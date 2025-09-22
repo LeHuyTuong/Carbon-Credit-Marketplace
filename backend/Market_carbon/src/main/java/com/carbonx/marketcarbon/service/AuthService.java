@@ -7,6 +7,7 @@ import com.carbonx.marketcarbon.request.VerifyOtpRequest;
 import com.carbonx.marketcarbon.response.MessageResponse;
 import com.carbonx.marketcarbon.response.TokenResponse;
 
+
 public interface AuthService {
     MessageResponse register(RegisterRequest request);
     MessageResponse login(LoginRequest request);
