@@ -11,9 +11,9 @@
   position: relative;
   padding: 8px 12px;
   border-radius: 8px;
-  color: #e9f0e6;            /* chữ sáng trên nền ảnh */
+  color: #e9f0e6;           
   user-select: none;
-  cursor: default;           /* không phải link */
+  cursor: default;        
   transition: background .2s ease, color .2s ease;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .menu-item.highlight {
-  background: #2de35f;       /* khối xanh cho “ĐĂNG NHẬP” */
+  background: #2de35f;      
   color: #0b0c10;
   font-weight: 700;
 }
@@ -30,7 +30,7 @@
 .menu-item .menu-label { letter-spacing: .3px; }
 .menu-item .caret { margin-left: 6px; font-size: 12px; opacity: .9; }
 
-/* Submenu */
+
 .menu-item.has-sub .submenu {
   position: absolute;
   top: calc(100% + 8px);
