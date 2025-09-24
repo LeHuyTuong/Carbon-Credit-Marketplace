@@ -39,7 +39,6 @@ function MenuItem({ label, to, children, highlight = false }) {
   )
 }
 
-// Submenu item vẫn là <span>, click vào label là đi
 function SubmenuItem({ to, children }) {
   const navigate = useNavigate()
   return (

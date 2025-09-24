@@ -1,4 +1,4 @@
-/* bỏ overflow:hidden trên * để không khóa scroll */
+/* bỏ overflow:hidden không khóa scroll*/
 body {
   margin: 0;
   font-family: sans-serif;
