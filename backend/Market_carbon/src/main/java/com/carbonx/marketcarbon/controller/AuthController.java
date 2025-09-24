@@ -25,10 +25,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -95,9 +97,32 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<MessageResponse>> login(@Valid @RequestBody LoginRequest req){
-        return ResponseEntity.ok(ApiResponse.ok(authService.login(req)));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) throws UserException {
+        User user = userRepository.findByEmail(req.getEmail());
+        if (user == null) {
+            throw new UserException("Email không tồn tại");
+        }
+
+        // Kiểm tra mật khẩu
+        if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
+            throw new UserException("Sai mật khẩu");
+        }
+
+        // Tạo Authentication object
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+
+        // Sinh token
+        String token = jwtProvider.generateToken(authentication);
+
+        // Response
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setJwt(token);
+        authResponse.setMessage("Đăng nhập thành công");
+
+        return ResponseEntity.ok(authResponse);
     }
+
 
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req){
