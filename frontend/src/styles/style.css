@@ -1,0 +1,55 @@
+/* bỏ overflow:hidden trên * để không khóa scroll */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: url('/images/background.png') center/cover no-repeat fixed;
+  padding-top: 50px;
+}
+.login-container {
+  max-width: 400px;
+  width: 100%;
+}
+.login-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.form-group { 
+    margin-bottom: 1rem; 
+    display:flex; 
+    flex-direction:column; 
+}
+h2 {
+  justify-content: center;
+}
+.error-message { 
+    color: red; 
+    font-size: 12px; 
+}
+.login-btn { 
+    width: 100%;
+    padding: 12px; 
+    margin-top: 20px;
+    border:none; 
+    border-radius:6px;
+    background:#43ea51; 
+    color:#fff; 
+    cursor:pointer; 
+}
+.divider { 
+    text-align:center; 
+    margin: 1rem 0; 
+}
+.social-btn { 
+    width:100%; 
+    padding:12px;
+    border:1px solid #ccc; 
+    border-radius:6px;
+    background:#dce0dd; 
+    cursor:pointer; 
+}
+.success-message { 
+    text-align:center; 
+    color:green; 
+}
