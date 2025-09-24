@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.model;
 
+import com.carbonx.marketcarbon.domain.USER_ROLE;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,9 +21,9 @@ public class User {
     private String fullName;
 
     @Column(nullable=false, length = 32)
-    private String role; // EV_OWNER, CC_BUYER, CVA, ADMIN
+    private USER_ROLE role; // EV_OWNER, CC_BUYER, CVA, ADMIN
 
     @Column(nullable=false, length = 16)
-    private String status; // ACTIVE, SUSPENDED
+    private USER_ROLE status; // ACTIVE, SUSPENDED
 }
 
