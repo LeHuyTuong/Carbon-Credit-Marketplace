@@ -1,16 +1,14 @@
 package com.carbonx.marketcarbon.request;
 
+import com.carbonx.marketcarbon.domain.USER_ROLE;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class RegisterRequest {
-    @Email
-    @NotBlank
     private String email;
-    @NotBlank
-    private String password;
-    @NotBlank
+    private String password;   // tên khớp JSON
     private String fullName;
+    private USER_ROLE role;
 }
