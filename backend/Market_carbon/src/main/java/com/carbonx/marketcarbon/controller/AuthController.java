@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.carbonx.marketcarbon.domain.USER_STATUS;
 import com.carbonx.marketcarbon.exception.UserException;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -16,6 +17,7 @@ import com.carbonx.marketcarbon.response.TokenResponse;
 import com.carbonx.marketcarbon.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,30 +35,37 @@ import java.util.List;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+    @Autowired
+    private  AuthService authService;
+    @Autowired
     private JwtProvider jwtProvider;
-    private final AuthService authService;
+
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
+
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody User user ) throws UserException {
-        String email = user.getEmail();
-        String password = user.getPasswordHash();
-        String fullName = user.getFullName();
-        USER_ROLE role = user.getRole();
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest  req ) throws UserException {
+        String email = req.getEmail();
+        String password = req.getPassword();
+        String fullName = req.getFullName();
+        USER_ROLE role = req.getRole();
 
-        User isEmailExist = userRepository.findByEmail(email);
-
-        if (isEmailExist!=null) {
+        // Kiểm tra email tồn tại
+        if (userRepository.findByEmail(email) != null) {
             throw new UserException("Email Is Already Used With Another Account");
         }
-        // Create new user
+
+        // Tạo user mới
         User createdUser = new User();
         createdUser.setEmail(email);
         createdUser.setFullName(fullName);
         createdUser.setPasswordHash(passwordEncoder.encode(password));
         createdUser.setRole(role);
+        createdUser.setStatus(USER_STATUS.ACTIVE);
 
         User savedUser = userRepository.save(createdUser);
 
@@ -67,10 +76,8 @@ public class AuthController {
         authorities.add(new SimpleGrantedAuthority(role.toString()));
 
         // Tạo đối tượng Authentication “đã xác thực” từ username + credentials + authorities
-        //  - principal: email (định danh người dùng)
-        //  - credentials: password (có thể là plaintext ở thời điểm này; KHÔNG nên lưu lại sau khi dùng)
-         //  - authorities: danh sách quyền
         Authentication authentication = new UsernamePasswordAuthenticationToken(email, password,authorities);
+
         // Đặt Authentication vào SecurityContext hiện tại để coi như user đã đăng nhập trong request này
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
