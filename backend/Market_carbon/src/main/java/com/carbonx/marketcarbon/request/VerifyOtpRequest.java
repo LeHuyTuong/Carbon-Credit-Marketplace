@@ -9,6 +9,10 @@ public class VerifyOtpRequest {
     @Email
     @NotBlank
     private String email;
+
+    @NotBlank
+    private String subject;
+
     @NotBlank
     private String otpCode;
 }

@@ -31,4 +31,13 @@ public class OtpCode {
 
     @Column(nullable=false)
     private boolean used;
+
+    @Column(nullable=false, length=255)
+    private String toEmail;
+
+    @Column(nullable=false, length=50)
+    private String subject;
+
+    @Column(nullable=false, length=255)
+    private String messageBody;
 }
