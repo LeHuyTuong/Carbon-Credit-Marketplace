@@ -122,15 +122,13 @@ public class AuthController {
 
         return ResponseEntity.ok(authResponse);
     }
-
-
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req){
-        return ResponseEntity.ok(ApiResponse.ok(authService.verifyOtp(req)));
+        return ResponseEntity.ok(ApiResponse.ok(authService.verifyOtp(req))); //fix
     }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<MessageResponse>> logout(@RequestHeader(name="Authorization", required = false) String bearer){
-        return ResponseEntity.ok(ApiResponse.ok(authService.logout(bearer)));
+        return ResponseEntity.ok(ApiResponse.ok(authService.logout(bearer))); // fix
     }
 }
