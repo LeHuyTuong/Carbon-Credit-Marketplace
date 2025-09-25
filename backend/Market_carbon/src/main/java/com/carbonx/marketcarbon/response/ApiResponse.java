@@ -17,6 +17,11 @@ public class ApiResponse<T> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String error;
 
+    public ApiResponse(boolean success, String error) {
+        this.success = success;
+        this.error = error;
+    }
+
     public static <T> ApiResponse<T> ok(T data) {
         return ApiResponse.<T>builder().success(true).data(data).build();
     }
