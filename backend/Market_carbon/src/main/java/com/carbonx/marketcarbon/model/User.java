@@ -5,6 +5,8 @@ import com.carbonx.marketcarbon.domain.USER_STATUS;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.OffsetDateTime;
+
 @Entity
 @Table(name="users")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -26,5 +28,11 @@ public class User {
 
     @Column(nullable=false, length = 16)
     private USER_STATUS status; // ACTIVE, SUSPENDED
+
+    @Column(name = "otp_code")
+    private String otpCode;
+
+    @Column(name = "otp_expired_at")
+    private OffsetDateTime otpExpiredAt;
 }
 
