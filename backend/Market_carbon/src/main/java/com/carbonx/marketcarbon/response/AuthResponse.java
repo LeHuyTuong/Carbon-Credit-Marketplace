@@ -1,9 +1,11 @@
 package com.carbonx.marketcarbon.response;
 
 import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResponse {
 
     private String message;
