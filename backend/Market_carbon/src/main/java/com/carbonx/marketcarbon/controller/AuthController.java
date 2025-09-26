@@ -93,7 +93,6 @@ public class AuthController {
     // ====================== LOGIN ======================
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
-        // Tìm user trong DB theo email
         User user = userRepository.findByEmail(req.getEmail());
         if (user == null) {
             throw new UserException("Email không tồn tại");
@@ -104,20 +103,25 @@ public class AuthController {
             throw new UserException("Sai mật khẩu");
         }
 
-        // Tạo Authentication object
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+        // 1. Sinh OTP ngẫu nhiên (6 chữ số)
+        String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
 
-        // Sinh JWT token
-        String token = jwtProvider.generateToken(authentication);
+        System.out.println("OTP for " + user.getEmail() + " = " + otp);
 
-        // Chuẩn bị payload trả về
+        // 2. Lưu OTP vào DB (ví dụ thêm cột otpCode và otpExpiredAt trong User)
+        user.setOtpCode(otp);
+        user.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+        // 3. (Tuỳ chọn) Gửi OTP qua email
+        // emailService.sendOtp(user.getEmail(), otp);
+
+        // 4. Trả AuthResponse (chưa có JWT, chỉ có message và role)
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(token);
-        authResponse.setMessage("Đăng nhập thành công");
+        authResponse.setJwt(null); // JWT sẽ được cấp sau khi verify OTP
+        authResponse.setMessage("OTP đã được gửi đến email. Vui lòng xác thực trong 5 phút.");
         authResponse.setRole(user.getRole());
 
-        // Bọc response vào CommonResponse<AuthResponse>
         return ResponseEntity.ok(
                 ResponseUtil.success("trace-login", authResponse)
         );
@@ -125,11 +129,31 @@ public class AuthController {
 
     // ====================== VERIFY OTP ======================
     @PostMapping("/verify-otp")
-    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
-        // Gọi service verify OTP
-        TokenResponse tokenResponse = authService.verifyOtp(req);
+    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) throws UserException {
+        User user = userRepository.findByEmail(req.getEmail());
+        if (user == null) {
+            throw new UserException("Email không tồn tại");
+        }
 
-        // Bọc response vào CommonResponse<TokenResponse>
+        // Kiểm tra OTP có hợp lệ không
+        if (user.getOtpCode() == null
+                || !user.getOtpCode().equals(req.getOtpCode())
+                || user.getOtpExpiredAt() == null
+                || user.getOtpExpiredAt().isBefore(java.time.OffsetDateTime.now())) {
+            throw new UserException("OTP không hợp lệ hoặc đã hết hạn");
+        }
+
+        // Xoá OTP sau khi dùng
+        user.setOtpCode(null);
+        user.setOtpExpiredAt(null);
+        userRepository.save(user);
+
+        // Sinh JWT token
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+        String token = jwtProvider.generateToken(authentication);
+
+        TokenResponse tokenResponse = new TokenResponse(token);
         return ResponseEntity.ok(
                 ResponseUtil.success("trace-verify-otp", tokenResponse)
         );
