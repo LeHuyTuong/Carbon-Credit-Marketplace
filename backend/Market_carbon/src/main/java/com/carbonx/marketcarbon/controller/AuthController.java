@@ -35,10 +35,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired private AuthService authService;
-    @Autowired private JwtProvider jwtProvider;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // ====================== REGISTER ======================
     @PostMapping("/register")
@@ -48,94 +47,41 @@ public class AuthController {
         String fullName = req.getFullName();
         USER_ROLE role = req.getRole();
 
-        // Kiểm tra email đã tồn tại trong DB chưa
         if (userRepository.findByEmail(email) != null) {
-            throw new UserException("Email Is Already Used With Another Account");
+            throw new UserException("Email đã tồn tại");
         }
 
-        // Tạo đối tượng User mới
-        User createdUser = new User();
-        createdUser.setEmail(email);
-        createdUser.setFullName(fullName);
-        createdUser.setPasswordHash(passwordEncoder.encode(password)); // Mã hoá password
-        createdUser.setRole(role);
-        createdUser.setStatus(USER_STATUS.ACTIVE);
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setFullName(fullName);
+        newUser.setPasswordHash(passwordEncoder.encode(password));
+        newUser.setRole(role);
+        newUser.setStatus(USER_STATUS.PENDING); // chưa active, chờ OTP
 
-        // Lưu vào DB
-        User savedUser = userRepository.save(createdUser);
-
-        // Gán quyền (authorities) cho user
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority(role.toString()));
-
-        // Tạo Authentication object (đã xác thực)
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(email, password, authorities);
-
-        // Đặt Authentication vào SecurityContext
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // Sinh JWT token từ Authentication
-        String token = jwtProvider.generateToken(authentication);
-
-        // Chuẩn bị payload trả về
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(token);                  // JWT để client lưu
-        authResponse.setMessage("Register Success"); // Thông báo cho client
-        authResponse.setRole(savedUser.getRole());   // Role của user
-
-        // Bọc response vào CommonResponse<AuthResponse>
-        return ResponseEntity.ok(
-                ResponseUtil.success("trace-register", authResponse)
-        );
-    }
-
-    // ====================== LOGIN ======================
-    @PostMapping("/login")
-    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
-        User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) {
-            throw new UserException("Email không tồn tại");
-        }
-
-        // Kiểm tra password nhập có khớp với password hash trong DB
-        if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new UserException("Sai mật khẩu");
-        }
-
-        // 1. Sinh OTP ngẫu nhiên (6 chữ số)
+        // Sinh OTP
         String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
+        newUser.setOtpCode(otp);
+        newUser.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
 
-        System.out.println("OTP for " + user.getEmail() + " = " + otp);
+        userRepository.save(newUser);
 
-        // 2. Lưu OTP vào DB (ví dụ thêm cột otpCode và otpExpiredAt trong User)
-        user.setOtpCode(otp);
-        user.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
-        userRepository.save(user);
+        System.out.println("OTP for " + email + " = " + otp);
+        // emailService.sendOtp(email, otp);
 
-        // 3. (Tuỳ chọn) Gửi OTP qua email
-        // emailService.sendOtp(user.getEmail(), otp);
-
-        // 4. Trả AuthResponse (chưa có JWT, chỉ có message và role)
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(null); // JWT sẽ được cấp sau khi verify OTP
-        authResponse.setMessage("OTP đã được gửi đến email. Vui lòng xác thực trong 5 phút.");
-        authResponse.setRole(user.getRole());
+        authResponse.setJwt(null);
+        authResponse.setMessage("Đăng ký thành công. OTP đã được gửi, vui lòng xác nhận.");
+        authResponse.setRole(newUser.getRole());
 
-        return ResponseEntity.ok(
-                ResponseUtil.success("trace-login", authResponse)
-        );
+        return ResponseEntity.ok(ResponseUtil.success("trace-register", authResponse));
     }
 
-    // ====================== VERIFY OTP ======================
+    // ====================== VERIFY OTP (sau REGISTER) ======================
     @PostMapping("/verify-otp")
     public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) throws UserException {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) {
-            throw new UserException("Email không tồn tại");
-        }
+        if (user == null) throw new UserException("Email không tồn tại");
 
-        // Kiểm tra OTP có hợp lệ không
         if (user.getOtpCode() == null
                 || !user.getOtpCode().equals(req.getOtpCode())
                 || user.getOtpExpiredAt() == null
@@ -143,32 +89,60 @@ public class AuthController {
             throw new UserException("OTP không hợp lệ hoặc đã hết hạn");
         }
 
-        // Xoá OTP sau khi dùng
+        // Xoá OTP, kích hoạt user
         user.setOtpCode(null);
         user.setOtpExpiredAt(null);
+        user.setStatus(USER_STATUS.ACTIVE);
         userRepository.save(user);
 
-        // Sinh JWT token
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+        // Sinh JWT
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(), null,
+                List.of(new SimpleGrantedAuthority(user.getRole().toString()))
+        );
         String token = jwtProvider.generateToken(authentication);
 
-        TokenResponse tokenResponse = new TokenResponse(token);
-        return ResponseEntity.ok(
-                ResponseUtil.success("trace-verify-otp", tokenResponse)
+        return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
+    }
+
+    // ====================== LOGIN (KHÔNG OTP) ======================
+    @PostMapping("/login")
+    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
+        User user = userRepository.findByEmail(req.getEmail());
+        if (user == null) throw new UserException("Email không tồn tại");
+        if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
+            throw new UserException("Sai mật khẩu");
+        }
+        if (user.getStatus() != USER_STATUS.ACTIVE) {
+            throw new UserException("Tài khoản chưa được kích hoạt OTP");
+        }
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(), null,
+                List.of(new SimpleGrantedAuthority(user.getRole().toString()))
         );
+        String token = jwtProvider.generateToken(authentication);
+
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setJwt(token);
+        authResponse.setMessage("Login thành công");
+        authResponse.setRole(user.getRole());
+
+        return ResponseEntity.ok(ResponseUtil.success("trace-login", authResponse));
     }
 
     // ====================== LOGOUT ======================
     @PostMapping("/logout")
     public ResponseEntity<CommonResponse<MessageResponse>> logout(
             @RequestHeader(name = "Authorization", required = false) String bearer) {
-        // Gọi service logout (thường là blacklist token)
-        MessageResponse msg = authService.logout(bearer);
+        if (bearer == null || !bearer.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body(
+                    ResponseUtil.error("trace-logout", "400", "Token không hợp lệ hoặc không được cung cấp")
+            );
+        }
+        String token = bearer.substring(7);
+        System.out.println("Logout token: " + token);
 
-        // Bọc response vào CommonResponse<MessageResponse>
-        return ResponseEntity.ok(
-                ResponseUtil.success("trace-logout", msg)
-        );
+        return ResponseEntity.ok(ResponseUtil.success("trace-logout", new MessageResponse("Đăng xuất thành công")));
     }
 }
