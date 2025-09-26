@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class RegisterRequest {
+    @Email
     private String email;
     private String password;   // tên khớp JSON
     private String fullName;
