@@ -65,7 +65,7 @@ export default function Login(){
     }}>
       <div className="login-container">
         <div className="login-card">
-          <h1>Đăng nhập</h1>
+          <h1>Login</h1>
 
           {!success ? (
           <form onSubmit={submit} noValidate>
@@ -93,17 +93,17 @@ export default function Login(){
             <label>
               <input type="checkbox" checked={remember}
                 onChange={e=>setRemember(e.target.checked)}/>
-              Nhớ phiên đăng nhập
+              Remember me
             </label>
 
-            <Link to="" style={{marginLeft: '30px'}}>Quên mật khẩu?</Link>
+            <Link to="" style={{marginLeft: '30px'}}>Forgot password?</Link>
             
             <button type="submit" disabled={loading}
               className={'login-btn' + (loading ? ' loading' : '')}
               onClick={(e)=>ripple(e, btnRippleRef.current)}
             >
               <div ref={btnRippleRef}></div>
-              {loading ? 'Loading...' : 'Đăng nhập'}
+              {loading ? 'Loading...' : 'Login'}
             </button>
           </form>
           ) : (
@@ -115,7 +115,7 @@ export default function Login(){
 
           <div className="divider"><span>or</span></div>
           <button type="button" className="social-btn">Continue with Google</button>
-          <p style={{marginLeft: '50px'}}>Chưa có tài khoản? <Link to="/register">Tạo tài khoản</Link></p>
+          <p style={{marginLeft: '50px'}}>Don't have an account? <Link to="/register">Sign up</Link></p>
         </div>
       </div>
     </div>

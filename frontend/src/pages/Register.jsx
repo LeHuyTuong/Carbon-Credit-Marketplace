@@ -49,8 +49,8 @@ function useRipple() {
 export default function Register(){
   const nav = useNavigate()
   const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [remember, setRemember] = useState(false)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -62,12 +62,11 @@ export default function Register(){
 
   const validate = () => {
     const e = {}
-    if (!name) e.name = 'Name is required'
-    else if (name.length < 4) e.name = 'Min 4 characters'
     if (!email.trim()) e.email = 'Email is required'
     else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Enter a valid email'
     if (!password) e.password = 'Password is required'
     else if (password.length < 6) e.password = 'Min 6 characters'
+    if (confirmPassword != password) e.confirmPassword = 'Confirm password must match password'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -94,28 +93,17 @@ export default function Register(){
     }}>
       <div className="login-container">
         <div className="login-card">
-          <h1>Đăng ký</h1>
+          <h1>Sign in</h1>
 
           {!success ? (
           <form onSubmit={submit} noValidate>
-
-            <div className={'form-group' + (errors.name ? ' error' : '')}>
-              <input
-                type={showPwd ? 'text' : 'name'}
-                required value={name}
-                onChange={e=>setPassword(e.target.value)}
-                onBlur={validate}
-                placeholder="Tên đăng nhập"
-              />
-              {errors.name && <span className="error-message">{errors.name}</span>}
-            </div>
 
             <div className={'form-group' + (errors.email ? ' error' : '')}>
               <input
                 type="email" required value={email}
                 onChange={e=>setEmail(e.target.value)}
                 onBlur={validate}
-                placeholder="Email"
+                placeholder="name@gmail.com"
               />
               {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
@@ -126,15 +114,27 @@ export default function Register(){
                 required value={password}
                 onChange={e=>setPassword(e.target.value)}
                 onBlur={validate}
-                placeholder="Mật khẩu"
+                placeholder="Enter password"
               />
               {errors.password && <span className="error-message">{errors.password}</span>}
             </div>
+            
+            <div className={'form-group' + (errors.confirmPassword ? ' error' : '')}>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                required value={confirmPassword}
+                onChange={e=>setConfirmPassword(e.target.value)}
+                onBlur={validate}
+                placeholder="Re-enter password"
+              />
+              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+            </div>
+
 
             <label>
               <input type="checkbox" checked={remember}
                 onChange={e=>setRemember(e.target.checked)}/>
-                Tôi chấp nhận <Link to="">điều khoản & quyền riêng tư</Link>
+                I agree with <Link to="">Terms of Use</Link> <Link to="">& Privacy Policy</Link>
             </label>
             
             <button type="submit" disabled={loading}
@@ -142,7 +142,7 @@ export default function Register(){
               onClick={(e)=>ripple(e, btnRippleRef.current)}
             >
               <div ref={btnRippleRef}></div>
-              {loading ? 'Loading...' : 'Đăng ký'}
+              {loading ? 'Loading...' : 'Sign in'}
             </button>
           </form>
           ) : (
@@ -154,7 +154,7 @@ export default function Register(){
 
           <div className="divider"><span>or</span></div>
           <button type="button" className="social-btn">Continue with Google</button>
-          <p style={{marginLeft: '70px'}}>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
+          <p style={{marginLeft: '70px'}}>Already have an account? <Link to="/login">Login</Link></p>
         </div>
       </div>
     </div>
