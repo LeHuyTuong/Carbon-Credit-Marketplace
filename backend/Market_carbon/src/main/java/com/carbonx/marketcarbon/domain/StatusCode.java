@@ -1,8 +1,10 @@
 package com.carbonx.marketcarbon.domain;
 
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 
 @Getter
+@Embeddable
 public enum StatusCode {
 
     SUCCESS("00000000", "Success"),

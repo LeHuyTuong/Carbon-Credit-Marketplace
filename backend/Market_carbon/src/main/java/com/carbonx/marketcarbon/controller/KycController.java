@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.service.KycService;
 import com.carbonx.marketcarbon.utils.CommonRequest;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,31 +26,31 @@ public class KycController {
 
     @PostMapping
     public ResponseEntity<CommonResponse<KycResponse>> create(
-            @Valid @RequestBody CommonRequest<KycRequest> req,
+            @Valid @RequestBody TuongCommonRequest<KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        KycResponse created = kycService.create(req.getRequestParamters());
+        KycResponse created = kycService.create(req.getData());
 
         return ResponseEntity.ok(ResponseUtil.success(trace, created));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CommonResponse<KycResponse>> update(
-            @PathVariable Long id,
-            @RequestBody CommonRequest<KycRequest> req,
+            @PathVariable("id") Long id,
+            @Valid @RequestBody TuongCommonRequest<KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace
             ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        KycResponse updated = kycService.update(id, req.getRequestParamters());
+        KycResponse updated = kycService.update(id, req.getData());
         return ResponseEntity.ok(ResponseUtil.success(trace, updated));
     }
 
     @GetMapping("/{userId}")
     public ResponseEntity<CommonResponse<KycResponse>> getByUser(
-            @PathVariable Long userId,
+            @PathVariable(name="userId") @Valid Long userId,
             @RequestHeader(value = "X-Request-Trace",required = false) String requestTrace){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        KycResponse kyc =  kycService.getByUser(userId);
+        KycResponse kyc =  kycService.getByUserId(userId);
         return ResponseEntity.ok(ResponseUtil.success(trace, kyc));
     }
 

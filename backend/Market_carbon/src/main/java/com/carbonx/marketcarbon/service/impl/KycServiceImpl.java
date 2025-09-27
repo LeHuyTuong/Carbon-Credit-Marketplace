@@ -54,7 +54,9 @@ public class KycServiceImpl implements KycService {
         //B3 lưu data vào response để trả về
         KycResponse kycResponse = KycResponse.builder()
                 .userId(req.getUserId())
+                .id(kycProfile.getId())
                 .kycStatus(KycStatus.NEW)
+                .email(email)
                 .phone(req.getPhone())
                 .country(req.getCountry())
                 .address(req.getAddress())
@@ -71,7 +73,7 @@ public class KycServiceImpl implements KycService {
     @Override
     public KycResponse update(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
-        KycProfile kycProfile = kycRepository.findByUserId((id))
+        KycProfile kycProfile = kycRepository.findById((id))
                 .orElseThrow(() -> new ResourceNotFoundException("Id of KYC not found"));
 
         // B1 Set data vào kyc profile
@@ -88,6 +90,7 @@ public class KycServiceImpl implements KycService {
         log.info("KYC Updated : {}" , kycProfile);
         //B3 Trả về response
         return KycResponse.builder()
+                .id(kycProfile.getId())
                 .userId(req.getUserId())
                 .birthday(req.getBirthday())
                 .phone(req.getPhone())
@@ -100,9 +103,9 @@ public class KycServiceImpl implements KycService {
     }
 
     @Override
-    public KycResponse getByUser(Long userId) {
+    public KycResponse getByUserId(Long userId) {
         // B1 xem thử có data không
-        KycProfile kycProfile = kycRepository.findById(userId)
+        KycProfile kycProfile = kycRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Id of KYC not found"));
 
         //B2 Trả Về response
