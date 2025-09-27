@@ -5,11 +5,13 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.request.VehicleCreateRequest;
+import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.response.VehicleResponse;
 import com.carbonx.marketcarbon.service.VehicleService;
 import com.carbonx.marketcarbon.utils.CommonRequest;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,11 +30,11 @@ public class VehicleController {
 
     @PostMapping
     public ResponseEntity<CommonResponse<VehicleResponse>> create(
-            @Valid @RequestBody CommonRequest<VehicleCreateRequest> req,
+            @Valid @RequestBody TuongCommonRequest<@Valid VehicleCreateRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace){
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        VehicleResponse created = vehicleService.create(req.getRequestParamters());
+        VehicleResponse created = vehicleService.create(req.getData());
 
         return ResponseEntity.ok(ResponseUtil.success(trace, created));
     }
@@ -52,32 +54,32 @@ public class VehicleController {
         return ResponseEntity.ok(ResponseUtil.success(trace, vehicles));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CommonResponse<VehicleResponse>> getById(
-            @PathVariable Long id,
+    @GetMapping("/by-plate/{plateNumber}")
+    public ResponseEntity<CommonResponse<VehicleResponse>> getByPlateNumber(
+            @PathVariable("plateNumber") String plateNumber,
             @RequestHeader(value = "X-Request-Trace",required = false) String requestTrace){
 
         String trace =  requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        VehicleResponse vehicle = vehicleService.getById(id);
+        VehicleResponse vehicle = vehicleService.getByPlateNumber(plateNumber);
 
         return ResponseEntity.ok(ResponseUtil.success(trace, vehicle));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CommonResponse<VehicleResponse>> update(
-            @PathVariable Long id,
-            @RequestBody CommonRequest<VehicleCreateRequest> req,
+            @PathVariable("id") Long id,
+            @Valid @RequestBody TuongCommonRequest<VehicleUpdateRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace){
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        VehicleResponse updated = vehicleService.update(id, req.getRequestParamters());
+        VehicleResponse updated = vehicleService.update(id, req.getData());
 
         return ResponseEntity.ok(ResponseUtil.success(trace, updated));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<CommonResponse<String>> delete(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace ){
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();

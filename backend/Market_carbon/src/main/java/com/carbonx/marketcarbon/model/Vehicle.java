@@ -10,9 +10,6 @@ public class Vehicle {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false)
-    private Long ownerId;
-
     @Column(length=64, unique = true)
     private String plateNumber;
 
@@ -23,4 +20,8 @@ public class Vehicle {
     private String model;
 
     private Integer yearOfManufacture;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 }
