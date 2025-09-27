@@ -9,5 +9,6 @@ public class VehicleCreateRequest {
     private String model;
     private String brand;
     private String manufacturer;
+    private Integer YearOfManufacture;
     private Integer year;
 }
