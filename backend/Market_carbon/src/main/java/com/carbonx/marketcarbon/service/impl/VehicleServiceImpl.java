@@ -3,14 +3,19 @@ package com.carbonx.marketcarbon.service.impl;
 
 
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
+import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.response.VehicleResponse;
 import com.carbonx.marketcarbon.service.VehicleService;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,18 +23,28 @@ import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class VehicleServiceImpl implements VehicleService {
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
+    private final VehicleRepository vehicleRepository;
 
     @Override
     public VehicleResponse create(VehicleCreateRequest req) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName(); // JWT phải có email/username trong claim "sub"
+        User owner = userRepository.findByEmail(email);
+        if (owner == null) {
+            throw new ResourceNotFoundException("Owner not found with email: " + email);
+        }
+
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
+                .yearOfManufacture(req.getYearOfManufacture())
+                .owner(owner)
                 .build();
         // B2 save data on repo
         vehicleRepository.save(vehicle);
@@ -37,7 +52,7 @@ public class VehicleServiceImpl implements VehicleService {
         VehicleResponse vehicleResponse = VehicleResponse
                 .builder()
                 .id(vehicle.getId())
-                .ownerId(vehicle.getOwnerId())
+                .ownerId(vehicle.getOwner().getId())
                 .plateNumber(vehicle.getPlateNumber())
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())
@@ -54,7 +69,7 @@ public class VehicleServiceImpl implements VehicleService {
         return vehicleRepository.findAll().stream()
                 .map(vehicle -> VehicleResponse.builder()
                         .id(vehicle.getId())
-                        .ownerId(vehicle.getOwnerId())
+                        .ownerId(vehicle.getOwner().getId())
                         .brand(vehicle.getBrand())
                         .plateNumber(vehicle.getPlateNumber())
                         .model(vehicle.getModel())
@@ -71,7 +86,7 @@ public class VehicleServiceImpl implements VehicleService {
         //B2: Trả về response
         return VehicleResponse.builder()
                 .id(vehicle.getId())
-                .ownerId(vehicle.getOwnerId())
+                .ownerId(vehicle.getOwner().getId())
                 .plateNumber(vehicle.getPlateNumber())
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())
@@ -91,7 +106,7 @@ public class VehicleServiceImpl implements VehicleService {
         log.info("Vehicle updated successfully");
         return VehicleResponse.builder()
                 .id(vehicle.getId())
-                .ownerId(vehicle.getOwnerId())
+                .ownerId(vehicle.getOwner().getId())
                 .plateNumber(vehicle.getPlateNumber())
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())

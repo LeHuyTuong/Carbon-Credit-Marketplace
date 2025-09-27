@@ -105,7 +105,7 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
     }
 
-    // ====================== LOGIN (KHÔNG OTP) ======================
+    // ====================== LOGIN  ======================
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
         User user = userRepository.findByEmail(req.getEmail());
