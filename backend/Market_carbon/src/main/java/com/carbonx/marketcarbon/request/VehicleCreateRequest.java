@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class VehicleCreateRequest {
+    private Long ownerId;
     private String plateNumber;
     private String model;
     private String brand;
