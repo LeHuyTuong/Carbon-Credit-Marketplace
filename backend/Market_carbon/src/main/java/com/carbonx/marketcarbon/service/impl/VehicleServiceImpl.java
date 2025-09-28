@@ -80,13 +80,21 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Override
     public VehicleResponse getByPlateNumber(String plateNumber) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User owner = userRepository.findByEmail(email);
+        if(owner == null){
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+
         //B1 : xác định xe bằng ID , nếu ko thì trả về exception
         Vehicle vehicle = (Vehicle) vehicleRepository.findByPlateNumber(plateNumber)
                 .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
         //B2: Trả về response
         return VehicleResponse.builder()
                 .id(vehicle.getId())
-                .ownerId(vehicle.getOwner().getId())
+                .ownerId(owner.getId())
                 .plateNumber(vehicle.getPlateNumber())
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())
@@ -96,6 +104,13 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Override
     public VehicleResponse update(Long id, VehicleUpdateRequest req) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User owner = userRepository.findByEmail(email);
+        if(owner == null){
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
         vehicle.setYearOfManufacture(req.getYear());
@@ -107,7 +122,7 @@ public class VehicleServiceImpl implements VehicleService {
         log.info("Vehicle updated successfully");
         return VehicleResponse.builder()
                 .id(vehicle.getId())
-                .ownerId(vehicle.getOwner().getId())
+                .ownerId(owner.getId())
                 .plateNumber(vehicle.getPlateNumber())
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())
