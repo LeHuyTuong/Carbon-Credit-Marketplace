@@ -1,0 +1,10 @@
+@media (min-width: 992px) {
+  .navbar .dropdown:hover > .dropdown-menu {
+    display: block;
+    margin-top: 0;
+  }
+}
+
+.navbar.bg-dark.bg-opacity-25 {
+  backdrop-filter: saturate(150%) blur(8px);
+}
