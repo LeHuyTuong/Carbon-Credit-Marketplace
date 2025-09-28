@@ -22,7 +22,7 @@ export default function Hero() {
             </p>
 
             <div className="d-flex gap-3">
-              <a href="/login" className="btn btn-brand btn-lg">Sign up now</a>
+              <a href="/register" className="btn btn-brand btn-lg">Sign up now</a>
               <a href="#how" className="btn btn-outline-primary btn-lg">Learn more</a>
             </div>
 
