@@ -4,15 +4,20 @@ import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.domain.USER_ROLE;
 import com.carbonx.marketcarbon.domain.USER_STATUS;
 import com.carbonx.marketcarbon.exception.UserException;
+import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.request.LoginRequest;
 import com.carbonx.marketcarbon.request.RegisterRequest;
+import com.carbonx.marketcarbon.request.ResetPasswordRequest;
 import com.carbonx.marketcarbon.request.VerifyOtpRequest;
+import com.carbonx.marketcarbon.response.ApiResponse;
 import com.carbonx.marketcarbon.response.AuthResponse;
 import com.carbonx.marketcarbon.response.MessageResponse;
 import com.carbonx.marketcarbon.response.TokenResponse;
 import com.carbonx.marketcarbon.service.AuthService;
+import com.carbonx.marketcarbon.service.PasswordResetTokenService;
+import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
 import jakarta.validation.Valid;
@@ -38,8 +43,9 @@ public class AuthController {
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final PasswordResetTokenService passwordResetTokenService;
 
-    // ====================== REGISTER ======================
     @PostMapping("/register")
     public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) throws UserException {
         String email = req.getEmail();
@@ -59,9 +65,10 @@ public class AuthController {
         newUser.setStatus(USER_STATUS.PENDING); // chưa active, chờ OTP
 
         // Sinh OTP
-        String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         newUser.setOtpCode(otp);
         newUser.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
+        userRepository.save(newUser);
 
         userRepository.save(newUser);
 
@@ -76,7 +83,6 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-register", authResponse));
     }
 
-    // ====================== VERIFY OTP (sau REGISTER) ======================
     @PostMapping("/verify-otp")
     public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) throws UserException {
         User user = userRepository.findByEmail(req.getEmail());
@@ -105,7 +111,6 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
     }
 
-    // ====================== LOGIN  ======================
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
         User user = userRepository.findByEmail(req.getEmail());
@@ -131,7 +136,7 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-login", authResponse));
     }
 
-    // ====================== LOGOUT ======================
+
     @PostMapping("/logout")
     public ResponseEntity<CommonResponse<MessageResponse>> logout(
             @RequestHeader(name = "Authorization", required = false) String bearer) {
@@ -144,5 +149,37 @@ public class AuthController {
         System.out.println("Logout token: " + token);
 
         return ResponseEntity.ok(ResponseUtil.success("trace-logout", new MessageResponse("Đăng xuất thành công")));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<CommonResponse<MessageResponse>> resetPassword(
+            @RequestBody ResetPasswordRequest req) throws UserException {
+
+        PasswordResetToken resetToken = passwordResetTokenService.findByToken(req.getToken());
+        if (resetToken == null) throw new UserException("Token is required...");
+        if (resetToken.isExpired()) {
+            passwordResetTokenService.delete(resetToken);
+            throw new UserException("Token expired...");
+        }
+
+        User user = resetToken.getUser();
+        userService.updatePassword(user, req.getPassword());
+        passwordResetTokenService.delete(resetToken);
+
+        MessageResponse payload = new MessageResponse("Password updated successfully");
+        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password", payload));
+    }
+
+    @PostMapping("/reset-password-request")
+    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(
+            @RequestParam("email") String email) throws UserException {
+
+        User user = userService.findUserByEmail(email);
+        if (user == null) throw new UserException("User not found");
+
+        userService.sendPasswordResetEmail(user);
+
+        MessageResponse payload = new MessageResponse("Password reset email sent successfully");
+        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", payload));
     }
 }
