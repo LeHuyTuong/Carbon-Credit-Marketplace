@@ -5,6 +5,8 @@ import Home from './pages/Home/Home.jsx'
 import Login from './pages/Login/Login.jsx'
 import Register from './pages/Register/Register.jsx'
 import Navbar from './components/Navbar/Navbar.jsx'
+import Marketplace from './pages/Market/Marketplace.jsx'
+import OTP from './pages/OTP/OTP.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import './styles/style.css'
@@ -20,6 +22,8 @@ function App() {
         <Route path="/home" element={<Home />} />                               
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/otp" element={<OTP />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
