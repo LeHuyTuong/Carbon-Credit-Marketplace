@@ -1,9 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-//hiệu ứng ripple 
-import useRipple from '../../hooks/useRipple'; 
-import bg from '../../assets/background.png';
-
+import useRipple from '../../hooks/useRipple';
 
 export default function Login() {
   const nav = useNavigate();
@@ -11,146 +8,147 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [showPwd, setShowPwd] = useState(false);
 
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
 
-  const validate = () => {
-    const e = {};
-    if (!email.trim()) e.email = 'Email is required';
-    else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Enter a valid email';
+  const validateField = (name, val) => {
+    switch (name) {
+      case 'email':
+        if (!val.trim()) return 'Email is required';
+        if (!/^\S+@\S+\.\S+$/.test(val)) return 'Enter a valid email';
+        return '';
+      case 'password':
+        if (!val) return 'Password is required';
+        if (val.length < 6) return 'Min 6 characters';
+        return '';
+      default:
+        return '';
+    }
+  };
 
-    if (!password) e.password = 'Password is required';
-    else if (password.length < 6) e.password = 'Min 6 characters';
-
+  //bắt lỗi
+  const validateForm = () => {
+    const e = {
+      email: validateField('email', email),
+      password: validateField('password', password),
+    };
+    Object.keys(e).forEach(k => !e[k] && delete e[k]);
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  //field đã đc blur
+  const markTouched = (n) => setTouched(p => ({ ...p, [n]: true }));
+
+  //cập nhật lỗi
+  const setErrorOf  = (n, msg) => setErrors(p => ({ ...p, [n]: msg || undefined }));
+
+  //show khi có lỗi
+  const show = (n) => !!errors[n] && (touched[n] || submitted);
+
+  //submit gọi validateFrom, lỗi thì ko call API
   const submit = async (ev) => {
     ev.preventDefault();
-    if (!validate()) return;
+    setSubmitted(true);
+    if (!validateForm()) return;
+
     setLoading(true);
-    //giả lập call API
     await new Promise((r) => setTimeout(r, 1000));
     setLoading(false);
-    setSuccess(true);
-    setTimeout(() => nav('/'), 1200);
+    nav('/home');
   };
 
   return (
-    <div className=" auth-hero min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ '--bg-url': `url(${bg})` }}
-    >
+    <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="container" style={{ maxWidth: 440 }}>
         <div className="card shadow-sm">
           <div className="card-body p-4 p-md-5">
-            <h1 className="h4 mb-4">Login</h1>
+            <h1 className="h4 mb-4 text-center">Login</h1>
 
-            {!success ? (
-              <form onSubmit={submit} noValidate>
-                {/*email*/}
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={validate}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                    required
-                  />
-                  {errors.email && (
-                    <div className="invalid-feedback">{errors.email}</div>
-                  )}
-                </div>
-
-                {/*password, toggle */}
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label">Password</label>
-                  <div className="input-group">
-                    <input
-                      id="password"
-                      type={showPwd ? 'text' : 'password'}
-                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onBlur={validate}
-                      placeholder="••••••"
-                      autoComplete="current-password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => setShowPwd((s) => !s)}
-                      aria-label={showPwd ? 'Hide password' : 'Show password'}
-                    >
-                      {showPwd ? 'Hide' : 'Show'}
-                    </button>
-                    {errors.password && (
-                      <div className="invalid-feedback d-block">{errors.password}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/*remember, forgot*/}
-                <div className="d-flex align-items-center mb-3">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="remember"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                    />
-                    <label className="form-check-label" htmlFor="remember">
-                      Remember me
-                    </label>
-                  </div>
-                  <Link to="/forgot" className="ms-auto">Forgot password?</Link>
-                </div>
-
-                {/*submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary w-100 position-relative overflow-hidden"
-                  onClick={(e) => ripple(e, btnRippleRef.current)}
-                >
-                  {/*host cho ripple*/}
-                  <span ref={btnRippleRef} className="ripple-host" />
-                  {loading && (
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    />
-                  )}
-                  {loading ? 'Loading…' : 'Login'}
-                </button>
-              </form>
-            ) : (
-              <div className="alert alert-success mb-0">
-                <h5 className="alert-heading mb-1">Welcome back!</h5>
-                <p className="mb-0">Signing you in…</p>
+            <form onSubmit={submit} noValidate>
+              {/*email */}
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  className={`form-control ${show('email') ? 'is-invalid' : ''}`}
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (touched.email) setErrorOf('email', validateField('email', e.target.value));
+                  }}
+                  onBlur={() => {
+                    markTouched('email');
+                    setErrorOf('email', validateField('email', email));
+                  }}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                />
+                {show('email') && <div className="invalid-feedback">{errors.email}</div>}
               </div>
-            )}
+
+              {/*password */}
+              <div className="mb-3">
+              <label htmlFor="password" className="form-label">Password</label>
+              <input
+                id="password"
+                type="password"
+                className={`form-control ${show('password') ? 'is-invalid' : ''}`}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (touched.password) setErrorOf('password', validateField('password', e.target.value));
+                }}
+                onBlur={() => {
+                  markTouched('password');
+                  setErrorOf('password', validateField('password', password));
+                }}
+                placeholder="••••••"
+                autoComplete="current-password"
+                required
+              />
+              {show('password') && <div className="invalid-feedback d-block">{errors.password}</div>}
+            </div>
+
+
+              {/*remember & link */}
+              <div className="d-flex align-items-center mb-3">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="remember"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                  <label className="form-check-label" htmlFor="remember">Remember me</label>
+                </div>
+                <Link to="/forgot" className="ms-auto">Forgot password?</Link>
+              </div>
+
+              {/**login btn */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary w-100 position-relative overflow-hidden"
+                onClick={(e) => ripple(e, btnRippleRef.current)}
+              >
+                <span ref={btnRippleRef} className="ripple-host" />
+                {loading ? 'Loading…' : 'Login'}
+              </button>
+            </form>
 
             <div className="text-center text-muted my-3">— or —</div>
-
-            {/*login google*/}
-            <button type="button" className="btn btn-outline-secondary w-100">
-              Login with Google
-            </button>
-
+            <button type="button" className="btn btn-outline-secondary w-100">Login with Google</button>
             <p className="mt-3 text-center mb-0">
               Don't have an account? <Link to="/register">Sign up</Link>
             </p>
