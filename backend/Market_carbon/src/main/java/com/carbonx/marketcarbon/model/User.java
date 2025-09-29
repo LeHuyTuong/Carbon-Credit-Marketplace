@@ -23,11 +23,14 @@ public class User {
     @Column(nullable=false, length = 255)
     private String fullName;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 32)
     private USER_ROLE role; // EV_OWNER, CC_BUYER, CVA, ADMIN
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 16)
-    private USER_STATUS status; // ACTIVE, SUSPENDED
+    @Builder.Default
+    private USER_STATUS status = USER_STATUS.PENDING;
 
     @Column(name = "otp_code")
     private String otpCode;
