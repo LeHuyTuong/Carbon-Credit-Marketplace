@@ -1,7 +1,8 @@
     package com.carbonx.marketcarbon.service.impl;
 
     import com.carbonx.marketcarbon.config.JwtProvider;
-    import com.carbonx.marketcarbon.exception.UserException;
+    import com.carbonx.marketcarbon.exception.AppException;
+    import com.carbonx.marketcarbon.exception.ErrorCode;
     import com.carbonx.marketcarbon.model.PasswordResetToken;
     import com.carbonx.marketcarbon.model.User;
     import com.carbonx.marketcarbon.repository.PasswordResetTokenRepository;
@@ -30,21 +31,19 @@
 
 
         @Override
-        public User findUserProfileByJwt(String jwt) throws UserException {
+        public User findUserProfileByJwt(String jwt) {
             String email=jwtProvider.getEmailFromJwtToken(jwt);
 
-
             User user = userRepository.findByEmail(email);
-
             if(user==null) {
-                throw new UserException("user not exist with email "+email);
+                throw new AppException(ErrorCode.EMAIL_INVALID);
             }
 //		System.out.println("email user "+user.get().getEmail());
             return user;
         }
 
         @Override
-        public User findUserByEmail(String username) throws UserException {
+        public User findUserByEmail(String username) {
 
             User user=userRepository.findByEmail(username);
 
@@ -52,8 +51,7 @@
 
                 return user;
             }
-
-            throw new UserException("user not exist with username "+username);
+            throw new AppException(ErrorCode.EMAIL_INVALID);
         }
 
         @Override
