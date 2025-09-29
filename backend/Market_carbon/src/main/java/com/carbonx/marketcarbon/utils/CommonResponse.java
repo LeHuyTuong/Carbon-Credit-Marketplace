@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CommonResponse<T> {
+public class        CommonResponse<T> {
     String requestTrace;   // requestTrace
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") // ISO 8601 format with timezone

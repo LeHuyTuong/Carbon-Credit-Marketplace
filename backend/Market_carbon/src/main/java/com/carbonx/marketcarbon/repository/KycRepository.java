@@ -10,4 +10,5 @@ public interface KycRepository extends JpaRepository<KycProfile,Long> {
     Optional<KycProfile> findByPhone(String phone); // tìm thông tin dựa trên  sddt
 
     Optional<KycProfile> findByUserId(Long userId);
+    boolean existsByUserId(Long userId);
 }
