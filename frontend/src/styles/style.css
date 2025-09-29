@@ -1,55 +1,71 @@
-/* bỏ overflow:hidden không khóa scroll*/
-body {
-  margin: 0;
-  font-family: sans-serif;
-  background: url('/images/background.png') center/cover no-repeat fixed;
-  padding-top: 50px;
+/*background*/
+.auth-hero {
+  background-image: var(--bg-url, url('../assets/background.png'));
+  background-size: cover;
+  background-position: center;
+  padding-top: 60px;
 }
-.login-container {
-  max-width: 400px;
-  width: 100%;
+
+.auth-hero .card-body > h1.h4 {
+  overflow: visible !important;
+  height: auto !important;     
 }
-.login-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+
+
+.auth-container {
+  max-width: 520px; 
 }
-.form-group { 
-    margin-bottom: 1rem; 
-    display:flex; 
-    flex-direction:column; 
+
+.auth-container h1.h4 {
+  overflow: visible !important;
+  height: auto !important;   
 }
-h2 {
-  justify-content: center;
+
+.ripple-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
-.error-message { 
-    color: red; 
-    font-size: 12px; 
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0.5;
+  background: #fff; 
+  animation: ripple-kf 600ms ease-out forwards;
 }
-.login-btn { 
-    width: 100%;
-    padding: 12px; 
-    margin-top: 20px;
-    border:none; 
-    border-radius:6px;
-    background:#43ea51; 
-    color:#fff; 
-    cursor:pointer; 
+@keyframes ripple-kf {
+  to { transform: scale(2.4); opacity: 0; }
 }
-.divider { 
-    text-align:center; 
-    margin: 1rem 0; 
+.btn-primary { 
+  background:#21f648ff; 
+  border-color:#21f648ff; 
+  color:#ffffffff; 
 }
-.social-btn { 
-    width:100%; 
-    padding:12px;
-    border:1px solid #ccc; 
-    border-radius:6px;
-    background:#dce0dd; 
-    cursor:pointer; 
+.btn-primary:hover { 
+  background:#66f583; 
+  border-color:#86EFAC; 
 }
-.success-message { 
-    text-align:center; 
-    color:green; 
+.btn-outline-secondary{
+  background:rgb(230, 232, 230); 
+  border-color:rgb(230, 232, 230); 
+  color:rgb(0, 0, 0); 
 }
+.btn-outline-secondary:hover{
+  background:#d0cece; 
+  border-color:#d0cece; 
+}
+/*không cho heading nào scroll */
+:where(h1, h2, h3, h4, h5, h6,
+       .h1, .h2, .h3, .h4, .h5, .h6,
+       .display-1, .display-2, .display-3, .display-4,
+       .section-title, .feature-title) {
+  overflow: visible !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  white-space: normal;    
+  word-break: break-word;
+}
+

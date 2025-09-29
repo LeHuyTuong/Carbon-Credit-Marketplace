@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
 
+import com.carbonx.marketcarbon.config.Translator;
 import com.carbonx.marketcarbon.domain.KycStatus;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.KycProfile;
@@ -14,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -30,13 +33,20 @@ public class KycServiceImpl implements KycService {
     @Override
     public KycResponse create(@Validated(KycRequest.Create.class) KycRequest req) {
         // check email thông tin kyc đã tồn tại chưa
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email);
+        if(user == null){
+            throw new ResourceNotFoundException("User not found");
+        }
+
         if(kycRepository.existsById(req.getUserId()))
             throw new ResourceNotFoundException("User with id " + req.getUserId() + " not found");
 
-        String email = req.getEmail();
         // B1 Lấy data từ request vào object
         KycProfile kycProfile = KycProfile.builder()
-                .userId(req.getUserId())
+                .userId(user.getId())
                 .email(email)
                 .name(req.getName())
                 .phone(req.getPhone())
@@ -53,8 +63,10 @@ public class KycServiceImpl implements KycService {
 
         //B3 lưu data vào response để trả về
         KycResponse kycResponse = KycResponse.builder()
-                .userId(req.getUserId())
+                .userId(user.getId())
+                .id(kycProfile.getId())
                 .kycStatus(KycStatus.NEW)
+                .email(email)
                 .phone(req.getPhone())
                 .country(req.getCountry())
                 .address(req.getAddress())
@@ -71,8 +83,15 @@ public class KycServiceImpl implements KycService {
     @Override
     public KycResponse update(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
-        KycProfile kycProfile = kycRepository.findByUserId((id))
-                .orElseThrow(() -> new ResourceNotFoundException("Id of KYC not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email);
+        if(user == null){
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        KycProfile kycProfile = kycRepository.findById((id))
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("kyc.not.found")));
 
         // B1 Set data vào kyc profile
         kycProfile.setName(req.getName());
@@ -88,7 +107,8 @@ public class KycServiceImpl implements KycService {
         log.info("KYC Updated : {}" , kycProfile);
         //B3 Trả về response
         return KycResponse.builder()
-                .userId(req.getUserId())
+                .id(kycProfile.getId())
+                .userId(user.getId())
                 .birthday(req.getBirthday())
                 .phone(req.getPhone())
                 .country(req.getCountry())
@@ -100,14 +120,21 @@ public class KycServiceImpl implements KycService {
     }
 
     @Override
-    public KycResponse getByUser(Long userId) {
+    public KycResponse getByUserId(Long userId) {
         // B1 xem thử có data không
-        KycProfile kycProfile = kycRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Id of KYC not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email);
+        if(user == null){
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        KycProfile kycProfile = kycRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
 
         //B2 Trả Về response
         return KycResponse.builder()
-                .userId(kycProfile.getUserId())
+                .userId(user.getId())
                 .birthday(kycProfile.getBirthDate())
                 .phone(kycProfile.getPhone())
                 .country(kycProfile.getCountry())

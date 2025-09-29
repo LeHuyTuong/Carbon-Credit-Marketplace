@@ -48,6 +48,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) throws UserException {
+        if (!req.getPassword().equals(req.getConfirmPassword())) {
+            throw new UserException("Mật khẩu và xác nhận mật khẩu không khớp");
+        }
         String email = req.getEmail();
         String password = req.getPassword();
         String fullName = req.getFullName();
@@ -62,14 +65,12 @@ public class AuthController {
         newUser.setFullName(fullName);
         newUser.setPasswordHash(passwordEncoder.encode(password));
         newUser.setRole(role);
-        newUser.setStatus(USER_STATUS.PENDING); // chưa active, chờ OTP
+        newUser.setStatus(USER_STATUS.PENDING);
 
         // Sinh OTP
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         newUser.setOtpCode(otp);
         newUser.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
-        userRepository.save(newUser);
-
         userRepository.save(newUser);
 
         System.out.println("OTP for " + email + " = " + otp);
@@ -106,7 +107,7 @@ public class AuthController {
                 user.getEmail(), null,
                 List.of(new SimpleGrantedAuthority(user.getRole().toString()))
         );
-        String token = jwtProvider.generateToken(authentication);
+        String token = jwtProvider.generateToken(user);
 
         return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
     }
@@ -126,7 +127,7 @@ public class AuthController {
                 user.getEmail(), null,
                 List.of(new SimpleGrantedAuthority(user.getRole().toString()))
         );
-        String token = jwtProvider.generateToken(authentication);
+        String token = jwtProvider.generateToken(user);
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(token);
