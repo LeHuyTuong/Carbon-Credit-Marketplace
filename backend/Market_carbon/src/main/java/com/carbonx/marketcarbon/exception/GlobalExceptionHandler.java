@@ -1,6 +1,9 @@
 package com.carbonx.marketcarbon.exception;
-
-import com.carbonx.marketcarbon.response.ApiResponse;
+import com.carbonx.marketcarbon.exception.BadRequestException;
+import com.carbonx.marketcarbon.exception.NotFoundException;
+import com.carbonx.marketcarbon.exception.UnauthorizedException;
+import com.carbonx.marketcarbon.utils.CommonResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -11,7 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import jakarta.validation.ConstraintViolationException;
+import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -19,66 +22,74 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private CommonResponse<Object> buildErrorResponse(String code, String message) {
+        return CommonResponse.<Object>builder()
+                .requestTrace(null) // có thể set từ MDC/log trace id
+                .responseDateTime(OffsetDateTime.now())
+                .responseStatus(CommonResponse.ResponseStatus.builder()
+                        .responseCode(code)
+                        .responseMessage(message)
+                        .build())
+                .responseData(null)
+                .build();
+    }
+
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNotFound(NotFoundException ex){
+    public ResponseEntity<CommonResponse<Object>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.fail(ex.getMessage()));
+                .body(buildErrorResponse("404", ex.getMessage()));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUnauthorized(UnauthorizedException ex){
+    public ResponseEntity<CommonResponse<Object>> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.fail(ex.getMessage()));
+                .body(buildErrorResponse("401", ex.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<Object>> handleBadRequest(BadRequestException ex){
+    public ResponseEntity<CommonResponse<Object>> handleBadRequest(BadRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(ex.getMessage()));
+                .body(buildErrorResponse("400", ex.getMessage()));
     }
 
-    // @Valid trên @RequestBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Object>> handleValidation(MethodArgumentNotValidException ex){
+    public ResponseEntity<CommonResponse<Object>> handleValidation(MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getFieldErrors().isEmpty()
                 ? "Validation error"
                 : ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining("; "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(msg));
+                .body(buildErrorResponse("400", msg));
     }
 
-    // @Validated trên @PathVariable/@RequestParam
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse<Object>> handleConstraint(ConstraintViolationException ex){
+    public ResponseEntity<CommonResponse<Object>> handleConstraint(ConstraintViolationException ex) {
         String msg = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .collect(Collectors.joining("; "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(msg.isEmpty() ? "Constraint violation" : msg));
+                .body(buildErrorResponse("400", msg.isEmpty() ? "Constraint violation" : msg));
     }
 
-    // Sai kiểu tham số đường dẫn/query
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex){
+    public ResponseEntity<CommonResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String msg = "Parameter '" + ex.getName() + "' must be of type " +
                 (ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "expected type");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(msg));
+                .body(buildErrorResponse("400", msg));
     }
 
-    // JSON body không đọc được
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNotReadable(HttpMessageNotReadableException ex){
+    public ResponseEntity<CommonResponse<Object>> handleNotReadable(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail("Malformed JSON request"));
+                .body(buildErrorResponse("400", "Malformed JSON request"));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleOther(Exception ex){
+    public ResponseEntity<CommonResponse<Object>> handleOther(Exception ex) {
         log.error("Unhandled error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail("Internal error"));
+                .body(buildErrorResponse("500", "Internal error"));
     }
 }
