@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service;
 
 
 
+import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.response.VehicleResponse;
@@ -9,10 +10,10 @@ import com.carbonx.marketcarbon.response.VehicleResponse;
 import java.util.List;
 
 public interface VehicleService {
-    VehicleResponse create(VehicleCreateRequest req);
-    List<VehicleResponse> getAll();
-    VehicleResponse getByPlateNumber(String number);
-    VehicleResponse update(Long id, VehicleUpdateRequest req);
-    void delete(Long id);
+    public Long create(VehicleCreateRequest req);
+    public List<Vehicle> getAll();
+    public List<Vehicle> getByPlateNumber(String number);
+    public Long update(Long id, VehicleUpdateRequest req);
+    public void delete(Long id);
 }
 
