@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import com.carbonx.marketcarbon.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -19,19 +20,15 @@ public class JwtProvider {
 
     private SecretKey key=Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
 
-    public String generateToken(Authentication auth) {
-        Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-        String roles = populateAuthorities(authorities);
-
-        String jwt=Jwts.builder()
+    public String generateToken(User user) {
+        return Jwts.builder()
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime()+86400000))
-                .claim("email",auth.getName())
-                .claim("authorities", roles)
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 ngày
+                .claim("id", user.getId())
+                .claim("email", user.getEmail())
+                .claim("authorities", user.getRole().name())
                 .signWith(key)
                 .compact();
-        return jwt;
-
     }
 
     public String getEmailFromJwtToken(String jwt) {
