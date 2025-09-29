@@ -25,4 +25,5 @@ public class VehicleCreateRequest {
 
     @NotNull(message = "year of manufacture is not null")
     private Integer yearOfManufacture;
+
 }
