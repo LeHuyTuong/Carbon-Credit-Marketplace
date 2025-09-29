@@ -3,7 +3,8 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.domain.USER_ROLE;
 import com.carbonx.marketcarbon.domain.USER_STATUS;
-import com.carbonx.marketcarbon.exception.UserException;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -11,28 +12,22 @@ import com.carbonx.marketcarbon.request.LoginRequest;
 import com.carbonx.marketcarbon.request.RegisterRequest;
 import com.carbonx.marketcarbon.request.ResetPasswordRequest;
 import com.carbonx.marketcarbon.request.VerifyOtpRequest;
-import com.carbonx.marketcarbon.response.ApiResponse;
 import com.carbonx.marketcarbon.response.AuthResponse;
 import com.carbonx.marketcarbon.response.MessageResponse;
 import com.carbonx.marketcarbon.response.TokenResponse;
-import com.carbonx.marketcarbon.service.AuthService;
 import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -47,9 +42,9 @@ public class AuthController {
     private final PasswordResetTokenService passwordResetTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) {
         if (!req.getPassword().equals(req.getConfirmPassword())) {
-            throw new UserException("Mật khẩu và xác nhận mật khẩu không khớp");
+            throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
         }
         String email = req.getEmail();
         String password = req.getPassword();
@@ -57,7 +52,7 @@ public class AuthController {
         USER_ROLE role = req.getRole();
 
         if (userRepository.findByEmail(email) != null) {
-            throw new UserException("Email đã tồn tại");
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
         User newUser = new User();
@@ -85,15 +80,15 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) throw new UserException("Email không tồn tại");
+        if (user == null) throw new AppException(ErrorCode.INVALID_OTP);
 
         if (user.getOtpCode() == null
                 || !user.getOtpCode().equals(req.getOtpCode())
                 || user.getOtpExpiredAt() == null
                 || user.getOtpExpiredAt().isBefore(java.time.OffsetDateTime.now())) {
-            throw new UserException("OTP không hợp lệ hoặc đã hết hạn");
+            throw new AppException(ErrorCode.INVALID_OTP);
         }
 
         // Xoá OTP, kích hoạt user
@@ -113,14 +108,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) throw new UserException("Email không tồn tại");
+        if (user == null) throw new AppException(ErrorCode.EMAIL_INVALID);
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new UserException("Sai mật khẩu");
+            throw new AppException(ErrorCode.CURRENT_PASSWORD_INVALID);
         }
         if (user.getStatus() != USER_STATUS.ACTIVE) {
-            throw new UserException("Tài khoản chưa được kích hoạt OTP");
+            throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -154,13 +149,13 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<CommonResponse<MessageResponse>> resetPassword(
-            @RequestBody ResetPasswordRequest req) throws UserException {
+            @RequestBody ResetPasswordRequest req) {
 
         PasswordResetToken resetToken = passwordResetTokenService.findByToken(req.getToken());
-        if (resetToken == null) throw new UserException("Token is required...");
+        if (resetToken == null) throw new AppException(ErrorCode.UNAUTHORIZED);
         if (resetToken.isExpired()) {
             passwordResetTokenService.delete(resetToken);
-            throw new UserException("Token expired...");
+            throw new AppException(ErrorCode.INVALID_OTP);
         }
 
         User user = resetToken.getUser();
@@ -172,15 +167,11 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password-request")
-    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(
-            @RequestParam("email") String email) throws UserException {
-
+    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(@RequestParam("email") String email) {
         User user = userService.findUserByEmail(email);
-        if (user == null) throw new UserException("User not found");
-
+        if (user == null) throw new AppException(ErrorCode.EMAIL_INVALID);
         userService.sendPasswordResetEmail(user);
-
-        MessageResponse payload = new MessageResponse("Password reset email sent successfully");
-        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", payload));
+        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", new MessageResponse("Password reset email sent successfully")));
     }
+
 }
