@@ -3,7 +3,9 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
-import com.carbonx.marketcarbon.exception.UserException;
+
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -41,9 +43,9 @@ public class AuthController {
     private final PasswordResetTokenService passwordResetTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) {
         if (!req.getPassword().equals(req.getConfirmPassword())) {
-            throw new UserException("Mật khẩu và xác nhận mật khẩu không khớp");
+            throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
         }
         String email = req.getEmail();
         String password = req.getPassword();
@@ -51,7 +53,7 @@ public class AuthController {
         USER_ROLE role = req.getRole();
 
         if (userRepository.findByEmail(email) != null) {
-            throw new UserException("Email đã tồn tại");
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
         User newUser = new User();
@@ -79,15 +81,15 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<AuthResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) throw new UserException("Email không tồn tại");
+        if (user == null) throw new AppException(ErrorCode.INVALID_OTP);
 
         if (user.getOtpCode() == null
                 || !user.getOtpCode().equals(req.getOtpCode())
                 || user.getOtpExpiredAt() == null
                 || user.getOtpExpiredAt().isBefore(java.time.OffsetDateTime.now())) {
-            throw new UserException("OTP không hợp lệ hoặc đã hết hạn");
+            throw new AppException(ErrorCode.INVALID_OTP);
         }
 
         // Xoá OTP, kích hoạt user
@@ -97,24 +99,27 @@ public class AuthController {
         userRepository.save(user);
 
         // Sinh JWT
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getEmail(), null,
-                List.of(new SimpleGrantedAuthority(user.getRole().toString()))
-        );
         String token = jwtProvider.generateToken(user);
 
-        return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
+        // Build AuthResponse (đồng bộ với login, register)
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setJwt(token);
+        authResponse.setMessage("OTP verified successfully");
+        authResponse.setRole(user.getRole());
+
+        return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", authResponse));
     }
 
+
     @PostMapping("/login")
-    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) throws UserException {
+    public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) throw new UserException("Email không tồn tại");
+        if (user == null) throw new AppException(ErrorCode.EMAIL_INVALID);
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new UserException("Sai mật khẩu");
+            throw new AppException(ErrorCode.CURRENT_PASSWORD_INVALID);
         }
         if (user.getStatus() != USER_STATUS.ACTIVE) {
-            throw new UserException("Tài khoản chưa được kích hoạt OTP");
+            throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -148,13 +153,13 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<CommonResponse<MessageResponse>> resetPassword(
-            @RequestBody ResetPasswordRequest req) throws UserException {
+            @RequestBody ResetPasswordRequest req) {
 
         PasswordResetToken resetToken = passwordResetTokenService.findByToken(req.getToken());
-        if (resetToken == null) throw new UserException("Token is required...");
+        if (resetToken == null) throw new AppException(ErrorCode.UNAUTHORIZED);
         if (resetToken.isExpired()) {
             passwordResetTokenService.delete(resetToken);
-            throw new UserException("Token expired...");
+            throw new AppException(ErrorCode.INVALID_OTP);
         }
 
         User user = resetToken.getUser();
@@ -166,15 +171,11 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password-request")
-    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(
-            @RequestParam("email") String email) throws UserException {
-
+    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(@RequestParam("email") String email) {
         User user = userService.findUserByEmail(email);
-        if (user == null) throw new UserException("User not found");
-
+        if (user == null) throw new AppException(ErrorCode.EMAIL_INVALID);
         userService.sendPasswordResetEmail(user);
-
-        MessageResponse payload = new MessageResponse("Password reset email sent successfully");
-        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", payload));
+        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", new MessageResponse("Password reset email sent successfully")));
     }
+
 }
