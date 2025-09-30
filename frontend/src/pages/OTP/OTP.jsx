@@ -11,6 +11,7 @@ export default function VerifyOtp() {
   const [otp, setOtp] = useState('');
   const [sec, setSec] = useState(60);
 
+  //đếm ngược thời gian
   useEffect(() => {
     const t = setInterval(() => setSec(s => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
@@ -59,7 +60,7 @@ export default function VerifyOtp() {
 
             <div className="d-grid gap-2">
               <button
-                className="btn btn-success btn-lg"
+                className="btn btn-primary btn-lg"
                 disabled={otp.length !== 6}
                 onClick={verify}
               >

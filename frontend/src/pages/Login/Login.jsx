@@ -1,68 +1,48 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useRipple from '../../hooks/useRipple';
+import { useForm } from '../../hooks/useForm';
 
 export default function Login() {
   const nav = useNavigate();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(false);
-
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(false); 
 
-  const validateField = (name, val) => {
-    switch (name) {
-      case 'email':
-        if (!val.trim()) return 'Email is required';
-        if (!/^\S+@\S+\.\S+$/.test(val)) return 'Enter a valid email';
-        return '';
-      case 'password':
-        if (!val) return 'Password is required';
-        if (val.length < 6) return 'Min 6 characters';
-        return '';
-      default:
-        return '';
-    }
+  //validator riêng cho login
+  const validators = {
+    email: (val) => {
+      if (!val.trim()) return "Email is required";
+      if (!/^\S+@\S+\.\S+$/.test(val)) return "Enter a valid email";
+      return "";
+    },
+    password: (val) => {
+      if (!val) return "Password is required";
+      if (val.length < 6) return "Min 6 characters";
+      return "";
+    },
   };
 
-  //bắt lỗi
-  const validateForm = () => {
-    const e = {
-      email: validateField('email', email),
-      password: validateField('password', password),
-    };
-    Object.keys(e).forEach(k => !e[k] && delete e[k]);
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+  const {
+    values,
+    setValue,
+    errors,
+    show,
+    validateForm,
+    markTouched,
+    setSubmitted,
+  } = useForm({ email: "", password: "" }, validators);
 
-  //field đã đc blur
-  const markTouched = (n) => setTouched(p => ({ ...p, [n]: true }));
-
-  //cập nhật lỗi
-  const setErrorOf  = (n, msg) => setErrors(p => ({ ...p, [n]: msg || undefined }));
-
-  //show khi có lỗi
-  const show = (n) => !!errors[n] && (touched[n] || submitted);
-
-  //submit gọi validateFrom, lỗi thì ko call API
   const submit = async (ev) => {
     ev.preventDefault();
     setSubmitted(true);
     if (!validateForm()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000)); //giả lập API
     setLoading(false);
-    nav('/home');
+    nav("/home");
   };
 
   return (
@@ -80,15 +60,9 @@ export default function Login() {
                   id="email"
                   type="email"
                   className={`form-control ${show('email') ? 'is-invalid' : ''}`}
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (touched.email) setErrorOf('email', validateField('email', e.target.value));
-                  }}
-                  onBlur={() => {
-                    markTouched('email');
-                    setErrorOf('email', validateField('email', email));
-                  }}
+                  value={values.email}
+                  onChange={(e) => setValue("email", e.target.value)}
+                  onBlur={() => markTouched('email')}
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -98,27 +72,20 @@ export default function Login() {
 
               {/*password */}
               <div className="mb-3">
-              <label htmlFor="password" className="form-label">Password</label>
-              <input
-                id="password"
-                type="password"
-                className={`form-control ${show('password') ? 'is-invalid' : ''}`}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (touched.password) setErrorOf('password', validateField('password', e.target.value));
-                }}
-                onBlur={() => {
-                  markTouched('password');
-                  setErrorOf('password', validateField('password', password));
-                }}
-                placeholder="••••••"
-                autoComplete="current-password"
-                required
-              />
-              {show('password') && <div className="invalid-feedback d-block">{errors.password}</div>}
-            </div>
-
+                <label htmlFor="password" className="form-label">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  className={`form-control ${show('password') ? 'is-invalid' : ''}`}
+                  value={values.password}
+                  onChange={(e) => setValue("password", e.target.value)}
+                  onBlur={() => markTouched('password')}
+                  placeholder="••••••"
+                  autoComplete="current-password"
+                  required
+                />
+                {show('password') && <div className="invalid-feedback">{errors.password}</div>}
+              </div>
 
               {/*remember & link */}
               <div className="d-flex align-items-center mb-3">
@@ -135,7 +102,7 @@ export default function Login() {
                 <Link to="/forgot" className="ms-auto">Forgot password?</Link>
               </div>
 
-              {/**login btn */}
+              {/*login btn */}
               <button
                 type="submit"
                 disabled={loading}
