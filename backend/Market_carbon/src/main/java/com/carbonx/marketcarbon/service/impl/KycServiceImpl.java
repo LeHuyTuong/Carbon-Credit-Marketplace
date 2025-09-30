@@ -2,7 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 
 import com.carbonx.marketcarbon.config.Translator;
-import com.carbonx.marketcarbon.domain.KycStatus;
+import com.carbonx.marketcarbon.common.KycStatus;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.KycProfile;
 import com.carbonx.marketcarbon.model.User;
@@ -11,10 +11,8 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.request.KycRequest;
 import com.carbonx.marketcarbon.response.KycResponse;
 import com.carbonx.marketcarbon.service.KycService;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

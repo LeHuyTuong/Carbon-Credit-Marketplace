@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.response;
 
-import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 

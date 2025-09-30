@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.schedule;
 
-import com.carbonx.marketcarbon.domain.USER_STATUS;
+import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;

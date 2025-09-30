@@ -1,11 +1,10 @@
 package com.carbonx.marketcarbon.model;
 
-import com.carbonx.marketcarbon.domain.Status;
+import com.carbonx.marketcarbon.common.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name="carbon_certificates", indexes = {
