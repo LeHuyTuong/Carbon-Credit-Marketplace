@@ -1,8 +1,10 @@
 package com.carbonx.marketcarbon.exception;
 
 import com.carbonx.marketcarbon.utils.CommonResponse;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -10,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
@@ -112,5 +115,20 @@ public class GlobalExceptionHandler {
         log.error("Unhandled error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildErrorResponse("500", "Internal error"));
+    }
+
+    // 400 - Validation
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<CommonResponse<Object>> HandlerMethodValidationException(Exception ex) {
+        log.error("Unhandled error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildErrorResponse("400", "Validation failure"));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<CommonResponse<Object>> DataIntegrityViolationException(Exception ex) {
+        log.error("Unhandled error", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("400", "Duplicate ID "));
     }
 }

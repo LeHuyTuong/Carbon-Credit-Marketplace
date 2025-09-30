@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.stereotype.Component;
@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 import java.util.Locale;
 
 @Component
-@RequiredArgsConstructor
 public class Translator {
     private static ResourceBundleMessageSource messageSource;
 
+    @Autowired
     public Translator(ResourceBundleMessageSource messageSource) {
         Translator.messageSource = messageSource;
     }
