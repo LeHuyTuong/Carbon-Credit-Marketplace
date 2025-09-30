@@ -7,14 +7,12 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
-import com.carbonx.marketcarbon.request.VehicleCreateRequest;
-import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
-import com.carbonx.marketcarbon.response.VehicleResponse;
+import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
+import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.service.VehicleService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,7 +28,7 @@ public class VehicleServiceImpl implements VehicleService {
     private final UserRepository userRepository;
 
     @Override
-    public VehicleResponse create(VehicleCreateRequest req) {
+    public Long create(VehicleCreateRequest req) {
         // Check owwner id is exist
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -38,48 +36,39 @@ public class VehicleServiceImpl implements VehicleService {
         if(owner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
+
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
-                .yearOfManufacture(req.getYear())
-                .owner(owner)
+                .yearOfManufacture(req.getYearOfManufacture())
+                .user(owner)
                 .build();
         // B2 save data on repo
         vehicleRepository.save(vehicle);
-        //B3 add data to response
-        VehicleResponse vehicleResponse = VehicleResponse
-                .builder()
-                .id(vehicle.getId())
-                .ownerId(owner.getId())
-                .plateNumber(vehicle.getPlateNumber())
-                .brand(vehicle.getBrand())
-                .model(vehicle.getModel())
-                .yearOfManufacture(vehicle.getYearOfManufacture())
-                .build();
 
-        log.info("Vehicle created: {}", vehicleResponse);
-        return vehicleResponse;
+        log.info("Vehicle created: {}", vehicle.getBrand());
+        return vehicle.getId();
     }
 
     @Override
-    public List<VehicleResponse> getAll() {
+    public List<Vehicle> getAll() {
 
         return vehicleRepository.findAll().stream()
-                .map(vehicle -> VehicleResponse.builder()
+                .map(vehicle -> Vehicle.builder()
                         .id(vehicle.getId())
-                        .ownerId(vehicle.getOwner().getId())
+                        .user(vehicle.getUser())
                         .brand(vehicle.getBrand())
                         .plateNumber(vehicle.getPlateNumber())
                         .model(vehicle.getModel())
                         .yearOfManufacture(vehicle.getYearOfManufacture())
                         .build())
-                .toList(); // return về 1 list của VehicleReponse
+                .toList(); // return về 1 list của Vehicle
     }
 
     @Override
-    public VehicleResponse getByPlateNumber(String plateNumber) {
+    public List<Vehicle> getByPlateNumber(String plateNumber) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -89,21 +78,23 @@ public class VehicleServiceImpl implements VehicleService {
         }
 
         //B1 : xác định xe bằng ID , nếu ko thì trả về exception
-        Vehicle vehicle = (Vehicle) vehicleRepository.findByPlateNumber(plateNumber)
+        Vehicle vehicleCheck = (Vehicle) vehicleRepository.findByPlateNumber(plateNumber)
                 .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
         //B2: Trả về response
-        return VehicleResponse.builder()
-                .id(vehicle.getId())
-                .ownerId(owner.getId())
-                .plateNumber(vehicle.getPlateNumber())
-                .brand(vehicle.getBrand())
-                .model(vehicle.getModel())
-                .yearOfManufacture(vehicle.getYearOfManufacture())
-                .build();
+        return vehicleRepository.findAll().stream()
+                .map(vehicle -> Vehicle.builder()
+                        .id(vehicle.getId())
+                        .user(owner)
+                        .brand(vehicle.getBrand())
+                        .plateNumber(vehicle.getPlateNumber())
+                        .model(vehicle.getModel())
+                        .yearOfManufacture(vehicle.getYearOfManufacture())
+                        .build())
+                .toList(); // return về 1 list của Vehicle
     }
 
     @Override
-    public VehicleResponse update(Long id, VehicleUpdateRequest req) {
+    public Long update(Long id, VehicleUpdateRequest req) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User owner = userRepository.findByEmail(email);
@@ -120,14 +111,7 @@ public class VehicleServiceImpl implements VehicleService {
 
         vehicleRepository.save(vehicle);
         log.info("Vehicle updated successfully");
-        return VehicleResponse.builder()
-                .id(vehicle.getId())
-                .ownerId(owner.getId())
-                .plateNumber(vehicle.getPlateNumber())
-                .brand(vehicle.getBrand())
-                .model(vehicle.getModel())
-                .yearOfManufacture(vehicle.getYearOfManufacture())
-                .build();
+        return vehicle.getId();
     }
 
     @Override

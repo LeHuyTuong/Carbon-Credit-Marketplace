@@ -8,8 +8,7 @@ import com.carbonx.marketcarbon.model.KycProfile;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.KycRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
-import com.carbonx.marketcarbon.request.KycRequest;
-import com.carbonx.marketcarbon.response.KycResponse;
+import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public class KycServiceImpl implements KycService {
     private UserRepository userRepository;
 
     @Override
-    public KycResponse create(@Validated(KycRequest.Create.class) KycRequest req) {
+    public Long create(@Validated(KycRequest.Create.class) KycRequest req) {
         // check email thông tin kyc đã tồn tại chưa
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -39,8 +38,8 @@ public class KycServiceImpl implements KycService {
             throw new ResourceNotFoundException("User not found");
         }
 
-        if(kycRepository.existsById(req.getUserId()))
-            throw new ResourceNotFoundException("User with id " + req.getUserId() + " not found");
+        if(kycRepository.existsByUserId(user.getId()))
+            throw new ResourceNotFoundException("KYC exists");
 
         // B1 Lấy data từ request vào object
         KycProfile kycProfile = KycProfile.builder()
@@ -58,28 +57,15 @@ public class KycServiceImpl implements KycService {
 
         // B2 lưu data vào repo
         kycRepository.save(kycProfile);
-
-        //B3 lưu data vào response để trả về
-        KycResponse kycResponse = KycResponse.builder()
-                .userId(user.getId())
-                .id(kycProfile.getId())
-                .kycStatus(KycStatus.NEW)
-                .email(email)
-                .phone(req.getPhone())
-                .country(req.getCountry())
-                .address(req.getAddress())
-                .documentType(req.getDocumentType())
-                .documentNumber(req.getDocumentNumber())
-                .birthday(req.getBirthday())
-                .build();
-        log.info("KYC Created : {}" , kycResponse);
+        //B3 ghi log
+        log.info("KYC Created : {}" , user.getFullName());
 
         //B4 trả về kết quả
-        return kycResponse;
+        return user.getId();
     }
 
     @Override
-    public KycResponse update(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
+    public Long update(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -103,22 +89,11 @@ public class KycServiceImpl implements KycService {
         //B2 save lại
         kycRepository.save(kycProfile);
         log.info("KYC Updated : {}" , kycProfile);
-        //B3 Trả về response
-        return KycResponse.builder()
-                .id(kycProfile.getId())
-                .userId(user.getId())
-                .birthday(req.getBirthday())
-                .phone(req.getPhone())
-                .country(req.getCountry())
-                .address(req.getAddress())
-                .documentType(req.getDocumentType())
-                .documentNumber(req.getDocumentNumber())
-                .birthday(req.getBirthday())
-                .build();
+        return user.getId();
     }
 
     @Override
-    public KycResponse getByUserId(Long userId) {
+    public KycProfile getByUserId(Long userId) {
         // B1 xem thử có data không
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -131,16 +106,7 @@ public class KycServiceImpl implements KycService {
                 .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
 
         //B2 Trả Về response
-        return KycResponse.builder()
-                .userId(user.getId())
-                .birthday(kycProfile.getBirthDate())
-                .phone(kycProfile.getPhone())
-                .country(kycProfile.getCountry())
-                .address(kycProfile.getAddress())
-                .documentType(kycProfile.getDocumentType())
-                .documentNumber(kycProfile.getDocumentNumber())
-                .kycStatus(kycProfile.getKycStatus())
-                .build();
+        return kycProfile;
     }
 
 }
