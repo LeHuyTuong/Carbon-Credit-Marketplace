@@ -1,87 +1,64 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useRipple from '../../hooks/useRipple';
+import { useForm } from '../../hooks/useForm';
 
 export default function Register() {
   const nav = useNavigate();
-
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm]   = useState('');
-  const [agree, setAgree]       = useState(false);
-
-  const [errors, setErrors]     = useState({});
-  const [touched, setTouched]   = useState({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const [loading, setLoading]   = useState(false);
-
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
-  const [role, setRole] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  //field-level validator
-  const validateField = (name, val) => {
-    switch (name) {
-      case 'email':
-        if (!val.trim()) return 'Email is required';
-        if (!/^\S+@\S+\.\S+$/.test(val)) return 'Email is invalid';
-        return '';
-      case 'password':
-        if (!val) return 'Password is required';
-        if (val.length < 6) return 'At least 6 characters';
-        return '';
-      case 'confirm':
-        if (!val) return 'Please re-enter your password';
-        if (val !== password) return 'The re-entered password does not match';
-        return '';
-      case 'agree':
-        if (!val) return 'You need to agree to the Terms of Use & Privacy Policy';
-        return '';
-      case 'role':
-        if (!val) return 'Please choose your role';
-        return '';
-      default:
-        return '';
-    }
+  //validator riêng cho Register
+  const validators = {
+    email: (val) => {
+      if (!val.trim()) return 'Email is required';
+      if (!/^\S+@\S+\.\S+$/.test(val)) return 'Email is invalid';
+      return '';
+    },
+    password: (val) => {
+      if (!val) return 'Password is required';
+      if (val.length < 6) return 'At least 6 characters';
+      return '';
+    },
+    confirm: (val, values) => {
+      if (!val) return 'Please re-enter your password';
+      if (val !== values.password) return 'Passwords do not match';
+      return '';
+    },
+    role: (val) => {
+      if (!val) return 'Please choose your role';
+      return '';
+    },
+    agree: (val) => {
+      if (!val) return 'You need to agree to the Terms of Use & Privacy Policy';
+      return '';
+    },
   };
 
-  //form-level validator (chỉ dùng lúc submit)
-  const validateForm = () => {
-    const e = {
-      email:    validateField('email', email),
-      password: validateField('password', password),
-      confirm:  validateField('confirm', confirm),
-      agree:    validateField('agree', agree),
-      role: validateField('role', role),
-    };
-    //lọc rỗng
-    Object.keys(e).forEach(k => !e[k] && delete e[k]);
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+  const {
+    values,
+    setValue,
+    errors,
+    show,
+    validateForm,
+    markTouched,
+    setSubmitted,
+  } = useForm(
+    { email: '', password: '', confirm: '', role: '', agree: false },
+    validators
+  );
 
-  //lưu field name đã được blur
-  const markTouched = (name) =>
-    setTouched(prev => ({ ...prev, [name]: true }));
-
-  const setErrorOf = (name, msg) =>
-    setErrors(prev => ({ ...prev, [name]: msg || undefined }));
-
-  //show lỗi khi đã blur hoặc submit
-  const show = (n) => !!errors[n] && (touched[n] || submitted);
-
-  //submit gọi validateFrom, lỗi thì ko call API
   const submit = async (ev) => {
     ev.preventDefault();
     setSubmitted(true);
     if (!validateForm()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800)); // giả lập API
+    await new Promise((r) => setTimeout(r, 800)); //giả lập API
     setLoading(false);
 
-    nav('/otp', { replace: true, state: { email } }); //chuyển sang otp
+    nav('/otp', { replace: true, state: { email: values.email } });
   };
 
   return (
@@ -99,15 +76,9 @@ export default function Register() {
                   id="email"
                   type="email"
                   className={`form-control form-control-sm ${show('email') ? 'is-invalid' : ''}`}
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (touched.email) setErrorOf('email', validateField('email', e.target.value));
-                  }}
-                  onBlur={() => {
-                    markTouched('email');
-                    setErrorOf('email', validateField('email', email));
-                  }}
+                  value={values.email}
+                  onChange={(e) => setValue('email', e.target.value)}
+                  onBlur={() => markTouched('email')}
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -119,71 +90,53 @@ export default function Register() {
               <div className="mb-3">
                 <label htmlFor="password" className="form-label">Password</label>
                 <input
-                    id="password"
-                    type="password"
-                    className={`form-control form-control-sm ${show('password') ? 'is-invalid' : ''}`}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (touched.password) setErrorOf('password', validateField('password', e.target.value));
-                      if (touched.confirm) setErrorOf('confirm', validateField('confirm', confirm));
-                    }}
-                    onBlur={() => {
-                      markTouched('password');
-                      setErrorOf('password', validateField('password', password));
-                    }}
-                    placeholder="••••••"
-                    autoComplete="new-password"
-                    required
-                  />
-                  {show('password') && <div className="invalid-feedback d-block">{errors.password}</div>}
-                </div>
+                  id="password"
+                  type="password"
+                  className={`form-control form-control-sm ${show('password') ? 'is-invalid' : ''}`}
+                  value={values.password}
+                  onChange={(e) => setValue('password', e.target.value)}
+                  onBlur={() => markTouched('password')}
+                  placeholder="••••••"
+                  autoComplete="new-password"
+                  required
+                />
+                {show('password') && <div className="invalid-feedback">{errors.password}</div>}
+              </div>
 
-                {/*confirm */}
-                <div className="mb-3">
+              {/*confirm password */}
+              <div className="mb-3">
                 <label htmlFor="confirm" className="form-label">Re-enter Password</label>
                 <input
                   id="confirm"
                   type="password"
                   className={`form-control form-control-sm ${show('confirm') ? 'is-invalid' : ''}`}
-                  value={confirm}
-                  onChange={(e) => {
-                    setConfirm(e.target.value);
-                    if (touched.confirm) setErrorOf('confirm', validateField('confirm', e.target.value));
-                  }}
-                  onBlur={() => {
-                    markTouched('confirm');
-                    setErrorOf('confirm', validateField('confirm', confirm));
-                  }}
+                  value={values.confirm}
+                  onChange={(e) => setValue('confirm', e.target.value)}
+                  onBlur={() => markTouched('confirm')}
                   placeholder="••••••"
                   autoComplete="new-password"
                   required
                 />
-                {show('confirm') && <div className="invalid-feedback d-block">{errors.confirm}</div>}
+                {show('confirm') && <div className="invalid-feedback">{errors.confirm}</div>}
               </div>
-              
-              {/**choose role */}
+
+              {/*role */}
               <div className="mb-3">
                 <label htmlFor="role" className="form-label">Role</label>
                 <select
                   id="role"
                   className={`form-select form-select-sm ${show('role') ? 'is-invalid' : ''}`}
-                  value={role}
-                  onChange={(e) => {
-                    setRole(e.target.value);
-                    if (touched.role) setErrorOf('role', validateField('role', e.target.value));
-                  }}
-                  onBlur={() => {
-                    markTouched('role');
-                    setErrorOf('role', validateField('role', role));
-                  }}
+                  value={values.role}
+                  onChange={(e) => setValue('role', e.target.value)}
+                  onBlur={() => markTouched('role')}
                   required
                 >
                   <option value="">Choose your role</option>
-                  <option value="ev">Electric Vehicle Owner</option>
-                  <option value="biz">Business</option>
+                  <option value="ev">Electric Vehicle Owner (EV Owner)</option>
+                  <option value="bis">Business</option>
+                  <option value="cv">Carbon Verification & Audit (CVA)</option>
                 </select>
-                {show('role') && <div className="invalid-feedback">Please choose your role</div>}
+                {show('role') && <div className="invalid-feedback">{errors.role}</div>}
               </div>
 
               {/*agree */}
@@ -193,15 +146,9 @@ export default function Register() {
                     className={`form-check-input ${show('agree') ? 'is-invalid' : ''}`}
                     type="checkbox"
                     id="agree"
-                    checked={agree}
-                    onChange={(e) => {
-                      setAgree(e.target.checked);
-                      if (touched.agree || submitted) setErrorOf('agree', validateField('agree', e.target.checked));
-                    }}
-                    onBlur={() => {
-                      markTouched('agree');
-                      setErrorOf('agree', validateField('agree', agree));
-                    }}
+                    checked={values.agree}
+                    onChange={(e) => setValue('agree', e.target.checked)}
+                    onBlur={() => markTouched('agree')}
                   />
                   <label className="form-check-label" htmlFor="agree">
                     I agree with <Link to="/terms">Terms of Use</Link> & <Link to="/privacy">Privacy Policy</Link>
@@ -218,7 +165,13 @@ export default function Register() {
                 onClick={(e) => ripple(e, btnRippleRef.current)}
               >
                 <span ref={btnRippleRef} className="ripple-host" />
-                {loading && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}
+                {loading && (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                )}
                 {loading ? 'Signing you in…' : 'Sign up'}
               </button>
             </form>
