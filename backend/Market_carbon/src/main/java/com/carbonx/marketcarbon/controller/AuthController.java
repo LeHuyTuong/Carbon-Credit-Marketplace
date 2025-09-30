@@ -3,7 +3,9 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
-import com.carbonx.marketcarbon.exception.UserException;
+
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -97,14 +99,17 @@ public class AuthController {
         userRepository.save(user);
 
         // Sinh JWT
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getEmail(), null,
-                List.of(new SimpleGrantedAuthority(user.getRole().toString()))
-        );
         String token = jwtProvider.generateToken(user);
 
-        return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", new TokenResponse(token)));
+        // Build AuthResponse (đồng bộ với login, register)
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setJwt(token);
+        authResponse.setMessage("OTP verified successfully");
+        authResponse.setRole(user.getRole());
+
+        return ResponseEntity.ok(ResponseUtil.success("trace-verify-otp", authResponse));
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
