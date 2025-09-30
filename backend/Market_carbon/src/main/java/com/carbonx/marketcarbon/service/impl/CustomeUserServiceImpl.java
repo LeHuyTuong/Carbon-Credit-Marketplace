@@ -35,7 +35,7 @@ public class CustomeUserServiceImpl implements UserDetailsService {
 
         USER_ROLE role=user.getRole();
 
-        if(role==null) role=USER_ROLE.EV_OWNER;
+        if(role==null) role=USER_ROLE.ROLE_EV_OWNER;
 
         System.out.println("role  ---- "+role);
 
