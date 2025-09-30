@@ -1,6 +1,4 @@
-package com.carbonx.marketcarbon.domain;
-
-import jakarta.persistence.Embeddable;
+package com.carbonx.marketcarbon.common;
 
 
 public enum USER_ROLE {

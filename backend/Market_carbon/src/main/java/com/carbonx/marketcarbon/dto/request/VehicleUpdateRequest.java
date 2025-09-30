@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.request;
+package com.carbonx.marketcarbon.dto.request;
 
 import lombok.Data;
 

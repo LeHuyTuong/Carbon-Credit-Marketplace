@@ -1,33 +1,35 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.config.JwtProvider;
-import com.carbonx.marketcarbon.domain.USER_ROLE;
-import com.carbonx.marketcarbon.domain.USER_STATUS;
+import com.carbonx.marketcarbon.common.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.exception.UserException;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
-import com.carbonx.marketcarbon.request.LoginRequest;
-import com.carbonx.marketcarbon.request.RegisterRequest;
-import com.carbonx.marketcarbon.request.ResetPasswordRequest;
-import com.carbonx.marketcarbon.request.VerifyOtpRequest;
-import com.carbonx.marketcarbon.response.AuthResponse;
-import com.carbonx.marketcarbon.response.MessageResponse;
-import com.carbonx.marketcarbon.response.TokenResponse;
+import com.carbonx.marketcarbon.dto.request.LoginRequest;
+import com.carbonx.marketcarbon.dto.request.RegisterRequest;
+import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
+import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
+import com.carbonx.marketcarbon.dto.response.AuthResponse;
+import com.carbonx.marketcarbon.dto.response.MessageResponse;
+import com.carbonx.marketcarbon.dto.response.TokenResponse;
 import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController

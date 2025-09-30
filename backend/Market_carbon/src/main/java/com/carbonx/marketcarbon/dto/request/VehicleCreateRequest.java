@@ -1,7 +1,6 @@
-package com.carbonx.marketcarbon.request;
+package com.carbonx.marketcarbon.dto.request;
 
-import com.carbonx.marketcarbon.domain.annotation.PlateNumber;
-import jakarta.persistence.Column;
+import com.carbonx.marketcarbon.common.annotation.PlateNumber;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 

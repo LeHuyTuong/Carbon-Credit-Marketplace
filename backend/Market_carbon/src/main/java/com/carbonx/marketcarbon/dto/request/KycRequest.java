@@ -1,15 +1,13 @@
-package com.carbonx.marketcarbon.request;
+package com.carbonx.marketcarbon.dto.request;
 
-import com.carbonx.marketcarbon.domain.IDType;
-import com.carbonx.marketcarbon.domain.annotation.PhoneNumber;
+import com.carbonx.marketcarbon.common.IDType;
+import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 
-import java.sql.Date;
 import java.time.LocalDate;
 
 @Data

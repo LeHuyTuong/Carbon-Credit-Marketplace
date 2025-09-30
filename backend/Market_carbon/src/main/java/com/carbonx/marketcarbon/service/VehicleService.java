@@ -3,9 +3,8 @@ package com.carbonx.marketcarbon.service;
 
 
 import com.carbonx.marketcarbon.model.Vehicle;
-import com.carbonx.marketcarbon.request.VehicleCreateRequest;
-import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
-import com.carbonx.marketcarbon.response.VehicleResponse;
+import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
+import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
 
 import java.util.List;
 
