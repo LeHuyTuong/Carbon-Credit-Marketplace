@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.response;
+package com.carbonx.marketcarbon.dto.response;
 
 import lombok.Builder;
 import lombok.Data;

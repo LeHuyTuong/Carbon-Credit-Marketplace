@@ -1,11 +1,11 @@
 package com.carbonx.marketcarbon.service;
 
 
-import com.carbonx.marketcarbon.request.KycRequest;
-import com.carbonx.marketcarbon.response.KycResponse;
+import com.carbonx.marketcarbon.model.KycProfile;
+import com.carbonx.marketcarbon.dto.request.KycRequest;
 
 public interface KycService {
-    KycResponse create(KycRequest req);
-    KycResponse update(Long id, KycRequest req);
-    KycResponse getByUserId(Long userId);
+    public Long create(KycRequest req);
+    public Long update(Long id, KycRequest req);
+    public KycProfile getByUserId(Long userId);
 }
