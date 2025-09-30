@@ -1,8 +1,8 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.config.JwtProvider;
-import com.carbonx.marketcarbon.domain.USER_ROLE;
-import com.carbonx.marketcarbon.domain.USER_STATUS;
+import com.carbonx.marketcarbon.common.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;

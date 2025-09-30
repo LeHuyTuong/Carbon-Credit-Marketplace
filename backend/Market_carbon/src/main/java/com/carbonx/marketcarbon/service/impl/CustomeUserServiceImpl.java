@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,7 +35,7 @@ public class CustomeUserServiceImpl implements UserDetailsService {
 
         USER_ROLE role=user.getRole();
 
-        if(role==null) role=USER_ROLE.ROLE_EV_OWNER;
+        if(role==null) role=USER_ROLE.EV_OWNER;
 
         System.out.println("role  ---- "+role);
 

@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.request;
 
-import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_ROLE;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
