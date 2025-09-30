@@ -8,7 +8,6 @@ import com.carbonx.marketcarbon.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.response.VehicleResponse;
 import com.carbonx.marketcarbon.service.VehicleService;
-import com.carbonx.marketcarbon.utils.CommonRequest;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;

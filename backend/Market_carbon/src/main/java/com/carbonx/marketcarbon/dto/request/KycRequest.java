@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.request;
+package com.carbonx.marketcarbon.dto.request;
 
 import com.carbonx.marketcarbon.common.IDType;
 import jakarta.validation.constraints.Email;

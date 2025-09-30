@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.response;
+package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.fasterxml.jackson.annotation.JsonInclude;
