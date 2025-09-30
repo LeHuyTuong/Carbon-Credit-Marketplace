@@ -1,6 +1,6 @@
-package com.carbonx.marketcarbon.domain.validator;
+package com.carbonx.marketcarbon.common.validator;
 
-import com.carbonx.marketcarbon.domain.annotation.PhoneNumber;
+import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.controller.advice;
 
-import com.carbonx.marketcarbon.domain.StatusCode;
+import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.exception.BadRequestException;
 import com.carbonx.marketcarbon.exception.NotFoundException;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;

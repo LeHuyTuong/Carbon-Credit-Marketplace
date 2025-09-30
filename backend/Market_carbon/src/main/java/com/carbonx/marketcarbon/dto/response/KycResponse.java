@@ -1,12 +1,11 @@
-package com.carbonx.marketcarbon.response;
+package com.carbonx.marketcarbon.dto.response;
 
-import com.carbonx.marketcarbon.domain.IDType;
-import com.carbonx.marketcarbon.domain.KycStatus;
+import com.carbonx.marketcarbon.common.IDType;
+import com.carbonx.marketcarbon.common.KycStatus;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
-import java.sql.Date;
 import java.time.LocalDate;
 
 @Data

@@ -1,6 +1,5 @@
-package com.carbonx.marketcarbon.domain;
+package com.carbonx.marketcarbon.common;
 
-import jakarta.persistence.Embeddable;
 import lombok.Getter;
 
 @Getter

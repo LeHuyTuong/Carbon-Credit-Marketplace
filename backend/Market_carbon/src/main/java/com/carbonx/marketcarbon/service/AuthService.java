@@ -1,11 +1,11 @@
 package com.carbonx.marketcarbon.service;
 
 
-import com.carbonx.marketcarbon.request.LoginRequest;
-import com.carbonx.marketcarbon.request.RegisterRequest;
-import com.carbonx.marketcarbon.request.VerifyOtpRequest;
-import com.carbonx.marketcarbon.response.MessageResponse;
-import com.carbonx.marketcarbon.response.TokenResponse;
+import com.carbonx.marketcarbon.dto.request.LoginRequest;
+import com.carbonx.marketcarbon.dto.request.RegisterRequest;
+import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
+import com.carbonx.marketcarbon.dto.response.MessageResponse;
+import com.carbonx.marketcarbon.dto.response.TokenResponse;
 
 
 public interface AuthService {
