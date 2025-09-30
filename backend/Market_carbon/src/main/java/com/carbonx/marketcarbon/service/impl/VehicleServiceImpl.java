@@ -7,14 +7,12 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
-import com.carbonx.marketcarbon.request.VehicleCreateRequest;
-import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
-import com.carbonx.marketcarbon.response.VehicleResponse;
+import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
+import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.service.VehicleService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

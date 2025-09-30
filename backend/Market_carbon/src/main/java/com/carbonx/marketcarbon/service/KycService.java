@@ -2,8 +2,7 @@ package com.carbonx.marketcarbon.service;
 
 
 import com.carbonx.marketcarbon.model.KycProfile;
-import com.carbonx.marketcarbon.request.KycRequest;
-import com.carbonx.marketcarbon.response.KycResponse;
+import com.carbonx.marketcarbon.dto.request.KycRequest;
 
 public interface KycService {
     public Long create(KycRequest req);

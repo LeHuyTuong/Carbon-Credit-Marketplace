@@ -1,14 +1,11 @@
 package com.carbonx.marketcarbon.model;
 
-import com.carbonx.marketcarbon.domain.IDType;
-import com.carbonx.marketcarbon.domain.KycStatus;
-import com.carbonx.marketcarbon.domain.annotation.PhoneNumber;
+import com.carbonx.marketcarbon.common.IDType;
+import com.carbonx.marketcarbon.common.KycStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.sql.Date;
-import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity

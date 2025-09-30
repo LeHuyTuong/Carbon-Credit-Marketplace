@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.domain.USER_ROLE;
+import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
