@@ -3,6 +3,10 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
+import com.carbonx.marketcarbon.dto.request.LoginRequest;
+import com.carbonx.marketcarbon.dto.request.RegisterRequest;
+import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
+import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
@@ -80,7 +84,7 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<CommonResponse<TokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+    public ResponseEntity<CommonResponse<AuthResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
         if (user == null) throw new AppException(ErrorCode.INVALID_OTP);
 
