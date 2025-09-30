@@ -14,13 +14,13 @@ public class Vehicle extends BaseEntity {
     @Column(length=64, unique = true, nullable=false)
     private String plateNumber;
 
-    @Column(length=128,  unique = true, nullable=false)
+    @Column(length=128, nullable=false)
     private String brand;
 
-    @Column(length=128,  unique = true, nullable=false)
+    @Column(length=128,  nullable=false)
     private String model;
 
-    @Column(length=128,  unique = true, nullable=false)
+    @Column(length=128, nullable=false)
     private Integer yearOfManufacture;
 
     @ManyToOne(fetch = FetchType.LAZY)

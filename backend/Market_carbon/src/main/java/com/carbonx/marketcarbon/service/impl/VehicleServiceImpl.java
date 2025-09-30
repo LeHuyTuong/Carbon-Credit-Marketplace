@@ -13,11 +13,19 @@ import com.carbonx.marketcarbon.service.VehicleService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -39,6 +47,7 @@ public class VehicleServiceImpl implements VehicleService {
 
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
+
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
@@ -52,10 +61,10 @@ public class VehicleServiceImpl implements VehicleService {
         return vehicle.getId();
     }
 
-    @Override
-    public List<Vehicle> getAll() {
-
-        return vehicleRepository.findAll().stream()
+    // cho EV Owner . ko trả về thời gian tạo và thời gian update
+    public List<Vehicle> getOwnerVehicles() {
+        return vehicleRepository.findAll(). // return về 1 list của Vehicle
+        stream()
                 .map(vehicle -> Vehicle.builder()
                         .id(vehicle.getId())
                         .user(vehicle.getUser())
@@ -64,33 +73,7 @@ public class VehicleServiceImpl implements VehicleService {
                         .model(vehicle.getModel())
                         .yearOfManufacture(vehicle.getYearOfManufacture())
                         .build())
-                .toList(); // return về 1 list của Vehicle
-    }
-
-    @Override
-    public List<Vehicle> getByPlateNumber(String plateNumber) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User owner = userRepository.findByEmail(email);
-        if(owner == null){
-            throw new ResourceNotFoundException("User not found with email: " + email);
-        }
-
-        //B1 : xác định xe bằng ID , nếu ko thì trả về exception
-        Vehicle vehicleCheck = (Vehicle) vehicleRepository.findByPlateNumber(plateNumber)
-                .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
-        //B2: Trả về response
-        return vehicleRepository.findAll().stream()
-                .map(vehicle -> Vehicle.builder()
-                        .id(vehicle.getId())
-                        .user(owner)
-                        .brand(vehicle.getBrand())
-                        .plateNumber(vehicle.getPlateNumber())
-                        .model(vehicle.getModel())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
-                        .build())
-                .toList(); // return về 1 list của Vehicle
+                .toList();
     }
 
     @Override
@@ -121,4 +104,5 @@ public class VehicleServiceImpl implements VehicleService {
         vehicleRepository.delete(vehicle);
         log.info("Vehicle deleted successfully");
     }
+
 }
