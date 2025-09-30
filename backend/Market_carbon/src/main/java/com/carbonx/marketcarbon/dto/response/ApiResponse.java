@@ -1,33 +1,20 @@
 package com.carbonx.marketcarbon.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Setter
+@Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ApiResponse<T> {
-    private boolean success;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private T data;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String error;
 
-    public ApiResponse(boolean success, String error) {
-        this.success = success;
-        this.error = error;
-    }
+    private int code = 200;
+    private String message;
+    private T result;
 
-    public static <T> ApiResponse<T> ok(T data) {
-        return ApiResponse.<T>builder().success(true).data(data).build();
-    }
-    public static <T> ApiResponse<T> fail(String message) {
-        return ApiResponse.<T>builder().success(false).error(message).build();
-    }
 }
 
 
