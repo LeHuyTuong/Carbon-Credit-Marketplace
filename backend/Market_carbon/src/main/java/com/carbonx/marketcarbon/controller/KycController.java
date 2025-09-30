@@ -1,9 +1,9 @@
 package com.carbonx.marketcarbon.controller;
 
 
-import com.carbonx.marketcarbon.domain.StatusCode;
+import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.model.KycProfile;
-import com.carbonx.marketcarbon.request.KycRequest;
+import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
