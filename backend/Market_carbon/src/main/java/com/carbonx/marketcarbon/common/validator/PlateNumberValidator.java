@@ -3,16 +3,15 @@ package com.carbonx.marketcarbon.common.validator;
 import com.carbonx.marketcarbon.common.annotation.PlateNumber;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
-@PropertySource("classpath:validation.yml")
 public class PlateNumberValidator implements ConstraintValidator<PlateNumber, String> {
 
-    @Value("${plate.regex")
-    private String plateRegex;
+    private static final String PLATE_REGEX = "^[0-9]{2}[A-Z]-\\d{4,5}$";
 
     @Override
     public void initialize(PlateNumber constraintAnnotation) {}
@@ -24,7 +23,7 @@ public class PlateNumberValidator implements ConstraintValidator<PlateNumber, St
                 return false;
             }
             if(plateNumber.length() == 9) return true;
-            else if(plateNumber.matches(plateRegex)) return true;
+            else if(plateNumber.matches(PLATE_REGEX)) return true;
             else return false;
         }catch (Exception e) {
             e.printStackTrace();

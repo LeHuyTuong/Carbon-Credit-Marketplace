@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -17,9 +19,11 @@ import java.time.ZoneOffset;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public abstract class BaseEntity {
-    @Column(name = "create_at" , nullable = false, updatable = false)
+    @CreationTimestamp  // Hibernate sẽ auto set timestamp khi persist/update, không cần @PrePersist.
+    @Column(name = "created_at" , nullable = false, updatable = false)
     OffsetDateTime createAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at" , nullable = false)
     OffsetDateTime updatedAt;
 

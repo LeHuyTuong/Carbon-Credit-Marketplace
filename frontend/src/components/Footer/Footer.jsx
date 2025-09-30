@@ -17,6 +17,12 @@ export default function Footer() {
               Turning EV emission reductions into verified, tradable carbon
               credits.
             </p>
+            <p className="footer-copy" style={{marginTop: '10px'}}>
+              Address: 7 D1 Street, Long Thanh My, Thu Duc, Ho Chi Minh 
+            </p>
+            <p className="footer-copy" style={{marginTop: '10px'}}>
+              Email: carbonX@gmail.com 
+            </p>
           </div>
 
           <div className="col-6 col-md-3">

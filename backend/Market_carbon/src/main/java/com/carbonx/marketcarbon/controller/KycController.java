@@ -33,7 +33,7 @@ public class KycController {
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        Long userID = kycService.update(req.getData().getUserId(), req.getData());
+        Long userID = kycService.create(req.getData());
 
         try {
             TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),

@@ -1,18 +1,23 @@
 package com.carbonx.marketcarbon.controller;
 
 
-
-
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.response.PageResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.model.KycProfile;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
+import com.carbonx.marketcarbon.service.VehicleControlService;
 import com.carbonx.marketcarbon.service.VehicleService;
+import com.carbonx.marketcarbon.utils.CommonRequest;
+import com.carbonx.marketcarbon.utils.CommonResponse;
+import com.carbonx.marketcarbon.utils.ResponseUtil;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -31,84 +36,46 @@ import java.util.UUID;
 public class VehicleController {
 
     private final VehicleService vehicleService;
+    private final VehicleControlService  vehicleControlService;
 
     @PostMapping
     public ResponseEntity<TuongCommonResponse<Long>> create(
             @Valid @RequestBody TuongCommonRequest<@Valid VehicleCreateRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime){
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         Long created = vehicleService.create(req.getData());
 
-        try{
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                    StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, created);
-            return ResponseEntity.ok(response);
-        }catch(Exception e){
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, created);
-            return ResponseEntity.ok(response);
-        }
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, created);
+        return ResponseEntity.ok(response);
+
     }
 
     @GetMapping
     public ResponseEntity<TuongCommonResponse<List<Vehicle>>> getAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime){
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         // check not found
-        List<Vehicle> vehicles = vehicleService.getAll();
-        if(vehicles == null || vehicles.isEmpty()){
+        List<Vehicle> vehicles = vehicleService.getOwnerVehicles();
+        if (vehicles == null || vehicles.isEmpty()) {
             throw new ResourceNotFoundException("Vehicle not found", requestTrace, requestDateTime);
         }
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        try{
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                    StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, vehicles);
-            return ResponseEntity.ok(response);
-        }catch(Exception e){
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, vehicles);
-            return ResponseEntity.ok(response);
-        }
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace, now, rs, vehicles);
+        return ResponseEntity.ok(response);
+
     }
 
-    @GetMapping("/by-plate/{plateNumber}")
-    public ResponseEntity<TuongCommonResponse<List<Vehicle>>> getByPlateNumber(
-            @PathVariable("plateNumber") String plateNumber,
-            @RequestHeader(value = "X-Request-Trace",required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
-    ){
-
-        String trace =  requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        List<Vehicle> list = vehicleService.getByPlateNumber(plateNumber);
-
-        try{
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                    StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, list);
-            return ResponseEntity.ok(response);
-        }catch(Exception e){
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, list);
-            return ResponseEntity.ok(response);
-        }
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<TuongCommonResponse<Long>> update(
@@ -116,25 +83,18 @@ public class VehicleController {
             @Valid @RequestBody TuongCommonRequest<VehicleUpdateRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
-        ){
+    ) {
 
-        String trace =  requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         Long updated = vehicleService.update(id, req.getData());
 
-        try{
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                    StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, updated);
-            return ResponseEntity.ok(response);
-        }catch(Exception e){
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, updated);
-            return ResponseEntity.ok(response);
-        }
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, updated);
+        return ResponseEntity.ok(response);
+
     }
 
     @DeleteMapping("/{id}")
@@ -142,23 +102,73 @@ public class VehicleController {
             @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        vehicleService.delete(id);
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace, now, rs, null);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<TuongCommonResponse<?>> getAllVehicles(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
+            @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(value = "sort", required = false) String sortBy
     ){
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        log.info("Request get user list");
+        PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortBy(pageNo,pageSize,sortBy);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<?> response = new TuongCommonResponse<>(trace, now, rs , data);
+        return ResponseEntity.ok(response);
+    }
 
-        vehicleService.delete(id);
-        try{
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                    StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace,now, rs, null);
-            return ResponseEntity.ok(response);
-        }catch(Exception e){
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace,now, rs,null);
-            return ResponseEntity.ok(response);
-        }
+    @GetMapping("/list-with-sort-by-multiple-columns")
+    public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumns(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
+            @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(value = "sort", required = false) String... sortBy
+            ){
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        log.info("Request get user list");
+        PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<?> response = new TuongCommonResponse<>(trace, now, rs , data);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/list-with-sort-by-multiple-columns-search")
+    public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumnsAndSearch(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
+            @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(value = "sort", required = false) String... sortBy
+    ){
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        log.info("Request get user list");
+        PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<?> response = new TuongCommonResponse<>(trace, now, rs , data);
+        return ResponseEntity.ok(response);
     }
 }
