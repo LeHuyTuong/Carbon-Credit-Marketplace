@@ -1,0 +1,258 @@
+[33mcommit edeeee490c781a643b4fdb33955382d7e770bcc6[m
+Merge: c1d8345 2db9a66
+Author: LeHuyTuong <lehuytuong2005@gmail.com>
+Date:   Tue Sep 30 12:02:58 2025 +0700
+
+    Merge remote-tracking branch 'origin/main' into test
+
+[33mcommit 2db9a66eac30201effeac58d6dd7315f79918f22[m
+Author: LeHuyTuong <lehuytuong2005@gmail.com>
+Date:   Tue Sep 30 11:57:33 2025 +0700
+
+    Refactor Folder
+
+[1mdiff --git a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1mindex f08489c..95f061f 100644[m
+[1m--- a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1m+++ b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[36m@@ -3,17 +3,12 @@[m [mpackage com.carbonx.marketcarbon.controller;[m
+ [m
+ [m
+ [m
+[31m-import com.carbonx.marketcarbon.domain.StatusCode;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.common.StatusCode;[m
+ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;[m
+[31m-import com.carbonx.marketcarbon.model.KycProfile;[m
+ import com.carbonx.marketcarbon.model.Vehicle;[m
+[31m-import com.carbonx.marketcarbon.request.VehicleCreateRequest;[m
+[31m-import com.carbonx.marketcarbon.request.VehicleUpdateRequest;[m
+[31m-import com.carbonx.marketcarbon.response.VehicleResponse;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;[m
+ import com.carbonx.marketcarbon.service.VehicleService;[m
+[31m-import com.carbonx.marketcarbon.utils.CommonRequest;[m
+[31m-import com.carbonx.marketcarbon.utils.CommonResponse;[m
+[31m-import com.carbonx.marketcarbon.utils.ResponseUtil;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;[m
+
+[33mcommit c1d83453bb3a4878946165cca0e3f5497a5038d8[m[33m ([m[1;31morigin/test[m[33m)[m
+Author: LeHuyTuong <lehuytuong2005@gmail.com>
+Date:   Tue Sep 30 11:45:32 2025 +0700
+
+    Fix
+
+[1mdiff --git a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1mindex f08489c..8abf7bd 100644[m
+[1m--- a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1m+++ b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[36m@@ -5,15 +5,10 @@[m [mpackage com.carbonx.marketcarbon.controller;[m
+ [m
+ import com.carbonx.marketcarbon.domain.StatusCode;[m
+ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;[m
+[31m-import com.carbonx.marketcarbon.model.KycProfile;[m
+ import com.carbonx.marketcarbon.model.Vehicle;[m
+ import com.carbonx.marketcarbon.request.VehicleCreateRequest;[m
+ import com.carbonx.marketcarbon.request.VehicleUpdateRequest;[m
+[31m-import com.carbonx.marketcarbon.response.VehicleResponse;[m
+ import com.carbonx.marketcarbon.service.VehicleService;[m
+[31m-import com.carbonx.marketcarbon.utils.CommonRequest;[m
+[31m-import com.carbonx.marketcarbon.utils.CommonResponse;[m
+[31m-import com.carbonx.marketcarbon.utils.ResponseUtil;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;[m
+
+[33mcommit 2747a4cffad8c45762b5f89d8146de630dc60d35[m
+Author: LeHuyTuong <lehuytuong2005@gmail.com>
+Date:   Tue Sep 30 01:33:40 2025 +0700
+
+    Change Message to Service Controller
+
+[1mdiff --git a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1mindex 6faa583..f08489c 100644[m
+[1m--- a/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[1m+++ b/backend/Market_carbon/src/main/java/com/carbonx/marketcarbon/controller/VehicleController.java[m
+[36m@@ -3,7 +3,10 @@[m [mpackage com.carbonx.marketcarbon.controller;[m
+ [m
+ [m
+ [m
+[32m+[m[32mimport com.carbonx.marketcarbon.domain.StatusCode;[m
+ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.model.KycProfile;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.model.Vehicle;[m
+ import com.carbonx.marketcarbon.request.VehicleCreateRequest;[m
+ import com.carbonx.marketcarbon.request.VehicleUpdateRequest;[m
+ import com.carbonx.marketcarbon.response.VehicleResponse;[m
+[36m@@ -12,15 +15,21 @@[m [mimport com.carbonx.marketcarbon.utils.CommonRequest;[m
+ import com.carbonx.marketcarbon.utils.CommonResponse;[m
+ import com.carbonx.marketcarbon.utils.ResponseUtil;[m
+ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;[m
+[32m+[m[32mimport com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;[m
+ import jakarta.validation.Valid;[m
+ import lombok.RequiredArgsConstructor;[m
+ [m
+[32m+[m[32mimport lombok.extern.slf4j.Slf4j;[m
+ import org.springframework.http.ResponseEntity;[m
+ import org.springframework.web.bind.annotation.*;[m
+ [m
+[32m+[m[32mimport java.time.OffsetDateTime;[m
+[32m+[m[32mimport java.time.ZoneOffset;[m
+ import java.util.List;[m
+ import java.util.UUID;[m
+ [m
+[32m+[m[32m@Slf4j[m
+ @RestController[m
+ @RequestMapping("/api/v1/vehicles")[m
+ @RequiredArgsConstructor[m
+[36m@@ -29,61 +38,132 @@[m [mpublic class VehicleController {[m
+     private final VehicleService vehicleService;[m
+ [m
+     @PostMapping[m
+[31m-    public ResponseEntity<CommonResponse<VehicleResponse>> create([m
+[32m+[m[32m    public ResponseEntity<TuongCommonResponse<Long>> create([m
+             @Valid @RequestBody TuongCommonRequest<@Valid VehicleCreateRequest> req,[m
+[31m-            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace){[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime){[m
+ [m
+         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[31m-        VehicleResponse created = vehicleService.create(req.getData());[m
+[31m-[m
+[31m-        return ResponseEntity.ok(ResponseUtil.success(trace, created));[m
+[32m+[m[32m        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();[m
+[32m+[m[32m        Long created = vehicleService.create(req.getData());[m
+[32m+[m
+[32m+[m[32m        try{[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),[m
+[32m+[m[32m                    StatusCode.SUCCESS.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, created);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }catch(Exception e){[m
+[32m+[m[32m            log.info("errorMessage = {}", e.getMessage(), e.getCause());[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),[m
+[32m+[m[32m                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, created);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     @GetMapping[m
+[31m-    public ResponseEntity<CommonResponse<List<VehicleResponse>>> getAllVehicles([m
+[32m+[m[32m    public ResponseEntity<TuongCommonResponse<List<Vehicle>>> getAllVehicles([m
+             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,[m
+             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime){[m
+ [m
+         // check not found[m
+[31m-        List<VehicleResponse> vehicles = vehicleService.getAll();[m
+[32m+[m[32m        List<Vehicle> vehicles = vehicleService.getAll();[m
+         if(vehicles == null || vehicles.isEmpty()){[m
+             throw new ResourceNotFoundException("Vehicle not found", requestTrace, requestDateTime);[m
+         }[m
+ [m
+         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[31m-        return ResponseEntity.ok(ResponseUtil.success(trace, vehicles));[m
+[32m+[m[32m        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();[m
+[32m+[m
+[32m+[m[32m        try{[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),[m
+[32m+[m[32m                    StatusCode.SUCCESS.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, vehicles);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }catch(Exception e){[m
+[32m+[m[32m            log.info("errorMessage = {}", e.getMessage(), e.getCause());[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),[m
+[32m+[m[32m                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, vehicles);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     @GetMapping("/by-plate/{plateNumber}")[m
+[31m-    public ResponseEntity<CommonResponse<VehicleResponse>> getByPlateNumber([m
+[32m+[m[32m    public ResponseEntity<TuongCommonResponse<List<Vehicle>>> getByPlateNumber([m
+             @PathVariable("plateNumber") String plateNumber,[m
+[31m-            @RequestHeader(value = "X-Request-Trace",required = false) String requestTrace){[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-Trace",required = false) String requestTrace,[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime[m
+[32m+[m[32m    ){[m
+ [m
+         String trace =  requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[31m-        VehicleResponse vehicle = vehicleService.getByPlateNumber(plateNumber);[m
+[31m-[m
+[31m-        return ResponseEntity.ok(ResponseUtil.success(trace, vehicle));[m
+[32m+[m[32m        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();[m
+[32m+[m
+[32m+[m[32m        List<Vehicle> list = vehicleService.getByPlateNumber(plateNumber);[m
+[32m+[m
+[32m+[m[32m        try{[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),[m
+[32m+[m[32m                    StatusCode.SUCCESS.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, list);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }catch(Exception e){[m
+[32m+[m[32m            log.info("errorMessage = {}", e.getMessage(), e.getCause());[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),[m
+[32m+[m[32m                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<List<Vehicle>> response = new TuongCommonResponse<>(trace,now, rs, list);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     @PutMapping("/{id}")[m
+[31m-    public ResponseEntity<CommonResponse<VehicleResponse>> update([m
+[32m+[m[32m    public ResponseEntity<TuongCommonResponse<Long>> update([m
+             @PathVariable("id") Long id,[m
+             @Valid @RequestBody TuongCommonRequest<VehicleUpdateRequest> req,[m
+[31m-            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace){[m
+[31m-[m
+[31m-        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[31m-        VehicleResponse updated = vehicleService.update(id, req.getData());[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime[m
+[32m+[m[32m        ){[m
+ [m
+[31m-        return ResponseEntity.ok(ResponseUtil.success(trace, updated));[m
+[32m+[m[32m        String trace =  requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[32m+[m[32m        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();[m
+[32m+[m
+[32m+[m[32m        Long updated = vehicleService.update(id, req.getData());[m
+[32m+[m
+[32m+[m[32m        try{[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),[m
+[32m+[m[32m                    StatusCode.SUCCESS.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, updated);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }catch(Exception e){[m
+[32m+[m[32m            log.info("errorMessage = {}", e.getMessage(), e.getCause());[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),[m
+[32m+[m[32m                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace,now, rs, updated);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     @DeleteMapping("/{id}")[m
+[31m-    public ResponseEntity<CommonResponse<String>> delete([m
+[32m+[m[32m    public ResponseEntity<TuongCommonResponse<Void>> delete([m
+             @PathVariable("id") Long id,[m
+[31m-            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace ){[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,[m
+[32m+[m[32m            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime[m
+[32m+[m[32m    ){[m
+ [m
+         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();[m
+[32m+[m[32m        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();[m
+[32m+[m
+         vehicleService.delete(id);[m
+[31m-        return ResponseEntity.ok(ResponseUtil.success(trace,"Delete Success"));[m
+[32m+[m[32m        try{[m
+[32m+[m[32m            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),[m
+[32m+[m[32m                    StatusCode.SUCCESS.getMessage());[m
+[32m+[m[32m            TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace,now, rs, null);[m
+[32m+[m[32m            return ResponseEntity.ok(response);[m
+[32m+[m[32m        }catch(Exception e){[m
+[32m+[m[32m            log.info("errorMessage = {}", e.getMessage(), e.getCause());[m
+[32m+[m[32m            TuongResponseStatus rs = n

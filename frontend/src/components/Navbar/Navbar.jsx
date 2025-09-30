@@ -58,7 +58,7 @@ export default function Navbar() {
                 ELECTRIC VEHICLE
               </a>
               <ul className="dropdown-menu" aria-labelledby="evDropdown">
-                <li><NavLink to="/ev/manage" className={ddItemCls}>Manage vehicle</NavLink></li>
+                <li><NavLink to="/managevehicle" className={ddItemCls}>Manage vehicle</NavLink></li>
                 <li><NavLink to="/ev/transactions" className={ddItemCls}>Personal transaction</NavLink></li>
               </ul>
             </li>

@@ -56,6 +56,22 @@
   background:#d0cece; 
   border-color:#d0cece; 
 }
+/*giữ màu xanh khi disabled */
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background: #21f648ff !important;
+  border-color: #21f648ff !important;
+  color: #ffffffff !important;
+  opacity: 0.7;
+}
+.btn-primary:active,
+.btn-primary.active {
+  background: #21f648ff !important;
+  border-color: #21f648ff !important;
+  color: #ffffffff !important;
+  opacity: 0.7;
+}
+
 /*không cho heading nào scroll */
 :where(h1, h2, h3, h4, h5, h6,
        .h1, .h2, .h3, .h4, .h5, .h6,
