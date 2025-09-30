@@ -5,15 +5,10 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.domain.StatusCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
-import com.carbonx.marketcarbon.model.KycProfile;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.request.VehicleUpdateRequest;
-import com.carbonx.marketcarbon.response.VehicleResponse;
 import com.carbonx.marketcarbon.service.VehicleService;
-import com.carbonx.marketcarbon.utils.CommonRequest;
-import com.carbonx.marketcarbon.utils.CommonResponse;
-import com.carbonx.marketcarbon.utils.ResponseUtil;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
