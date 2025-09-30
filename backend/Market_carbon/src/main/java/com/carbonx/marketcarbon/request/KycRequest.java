@@ -1,8 +1,10 @@
 package com.carbonx.marketcarbon.request;
 
 import com.carbonx.marketcarbon.domain.IDType;
+import com.carbonx.marketcarbon.domain.annotation.PhoneNumber;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
@@ -12,16 +14,33 @@ import java.time.LocalDate;
 
 @Data
 public class KycRequest {
-    @NotNull(groups = CreatedBy.class)
+
+    @NotNull(groups = CreatedBy.class, message = "userId is not null")
     private Long userId;
-    @Email @NotBlank(groups = CreatedBy.class)
+
+    @Email(message = "email invalid format")
+    @NotNull(message = "email is not null",  groups = CreatedBy.class)
     private String email;
+
+    @NotNull(message = "name is not null")
     private String name;
+
+    @PhoneNumber(message = "phone invalid format")
     private String phone;
+
+    @NotNull(message = "country is not null")
     private String country;
+
+    @NotEmpty(message = "address is not null")
     private String address;
+
+    @NotNull(message = "documentType is not null")
     private IDType documentType;
+
+    @NotEmpty(message = "documentNumber is not empty ")
     private String documentNumber;
+
+    @NotNull(message = "birthday is not null")
     private LocalDate birthday;
 
     public interface Create{} // tách riêng , email được create
