@@ -5,7 +5,7 @@ import com.carbonx.marketcarbon.common.USER_STATUS;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name="users")
@@ -31,16 +31,15 @@ public class User {
     @Column(name = "otp_code")
     private String otpCode;
 
-    @Column(name = "otp_expired_at")
-    private OffsetDateTime otpExpiredAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable=false, length = 50)
-    private USER_ROLE role;
-
     @ManyToOne(fetch =  FetchType.EAGER)
     @JoinColumn(name = "enterprise_id", nullable = false)
     private Enterprise enterprise;
 
+    @Column(name = "otp_expiry_at")
+    LocalDateTime otpExpiryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private USER_ROLE role;
 }
 
