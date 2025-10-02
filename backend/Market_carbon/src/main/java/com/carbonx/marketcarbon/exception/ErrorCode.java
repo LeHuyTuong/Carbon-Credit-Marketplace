@@ -20,7 +20,10 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(404, "Payment not found", HttpStatus.NOT_FOUND),
     EMAIL_CONTACT_INVALID(400, "Email Contact cannot be null", HttpStatus.BAD_REQUEST),
     INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
-    EXPIRED_TOKEN(401, "EXPIRED_TOKEN", HttpStatus.UNAUTHORIZED);
+    EXPIRED_TOKEN(401, "EXPIRED_TOKEN", HttpStatus.UNAUTHORIZED),
+    USER_NOT_EXISTED(404, "User not existed", HttpStatus.NOT_FOUND),
+    USER_EXISTED(400, "User existed", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAILED(500, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),;
 
     private int code;
     private String message;
