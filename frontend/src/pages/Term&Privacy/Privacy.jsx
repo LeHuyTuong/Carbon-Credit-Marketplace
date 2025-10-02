@@ -2,21 +2,20 @@ export default function Privacy() {
   return (
     <div className="container">
       <h1>
-        Privacy Notice for Registration <span className="tag">6-Week MVP</span>
+        Privacy Notice for Registration
       </h1>
 
       <div className="sub">
         Applies to the demo of the Carbon Credit Exchange of{" "}
-        <strong>[Platform/Company Name]</strong>. Last updated:{" "}
-        <strong>[dd/mm/yyyy]</strong>.
+        <strong>CarbonX</strong>. Last updated:{" "}
+        <strong>10/10/2025</strong>.
       </div>
 
       <div className="card">
         <strong>Purpose of Processing</strong>
         <ul>
           <li>
-            <b>Registration & Security:</b> identity verification (KYC), fraud
-            prevention, 2FA.
+            <b>Registration & Security:</b> identity verification (KYC).
           </li>
           <li>
             <b>Service Delivery:</b> order creation/matching, payment (DvP),
@@ -24,7 +23,7 @@ export default function Privacy() {
             resolution.
           </li>
           <li>
-            <b>Legal Compliance:</b> KYC/AML/CTF, government/court requests,
+            <b>Legal Compliance:</b> KYC, government/court requests,
             accounting & record keeping.
           </li>
           <li>
@@ -37,7 +36,7 @@ export default function Privacy() {
         <ul>
           <li>
             <b>Identity/KYC:</b> full name, date of birth, nationality, address,
-            ID documents & numbers, face photo/video.
+            ID documents & numbers.
           </li>
           <li>
             <b>Contact & Account:</b> email, phone number, login logs (IP,
@@ -86,7 +85,7 @@ export default function Privacy() {
         <div className="small">
           Access, rectification, erasure, restriction/objection to processing,
           data copy/portability, withdraw consent (if applicable). Contact{" "}
-          <b>[privacy@companyname.com]</b>. Response time:{" "}
+          <b>carbonX@gmail.com</b>. Response time:{" "}
           <b>72 business hours</b>.
         </div>
 
@@ -97,52 +96,13 @@ export default function Privacy() {
         </div>
       </div>
 
-      <div className="card consents">
-        <label>
-          <input type="checkbox" required /> I confirm I am <b>18 years old</b>{" "}
-          or older and have read the{" "}
-          <a href="[terms-link]" target="_blank" rel="noopener noreferrer">
-            Terms of Service
-          </a>{" "}
-          &amp;{" "}
-          <a
-            href="[privacy-policy-link]"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-          .
-        </label>
-        <label>
-          <input type="checkbox" required /> I agree to allow{" "}
-          <b>[Platform/Company Name]</b> to process <b>KYC/AML</b> data
-          (including automated checks) to provide the service; I understand I
-          have the right to request <b>manual review</b>.
-        </label>
-        <label>
-          <input type="checkbox" /> I agree to receive product updates/newsletters
-          (unsubscribe anytime).
-        </label>
-        <div className="muted small">
-          Only <b>essential cookies</b> are used on the registration screen.
-          Cookie settings can be changed in your browser.
-        </div>
-      </div>
-
       <div className="links small">
-        Contact DPO/security lead:{" "}
-        <a href="mailto:privacy@companyname.com">privacy@companyname.com</a> ·
-        Sub-processor list:{" "}
-        <a href="[subprocessor-link]" target="_blank" rel="noopener noreferrer">
-          view here
-        </a>
-        .
+        Contact:{" "}
+        <a href="mailto:privacy@companyname.com">carbonX@gmail.com</a> ·
       </div>
 
       <div className="footer">
-        © {new Date().getFullYear()} [Platform/Company Name]. All rights
-        reserved.
+        © {new Date().getFullYear()} CarbonX. All rights reserved.
       </div>
     </div>
   );

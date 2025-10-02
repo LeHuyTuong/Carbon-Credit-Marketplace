@@ -1,10 +1,14 @@
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';  
 import logo from '../../assets/logo.png';
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const isEV = pathname.startsWith('/ev');         
+  const { isAuthenticated, user, logout } = useAuth();
+  
+  //active state cho EV
+  const isEV = pathname.startsWith('/ev') || pathname.startsWith('/managevehicle');         
   const isCredits = pathname.startsWith('/credits'); 
   const linkCls = ({ isActive }) => `nav-link px-3 ${isActive ? 'is-active' : ''}`;
   const ddItemCls = ({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`;
@@ -86,14 +90,64 @@ export default function Navbar() {
           </ul>
 
           {/*right group */}
-          <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
-            <li className="nav-item">
-              <NavLink to="/login" className={linkCls}>LOGIN</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/register" className="btn btn-outline-light ms-lg-2">SIGN UP</NavLink>
-            </li>
+          <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center gap-2 gap-lg-3">
+            {!isAuthenticated ? (
+              <>
+                <li className="nav-item">
+                  <NavLink to="/login" className={linkCls}>LOGIN</NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/register" className="btn btn-outline-light ms-lg-2">SIGN UP</NavLink>
+                </li>
+              </>
+            ) : (
+              <>
+                {/*btn bell */}
+                <li className="nav-item dropdown">
+                  <a
+                    href="#"
+                    className="nav-link p-0 dropdown-toggle no-caret"
+                    id="notifDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="Notifications"
+                  >
+                    <span className="icon-btn">
+                      <i className="bi bi-bell"></i>
+                    </span>
+                  </a>
+                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown">
+                    <li><span className="dropdown-item-text">No new notifications</span></li>
+                  </ul>
+                </li>
+
+                {/*btn person */}
+                <li className="nav-item dropdown">
+                  <a
+                    href="#"
+                    className="nav-link dropdown-toggle no-caret p-0"
+                    id="userDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span className="icon-btn">
+                      <i className="bi bi-person"></i>
+                    </span>
+                  </a>
+                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><NavLink to="/profile" className="dropdown-item">Profile</NavLink></li>
+                    <li><NavLink to="/wallet" className="dropdown-item">Wallet</NavLink></li>
+                    <li><NavLink to="/managevehicle" className="dropdown-item">My vehicles</NavLink></li>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li><button className="dropdown-item" onClick={logout}>Logout</button></li>
+                  </ul>
+                </li>
+              </>
+            )}
           </ul>
+
         </div>
       </div>
     </nav>

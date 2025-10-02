@@ -31,6 +31,10 @@ public class User {
     @Column(name = "otp_code")
     private String otpCode;
 
+    @ManyToOne(fetch =  FetchType.EAGER)
+    @JoinColumn(name = "enterprise_id", nullable = false)
+    private Enterprise enterprise;
+
     @Column(name = "otp_expiry_at")
     LocalDateTime otpExpiryDate;
 

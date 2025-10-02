@@ -35,7 +35,7 @@ export default function ForgotPassword() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1000)); //giả lập API
     setLoading(false);
-    nav("/otp", { replace: true, state: { email: values.email } });
+    nav("/otp", { replace: true, state: { email: values.email, from: 'forgot' } });
   };
 
   return (
