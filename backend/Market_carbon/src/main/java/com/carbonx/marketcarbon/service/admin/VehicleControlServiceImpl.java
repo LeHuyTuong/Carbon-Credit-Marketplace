@@ -111,7 +111,7 @@ public class VehicleControlServiceImpl implements VehicleControlService {
             }
         }
 
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(sorts));
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(orders));
         //B3 Tra ve Page
         Page<Vehicle> vehiclePage = vehicleRepository.findAll(pageable);
 

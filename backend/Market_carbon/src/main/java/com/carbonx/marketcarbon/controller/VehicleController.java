@@ -16,6 +16,7 @@ import com.carbonx.marketcarbon.utils.ResponseUtil;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class VehicleController {
     private final VehicleService vehicleService;
     private final VehicleControlService  vehicleControlService;
 
+    @Operation(summary = "Create Vehicle" , description = "API Create Vehicle")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<Long>> create(
             @Valid @RequestBody TuongCommonRequest<@Valid VehicleCreateRequest> req,
@@ -55,6 +57,7 @@ public class VehicleController {
 
     }
 
+    @Operation(summary = "Get All  Vehicle" , description = "API Get All  Vehicle")
     @GetMapping
     public ResponseEntity<TuongCommonResponse<List<Vehicle>>> getAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -76,7 +79,7 @@ public class VehicleController {
 
     }
 
-
+    @Operation(summary = "Update vehicle", description = "API Update vehicle")
     @PutMapping("/{id}")
     public ResponseEntity<TuongCommonResponse<Long>> update(
             @PathVariable("id") Long id,
@@ -97,6 +100,7 @@ public class VehicleController {
 
     }
 
+    @Operation(summary = "Delete vehicle", description = "API Delete vehicle")
     @DeleteMapping("/{id}")
     public ResponseEntity<TuongCommonResponse<Void>> delete(
             @PathVariable("id") Long id,
@@ -114,6 +118,7 @@ public class VehicleController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get list of vehicle per pageNo", description = "send a request via this API to get vehicle list by pageNo and pageSize")
     @GetMapping("/list")
     public ResponseEntity<TuongCommonResponse<?>> getAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -126,7 +131,7 @@ public class VehicleController {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        log.info("Request get user list");
+        log.info("Request get vehicle list");
         PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortBy(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -134,6 +139,7 @@ public class VehicleController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get list of all vehicle ort by multiple colum ", description = "send a request via this API to get vehicle list by sort")
     @GetMapping("/list-with-sort-by-multiple-columns")
     public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumns(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -145,7 +151,7 @@ public class VehicleController {
             ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        log.info("Request get user list");
+        log.info("Request get vehicle list");
         PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -153,6 +159,7 @@ public class VehicleController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get list of all vehicle ort by multiple colum and search ", description = "send a request via this API to get vehicle list by sort")
     @GetMapping("/list-with-sort-by-multiple-columns-search")
     public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumnsAndSearch(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -164,7 +171,7 @@ public class VehicleController {
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        log.info("Request get user list");
+        log.info("Request get vehicle list");
         PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

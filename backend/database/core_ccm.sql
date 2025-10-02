@@ -1,7 +1,7 @@
 -- Schema: carbon_market
-CREATE DATABASE IF NOT EXISTS carbon_market
+CREATE DATABASE IF NOT EXISTS core_ccm
   DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE carbon_market;
+USE core_ccm;
 
 -- 1) Người dùng & KYC
 CREATE TABLE users (

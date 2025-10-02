@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.service.KycService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class KycController {
 
     private final KycService kycService;
 
+    @Operation(summary = "Create Vehicle" , description = "API Create Vehicle")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<Long>> create(
             @Valid @RequestBody TuongCommonRequest<KycRequest> req,
@@ -49,6 +51,7 @@ public class KycController {
         }
     }
 
+    @Operation(summary = "Update KYC ", description = "Update KYC for user ")
     @PutMapping("/{id}")
     public ResponseEntity<TuongCommonResponse<Long>> update(
             @PathVariable("id") Long id,
@@ -73,6 +76,7 @@ public class KycController {
         }
     }
 
+    @Operation(summary = "Get all KYC of user ")
     @GetMapping("/{userId}")
     public ResponseEntity<TuongCommonResponse<KycProfile>> getByUser(
             @PathVariable(name = "userId") @Valid Long userId,
