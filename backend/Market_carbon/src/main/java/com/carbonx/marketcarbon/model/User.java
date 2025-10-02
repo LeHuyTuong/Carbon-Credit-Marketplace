@@ -24,10 +24,6 @@ public class User {
     private String fullName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable=false, length = 32)
-    private USER_ROLE role; // EV_OWNER, CC_BUYER, CVA, ADMIN
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 16)
     @Builder.Default
     private USER_STATUS status = USER_STATUS.PENDING;
@@ -38,8 +34,13 @@ public class User {
     @Column(name = "otp_expired_at")
     private OffsetDateTime otpExpiredAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length = 50)
+    private USER_ROLE role;
+
     @ManyToOne(fetch =  FetchType.EAGER)
     @JoinColumn(name = "enterprise_id", nullable = false)
     private Enterprise enterprise;
+
 }
 
