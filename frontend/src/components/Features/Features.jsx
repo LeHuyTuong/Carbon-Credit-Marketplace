@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import "./features.css";
+import { useAuth } from "../../context/AuthContext.jsx"
 
 export default function Features() {
   const sectionRef = useRef(null);
+  const { isAuthenticated } = useAuth();//lấy trạng thái login
 
   //hiện dần
   useEffect(() => {
@@ -70,12 +72,15 @@ export default function Features() {
           </div>
         </div>
 
-        <div className="mt-5 text-start">
+        {/**chỉ hiện khi chưa login */}
+        {!isAuthenticated && (
+          <div className="mt-5 text-start">
             <a href="/register" className="btn btn-brand btn-lg me-3">Get started</a>
             <p className="small text-muted mb-0 mt-2">
                 Join us in building a greener future — sign up now and start trading carbon credits effortlessly.
             </p>
         </div>
+        )}
 
       </div>
     </section>

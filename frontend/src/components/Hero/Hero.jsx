@@ -1,7 +1,10 @@
 import React from "react"
 import bg from '../../assets/background.png';
+import { useAuth } from "../../context/AuthContext.jsx"
 
 export default function Hero() {
+  const { isAuthenticated } = useAuth();//lấy trạng thái login
+  
   return (
     <header id="top" className="auth-hero hero min-vh-100 d-flex align-items-center"
         style={{ '--bg-url': `url(${bg})` }}>
@@ -22,7 +25,10 @@ export default function Hero() {
             </p>
 
             <div className="d-flex gap-3">
-              <a href="/register" className="btn btn-brand btn-lg">Sign up now</a>
+              {/*chỉ hiện khi chua login */}
+              {!isAuthenticated && (
+                <a href="/register" className="btn btn-brand btn-lg">Sign up now</a>
+              )}
               <a href="#how" className="btn btn-outline-primary btn-lg">Learn more</a>
             </div>
 
