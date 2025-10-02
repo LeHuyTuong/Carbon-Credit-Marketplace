@@ -5,7 +5,7 @@ import com.carbonx.marketcarbon.common.USER_STATUS;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name="users")
@@ -24,10 +24,6 @@ public class User {
     private String fullName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable=false, length = 32)
-    private USER_ROLE role; // EV_OWNER, CC_BUYER, CVA, ADMIN
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 16)
     @Builder.Default
     private USER_STATUS status = USER_STATUS.PENDING;
@@ -35,7 +31,11 @@ public class User {
     @Column(name = "otp_code")
     private String otpCode;
 
-    @Column(name = "otp_expired_at")
-    private OffsetDateTime otpExpiredAt;
+    @Column(name = "otp_expiry_at")
+    LocalDateTime otpExpiryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private USER_ROLE role;
 }
 

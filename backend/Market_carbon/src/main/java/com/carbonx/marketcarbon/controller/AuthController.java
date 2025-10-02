@@ -16,14 +16,17 @@ import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
 import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.dto.response.TokenResponse;
+import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,6 +35,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -44,6 +49,8 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
     private final PasswordResetTokenService passwordResetTokenService;
+    private final EmailService emailService;
+    private final JavaMailSender javaMailSender;
 
     @PostMapping("/register")
     public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) {
@@ -69,11 +76,25 @@ public class AuthController {
         // Sinh OTP
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         newUser.setOtpCode(otp);
-        newUser.setOtpExpiredAt(java.time.OffsetDateTime.now().plusMinutes(5));
+        newUser.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
         userRepository.save(newUser);
 
         System.out.println("OTP for " + email + " = " + otp);
-        // emailService.sendOtp(email, otp);
+        String subject = "Xác thực tài khoản - CarbonX";
+        String content = String.format(
+                "<p>Xin chào %s,</p>" +
+                        "<p>Cảm ơn bạn đã đăng ký. Vui lòng sử dụng mã OTP sau để xác nhận tài khoản:</p>" +
+                        "<h2>%s</h2>" +
+                        "<p>Mã OTP sẽ hết hạn sau 5 phút.</p>" +
+                        "<p>Trân trọng,<br/>CarbonX Team</p>",
+                fullName, otp
+        );
+
+        try {
+            emailService.sendEmail(subject, content, List.of(email));
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
+        }
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(null);
@@ -90,14 +111,14 @@ public class AuthController {
 
         if (user.getOtpCode() == null
                 || !user.getOtpCode().equals(req.getOtpCode())
-                || user.getOtpExpiredAt() == null
-                || user.getOtpExpiredAt().isBefore(java.time.OffsetDateTime.now())) {
+                || user.getOtpExpiryDate() == null
+                || user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
 
-        // Xoá OTP, kích hoạt user
+         // Xoá OTP, kích hoạt user
         user.setOtpCode(null);
-        user.setOtpExpiredAt(null);
+        user.setOtpExpiryDate(null);
         user.setStatus(USER_STATUS.ACTIVE);
         userRepository.save(user);
 
@@ -154,7 +175,7 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-logout", new MessageResponse("Đăng xuất thành công")));
     }
 
-    @PostMapping("/reset-password")
+    @PostMapping("/reset-token")
     public ResponseEntity<CommonResponse<MessageResponse>> resetPassword(
             @RequestBody ResetPasswordRequest req) {
 
