@@ -22,9 +22,29 @@ export default function VerifyOtp() {
     setSec(60);
   };
 
+  // //sau otp điều hướng về home
+  // const verify = async () => {
+  //   const res = await api.verifyOtp({ email, otp });
+  //   if (res.ok) {
+  //     auth.login(res.token);               // save token / set context
+  //     nav('/marketplace', { replace: true }); // hoặc '/dashboard'
+  //   } else {
+  //     toast.error('OTP invalid');
+  //   }
+  // };
+
+
   const verify = async () => {
     //call API verify OTP
-    nav('/login')
+
+    const res = await api.verifyOtp({ email, otp })
+    if (!res.ok) return toast.error('OTP invalid')
+    //2 state cho otp
+    if (state?.from === 'register') {
+      nav('/login', { replace: true, state: { email, msg: 'Account verified. Please login.'}});
+    } else {
+      nav('/change', { replace: true });
+    }
   };
 
   return (

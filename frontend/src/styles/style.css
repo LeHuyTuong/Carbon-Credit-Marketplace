@@ -47,6 +47,7 @@
   background:#66f583; 
   border-color:#86EFAC; 
 }
+
 .btn-outline-secondary{
   background:rgb(230, 232, 230); 
   border-color:rgb(230, 232, 230); 
@@ -72,16 +73,10 @@
   opacity: 0.7;
 }
 
-/*không cho heading nào scroll */
-:where(h1, h2, h3, h4, h5, h6,
-       .h1, .h2, .h3, .h4, .h5, .h6,
-       .display-1, .display-2, .display-3, .display-4,
-       .section-title, .feature-title) {
-  overflow: visible !important;
-  overflow-y: visible !important;
-  height: auto !important;
-  max-height: none !important;
-  white-space: normal;    
-  word-break: break-word;
+/*khi nhấn vào item trong dropdown */
+.dropdown-menu .dropdown-item:active {
+  background-color: #21f648 !important;
+  color: #fff !important;
 }
+
 
