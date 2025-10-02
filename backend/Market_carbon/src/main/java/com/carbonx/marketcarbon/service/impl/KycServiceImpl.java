@@ -21,11 +21,8 @@ import org.springframework.validation.annotation.Validated;
 @Service
 public class KycServiceImpl implements KycService {
 
-    @Autowired
-    private KycRepository kycRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    private  KycRepository kycRepository;
+    private  UserRepository userRepository;
 
     @Override
     public Long create(@Validated(KycRequest.Create.class) KycRequest req) {

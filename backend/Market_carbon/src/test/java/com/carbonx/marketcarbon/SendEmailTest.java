@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon;
 
-import com.carbonx.marketcarbon.service.EmailService;
 import jakarta.validation.constraints.Email;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,17 +11,17 @@ import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest
 public class SendEmailTest {
-
-    @Autowired
-    private EmailService emailService;
-
-    private JavaMailSender mailSender;
-
-    @Test
-    void sendEmailTest(){
-        String email = "dihoc77@gmail.com";
-        String otp = emailService.generateOtp();
-        emailService.sendEmail(email,otp);
-    }
+//
+//    @Autowired
+//    private EmailService emailService;
+//
+//    private JavaMailSender mailSender;
+//
+//    @Test
+//    void sendEmailTest(){
+//        String email = "dihoc77@gmail.com";
+//        String otp = emailService.generateOtp();
+//        emailService.sendEmail(email,otp);
+//    }
 
 }

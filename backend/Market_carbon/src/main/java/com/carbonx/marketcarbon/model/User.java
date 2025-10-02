@@ -37,5 +37,9 @@ public class User {
 
     @Column(name = "otp_expired_at")
     private OffsetDateTime otpExpiredAt;
+
+    @ManyToOne(fetch =  FetchType.EAGER)
+    @JoinColumn(name = "enterprise_id", nullable = false)
+    private Enterprise enterprise;
 }
 
