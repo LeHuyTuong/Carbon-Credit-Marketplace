@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.dto.request.ChangePasswordRequest;
 import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
 import com.carbonx.marketcarbon.dto.request.UserCreationRequest;
@@ -20,4 +21,5 @@ public interface UserService {
             throws MessagingException, UnsupportedEncodingException;
     public UserResponse createUser(UserCreationRequest request, String otp);
     public void resetPassword(PasswordCreationRequest request);
+    public void changePassword(String jwt, ChangePasswordRequest req);
 }
