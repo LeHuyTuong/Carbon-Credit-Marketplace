@@ -2,9 +2,11 @@ import React, { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useRipple from '../../hooks/useRipple';
 import { useForm } from '../../hooks/useForm';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Login() {
   const nav = useNavigate();
+  const { login } = useAuth(); 
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -40,10 +42,54 @@ export default function Login() {
     if (!validateForm()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000)); //giả lập API
+    await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    nav("/home");
+
+    //fake data để thấy navbar đổi
+    const fakeUser = { id: 1, email: values.email};
+    const fakeToken = 'fake-jwt';
+    login(fakeUser, fakeToken, remember);  
+    nav('/home', { replace: true });
   };
+
+  // const submit = async (ev) => {
+  //   ev.preventDefault();
+  //   setSubmitted(true);
+  //   if (!validateForm()) return;
+
+  //   setLoading(true);
+  //   try {
+  //     const res = await fetch("http://localhost:8082/api/v1/auth/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email: values.email, password: values.password }),
+  //     });
+
+  //     if (!res.ok) {
+  //       const errData = await res.json().catch(() => ({}));
+  //       throw new Error(errData.message || "Login failed");
+  //     }
+
+  //     const data = await res.json();
+  //     // Giả sử backend trả: { token, user }
+  //     const token = data.token;
+  //     const user  = data.user || { email: values.email };
+
+  //     // Nếu backend chỉ trả token JWT mà không trả user, có thể decode nhanh (nếu là JWT chuẩn)
+  //     // Cẩn trọng: chỉ fallback, không phụ thuộc hoàn toàn
+  //     // try { const payload = JSON.parse(atob(token.split('.')[1])); user.name = payload.name || user.email; } catch {}
+
+  //     login(user, token, remember);
+  //     nav('/home', { replace: true });
+  //   } catch (err) {
+  //     console.error("Login error:", err.message);
+  //     alert(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">

@@ -58,8 +58,47 @@ export default function Register() {
     await new Promise((r) => setTimeout(r, 800)); //giả lập API
     setLoading(false);
 
-    nav('/otp', { replace: true, state: { email: values.email } });
+    nav('/otp', { replace: true, state: { email: values.email, form: 'register' } });
   };
+
+//   const submit = async (ev) => {
+//   ev.preventDefault();
+//   setSubmitted(true);
+//   if (!validateForm()) return;
+
+//   setLoading(true);
+//   try {
+//     const res = await fetch("http://localhost:8080/api/auth/register", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         email: values.email,
+//         password: values.password,
+//         role: values.role,
+//       }),
+//     });
+
+//     if (!res.ok) {
+//       // Backend trả lỗi HTTP (400/500…)
+//       const errData = await res.json();
+//       throw new Error(errData.message || "Register failed");
+//     }
+
+//     const data = await res.json();
+//     console.log("Register success:", data);
+
+//     // Điều hướng sau khi đăng ký thành công
+//     nav("/otp", { replace: true, state: { email: values.email } });
+//   } catch (err) {
+//     console.error("Register error:", err.message);
+//     // chỗ này bạn có thể set error state để hiện lên UI
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
@@ -133,7 +172,7 @@ export default function Register() {
                 >
                   <option value="">Choose your role</option>
                   <option value="ev">Electric Vehicle Owner (EV Owner)</option>
-                  <option value="bis">Business</option>
+                  <option value="bis">Company</option>
                   <option value="cv">Carbon Verification & Audit (CVA)</option>
                 </select>
                 {show('role') && <div className="invalid-feedback">{errors.role}</div>}

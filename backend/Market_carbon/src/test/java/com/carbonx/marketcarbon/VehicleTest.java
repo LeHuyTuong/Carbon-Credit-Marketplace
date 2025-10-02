@@ -25,7 +25,7 @@ public class VehicleTest {
     public void createVehicleTest(){
         // B1 Create
         Vehicle vehicle = new Vehicle();
-        vehicle.setOwnerId(122L);
+        vehicle.setId(122L);
         vehicle.setPlateNumber("123");
         vehicle.setBrand("Vinfast");
         vehicle.setModel("VF3");
@@ -40,7 +40,7 @@ public class VehicleTest {
     @Test
     public void testReadVehicle() {
         Vehicle vehicle = new Vehicle();
-        vehicle.setOwnerId(123L);
+        vehicle.setId(123L);
         vehicle.setPlateNumber("vietnam-70001");
         vehicle.setBrand("Toyota");
         vehicle.setModel("Corolla");
@@ -55,14 +55,14 @@ public class VehicleTest {
     @Test
     public void testGetAllVehicles() {
         Vehicle vehicle1 = new Vehicle();
-        vehicle1.setOwnerId(201L);
+        vehicle1.setId(201L);
         vehicle1.setPlateNumber("vietnam-80001");
         vehicle1.setBrand("Hyundai");
         vehicle1.setModel("Accent");
         vehicle1.setYearOfManufacture(2021);
 
         Vehicle vehicle2 = new Vehicle();
-        vehicle2.setOwnerId(202L);
+        vehicle2.setId(202L);
         vehicle2.setPlateNumber("vietnam-80002");
         vehicle2.setBrand("Kia");
         vehicle2.setModel("Morning");
@@ -75,7 +75,7 @@ public class VehicleTest {
         assertTrue(vehicles.size() >= 2);
         for (Vehicle v : vehicles) {
             System.out.println("Vehicle ID: " + v.getId()
-                + ", Owner ID: " + v.getOwnerId()
+                + ", Owner ID: " + v.getId()
                 + ", Plate Number: " + v.getPlateNumber()
                 + ", Brand: " + v.getBrand()
                 + ", Model: " + v.getModel()
@@ -87,7 +87,7 @@ public class VehicleTest {
     @Test
     public void testUpdateVehicle() {
         Vehicle vehicle = new Vehicle();
-        vehicle.setOwnerId(124L);
+        vehicle.setId(124L);
         vehicle.setPlateNumber("vietnam-70002");
         vehicle.setBrand("Honda");
         vehicle.setModel("Civic");
@@ -102,7 +102,7 @@ public class VehicleTest {
     @Test
     public void testDeleteVehicle() {
         Vehicle vehicle = new Vehicle();
-        vehicle.setOwnerId(125L);
+        vehicle.setId(125L);
         vehicle.setPlateNumber("vietnam-70003");
         vehicle.setBrand("Ford");
         vehicle.setModel("Focus");
