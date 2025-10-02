@@ -1,26 +1,39 @@
     package com.carbonx.marketcarbon.service.impl;
 
     import com.carbonx.marketcarbon.config.JwtProvider;
+    import com.carbonx.marketcarbon.dto.request.EmailRequest;
+    import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
+    import com.carbonx.marketcarbon.dto.request.UserCreationRequest;
+    import com.carbonx.marketcarbon.dto.response.UserResponse;
     import com.carbonx.marketcarbon.exception.AppException;
     import com.carbonx.marketcarbon.exception.ErrorCode;
+    import com.carbonx.marketcarbon.mapper.UserMapper;
     import com.carbonx.marketcarbon.model.PasswordResetToken;
     import com.carbonx.marketcarbon.model.User;
     import com.carbonx.marketcarbon.repository.PasswordResetTokenRepository;
+    import com.carbonx.marketcarbon.repository.RoleRepository;
     import com.carbonx.marketcarbon.repository.UserRepository;
+    import com.carbonx.marketcarbon.service.EmailService;
     import com.carbonx.marketcarbon.service.UserService;
+    import jakarta.mail.MessagingException;
+    import jakarta.transaction.Transactional;
+    import lombok.AccessLevel;
     import lombok.RequiredArgsConstructor;
+    import lombok.experimental.FieldDefaults;
+    import lombok.extern.slf4j.Slf4j;
     import org.springframework.mail.SimpleMailMessage;
     import org.springframework.mail.javamail.JavaMailSender;
     import org.springframework.security.crypto.password.PasswordEncoder;
     import org.springframework.stereotype.Service;
 
-    import java.util.Calendar;
-    import java.util.Date;
-    import java.util.List;
-    import java.util.UUID;
+    import java.io.UnsupportedEncodingException;
+    import java.time.LocalDateTime;
+    import java.util.*;
 
     @Service
     @RequiredArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+    @Slf4j
     public class UserServiceImplementation implements UserService {
 
         private final UserRepository userRepository;
@@ -28,30 +41,31 @@
         private final PasswordEncoder passwordEncoder;
         private final PasswordResetTokenRepository passwordResetTokenRepository;
         private final JavaMailSender javaMailSender;
+        private final EmailService emailService;
+        private final OtpService otpService;
+        private final RoleRepository roleRepository;
+        private final UserMapper userMapper;
 
 
         @Override
         public User findUserProfileByJwt(String jwt) {
-            String email=jwtProvider.getEmailFromJwtToken(jwt);
+            String email = jwtProvider.getEmailFromJwtToken(jwt);
 
             User user = userRepository.findByEmail(email);
-            if(user==null) {
+            if (user == null) {
                 throw new AppException(ErrorCode.EMAIL_INVALID);
             }
-//		System.out.println("email user "+user.get().getEmail());
             return user;
         }
 
+
         @Override
         public User findUserByEmail(String username) {
-
-            User user=userRepository.findByEmail(username);
-
-            if(user!=null) {
-
-                return user;
+            User user = userRepository.findByEmail(username);
+            if (user == null) {
+                throw new AppException(ErrorCode.EMAIL_INVALID);
             }
-            throw new AppException(ErrorCode.EMAIL_INVALID);
+            return user;
         }
 
         @Override
@@ -80,6 +94,65 @@
             // Send an email containing the reset link
             sendEmail(user.getEmail(), "Password Reset", "Click the following link to reset your password: http://localhost:3000/account/reset-password?token=" + resetToken);
         }
+
+        @Transactional
+        public void sendOtpForgotPassword(EmailRequest request)
+                throws MessagingException, UnsupportedEncodingException {
+
+            User user = userRepository.findByEmail(request.getEmail());
+            if (user == null) {
+                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            }
+
+            String otp = generateOtp();
+            LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(30);
+
+            user.setOtpCode(otp);
+            user.setOtpExpiryDate(expiryDate);
+
+            String subject = "Your OTP Code";
+            String content = String.format(
+                    "<p>Hello,</p>" +
+                            "<p>We received a request to reset your password. Use the following OTP to reset it:</p>" +
+                            "<h2>%s</h2>" +
+                            "<p>If you did not request this, please ignore this email.</p>" +
+                            "<p>Best regards,<br/>Your Company</p>",
+                    otp
+            );
+
+            emailService.sendEmail(subject, content, List.of(user.getEmail()));
+        }
+
+        @Transactional
+        public UserResponse createUser(UserCreationRequest request, String otp)  {
+//            User existingUser = userRepository.findByEmail(request.getEmail());
+//            if (existingUser != null) {
+//                throw new AppException(ErrorCode.USER_EXISTED);
+//            }
+//
+//            String storedOtp = otpService.getOtp(request.getEmail())
+//                    .orElse(null);
+//            if (storedOtp == null || !storedOtp.equals(otp)) {
+//                throw new AppException(ErrorCode.INVALID_OTP);
+//            }
+//
+//            User user = userMapper.toUser(request);
+//
+//            Role role = roleRepository.findByName(PredefinedRole.USER_ROLE)
+//                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+//
+//            user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+//            user.setRole(role);
+//            user.setFullName(request.getFirstName() + " " + request.getLastName());
+//            userRepository.save(user);
+//
+//            otpService.deleteOtp(request.getEmail());
+//
+//
+//            return userMapper.toUserResponse(user);
+            return null;
+        }
+
         private void sendEmail(String to, String subject, String message) {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
 
@@ -97,6 +170,37 @@
             cal.setTime(new Date());
             cal.add(Calendar.MINUTE, 10);
             return cal.getTime();
+        }
+
+        @Transactional
+        public void resetPassword(PasswordCreationRequest request){
+            User user = userRepository.findByEmail(request.getEmail());
+            if (user == null) {
+                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            }
+
+            if (user.getOtpCode() == null || !user.getOtpCode().equals(request.getOtp())) {
+                throw new AppException(ErrorCode.INVALID_OTP);
+            }
+
+            if (user.getOtpExpiryDate() == null || user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
+                throw new AppException(ErrorCode.INVALID_OTP);
+            }
+
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            user.setOtpCode(null);
+            user.setOtpExpiryDate(null);
+            userRepository.save(user);
+        }
+
+        private static String generateOtp(){
+
+            Random random = new Random();
+            StringBuilder otp = new StringBuilder();
+            for(int i = 0; i < 6 ; i++){
+                otp.append(random.nextInt(10));
+            }
+            return otp.toString();
 
         }
     }
