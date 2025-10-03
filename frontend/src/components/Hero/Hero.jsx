@@ -17,7 +17,7 @@ export default function Hero() {
             </h4>
 
             <h1 className="display-4 fw-bold mb-3">
-              Carbon credit exchange platform for electtric vehicle owners
+              Carbon credit exchange platform for electric vehicle owners
             </h1>
 
             <p className="lead text-body-secondary mb-4">
