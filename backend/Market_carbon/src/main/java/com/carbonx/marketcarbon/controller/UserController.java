@@ -25,10 +25,10 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+
 @RequestMapping("/api/v1")
 public class UserController {
-    UserService userService;
+    private final UserService userService;
 
     @PostMapping("/check-exists-user")
     public CommonResponse<Boolean> checkExistsUser(@RequestBody EmailRequest request) {
