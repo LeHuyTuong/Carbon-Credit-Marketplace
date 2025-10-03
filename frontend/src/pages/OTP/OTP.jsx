@@ -37,8 +37,8 @@ export default function VerifyOtp() {
   const verify = async () => {
     //call API verify OTP
 
-    const res = await api.verifyOtp({ email, otp })
-    if (!res.ok) return toast.error('OTP invalid')
+    // const res = await api.verifyOtp({ email, otp })
+    // if (!res.ok) return toast.error('OTP invalid')
     //2 state cho otp
     if (state?.from === 'register') {
       nav('/login', { replace: true, state: { email, msg: 'Account verified. Please login.'}});
