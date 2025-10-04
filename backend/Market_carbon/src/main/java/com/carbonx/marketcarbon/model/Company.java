@@ -15,8 +15,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "enterprise")
-public class Enterprise extends BaseEntity{
+@Table(name = "company")
+public class Company extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,8 +31,20 @@ public class Enterprise extends BaseEntity{
     @Column(nullable=false, length=50, unique=true)
     private String tax_code;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL) // 1 Enterprise gồm nhiều user
-    @JoinColumn(name = "enterprise_id") // đặt FK ở bảng users
+    @OneToMany(
+            mappedBy = "company",
+            fetch = FetchType.LAZY,
+            cascade = { CascadeType.PERSIST, CascadeType.MERGE },
+            orphanRemoval = false
+    )
     private List<User> users = new ArrayList<>();
 
+
+    @OneToMany(
+            mappedBy = "company",
+            fetch = FetchType.LAZY,
+            cascade = { CascadeType.PERSIST, CascadeType.MERGE },
+            orphanRemoval = false
+    )
+    private List<Vehicle> vehicles = new ArrayList<>();
 }

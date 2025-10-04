@@ -77,4 +77,21 @@ public class ProjectController {
         TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace,now,rs,null);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Get All Projct" , description = "API Get Project by id")
+    @GetMapping
+    public ResponseEntity<TuongCommonResponse<List<Project>>> getProjectById(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+            String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+            String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+            List<Project> list = projectService.findAllProject();
+
+            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                    StatusCode.SUCCESS.getMessage());
+            TuongCommonResponse<List<Project>> response = new TuongCommonResponse<>(trace,now,rs,list);
+            return  ResponseEntity.ok(response);
+    }
 }

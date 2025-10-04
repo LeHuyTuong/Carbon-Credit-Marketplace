@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.request;
 
+import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
 import jakarta.validation.constraints.Email;
@@ -13,18 +14,13 @@ import java.time.LocalDate;
 @Data
 public class KycRequest {
 
-    @NotNull(groups = CreatedBy.class, message = "userId is not null")
-    private Long userId;
-
-    @Email(message = "email invalid format")
-    @NotNull(message = "email is not null",  groups = CreatedBy.class)
-    private String email;
-
     @NotNull(message = "name is not null")
     private String name;
 
     @PhoneNumber(message = "phone invalid format")
     private String phone;
+
+    private Gender gender;
 
     @NotNull(message = "country is not null")
     private String country;

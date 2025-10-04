@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.model;
 
+import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.KycStatus;
 import jakarta.persistence.*;
@@ -48,12 +49,15 @@ public class KycProfile extends BaseEntity {
     @Column(nullable=false, length=16)
     private KycStatus kycStatus = KycStatus.NEW; // NONE,PENDING,VERIFIED,REJECTED
 
-    @Column(length=32)
+    @Column(length=64, nullable=false)
     @Enumerated(EnumType.STRING)
     private IDType documentType;
 
     @Column(length=64, nullable = false, unique=true)
     private String documentNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false)
+    private Gender gender;
 
 }

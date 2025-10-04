@@ -11,4 +11,5 @@ public interface VehicleControlService {
     public PageResponse<?> getAllVehiclesWithSortBy(int pageNo, int pageSize, String sortBy);
     public PageResponse<?>  getAllVehiclesWithSortByMultipleColumns(int pageNo, int pageSize, String... sortBy);
     public PageResponse<?>  getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortBy);
+    public PageResponse<?> getAllVehiclesOfCompanyWithSortBy(int pageNo, int pageSize, String sortBy);
 }
