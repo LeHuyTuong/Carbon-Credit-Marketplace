@@ -31,8 +31,8 @@ public class Project extends BaseEntity {
     @Column(nullable = false,  length = 10)
     private Status status;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "enterprise_id")
-    private Enterprise enterprise;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
 }

@@ -131,4 +131,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorResponse("400", "Duplicate ID "));
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<CommonResponse<Object>> ResourceNotFoundException(Exception ex) {
+        log.error("Unhandled error", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("400", "ID exists "));
+    }
+
 }

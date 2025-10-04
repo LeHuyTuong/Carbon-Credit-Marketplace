@@ -63,17 +63,13 @@ public class VehicleServiceImpl implements VehicleService {
 
     // cho EV Owner . ko trả về thời gian tạo và thời gian update
     public List<Vehicle> getOwnerVehicles() {
-        return vehicleRepository.findAll(). // return về 1 list của Vehicle
-        stream()
-                .map(vehicle -> Vehicle.builder()
-                        .id(vehicle.getId())
-                        .user(vehicle.getUser())
-                        .brand(vehicle.getBrand())
-                        .plateNumber(vehicle.getPlateNumber())
-                        .model(vehicle.getModel())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
-                        .build())
-                .toList();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User owner =  userRepository.findByEmail(email);
+        if(owner == null){
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+        return vehicleRepository.findByUserId(owner.getId());
     }
 
     @Override
