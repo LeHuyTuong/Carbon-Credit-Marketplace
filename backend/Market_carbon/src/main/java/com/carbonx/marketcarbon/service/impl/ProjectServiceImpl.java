@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
+import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.Project;
 import com.carbonx.marketcarbon.model.User;
@@ -9,6 +10,7 @@ import com.carbonx.marketcarbon.repository.ProjectRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.ProjectService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,9 @@ import java.util.List;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
+    @Autowired
     private ProjectRepository projectRepository;
+    @Autowired
     private UserRepository userRepository;
 
     @Override
@@ -35,6 +39,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .description(req.getDescription())
                 .status(Status.Pending)
                 .logo(req.getLogo())
+
                 .build();
 
         projectRepository.save(project);
@@ -76,15 +81,19 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<Project> findProjectById(Long id) {
+    public List<ProjectDetailResponse> findAllProject() {
         return projectRepository.findAll().stream()
-                .map(project ->  Project.builder()
-                                .id(project.getId())
-                                .title(project.getTitle())
-                                .description(project.getDescription())
-                                .status(project.getStatus())
-                                .logo(project.getLogo())
-                                .build())
+                .map(project ->  ProjectDetailResponse.builder()
+                        .id(project.getId())
+                        .title(project.getTitle())
+                        .description(project.getDescription())
+                        .status(project.getStatus())
+                        .logo(project.getLogo())
+                        .company(project.getCompany())
+                        .updatedAt(project.getUpdatedAt())
+                        .createAt(project.getCreateAt())
+                        .build()
+                )
                 .toList();
     }
 }

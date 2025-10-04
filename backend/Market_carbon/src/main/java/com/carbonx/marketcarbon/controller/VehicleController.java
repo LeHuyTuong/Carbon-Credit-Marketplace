@@ -123,7 +123,6 @@ public class VehicleController {
     public ResponseEntity<TuongCommonResponse<?>> getAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
-            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
             @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(value = "sort", required = false) String sortBy
@@ -144,7 +143,6 @@ public class VehicleController {
     public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumns(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
-            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
             @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
             @RequestParam(value = "sort", required = false) String... sortBy
@@ -164,15 +162,34 @@ public class VehicleController {
     public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByMultipleColumnsAndSearch(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
-            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
             @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
-            @RequestParam(value = "sort", required = false) String... sortBy
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sort", required = false) String sortBy
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         log.info("Request get vehicle list");
-        PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
+        PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumnsAndSearch(pageNo,pageSize,search,sortBy);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<?> response = new TuongCommonResponse<>(trace, now, rs , data);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get list of all vehicle from Company" , description = "Sort")
+    @GetMapping("/list-by-company")
+    public ResponseEntity<TuongCommonResponse<?>> getAllVehiclesWithSortByCompany(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime,
+            @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
+            @Min(20) @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(value = "sort", required = false) String sortBy
+    ){
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        log.info("Request get vehicle list by company");
+        PageResponse<?> data = vehicleControlService.getAllVehiclesOfCompanyWithSortBy(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<?> response = new TuongCommonResponse<>(trace, now, rs , data);

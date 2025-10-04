@@ -36,58 +36,65 @@ export default function Login() {
     setSubmitted,
   } = useForm({ email: "", password: "" }, validators);
 
-  const submit = async (ev) => {
-    ev.preventDefault();
-    setSubmitted(true);
-    if (!validateForm()) return;
-
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-
-    //fake data để thấy navbar đổi
-    const fakeUser = { id: 1, email: values.email};
-    const fakeToken = 'fake-jwt';
-    login(fakeUser, fakeToken, remember);  
-    nav('/home', { replace: true });
-  };
-
   // const submit = async (ev) => {
   //   ev.preventDefault();
   //   setSubmitted(true);
   //   if (!validateForm()) return;
 
   //   setLoading(true);
-  //   try {
-  //     const res = await fetch("http://localhost:8082/api/v1/auth/login", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ email: values.email, password: values.password }),
-  //     });
+  //   await new Promise((r) => setTimeout(r, 800));
+  //   setLoading(false);
 
-  //     if (!res.ok) {
-  //       const errData = await res.json().catch(() => ({}));
-  //       throw new Error(errData.message || "Login failed");
-  //     }
-
-  //     const data = await res.json();
-  //     // Giả sử backend trả: { token, user }
-  //     const token = data.token;
-  //     const user  = data.user || { email: values.email };
-
-  //     // Nếu backend chỉ trả token JWT mà không trả user, có thể decode nhanh (nếu là JWT chuẩn)
-  //     // Cẩn trọng: chỉ fallback, không phụ thuộc hoàn toàn
-  //     // try { const payload = JSON.parse(atob(token.split('.')[1])); user.name = payload.name || user.email; } catch {}
-
-  //     login(user, token, remember);
-  //     nav('/home', { replace: true });
-  //   } catch (err) {
-  //     console.error("Login error:", err.message);
-  //     alert(err.message);
-  //   } finally {
-  //     setLoading(false);
-  //   }
+  //   //fake data để thấy navbar đổi
+  //   const fakeUser = { id: 1, email: values.email};
+  //   const fakeToken = 'fake-jwt';
+  //   login(fakeUser, fakeToken, remember);  
+  //   nav('/home', { replace: true });
   // };
+
+  const submit = async (ev) => {
+    ev.preventDefault();
+    setSubmitted(true);
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const API = import.meta.env.VITE_API_BASE;
+      const res = await fetch('/api/v1/auth/login', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: values.email, 
+          password: values.password }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Login failed");
+      }
+
+      const data = await res.json();
+      
+      // lấy token & role từ responseData
+      const token = data?.responseData?.jwt;
+      const role = data?.responseData?.role;
+      if (!token) throw new Error("Missing token from server");
+
+      // tạo user object đơn giản
+      const user = {
+        email: values.email,
+        role: role,
+      };
+
+      login(user, token, remember);
+      nav('/home', { replace: true });
+    } catch (err) {
+      console.error("Login error:", err.message);
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 

@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service.admin;
 import com.carbonx.marketcarbon.dto.response.PageResponse;
 import com.carbonx.marketcarbon.dto.response.VehicleDetailResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.repository.SearchRepository;
@@ -139,6 +140,55 @@ public class VehicleControlServiceImpl implements VehicleControlService {
     public PageResponse<?> getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortsBy) {
         return searchRepository.getAllVehiclesWithSortByMultipleColumnsAndSearch(pageNo, pageSize, search, sortsBy);
     }
+
+    @Override
+    public PageResponse<?> getAllVehiclesOfCompanyWithSortBy(int pageNo, int pageSize, String sorts) {
+        // B1 tạo pageNo
+        if(pageNo > 0){
+            pageNo = pageNo - 1;
+        }
+
+        //B2 process logic sort
+        List<Sort.Order> orders = new ArrayList<>();
+        if(StringUtils.hasLength(sorts)){
+            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sorts);
+            if(matcher.find()){
+                if(matcher.group(3).equalsIgnoreCase("asc")){ // truyen vao group 3 la asc hoac desc
+                    orders.add(new Sort.Order(Sort.Direction.ASC, matcher.group(1)));
+                }else{
+                    orders.add(new Sort.Order(Sort.Direction.DESC, matcher.group(1)));
+                }
+            }
+        }
+
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(orders));
+
+        // B3 get CompanyId from user login
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User)authentication.getPrincipal();
+        Long companyId = user.getCompany().getId();
+        Page<Vehicle> vehiclePage = vehicleRepository.findByCompany_Id(companyId, pageable);
+
+        List<VehicleDetailResponse> responses = vehiclePage.stream()
+                .map(vehicle -> new VehicleDetailResponse(
+                        vehicle.getId(),
+                        vehicle.getPlateNumber(),
+                        vehicle.getBrand(),
+                        vehicle.getModel(),
+                        vehicle.getYearOfManufacture(),
+                        vehicle.getCreateAt(),
+                        vehicle.getUpdatedAt()
+                )).toList();
+
+        return PageResponse.builder()
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .totalPages(vehiclePage.getTotalPages())
+                .items(responses)
+                .build();
+    }
+
 
     // Cho aggrerator trả về thời gian tạo và thời gian update
     @Override
