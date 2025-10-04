@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
+import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
 import com.carbonx.marketcarbon.model.Project;
 import com.carbonx.marketcarbon.service.ProjectService;
 import com.carbonx.marketcarbon.service.VehicleService;
@@ -80,18 +81,18 @@ public class ProjectController {
 
     @Operation(summary = "Get All Projct" , description = "API Get Project by id")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<Project>>> getProjectById(
+    public ResponseEntity<TuongCommonResponse<List<ProjectDetailResponse>>> getProjectById(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
             String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
             String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-            List<Project> list = projectService.findAllProject();
+            List<ProjectDetailResponse> list = projectService.findAllProject();
 
             TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                     StatusCode.SUCCESS.getMessage());
-            TuongCommonResponse<List<Project>> response = new TuongCommonResponse<>(trace,now,rs,list);
+            TuongCommonResponse<List<ProjectDetailResponse>> response = new TuongCommonResponse<>(trace,now,rs,list);
             return  ResponseEntity.ok(response);
     }
 }
