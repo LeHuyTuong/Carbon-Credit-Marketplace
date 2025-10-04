@@ -1,19 +1,20 @@
 package com.carbonx.marketcarbon.dto.response;
 
+import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.KycStatus;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Data
 @Builder
-@Getter
+@AllArgsConstructor
 public class KycResponse {
     private Long id;
     private Long userId;
+    private String name;
+    private Gender gender;
     private String email; // expose để xem
     private String phone;
     private String country;

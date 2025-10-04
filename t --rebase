@@ -1,0 +1,172 @@
+* [33mb8e30c8[m[33m ([m[1;31morigin/test[m[33m)[m chore: ignore frontend/src/data folder
+* [33m9f52381[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtest[m[33m)[m FE: cập nhật tính năng Admin Dashboard + chỉnh sửa FE
+* [33m7e8e4e8[m test fetch API
+[31m|[m * [33mafafd61[m[33m ([m[1;31morigin/fix[m[33m)[m fix Cors
+[31m|[m * [33m083be01[m changePassword
+[31m|[m [32m|[m *   [33m1735ff3[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #34 from LeHuyTuong/test
+[31m|[m [32m|[m [33m|[m[31m\[m  
+[31m|[m [32m|[m[31m_[m[33m|[m[31m/[m  
+[31m|[m[31m/[m[32m|[m [33m|[m   
+* [32m|[m [33m|[m   [33m257826e[m Merge branch 'main' into test
+[35m|[m[33m\[m [32m\[m [33m\[m  
+[35m|[m [33m|[m [32m|[m[33m/[m  
+[35m|[m [33m|[m[33m/[m[32m|[m   
+[35m|[m * [32m|[m [33mc6edce0[m Merge pull request #33 from LeHuyTuong/fix
+[35m|[m [1;31m|[m[32m\[m[32m|[m 
+[35m|[m [1;31m|[m * [33m068b088[m fix AuthController
+[35m|[m [1;31m|[m * [33m456d466[m complete feature login/register/otp/forgot password
+[35m|[m [1;31m|[m[1;31m/[m  
+[35m|[m *   [33m759e24b[m Merge pull request #32 from LeHuyTuong/test
+[35m|[m [1;33m|[m[1;34m\[m  
+* [1;33m|[m [1;34m|[m [33m9a67751[m Sovle conflicts
+* [1;33m|[m [1;34m|[m [33m5719cc6[m Docker file , Enterprise , Project
+* [1;33m|[m [1;34m|[m [33mecec6fd[m favicon + OTP flows; refactor AuthContext; fix code
+[1;34m|[m [1;33m|[m[1;34m/[m  
+[1;34m|[m[1;34m/[m[1;33m|[m   
+* [1;33m|[m   [33mf64e2da[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Market-Trading- into test
+[1;35m|[m[1;36m\[m [1;33m\[m  
+[1;35m|[m * [1;33m\[m   [33m23920c8[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Credit-Marketplace into test
+[1;35m|[m [31m|[m[32m\[m [1;33m\[m  
+[1;35m|[m * [32m|[m [1;33m|[m [33m8fa9c08[m feat: update frontend components and add new hooks/pages
+* [32m|[m [32m|[m [1;33m|[m [33mae55b53[m Sort Search Vehicle
+* [32m|[m [32m|[m [1;33m|[m   [33m8693923[m Merge branch 'rescue-b4f9a50' into test
+[33m|[m[34m\[m [32m\[m [32m\[m [1;33m\[m  
+[33m|[m * [32m|[m [32m|[m [1;33m|[m [33mb4f9a50[m Search Sort Vehicle
+[33m|[m [1;33m|[m [32m|[m[1;33m_[m[32m|[m[1;33m/[m  
+[33m|[m [1;33m|[m[1;33m/[m[32m|[m [32m|[m   
+* [1;33m|[m [32m|[m [32m|[m [33m5332246[m Merge branch 'main' of https://github.com/LeHuyTuong/Carbon-Market-Trading- into test
+[35m|[m[1;33m\[m[1;33m|[m [32m|[m [32m|[m 
+[35m|[m * [32m|[m [32m|[m   [33m269ed8f[m Merge pull request #28 from LeHuyTuong/fix
+[35m|[m [1;31m|[m[1;32m\[m [32m\[m [32m\[m  
+[35m|[m [1;31m|[m * [32m|[m [32m|[m [33m852a119[m fixxxx
+[35m|[m [1;31m|[m * [32m|[m [32m|[m   [33m3dbe21e[m Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into fix
+[35m|[m [1;31m|[m [1;33m|[m[1;31m\[m [32m\[m [32m\[m  
+[35m|[m [1;31m|[m [1;33m|[m[1;31m/[m [32m/[m [32m/[m  
+[35m|[m [1;31m|[m[1;31m/[m[1;33m|[m [32m|[m [32m|[m   
+[35m|[m [1;31m|[m * [32m|[m [32m|[m [33m1182a18[m save local changes
+* [1;31m|[m [1;34m|[m [32m|[m [32m|[m [33medeeee4[m Merge remote-tracking branch 'origin/main' into test
+[32m|[m[1;31m\[m[1;31m|[m [1;34m|[m [32m|[m [32m|[m 
+[32m|[m [1;31m|[m[32m_[m[1;34m|[m[32m_[m[32m|[m[32m/[m  
+[32m|[m[32m/[m[1;31m|[m [1;34m|[m [32m|[m   
+[32m|[m * [1;34m|[m [32m|[m [33m2db9a66[m Refactor Folder
+* [1;36m|[m [1;34m|[m [32m|[m [33mc1d8345[m Fix
+[1;36m|[m [1;36m|[m [1;34m|[m [32m|[m *   [33m1ab5ecf[m[33m ([m[1;31morigin/ResetpasswordFeature[m[33m)[m Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into ResetpasswordFeature
+[1;36m|[m [1;36m|[m [1;34m|[m [32m|[m [31m|[m[1;36m\[m  
+[1;36m|[m [1;36m|[m [1;34m|[m[1;36m_[m[32m|[m[1;36m_[m[31m|[m[1;36m/[m  
+[1;36m|[m [1;36m|[m[1;36m/[m[1;34m|[m [32m|[m [31m|[m   
+[1;36m|[m * [1;34m|[m [32m|[m [31m|[m   [33mfa622ae[m Merge pull request #24 from LeHuyTuong/test
+[1;36m|[m [33m|[m[1;36m\[m [1;34m\[m [32m\[m [31m\[m  
+[1;36m|[m [33m|[m[1;36m/[m [1;34m/[m [32m/[m [31m/[m  
+[1;36m|[m[1;36m/[m[33m|[m [1;34m|[m [32m|[m [31m|[m   
+* [33m|[m [1;34m|[m [32m|[m [31m|[m [33mc2f4a07[m Merge branch 'main' into test
+[35m|[m[33m\[m[33m|[m [1;34m|[m [32m|[m [31m|[m 
+[35m|[m * [1;34m|[m [32m|[m [31m|[m   [33m6e84c93[m Merge pull request #23 from LeHuyTuong/ResetpasswordFeature
+[35m|[m [1;31m|[m[1;32m\[m [1;34m\[m [32m\[m [31m\[m  
+* [1;31m|[m [1;32m|[m [1;34m|[m [32m|[m [31m|[m [33m2747a4c[m Change Message to Service Controller
+[1;32m|[m [1;31m|[m [1;32m|[m [1;34m|[m [32m|[m * [33m6a4fa16[m add DTO contain request and response
+[1;32m|[m [1;31m|[m [1;32m|[m [1;34m|[m [32m|[m[1;34m/[m  
+[1;32m|[m [1;31m|[m [1;32m|[m [1;34m|[m[1;34m/[m[32m|[m   
+[1;32m|[m [1;31m|[m [1;32m|[m * [32m|[m [33m6613885[m Update response, request, common, mapper
+[1;32m|[m [1;31m|[m [1;32m|[m * [32m|[m [33mb450644[m add global exception handler with unified response format
+[1;32m|[m [1;31m|[m [1;32m|[m[1;32m/[m [32m/[m  
+[1;32m|[m [1;31m|[m * [32m|[m   [33m947d33b[m Update jwt and global Exception
+[1;32m|[m [1;31m|[m [1;33m|[m[1;31m\[m [32m\[m  
+[1;32m|[m [1;31m|[m [1;33m|[m[1;31m/[m [32m/[m  
+[1;32m|[m [1;31m|[m[1;31m/[m[1;33m|[m [32m|[m   
+[1;32m|[m * [1;33m|[m [32m|[m   [33mf5a35be[m Merge pull request #22 from LeHuyTuong/test
+[1;32m|[m [1;35m|[m[1;32m\[m [1;33m\[m [32m\[m  
+[1;32m|[m [1;35m|[m[1;32m/[m [1;33m/[m [32m/[m  
+[1;32m|[m[1;32m/[m[1;35m|[m [1;33m|[m [32m|[m   
+* [1;35m|[m [1;33m|[m [32m|[m   [33m410aa90[m[33m ([m[1;31morigin/17-fix-kyc-vehicle-mapping-with-email-owner_id-of-user[m[33m)[m Merge remote-tracking branch 'origin/test' into test
+[31m|[m[32m\[m [1;35m\[m [1;33m\[m [32m\[m  
+[31m|[m [32m|[m [1;35m|[m[32m_[m[1;33m|[m[32m/[m  
+[31m|[m [32m|[m[32m/[m[1;35m|[m [1;33m|[m   
+* [32m|[m [1;35m|[m [1;33m|[m [33m4023771[m PDF
+* [32m|[m [1;35m|[m [1;33m|[m [33m5fbe285[m report PDF + user ID with vehicle & kyc
+[32m|[m [32m|[m * [1;33m|[m [33m3d70b4d[m Merge pull request #21 from LeHuyTuong/test
+[32m|[m [32m|[m[32m/[m[32m|[m [1;33m|[m 
+[32m|[m[32m/[m[32m|[m[32m/[m [1;33m/[m  
+[32m|[m * [1;33m|[m [33mb8c715d[m code Frontend
+* [34m|[m [1;33m|[m [33ma5e1745[m Merge pull request #20 from LeHuyTuong/test
+[35m|[m[34m\[m[34m|[m [1;33m|[m 
+[35m|[m * [1;33m|[m [33m983418a[m code frontend
+[35m|[m * [1;33m|[m [33m9364c0d[m chore(frontend): add .gitignore to exclude node artifacts
+* [36m|[m [1;33m|[m [33m951f881[m Merge pull request #19 from LeHuyTuong/test
+[1;31m|[m[36m\[m[36m|[m [1;33m|[m 
+[1;31m|[m * [1;33m|[m [33m5aa5ff6[m Change config
+[1;31m|[m * [1;33m|[m [33mfc5f88d[m Vehicle && KYC testing without mapping
+[1;31m|[m * [1;33m|[m [33m8a6fae8[m update login and verifyOtp
+[1;31m|[m * [1;33m|[m [33mb53935a[m update login and verifyOtp
+[1;31m|[m * [1;33m|[m [33m43dc712[m update login and verifyOtp
+* [1;32m|[m [1;33m|[m [33m78ab506[m Merge pull request #16 from LeHuyTuong/test
+[1;33m|[m[1;32m\[m[1;32m|[m [1;33m|[m 
+[1;33m|[m * [1;33m|[m   [33mb0845cc[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Credit-Marketplace into test
+[1;33m|[m [1;35m|[m[1;36m\[m [1;33m\[m  
+[1;33m|[m * [1;36m|[m [1;33m|[m [33m2a54723[m code Frontend
+[1;33m|[m [1;36m|[m [1;36m|[m * [33mcf0e2ff[m resetpassword
+[1;33m|[m [1;36m|[m [1;36m|[m * [33m25a6489[m Vehicle test feature
+[1;33m|[m [1;36m|[m[1;33m_[m[1;36m|[m[1;33m/[m  
+[1;33m|[m[1;33m/[m[1;36m|[m [1;36m|[m   
+* [1;36m|[m [1;36m|[m [33m9fc643c[m update login and verifyOtp
+* [1;36m|[m [1;36m|[m [33m5513e71[m update login and verifyOtp
+* [1;36m|[m [1;36m|[m   [33mcbc815b[m Merge pull request #15 from LeHuyTuong/test
+[31m|[m[1;36m\[m [1;36m\[m [1;36m\[m  
+[31m|[m [1;36m|[m [1;36m|[m[1;36m/[m  
+[31m|[m [1;36m|[m[1;36m/[m[1;36m|[m   
+[31m|[m * [1;36m|[m [33m7354588[m Done Vehicle , KYC
+* [32m|[m [1;36m|[m   [33m11f41a6[m Merge pull request #14 from LeHuyTuong/feature/ResponseUtils
+[32m|[m[34m\[m [32m\[m [1;36m\[m  
+[32m|[m [34m|[m[32m/[m [1;36m/[m  
+[32m|[m[32m/[m[34m|[m [1;36m|[m   
+[32m|[m * [1;36m|[m [33m37ba551[m[33m ([m[1;31morigin/feature/ResponseUtils[m[33m)[m update login and verifyOtp
+* [34m|[m [1;36m|[m [33m5604a67[m Merge pull request #13 from LeHuyTuong/feature/ResponseUtils
+[35m|[m[34m\[m[34m|[m [1;36m|[m 
+[35m|[m * [1;36m|[m [33m5fc62f2[m change response and update login/register
+* [36m|[m [1;36m|[m [33m6c63c80[m Merge pull request #12 from LeHuyTuong/feature/RegisterAndLogin-api
+[1;31m|[m[36m\[m[36m|[m [1;36m|[m 
+[1;31m|[m * [1;36m|[m [33mba7492a[m[33m ([m[1;31morigin/feature/RegisterAndLogin-api[m[33m)[m Update Login success
+[1;31m|[m[1;31m/[m [1;36m/[m  
+* [1;36m|[m   [33m8bcbb75[m Merge pull request #11 from LeHuyTuong/test
+[1;33m|[m[1;34m\[m [1;36m\[m  
+[1;33m|[m * [1;36m|[m [33ma3c79dd[m Gen OTP && Send OTP Email
+* [1;34m|[m [1;36m|[m   [33mbfc29c0[m Merge pull request #10 from LeHuyTuong/feature/RegisterAndLogin-api
+[1;35m|[m[1;36m\[m [1;34m\[m [1;36m\[m  
+[1;35m|[m * [1;34m|[m [1;36m|[m [33m3502027[m Update Login success
+[1;35m|[m * [1;34m|[m [1;36m|[m [33m19b7c51[m Update Register success
+[1;35m|[m * [1;34m|[m [1;36m|[m [33m16d9bbd[m Update AppConfig
+[1;35m|[m * [1;34m|[m [1;36m|[m [33m2375277[m fix JwtTokenValidator
+[1;35m|[m * [1;34m|[m [1;36m|[m [33m1bb9acb[m complete register with JWT
+[1;35m|[m[1;35m/[m [1;34m/[m [1;36m/[m  
+* [1;34m|[m [1;36m|[m   [33m2247973[m Merge pull request #9 from LeHuyTuong/test
+[31m|[m[1;36m\[m [1;34m\[m [1;36m\[m  
+[31m|[m [1;36m|[m [1;34m|[m[1;36m/[m  
+[31m|[m [1;36m|[m[1;36m/[m[1;34m|[m   
+[31m|[m * [1;34m|[m [33m03d494a[m test fix
+[31m|[m [1;34m|[m[1;34m/[m  
+* [1;34m|[m [33mc4a4eac[m Merge pull request #8 from LeHuyTuong/test
+[33m|[m[1;34m\[m[1;34m|[m 
+[33m|[m * [33m6f88be6[m Init Frontend
+* [34m|[m [33ma671c61[m[33m ([m[1;32mmain[m[33m)[m Merge pull request #7 from LeHuyTuong/test
+[35m|[m[34m\[m[34m|[m 
+[35m|[m * [33m0954793[m Change gitignore
+* [36m|[m [33m83cc315[m implement JWT provider
+* [36m|[m [33m7caec3d[m Merge pull request #6 from LeHuyTuong/test
+[1;31m|[m[36m\[m[36m|[m 
+[1;31m|[m * [33m9f46f69[m Create test for CRUD Vehicle Services
+* [1;32m|[m [33m0a91c10[m Merge pull request #5 from LeHuyTuong/test
+[1;33m|[m[1;32m\[m[1;32m|[m 
+[1;33m|[m * [33m38dd259[m CRUD Vehicle
+[1;33m|[m * [33m6e93201[m CRUD Vehicle
+* [1;34m|[m [33mb2fe3e2[m Merge pull request #4 from LeHuyTuong/test
+[1;35m|[m[1;34m\[m[1;34m|[m 
+[1;35m|[m * [33md7ed989[m Database v1.2
+* [1;36m|[m [33mb4a8eae[m Merge pull request #3 from LeHuyTuong/test
+[31m|[m[1;36m\[m[1;36m|[m 
+[31m|[m * [33medd59d7[m fix: update DB config and API logic
+[31m|[m * [33m9da5cb6[m build project chuan Restfull API(controler/service/repository/entity/DTO
+* [32m|[m [33m643f972[m Init project
+* [32m|[m [33mef24581[m Merge pull request #1 from LeHuyTuong/test
+[33m|[m[32m\[m[32m|[m 
+[33m|[m * [33m186307c[m DataBase Init
+[33m|[m[33m/[m  
+* [33macedb5a[m first commit

@@ -49,55 +49,78 @@ export default function Register() {
     validators
   );
 
-  const submit = async (ev) => {
-    ev.preventDefault();
-    setSubmitted(true);
-    if (!validateForm()) return;
-
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800)); //giả lập API
-    setLoading(false);
-
-    nav('/otp', { replace: true, state: { email: values.email, form: 'register' } });
+  const mapRoleToBackend = (r) => {
+    switch (r) {
+      case "ev":  return "EV_OWNER";
+      case "bis": return "COMPANY";
+      case "cv":  return "CVA";
+      default:    return "";
+    }
   };
 
-//   const submit = async (ev) => {
-//   ev.preventDefault();
-//   setSubmitted(true);
-//   if (!validateForm()) return;
 
-//   setLoading(true);
-//   try {
-//     const res = await fetch("http://localhost:8080/api/auth/register", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         email: values.email,
-//         password: values.password,
-//         role: values.role,
-//       }),
-//     });
+  // const submit = async (ev) => {
+  //   ev.preventDefault();
+  //   setSubmitted(true);
+  //   if (!validateForm()) return;
 
-//     if (!res.ok) {
-//       // Backend trả lỗi HTTP (400/500…)
-//       const errData = await res.json();
-//       throw new Error(errData.message || "Register failed");
-//     }
+  //   setLoading(true);
+  //   await new Promise((r) => setTimeout(r, 800)); //giả lập API
+  //   setLoading(false);
 
-//     const data = await res.json();
-//     console.log("Register success:", data);
+  //   nav('/otp', { replace: true, state: { email: values.email, from: 'register' } });
+  // };
 
-//     // Điều hướng sau khi đăng ký thành công
-//     nav("/otp", { replace: true, state: { email: values.email } });
-//   } catch (err) {
-//     console.error("Register error:", err.message);
-//     // chỗ này bạn có thể set error state để hiện lên UI
-//   } finally {
-//     setLoading(false);
-//   }
-// };
+  const submit = async (ev) => {
+  ev.preventDefault();
+  setSubmitted(true);
+  if (!validateForm()) return;
+
+  const roleBackend = mapRoleToBackend(values.role);
+  if (!roleBackend) {
+    alert("Invalid role");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const API = import.meta.env.VITE_API_BASE;
+
+    const res = await fetch('/api/v1/auth/register', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: values.email.trim(),
+        password: values.password,
+        confirmPassword: values.confirm,
+        fullName: values.email.split("@")[0], // hoặc thêm input fullName
+        role: roleBackend,
+      }),
+    });
+
+    if (!res.ok) {
+      let message = "Register failed";
+      try {
+        const err = await res.json();
+        message = err?.responseStatus?.responseMessage || err?.message || message;
+      } catch {}
+      if (res.status === 409) message = "Email already registered";
+      throw new Error(message);
+    }
+
+    const data = await res.json();
+    console.log("Register success:", data);
+
+    // Sau khi đăng ký xong, đi đến OTP
+    nav("/otp", { replace: true, state: { email: values.email, from: "register" } });
+  } catch (err) {
+    console.error("Register error:", err.message);
+    alert(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (
