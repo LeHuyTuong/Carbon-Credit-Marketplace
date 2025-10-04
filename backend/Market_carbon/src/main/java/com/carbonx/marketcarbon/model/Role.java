@@ -7,28 +7,28 @@ import lombok.experimental.FieldDefaults;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-public class Role extends BaseEntity {
-
+@Table(name = "roles")
+@Getter @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Role {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long roleId;
 
-    @Column(nullable = false, unique = true)
-    String name;
+    private String name;
+    private String description;
 
-    @Column(name = "description")
-    String description;
+    @ManyToMany(mappedBy = "roles")
+    private Set<User> users = new HashSet<>();
 
-    @OneToMany(mappedBy = "role")
-    Set<User> users;
-
-
-    @ManyToMany
-    Set<Permission> permissions;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "role_permission",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "perm_id")
+    )
+    private Set<Permission> permissions = new HashSet<>();
 }
+
