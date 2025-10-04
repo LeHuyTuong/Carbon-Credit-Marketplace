@@ -1,6 +1,7 @@
     package com.carbonx.marketcarbon.service.impl;
 
     import com.carbonx.marketcarbon.config.JwtProvider;
+    import com.carbonx.marketcarbon.dto.request.ChangePasswordRequest;
     import com.carbonx.marketcarbon.dto.request.EmailRequest;
     import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
     import com.carbonx.marketcarbon.dto.request.UserCreationRequest;
@@ -203,4 +204,28 @@
             return otp.toString();
 
         }
+        @Transactional
+        public void changePassword(String jwt, ChangePasswordRequest req) {
+            // validate confirm
+            if (!req.getNewPassword().equals(req.getConfirmPassword())) {
+                throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
+            }
+
+            // lấy email từ JWT
+            String email = jwtProvider.getEmailFromJwtToken(jwt);
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            }
+
+            // kiểm tra mật khẩu cũ
+            if (!passwordEncoder.matches(req.getOldPassword(), user.getPasswordHash())) {
+                throw new AppException(ErrorCode.CURRENT_PASSWORD_INVALID);
+            }
+
+            // mã hoá và lưu mật khẩu mới
+            user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+            userRepository.save(user);
+        }
+
     }
