@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import com.carbonx.marketcarbon.model.Role;
 import com.carbonx.marketcarbon.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -26,7 +27,10 @@ public class JwtProvider {
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 ngày
                 .claim("id", user.getId())
                 .claim("email", user.getEmail())
-                .claim("authorities", user.getRole().name())
+                .claim("roles", user.getRoles().stream()
+                        .map(Role::getName)
+                        .toList()
+                )
                 .signWith(key)
                 .compact();
     }

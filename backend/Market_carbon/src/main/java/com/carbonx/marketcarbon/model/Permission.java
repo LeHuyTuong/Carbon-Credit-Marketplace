@@ -2,25 +2,21 @@ package com.carbonx.marketcarbon.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
-public class Permission extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    Long id;
+@Table(name = "permissions")
+@Getter @Setter
+public class Permission {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long permId;
 
-    @Column(name = "name", nullable = false, unique = true)
-    String name;
+    private String code;
+    private String description;
 
-    @Column(name = "description")
-    String description;
+    @ManyToMany(mappedBy = "permissions")
+    private Set<Role> roles = new HashSet<>();
 }
 

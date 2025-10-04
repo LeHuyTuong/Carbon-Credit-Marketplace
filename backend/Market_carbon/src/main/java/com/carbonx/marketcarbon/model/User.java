@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name="users")
@@ -34,8 +36,13 @@ public class User {
     @Column(name = "otp_expiry_at")
     LocalDateTime otpExpiryDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private USER_ROLE role;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_role",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
 }
 

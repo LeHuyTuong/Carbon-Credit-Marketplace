@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
@@ -8,17 +9,19 @@ import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
 import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
 import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
-import com.carbonx.marketcarbon.dto.response.TokenResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PasswordResetToken;
+import com.carbonx.marketcarbon.model.Role;
 import com.carbonx.marketcarbon.model.User;
+import com.carbonx.marketcarbon.repository.RoleRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.AuthService;
 import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +30,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final JwtProvider jwtProvider;
@@ -35,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final PasswordResetTokenService passwordResetTokenService;
     private final EmailService emailService;
+    private final RoleRepository roleRepository;
 
     @Override
     public AuthResponse register(RegisterRequest req) {
@@ -50,14 +55,20 @@ public class AuthServiceImpl implements AuthService {
         newUser.setEmail(req.getEmail());
         newUser.setFullName(req.getFullName());
         newUser.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        newUser.setRole(req.getRole());
         newUser.setStatus(USER_STATUS.PENDING);
 
+        String requested = req.getRoleName().trim();
+
+        Role role = roleRepository.findByName(requested)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+        newUser.getRoles().add(role);
         // Sinh OTP
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         newUser.setOtpCode(otp);
         newUser.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
         userRepository.save(newUser);
+
+        log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
 
         String subject = "Xác thực tài khoản - CarbonX";
         String content = String.format(
@@ -78,7 +89,11 @@ public class AuthServiceImpl implements AuthService {
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(null);
         authResponse.setMessage("Đăng ký thành công. OTP đã được gửi, vui lòng xác nhận.");
-        authResponse.setRole(newUser.getRole());
+        authResponse.setRoles(
+                newUser.getRoles().stream()
+                        .map(Role::getName)
+                        .toList()
+        );
 
         return authResponse;
     }
@@ -103,7 +118,11 @@ public class AuthServiceImpl implements AuthService {
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(token);
         authResponse.setMessage("OTP verified successfully");
-        authResponse.setRole(user.getRole());
+        authResponse.setRoles(
+                user.getRoles().stream()
+                        .map(Role::getName)   // lấy tên role từ entity Role
+                        .toList()
+        );
 
         return authResponse;
     }
@@ -124,7 +143,11 @@ public class AuthServiceImpl implements AuthService {
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(token);
         authResponse.setMessage("Login thành công");
-        authResponse.setRole(user.getRole());
+        authResponse.setRoles(
+                user.getRoles().stream()
+                        .map(Role::getName)   // lấy tên role từ entity Role
+                        .toList()
+        );
 
         return authResponse;
     }
