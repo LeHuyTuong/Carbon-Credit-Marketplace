@@ -13,7 +13,6 @@ import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,10 +25,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KycServiceImpl implements KycService {
 
-    @Autowired
-    private  KycRepository kycRepository;
-    @Autowired
-    private  UserRepository userRepository;
+
+    private final  KycRepository kycRepository;
+
+    private final  UserRepository userRepository;
 
     @Override
     public Long create(@Validated(KycRequest.Create.class) KycRequest req) {
@@ -43,7 +42,7 @@ public class KycServiceImpl implements KycService {
         }
 
         if(kycRepository.existsByUserId(user.getId()))
-            throw new ResourceNotFoundException("KYC exists");
+            throw new ResourceNotFoundException("KYC exists" + user.getId());
 
         // B1 Lấy data từ request vào object
         KycProfile kycProfile = KycProfile.builder()
