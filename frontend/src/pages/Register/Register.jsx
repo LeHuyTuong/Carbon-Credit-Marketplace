@@ -58,68 +58,55 @@ export default function Register() {
     }
   };
 
-
-  // const submit = async (ev) => {
-  //   ev.preventDefault();
-  //   setSubmitted(true);
-  //   if (!validateForm()) return;
-
-  //   setLoading(true);
-  //   await new Promise((r) => setTimeout(r, 800)); //giả lập API
-  //   setLoading(false);
-
-  //   nav('/otp', { replace: true, state: { email: values.email, from: 'register' } });
-  // };
-
+  //call api
   const submit = async (ev) => {
-  ev.preventDefault();
-  setSubmitted(true);
-  if (!validateForm()) return;
+    ev.preventDefault();
+    setSubmitted(true);
+    if (!validateForm()) return;
 
-  const roleBackend = mapRoleToBackend(values.role);
-  if (!roleBackend) {
-    alert("Invalid role");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const API = import.meta.env.VITE_API_BASE;
-
-    const res = await fetch('/api/v1/auth/register', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: values.email.trim(),
-        password: values.password,
-        confirmPassword: values.confirm,
-        fullName: values.email.split("@")[0], // hoặc thêm input fullName
-        role: roleBackend,
-      }),
-    });
-
-    if (!res.ok) {
-      let message = "Register failed";
-      try {
-        const err = await res.json();
-        message = err?.responseStatus?.responseMessage || err?.message || message;
-      } catch {}
-      if (res.status === 409) message = "Email already registered";
-      throw new Error(message);
+    const roleBackend = mapRoleToBackend(values.role);
+    if (!roleBackend) {
+      alert("Invalid role");
+      return;
     }
 
-    const data = await res.json();
-    console.log("Register success:", data);
+    setLoading(true);
+    try {
+      const API = import.meta.env.VITE_API_BASE;
+      const res = await fetch(`${API}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: values.email.trim(),
+          password: values.password,
+          confirmPassword: values.confirm,
+          fullName: values.email.split("@")[0], // hoặc thêm input fullName
+          roleName: roleBackend,
+        }),
+      });
 
-    // Sau khi đăng ký xong, đi đến OTP
-    nav("/otp", { replace: true, state: { email: values.email, from: "register" } });
-  } catch (err) {
-    console.error("Register error:", err.message);
-    alert(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+      if (!res.ok) {
+        let message = "Register failed";
+        try {
+          const err = await res.json();
+          message = err?.responseStatus?.responseMessage || err?.message || message;
+        } catch {}
+        if (res.status === 409) message = "Email already registered";
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+      console.log("Register success:", data);
+
+      //đi đến OTP
+      nav("/otp", { replace: true, state: { email: values.email, from: "register" } });
+    } catch (err) {
+      console.error("Register error:", err.message);
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 

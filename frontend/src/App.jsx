@@ -48,9 +48,9 @@ export default function App() {
           <Route
             path="/managevehicle"
             element={
-              // <RequireAuth>
+              <RequireAuth>
                 <ManageVehicle />
-              // </RequireAuth>
+              </RequireAuth>
             }
           />
         </Route>

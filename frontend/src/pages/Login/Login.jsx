@@ -36,31 +36,16 @@ export default function Login() {
     setSubmitted,
   } = useForm({ email: "", password: "" }, validators);
 
-  // const submit = async (ev) => {
-  //   ev.preventDefault();
-  //   setSubmitted(true);
-  //   if (!validateForm()) return;
-
-  //   setLoading(true);
-  //   await new Promise((r) => setTimeout(r, 800));
-  //   setLoading(false);
-
-  //   //fake data để thấy navbar đổi
-  //   const fakeUser = { id: 1, email: values.email};
-  //   const fakeToken = 'fake-jwt';
-  //   login(fakeUser, fakeToken, remember);  
-  //   nav('/home', { replace: true });
-  // };
-
+  //call api
   const submit = async (ev) => {
-    ev.preventDefault();
+    ev.preventDefault(); //chặn reload trang
     setSubmitted(true);
     if (!validateForm()) return;
 
     setLoading(true);
     try {
       const API = import.meta.env.VITE_API_BASE;
-      const res = await fetch('/api/v1/auth/login', {
+      const res = await fetch(`${API}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -73,17 +58,17 @@ export default function Login() {
         throw new Error(errData.message || "Login failed");
       }
 
-      const data = await res.json();
+      const data = await res.json(); //request thành công, đọc json từ be
       
       // lấy token & role từ responseData
       const token = data?.responseData?.jwt;
-      const role = data?.responseData?.role;
+      const roles = data?.responseData?.role;
       if (!token) throw new Error("Missing token from server");
 
-      // tạo user object đơn giản
+      // tạo user object đơn giản lưu vào localS
       const user = {
         email: values.email,
-        role: role,
+        role: roles,
       };
 
       login(user, token, remember);
