@@ -41,7 +41,7 @@ export default function VerifyOtp() {
     // if (!res.ok) return toast.error('OTP invalid')
     //2 state cho otp
     if (state?.from === 'register') {
-      nav('/login', { replace: true, state: { email, msg: 'Account verified. Please login.'}});
+      nav('/kyc', { replace: true, state: { email, msg: 'Account verified. Please fill in KYC form.'}});
     } else {
       nav('/change', { replace: true });
     }

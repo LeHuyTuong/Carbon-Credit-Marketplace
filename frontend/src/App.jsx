@@ -12,6 +12,7 @@ import OTP from './pages/OTP/OTP.jsx';
 import Privacy from './pages/Term&Privacy/Privacy.jsx';
 import TermsOfUse from './pages/Term&Privacy/TermsOfUse.jsx';
 import ManageVehicle from './pages/Dashboard/EVOwner/ManageVehicle/ManageVehicle.jsx';
+import KYC from './pages/KYC/KYC.jsx';
 
 function Layout() {
   return (
@@ -43,12 +44,13 @@ export default function App() {
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
+          <Route path="/kyc" element={<KYC />} />
           <Route
             path="/managevehicle"
             element={
-              <RequireAuth>
+              // <RequireAuth>
                 <ManageVehicle />
-              </RequireAuth>
+              // </RequireAuth>
             }
           />
         </Route>
