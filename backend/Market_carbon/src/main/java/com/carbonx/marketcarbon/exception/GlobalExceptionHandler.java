@@ -121,15 +121,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<CommonResponse<Object>> HandlerMethodValidationException(Exception ex) {
         log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildErrorResponse("400", "Validation failure"));
+                .body(buildErrorResponse("400", errorMsg));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<CommonResponse<Object>> DataIntegrityViolationException(Exception ex) {
         log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", "Duplicate ID "));
+                .body(buildErrorResponse("400", errorMsg));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
