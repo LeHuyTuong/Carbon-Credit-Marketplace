@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.response.KycResponse;
 import com.carbonx.marketcarbon.model.KycProfile;
 import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -37,18 +39,11 @@ public class KycController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         Long userID = kycService.create(req.getData());
 
-        try {
             TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                     StatusCode.SUCCESS.getMessage());
             TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, userID);
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.BAD_REQUEST.getCode(),
-                    StatusCode.BAD_REQUEST.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, userID);
-            return ResponseEntity.ok(response);
-        }
+
     }
 
     @Operation(summary = "Update KYC ", description = "Update KYC for user ")
@@ -62,42 +57,41 @@ public class KycController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         Long updateUsedID = kycService.update(id, req.getData());
-        try {
             TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                     StatusCode.SUCCESS.getMessage());
             TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, updateUsedID);
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, updateUsedID);
-            return ResponseEntity.ok(response);
-        }
     }
 
-    @Operation(summary = "Get all KYC of user ")
-    @GetMapping("/{userId}")
+    @Operation(summary = "Get KYC of user ", description = "User get their KYC ")
+    @GetMapping
     public ResponseEntity<TuongCommonResponse<KycProfile>> getByUser(
-            @PathVariable(name = "userId") @Valid Long userId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        KycProfile kyc = kycService.getByUserId(userId);
-        try {
+        KycProfile kyc = kycService.getByUserId();
             TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                     StatusCode.SUCCESS.getMessage());
             TuongCommonResponse<KycProfile> response = new TuongCommonResponse<>(trace, now, rs, kyc);
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.info("errorMessage = {}", e.getMessage(), e.getCause());
-            TuongResponseStatus rs = new TuongResponseStatus(StatusCode.INTERNAL_SERVER_ERROR.getCode(),
-                    StatusCode.INTERNAL_SERVER_ERROR.getMessage());
-            TuongCommonResponse<KycProfile> response = new TuongCommonResponse<>(trace, now, rs, kyc);
-            return ResponseEntity.ok(response);
-        }
+    }
+
+
+    @Operation(summary = "Get all KYC of user ", description = "Admin get all KYC")
+    @GetMapping("/listKYC")
+    public ResponseEntity<TuongCommonResponse<List<KycResponse>>> getAllKYCByAdmin(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        List<KycResponse> kyc = kycService.getAllKYC();
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<List<KycResponse>> response = new TuongCommonResponse<>(trace, now, rs, kyc);
+        return ResponseEntity.ok(response);
     }
 
 
