@@ -17,33 +17,81 @@ export default function VerifyOtp() {
     return () => clearInterval(t);
   }, []);
 
-  const resend = async () => {
-    //call API resend
-    setSec(60);
+  //gửi mã otp
+  const verify = async () => {
+    if (otp.length !== 6) return alert('Please enter 6-digit OTP');
+
+    try {
+      const API = import.meta.env.VITE_API_BASE; //lấy biến môi trường
+      const res = await fetch(`${API}/api/v1/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          otpCode: otp,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({})); //đợi api trả kết quả
+
+      if (!res.ok) {
+        const message =
+          data?.responseStatus?.responseMessage ||
+          data?.message ||
+          "OTP verification failed"; //status ko phải 200 thì báo lỗi
+        throw new Error(message);
+      }
+
+      //xác thực thành công, be trả jwt token & list roles
+      const token = data?.responseData?.jwt;
+      const roles = data?.responseData?.roles || [];
+      if (!token) throw new Error("Missing token from server");
+
+      console.log("OTP verified:", { token, roles });
+
+      //điều hướng sau khi xác thực thành công
+      if (state?.from === "register") {
+        nav("/kyc", {
+          replace: true,
+          state: { email, msg: "Account verified. Please fill in KYC form." },
+        });
+      } else {
+        nav("/change", { replace: true });
+      }
+    } catch (err) {
+      console.error("Verify OTP error:", err.message);
+      alert(err.message);
+    }
   };
 
-  // //sau otp điều hướng về home
-  // const verify = async () => {
-  //   const res = await api.verifyOtp({ email, otp });
-  //   if (res.ok) {
-  //     auth.login(res.token);               // save token / set context
-  //     nav('/marketplace', { replace: true }); // hoặc '/dashboard'
-  //   } else {
-  //     toast.error('OTP invalid');
-  //   }
-  // };
+  //gửi lại mã otp
+  const resend = async () => {
+    try {
+      const API = import.meta.env.VITE_API_BASE;
 
+      const res = await fetch(`${API}/api/v1/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-  const verify = async () => {
-    //call API verify OTP
+      const data = await res.json().catch(() => ({}));
 
-    // const res = await api.verifyOtp({ email, otp })
-    // if (!res.ok) return toast.error('OTP invalid')
-    //2 state cho otp
-    if (state?.from === 'register') {
-      nav('/kyc', { replace: true, state: { email, msg: 'Account verified. Please fill in KYC form.'}});
-    } else {
-      nav('/change', { replace: true });
+      if (!res.ok) {
+        const message =
+          data?.responseStatus?.responseMessage ||
+          data?.message ||
+          "Failed to resend OTP";
+        throw new Error(message);
+      }
+
+      //thành công thì reset time và thông báo
+      setSec(60);
+      alert("OTP has been resent to your email.");
+      console.log("Resend OTP success:", data);
+    } catch (err) {
+      console.error("Resend OTP error:", err.message);
+      alert(err.message);
     }
   };
 
