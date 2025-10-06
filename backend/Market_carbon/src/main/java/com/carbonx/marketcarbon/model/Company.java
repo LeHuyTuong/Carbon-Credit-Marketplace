@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.model;
 
 
+import com.carbonx.marketcarbon.common.Status;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,20 +32,25 @@ public class Company extends BaseEntity{
     @Column(nullable=false, length=50, unique=true)
     private String tax_code;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.PENDING;
+
     @OneToMany(
             mappedBy = "company",
             fetch = FetchType.LAZY,
             cascade = { CascadeType.PERSIST, CascadeType.MERGE },
             orphanRemoval = false
     )
+    @Column(nullable=true)
     private List<User> users = new ArrayList<>();
 
-
     @OneToMany(
             mappedBy = "company",
             fetch = FetchType.LAZY,
             cascade = { CascadeType.PERSIST, CascadeType.MERGE },
             orphanRemoval = false
     )
+    @Column(nullable=true)
     private List<Vehicle> vehicles = new ArrayList<>();
 }

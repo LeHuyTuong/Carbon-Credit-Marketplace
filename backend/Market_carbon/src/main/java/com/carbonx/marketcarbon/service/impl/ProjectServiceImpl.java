@@ -37,7 +37,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = Project.builder()
                 .title(req.getTitle())
                 .description(req.getDescription())
-                .status(Status.Pending)
+                .status(Status.PENDING)
                 .logo(req.getLogo())
 
                 .build();
@@ -60,7 +60,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.setTitle(req.getTitle());
         project.setDescription(req.getDescription());
-        project.setStatus(Status.Pending);
+        project.setStatus(Status.PENDING);
         project.setLogo(req.getLogo());
         projectRepository.save(project);
         log.info("Project updated");

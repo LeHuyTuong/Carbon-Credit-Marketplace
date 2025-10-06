@@ -8,7 +8,7 @@ import lombok.Data;
 public class VehicleCreateRequest {
     private Long ownerId;
 
-    @NotNull(message = "plateNummber is not null")
+    @NotNull(message = "plateNumber is not null")
     @PlateNumber
     private String plateNumber;
 
@@ -23,5 +23,8 @@ public class VehicleCreateRequest {
 
     @NotNull(message = "year of manufacture is not null")
     private Integer yearOfManufacture;
+
+    @NotNull(message = "companyId  is not null")
+    private Long company;
 
 }
