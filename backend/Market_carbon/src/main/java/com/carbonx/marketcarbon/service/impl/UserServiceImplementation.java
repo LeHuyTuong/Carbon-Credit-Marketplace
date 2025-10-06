@@ -8,7 +8,7 @@
     import com.carbonx.marketcarbon.dto.response.UserResponse;
     import com.carbonx.marketcarbon.exception.AppException;
     import com.carbonx.marketcarbon.exception.ErrorCode;
-    import com.carbonx.marketcarbon.mapper.UserMapper;
+
     import com.carbonx.marketcarbon.model.PasswordResetToken;
     import com.carbonx.marketcarbon.model.User;
     import com.carbonx.marketcarbon.repository.PasswordResetTokenRepository;
@@ -45,7 +45,7 @@
         private final EmailService emailService;
         private final OtpService otpService;
         private final RoleRepository roleRepository;
-        private final UserMapper userMapper;
+//        private final UserMapper userMapper;
 
 
         @Override

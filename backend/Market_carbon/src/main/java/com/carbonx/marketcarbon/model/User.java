@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,9 +22,10 @@ public class User {
     private String email;
 
     @Column(nullable=false, length = 255)
+    @JsonIgnore
     private String passwordHash;
 
-    @Column(nullable=false, length = 255)
+    @Column( length = 255)
     private String fullName;
 
     @Enumerated(EnumType.STRING)
@@ -32,6 +34,7 @@ public class User {
     private USER_STATUS status = USER_STATUS.PENDING;
 
     @Column(name = "otp_code")
+    @JsonIgnore
     private String otpCode;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = true) // cho phép null nếu register chưa có DN
@@ -39,6 +42,7 @@ public class User {
     private Company company;
 
     @Column(name = "otp_expiry_at")
+    @JsonIgnore
     LocalDateTime otpExpiryDate;
 
     @ManyToMany(fetch = FetchType.LAZY)
