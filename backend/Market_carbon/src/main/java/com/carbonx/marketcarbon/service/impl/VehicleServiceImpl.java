@@ -2,6 +2,8 @@ package com.carbonx.marketcarbon.service.impl;
 
 
 
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
@@ -42,12 +44,11 @@ public class VehicleServiceImpl implements VehicleService {
         String email = authentication.getName();
         User owner = userRepository.findByEmail(email);
         if(owner == null){
-            throw new ResourceNotFoundException("User not found with email: " + email);
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
 
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
-
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
