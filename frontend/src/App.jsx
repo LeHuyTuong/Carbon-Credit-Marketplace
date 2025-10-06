@@ -12,7 +12,12 @@ import OTP from './pages/OTP/OTP.jsx';
 import Privacy from './pages/Term&Privacy/Privacy.jsx';
 import TermsOfUse from './pages/Term&Privacy/TermsOfUse.jsx';
 import ManageVehicle from './pages/Dashboard/EVOwner/ManageVehicle/ManageVehicle.jsx';
+
 import KYC from './pages/KYC/KYC.jsx';
+
+//  import AdminApp
+import AdminApp from './AdminApp.jsx';
+
 
 function Layout() {
   return (
@@ -58,7 +63,8 @@ export default function App() {
         {/*routes không có navbar */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<TermsOfUse />} />
-
+         {/*Route riêng cho admin, không Navbar */}
+        <Route path="/admin/*" element={<AdminApp />} />
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

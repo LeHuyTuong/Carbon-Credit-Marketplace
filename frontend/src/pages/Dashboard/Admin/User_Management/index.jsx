@@ -7,11 +7,37 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Header from "@/components/Chart/Header.jsx";
 
+const accessConfig = {
+  admin: {
+    label: "Admin",
+    icon: <AdminPanelSettingsOutlinedIcon />,
+    bg: "greenAccent.600",
+  },
+  cva: {
+    label: "CVA", // đổi tên hiển thị mà ko cần đổi data BE
+    icon: <SecurityOutlinedIcon />,
+    bg: "greenAccent.700",
+  },
+  ev_owner: {
+    label: "Ev-Owner",
+    icon: <LockOpenOutlinedIcon />,
+    bg: "greenAccent.700",
+  },
+  cc_buyer: {
+    label: "CC-Buyer",
+    icon: <LockOpenOutlinedIcon />,
+    bg: "greenAccent.700",
+  },
+
+};
+
 const Team = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const columns = [
-    { field: "id", headerName: "ID" },
+    { field: "id", headerName: "" },
+    { field: "userid", headerName: "User ID" },
+
     {
       field: "name",
       headerName: "Name",
@@ -19,11 +45,27 @@ const Team = () => {
       cellClassName: "name-column--cell",
     },
     {
-      field: "age",
-      headerName: "Age",
-      type: "number",
-      headerAlign: "left",
-      align: "left",
+      field: "status",
+      headerName: "Account Status",
+      flex: 1,
+      renderCell: ({ row: { status } }) => {
+        return (
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="left"
+            height="100%"
+          >
+            <Typography
+              color={status === "active" ? "green" : "red"}
+              fontWeight="600"
+              sx={{ lineHeight: 1 }}
+            >
+              {status === "active" ? "Active" : "Inactive"}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "phone",
@@ -36,10 +78,16 @@ const Team = () => {
       flex: 1,
     },
     {
-      field: "accessLevel",
+      field: "date",
+      headerName: "Created Date",
+      flex: 1,
+    },
+    {
+      field: "accesslevel",
       headerName: "Access Level",
       flex: 1,
       renderCell: ({ row: { access } }) => {
+        const config = accessConfig[access] || {};
         return (
           <Box
             width="60%"
@@ -47,30 +95,23 @@ const Team = () => {
             p="5px"
             display="flex"
             justifyContent="center"
-            backgroundColor={
-              access === "admin"
-                ? colors.greenAccent[600]
-                : access === "manager"
-                ? colors.greenAccent[700]
-                : colors.greenAccent[700]
-            }
+            backgroundColor={config.bg ? colors[config.bg.split(".")[0]][config.bg.split(".")[1]] : colors.grey[700]}
             borderRadius="4px"
           >
-            {access === "admin" && <AdminPanelSettingsOutlinedIcon />}
-            {access === "manager" && <SecurityOutlinedIcon />}
-            {access === "user" && <LockOpenOutlinedIcon />}
+            {config.icon}
             <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
-              {access}
+              {config.label || access}
             </Typography>
           </Box>
         );
       },
     },
+
   ];
 
   return (
     <Box m="20px">
-      <Header title="TEAM" subtitle="Managing the Team Members" />
+      <Header title="USERS" subtitle="Managing the Users" />
       <Box
         m="40px 0 0 0"
         height="75vh"
