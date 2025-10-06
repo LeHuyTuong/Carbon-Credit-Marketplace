@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon.model;
 
-import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -13,7 +12,7 @@ import java.util.Set;
 @Entity
 @Table(name="users")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class User {
+public class User extends BaseEntity{
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,10 +32,6 @@ public class User {
     @Column(name = "otp_code")
     @JsonIgnore
     private String otpCode;
-
-    @ManyToOne(fetch = FetchType.EAGER, optional = true) // cho phép null nếu register chưa có DN
-    @JoinColumn(name = "company_id", nullable = true) // cột FK cho phép NULL, không default 0
-    private Company company;
 
     @Column(name = "otp_expiry_at")
     @JsonIgnore

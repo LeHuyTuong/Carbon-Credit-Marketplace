@@ -2,12 +2,15 @@ package com.carbonx.marketcarbon.service.impl;
 
 
 import com.carbonx.marketcarbon.config.Translator;
-import com.carbonx.marketcarbon.common.KycStatus;
+import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
+import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
-import com.carbonx.marketcarbon.model.KycProfile;
+import com.carbonx.marketcarbon.model.Company;
+import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.repository.KycRepository;
+import com.carbonx.marketcarbon.repository.CompanyRepository;
+import com.carbonx.marketcarbon.repository.EVOwnerRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
@@ -25,13 +28,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KycServiceImpl implements KycService {
 
-
-    private final  KycRepository kycRepository;
-
+    private final EVOwnerRepository EVOwnerRepository;
     private final  UserRepository userRepository;
+    private final CompanyRepository companyRepository;
 
     @Override
-    public Long create(@Validated(KycRequest.Create.class) KycRequest req) {
+    public Long createUser(@Validated(KycRequest.Create.class) KycRequest req) {
         // check email thông tin kyc đã tồn tại chưa
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -41,12 +43,12 @@ public class KycServiceImpl implements KycService {
             throw new ResourceNotFoundException("User not found");
         }
 
-        if(kycRepository.existsByUserId(user.getId()))
+        if(EVOwnerRepository.existsByUserId(user.getId()))
             throw new ResourceNotFoundException("KYC exists" + user.getId());
 
         // B1 Lấy data từ request vào object
-        KycProfile kycProfile = KycProfile.builder()
-                .userId(user.getId())
+        EVOwner evOwner = EVOwner.builder()
+                .user(user)
                 .email(email)
                 .name(req.getName())
                 .gender(req.getGender())
@@ -56,20 +58,19 @@ public class KycServiceImpl implements KycService {
                 .documentType(req.getDocumentType())
                 .documentNumber(req.getDocumentNumber())
                 .birthDate(req.getBirthday())
-                .kycStatus(KycStatus.NEW)
                 .build();
 
         // B2 lưu data vào repo
-        kycRepository.save(kycProfile);
+        EVOwnerRepository.save(evOwner);
         //B3 ghi log
-        log.info("KYC Created : {}" , user.getFullName());
+        log.info("KYC Created : {}" , user.getId());
 
         //B4 trả về kết quả
         return user.getId();
     }
 
     @Override
-    public Long update(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
+    public Long updateUser(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -78,26 +79,26 @@ public class KycServiceImpl implements KycService {
             throw new ResourceNotFoundException("User not found");
         }
 
-        KycProfile kycProfile = kycRepository.findById((id))
+        EVOwner EVOwner = EVOwnerRepository.findById((id))
                 .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("kyc.not.found")));
 
         // B1 Set data vào kyc profile
-        kycProfile.setName(req.getName());
-        kycProfile.setPhone(req.getPhone());
-        kycProfile.setCountry(req.getCountry());
-        kycProfile.setAddress(req.getAddress());
-        kycProfile.setDocumentType(req.getDocumentType());
-        kycProfile.setDocumentNumber(req.getDocumentNumber());
-        kycProfile.setBirthDate(req.getBirthday());
+        EVOwner.setName(req.getName());
+        EVOwner.setPhone(req.getPhone());
+        EVOwner.setCountry(req.getCountry());
+        EVOwner.setAddress(req.getAddress());
+        EVOwner.setDocumentType(req.getDocumentType());
+        EVOwner.setDocumentNumber(req.getDocumentNumber());
+        EVOwner.setBirthDate(req.getBirthday());
 
         //B2 save lại
-        kycRepository.save(kycProfile);
-        log.info("KYC Updated : {}" , kycProfile);
+        EVOwnerRepository.save(EVOwner);
+        log.info("KYC Updated : {}" , EVOwner);
         return user.getId();
     }
 
     @Override
-    public KycProfile getByUserId() {
+    public EVOwner getByUserId() {
         // B1 xem thử có data không
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -106,30 +107,50 @@ public class KycServiceImpl implements KycService {
             throw new ResourceNotFoundException("User not found");
         }
 
-        KycProfile kycProfile = kycRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
 
         //B2 Trả Về response
-        return kycProfile;
+        return  EVOwnerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
     }
 
     @Override
-    public List<KycResponse> getAllKYC() {
-        return kycRepository.findAll().stream()
-                .map(kycProfile -> new KycResponse(
-                        kycProfile.getId(),
-                        kycProfile.getUserId(),
-                        kycProfile.getName(),
-                        kycProfile.getGender(),
-                        kycProfile.getEmail(),
-                        kycProfile.getPhone(),
-                        kycProfile.getCountry(),
-                        kycProfile.getAddress(),
-                        kycProfile.getKycStatus(),
-                        kycProfile.getDocumentType(),
-                        kycProfile.getDocumentNumber(),
-                        kycProfile.getBirthDate()
+    public List<KycResponse> getAllKYCUser() {
+        return EVOwnerRepository.findAll().stream()
+                .map(EVOwner -> new KycResponse(
+                        EVOwner.getId(),
+                        EVOwner.getUser().getId(),
+                        EVOwner.getName(),
+                        EVOwner.getGender(),
+                        EVOwner.getEmail(),
+                        EVOwner.getPhone(),
+                        EVOwner.getCountry(),
+                        EVOwner.getAddress(),
+                        EVOwner.getDocumentType(),
+                        EVOwner.getDocumentNumber(),
+                        EVOwner.getBirthDate()
                 )).toList();
+    }
+
+    @Override
+    public Long createCompany(KycCompanyRequest req) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        return 0L;
+    }
+
+    @Override
+    public Long updateCompany(Long id, KycCompanyRequest req) {
+        return 0L;
+    }
+
+    @Override
+    public Company getByCompanyId(Long companyId) {
+        return null;
+    }
+
+    @Override
+    public List<KycCompanyResponse> getAllKYCCompany() {
+        return List.of();
     }
 
 

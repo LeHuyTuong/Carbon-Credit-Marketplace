@@ -167,7 +167,7 @@ public class VehicleControlServiceImpl implements VehicleControlService {
         // B3 get CompanyId from user login
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User)authentication.getPrincipal();
-        Long companyId = user.getCompany().getId();
+        Long companyId = user.getId();
         Page<Vehicle> vehiclePage = vehicleRepository.findByCompany_Id(companyId, pageable);
 
         List<VehicleDetailResponse> responses = vehiclePage.stream()

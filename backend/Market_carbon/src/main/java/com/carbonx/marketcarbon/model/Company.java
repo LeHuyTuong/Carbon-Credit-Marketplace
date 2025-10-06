@@ -1,7 +1,6 @@
 package com.carbonx.marketcarbon.model;
 
 
-import com.carbonx.marketcarbon.common.Status;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,36 +20,33 @@ public class Company extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "company_id")
     private Long id;
 
-    @Column(nullable=false, length=20, unique=true)
-    private String name;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="user_id", nullable=false)
+    private User user;
 
-    @Column(nullable=false, length=50)
+    @Column(name = "business_license", nullable = false, length = 100)
+    private String businessLicense;
+
+    @Column(name = "tax_code", length = 100)
+    private String taxCode;
+
+    @Column(name = "company_name", length = 255)
+    private String companyName;
+
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
-    @Column(nullable=false, length=50, unique=true)
-    private String tax_code;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status = Status.PENDING;
+    @OneToMany(mappedBy = "company")
+    private List<EVOwner> evOwners = new ArrayList<>();
 
     @OneToMany(
             mappedBy = "company",
             fetch = FetchType.LAZY,
-            cascade = { CascadeType.PERSIST, CascadeType.MERGE },
+            cascade = { CascadeType.MERGE},
             orphanRemoval = false
     )
-    @Column(nullable=true)
-    private List<User> users = new ArrayList<>();
-
-    @OneToMany(
-            mappedBy = "company",
-            fetch = FetchType.LAZY,
-            cascade = { CascadeType.PERSIST, CascadeType.MERGE },
-            orphanRemoval = false
-    )
-    @Column(nullable=true)
     private List<Vehicle> vehicles = new ArrayList<>();
 }

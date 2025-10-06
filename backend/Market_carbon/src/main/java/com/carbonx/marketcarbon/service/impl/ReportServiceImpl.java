@@ -45,8 +45,7 @@ public class ReportServiceImpl implements ReportService {
                 cont.newLine();
 
 
-                String fullName = (user != null && user.getFullName() != null)
-                        ? user.getFullName() : "Holder";
+                String fullName = "hehe";
                 // TODO: thay <CREDITS> bằng dữ liệu thực
                 cont.showText(fullName + " has purchased <CREDITS> CARBON CREDITS");
                 cont.newLine();
