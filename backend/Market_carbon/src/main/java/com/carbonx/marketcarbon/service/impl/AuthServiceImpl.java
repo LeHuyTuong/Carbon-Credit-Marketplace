@@ -1,6 +1,4 @@
 package com.carbonx.marketcarbon.service.impl;
-
-import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
