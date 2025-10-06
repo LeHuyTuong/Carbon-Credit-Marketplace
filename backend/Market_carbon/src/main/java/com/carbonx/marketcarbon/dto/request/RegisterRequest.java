@@ -23,9 +23,6 @@ public class RegisterRequest {
     @NotBlank(message = "Xác nhận mật khẩu không được để trống")
     private String confirmPassword;
 
-    @NotBlank(message = "Full name không được để trống")
-    private String fullName;
-
     @NotBlank(message = "Role không được để trống")
     private String roleName;
 }
