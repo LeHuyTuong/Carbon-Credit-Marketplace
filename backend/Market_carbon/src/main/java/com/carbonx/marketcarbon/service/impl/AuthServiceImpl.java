@@ -51,7 +51,6 @@ public class AuthServiceImpl implements AuthService {
 
         User newUser = new User();
         newUser.setEmail(req.getEmail());
-        newUser.setFullName(null);
         newUser.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         newUser.setStatus(USER_STATUS.PENDING);
 
@@ -75,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
                         "<h2>%s</h2>" +
                         "<p>Mã OTP sẽ hết hạn sau 5 phút.</p>" +
                         "<p>Trân trọng,<br/>CarbonX Team</p>",
-                newUser.getFullName(), otp
+                newUser.getEmail(), otp
         );
 
         try {

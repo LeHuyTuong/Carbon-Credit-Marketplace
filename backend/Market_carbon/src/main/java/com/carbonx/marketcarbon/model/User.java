@@ -25,9 +25,6 @@ public class User {
     @JsonIgnore
     private String passwordHash;
 
-    @Column( length = 255)
-    private String fullName;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 16)
     @Builder.Default
