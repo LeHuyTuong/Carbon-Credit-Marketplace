@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
 
         User newUser = new User();
         newUser.setEmail(req.getEmail());
-        newUser.setFullName(req.getFullName());
+        newUser.setFullName(null);
         newUser.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         newUser.setStatus(USER_STATUS.PENDING);
 
