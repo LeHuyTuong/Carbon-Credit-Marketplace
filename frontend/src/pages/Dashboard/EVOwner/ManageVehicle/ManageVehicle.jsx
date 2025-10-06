@@ -1,29 +1,75 @@
 import { useState } from "react";
-import './manage.css'
-import { Button, Modal, Form } from 'react-bootstrap';
+import "./manage.css";
+import { Button, Modal, Form } from "react-bootstrap";
+import { Formik } from "formik";
+import * as Yup from "yup";
+
+const schema = Yup.object().shape({
+  plate: Yup.string().required("License plate is required"),
+  brand: Yup.string().required("Brand is required"),
+  model: Yup.string().required("Model is required"),
+  company: Yup.string().required("Company is required"),
+});
 
 export default function Manage() {
-
   const [vehicles, setVehicles] = useState([
-    { id: 1, code: "EV-0001", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Company_A", credits: "0.2"},
-    { id: 2, code: "EV-0002", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Company_A", credits: "0.2"},
-    { id: 3, code: "EV-0003", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Company_A", credits: "0.2"},
-    { id: 4, code: "EV-0004", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Company_A", credits: "0.2"}
-  ])
+    { id: 1, code: "EV-0001", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Vinfast", credits: "0.2" },
+    { id: 2, code: "EV-0002", plate: "30H-999.99", brand: "Tesla", model: "Model 3", company: "Tesla", credits: "0.4" },
+  ]);
 
-  //thêm xe mới
-  const addVehicle = (vehicle) => {
-    setVehicles(prev => [...prev, { ...vehicle, id: prev.length + 1 }]);
+  const [show, setShow] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+  const handleClose = () => setShow(false);
+  const handleAdd = () => {
+    setEditData(null);
+    setShow(true);
+  };
+
+  const handleDelete = (id) => {
+    setVehicles((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleEdit = (vehicle) => {
+    setEditData(vehicle);
+    setShow(true);
+  };
+
+  const handleSubmit = (values) => {
+    if (editData) {
+      //edit xe
+      setVehicles((prev) =>
+        prev.map((v) => (v.id === editData.id ? { ...v, ...values } : v))
+      );
+    } else {
+      //add xe
+      const newVehicle = {
+        ...values,
+        id: Date.now(),
+        code: "EV-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0"),
+      };
+      setVehicles((prev) => [...prev, newVehicle]);
+    }
+    setShow(false);
+    setEditData(null);
   };
 
   return (
     <>
       <div className="vehicle-search-section">
         <h1 className="title">Your vehicles</h1>
-        <RegistrationForm onAdd={addVehicle}/>
+        <Button className="mb-3" onClick={handleAdd}>
+          Add Vehicle
+        </Button>
       </div>
 
-      {/*table Section */}
+      <VehicleModal
+        show={show}
+        onHide={handleClose}
+        onSubmit={handleSubmit}
+        data={editData}
+      />
+
       <div className="table-wrapper">
         <table className="vehicle-table">
           <thead>
@@ -48,9 +94,18 @@ export default function Manage() {
                   <td>{row.company}</td>
                   <td>{row.credits}</td>
                   <td className="action-buttons">
-                    <button className="action-btn view"><i className="bi bi-eye"></i></button>
-                    <button className="action-btn edit"><i className="bi bi-pencil"></i></button>
-                    <button className="action-btn delete"><i className="bi bi-trash"></i></button>
+                    <button
+                      className="action-btn edit"
+                      onClick={() => handleEdit(row)}
+                    >
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      className="action-btn delete"
+                      onClick={() => handleDelete(row.id)}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
                   </td>
                 </tr>
               ))
@@ -59,7 +114,7 @@ export default function Manage() {
                 <td colSpan="10" className="no-data">
                   <h5>No vehicles yet</h5>
                   <p>Add your vehicle to get started.</p>
-                  </td>
+                </td>
               </tr>
             )}
           </tbody>
@@ -69,106 +124,113 @@ export default function Manage() {
   );
 }
 
-//form đăng ký xe
-function RegistrationForm({onAdd}){
-  const [show, setShow] = useState(false)
-  const [formData, setFormData] =useState({
-    plate: '', brand: '',
-    model: '', company: '',
-    credits: '', code: ''
-  })
-
-  const handelSetOpen = () => setShow(true)
-  const handelSetClose = () => setShow(false)
-
-  const handleChange = (e) => {
-    const {name, value } = e.target
-    setFormData(pre => ({ ...pre, [name]: value }))
-  }
-
-  const handleSubmit = () => {
-    //auto generate code xe
-    const vehicle = {
-      ...formData,
-      code: "EV-" + String(Math.floor(Math.random() * 10000)).padStart(4, '0')
-    }
-    onAdd(vehicle); //gọi cha
-    handelSetClose();
-    setFormData({ plate: '', brand: '', model: '', company: '', credits: '0.0', code: '' })
-  }
-
-  const verify = async () => {
-    //call API verify OTP
-    nav('/managevehicle')
+function VehicleModal({ show, onHide, data, onSubmit }) {
+  const initialValues = {
+    plate: data?.plate ?? "",
+    brand: data?.brand ?? "",
+    model: data?.model ?? "",
+    company: data?.company ?? "",
   };
 
   return (
-    <>
-      <Button className='' onClick={handelSetOpen} style={{marginBottom: '30px'}} >Add Vehicle</Button>
-      <Modal show={show} onHide={handelSetClose}>
-        <Modal.Header closeButton>
-            <Modal.Title>ELECTRIC VEHICLE REGISTRATION</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3" controlId="formPlate">
-              <Form.Label>License Plate</Form.Label>
-              <Form.Control 
-                type="text" 
-                placeholder="Enter License Plate" 
-                name="plate"
-                value={formData.plate}
-                onChange={handleChange}
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>
+          {data ? "Edit Vehicle" : "Register New Vehicle"}
+        </Modal.Title>
+      </Modal.Header>
+
+      <Formik
+        enableReinitialize
+        validationSchema={schema}
+        initialValues={initialValues}
+        onSubmit={(values) => onSubmit(values)}
+      >
+        {({
+          handleSubmit,
+          handleChange,
+          handleBlur,
+          values,
+          errors,
+          touched,
+        }) => (
+          <Form noValidate onSubmit={handleSubmit}>
+            <Modal.Body>
+              <Form.Group className="mb-3" controlId="formPlate">
+                <Form.Label>License Plate</Form.Label>
+                <Form.Control
+                  name="plate"
+                  placeholder="Enter license plate"
+                  value={values.plate}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.plate && !!errors.plate}
                 />
-            </Form.Group>
+                <Form.Control.Feedback type="invalid">
+                  {errors.plate}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formBrand">
-              <Form.Label>Car Brand</Form.Label>
-              <Form.Control 
-                type="text" 
-                placeholder="Enter brand" 
-                name="brand"
-                value={formData.brand}
-                onChange={handleChange}
+              <Form.Group className="mb-3" controlId="formBrand">
+                <Form.Label>Brand</Form.Label>
+                <Form.Control
+                  name="brand"
+                  placeholder="Enter brand"
+                  value={values.brand}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.brand && !!errors.brand}
                 />
-            </Form.Group>
+                <Form.Control.Feedback type="invalid">
+                  {errors.brand}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formModel">
-              <Form.Label>Car Model</Form.Label>
-              <Form.Control 
-                type="text" 
-                placeholder="Enter model" 
-                name="model"
-                value={formData.model}
-                onChange={handleChange}
+              <Form.Group className="mb-3" controlId="formModel">
+                <Form.Label>Model</Form.Label>
+                <Form.Control
+                  name="model"
+                  placeholder="Enter model"
+                  value={values.model}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.model && !!errors.model}
                 />
-            </Form.Group>
+                <Form.Control.Feedback type="invalid">
+                  {errors.model}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formCompany">
-              <Form.Label>Company</Form.Label>
-              <Form.Select 
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-              >
-                <option>Choose one company</option>
-                <option value="1">Vinfast</option>
-                <option value="2">Tesla</option>
-              </Form.Select>
-            </Form.Group>
+              <Form.Group className="mb-3" controlId="formCompany">
+                <Form.Label>Company</Form.Label>
+                <Form.Select
+                  name="company"
+                  value={values.company}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.company && !!errors.company}
+                >
+                  <option value="">Choose one company</option>
+                  <option value="Vinfast">Vinfast</option>
+                  <option value="Tesla">Tesla</option>
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">
+                  {errors.company}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Modal.Body>
 
+            <Modal.Footer>
+              <Button variant="secondary" onClick={onHide}>
+                Close
+              </Button>
+              <Button type="submit" variant="primary">
+                Submit
+              </Button>
+            </Modal.Footer>
           </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handelSetClose}>Close</Button>
-          <Button variant="primary" onClick={handleSubmit}>Submit</Button>
-        </Modal.Footer>
-{/* 
-        <Formik onSubmit={() => {}} initialValues={{}}> 
-            {() => <div>as</div>} 
-        </Formik> */}
-
-      </Modal>
-    </>
-  )
+        )}
+      </Formik>
+    </Modal>
+  );
 }
