@@ -32,7 +32,7 @@ public class Vehicle extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "company_id", nullable = false)
+    @JoinColumn(name = "company_id", nullable = true)
     @JsonIgnore // ẳn quan hệ khỏi Json tránh vòng lặp tuần hoàn
     private Company company;
 }
