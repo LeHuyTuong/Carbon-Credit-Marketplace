@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
@@ -27,6 +28,57 @@ import java.util.UUID;
 @RequestMapping("/api/v1")
 public class UserController {
     private final UserService userService;
+
+    @GetMapping("/me/profile")
+    public CommonResponse<User> getMyProfile(@RequestHeader("Authorization") String bearerToken) {
+        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        String jwt = bearerToken.substring(7);
+        User me = userService.findUserProfileByJwt(jwt);
+
+        return CommonResponse.<User>builder()
+                .requestTrace(UUID.randomUUID().toString())
+                .responseDateTime(OffsetDateTime.now())
+                .responseStatus(new CommonResponse.ResponseStatus(
+                        String.valueOf(HttpStatus.OK.value()),
+                        "Get profile successfully"
+                ))
+                .responseData(me)
+                .build();
+    }
+
+    // TÌM USER THEO EMAIL (phục vụ kiểm tra, hiển thị chi tiết) — có thể hạn chế cho ADMIN
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users/by-email")
+    public CommonResponse<User> getUserByEmail(@RequestParam("email") String email) {
+        User user = userService.findUserByEmail(email);
+        return CommonResponse.<User>builder()
+                .requestTrace(UUID.randomUUID().toString())
+                .responseDateTime(OffsetDateTime.now())
+                .responseStatus(new CommonResponse.ResponseStatus(
+                        String.valueOf(HttpStatus.OK.value()),
+                        "Get user by email successfully"
+                ))
+                .responseData(user)
+                .build();
+    }
+
+    // LẤY TOÀN BỘ USER (đơn giản, chưa phân trang) — nên chỉ mở cho ADMIN
+     @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users")
+    public CommonResponse<java.util.List<User>> getAllUsers() {
+        java.util.List<User> users = userService.findALlUser();
+        return CommonResponse.<java.util.List<User>>builder()
+                .requestTrace(UUID.randomUUID().toString())
+                .responseDateTime(OffsetDateTime.now())
+                .responseStatus(new CommonResponse.ResponseStatus(
+                        String.valueOf(HttpStatus.OK.value()),
+                        "Get all users successfully"
+                ))
+                .responseData(users)
+                .build();
+    }
 
     @PostMapping("/check-exists-user")
     public CommonResponse<Boolean> checkExistsUser(@RequestBody EmailRequest request) {
