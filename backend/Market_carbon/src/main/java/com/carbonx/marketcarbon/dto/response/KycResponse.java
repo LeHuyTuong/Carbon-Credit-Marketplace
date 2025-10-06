@@ -2,7 +2,6 @@ package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
-import com.carbonx.marketcarbon.common.KycStatus;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -19,7 +18,6 @@ public class KycResponse {
     private String phone;
     private String country;
     private String address;
-    private KycStatus kycStatus;
     private IDType documentType;
     private String documentNumber;
     private LocalDate birthday;

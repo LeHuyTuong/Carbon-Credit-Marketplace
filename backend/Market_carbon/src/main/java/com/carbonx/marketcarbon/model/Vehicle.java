@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,16 +22,15 @@ public class Vehicle extends BaseEntity {
     private String model;
 
     @Column( nullable=false)
-    @Min(1950) @Max(2025)
+    @Min(1950) @Max(2050)
     private Integer yearOfManufacture;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    @JsonIgnore
-    private User user;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "company_id", nullable = true)
-    @JsonIgnore // ẳn quan hệ khỏi Json tránh vòng lặp tuần hoàn
+    @JoinColumn(name = "owner_id", nullable =false)
+    private User owner;
+
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="company_id", nullable=true)
     private Company company;
+
 }
