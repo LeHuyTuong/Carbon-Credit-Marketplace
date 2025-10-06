@@ -62,7 +62,7 @@ public class KycServiceImpl implements KycService {
         // B2 lưu data vào repo
         kycRepository.save(kycProfile);
         //B3 ghi log
-        log.info("KYC Created : {}" , user.getFullName());
+        log.info("KYC Created : {}" , user.getId());
 
         //B4 trả về kết quả
         return user.getId();
