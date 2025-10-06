@@ -27,13 +27,10 @@
     "@nivo/pie": "^0.99.0",
     "@reduxjs/toolkit": "^2.9.0",
     "bootstrap": "^5.3.8",
-
     "bootstrap-icons": "^1.13.1",
-
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "formik": "^2.4.6",
-
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.10",
     "react-chartjs-2": "^5.3.0",
