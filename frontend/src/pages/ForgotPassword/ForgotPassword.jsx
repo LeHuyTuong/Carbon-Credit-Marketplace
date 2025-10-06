@@ -27,15 +27,50 @@ export default function ForgotPassword() {
     setSubmitted,
   } = useForm({ email: "" }, validators);
 
+  // const submit = async (ev) => {
+  //   ev.preventDefault();
+  //   setSubmitted(true);
+  //   if (!validateForm()) return;
+
+  //   setLoading(true);
+  //   await new Promise((r) => setTimeout(r, 1000)); //giả lập API
+  //   setLoading(false);
+  //   nav("/otp", { replace: true, state: { email: values.email, from: 'forgot' } });
+  // };
+
+  //call api
   const submit = async (ev) => {
-    ev.preventDefault();
+    ev.preventDefault(); //chặn reload trang
     setSubmitted(true);
     if (!validateForm()) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000)); //giả lập API
-    setLoading(false);
-    nav("/otp", { replace: true, state: { email: values.email, from: 'forgot' } });
+    try {
+      const API = import.meta.env.VITE_API_BASE;
+      const res = await fetch(`${API}/api/v1/auth/reset-password-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json(); //request thành công, đọc json từ be
+      
+      if (!res.ok) {
+        const message = data?.responseStatus?.responseMessage ||
+                        data?.message || 
+                        "Failed to send reset OTP"
+        throw new Error(message);
+      }
+
+      alert("OTP has been sent to your email. Please check your inbox.");
+
+      //sang otp
+      nav('/otp', { replace: true, state: {email: values.email, from: "forgot"} });
+    } catch (err) {
+      console.error("Forgot password error:", err.message);
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

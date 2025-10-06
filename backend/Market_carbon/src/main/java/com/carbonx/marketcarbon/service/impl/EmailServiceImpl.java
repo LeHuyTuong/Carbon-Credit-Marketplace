@@ -29,7 +29,7 @@ public class EmailServiceImpl implements EmailService {
     String emailFrom;
 
     JavaMailSender mailSender;
-    SpringTemplateEngine templateEngine;
+//    SpringTemplateEngine templateEngine;
 
     @Async
     public void sendEmail(String subject, String content, List<String> toList) throws MessagingException,
