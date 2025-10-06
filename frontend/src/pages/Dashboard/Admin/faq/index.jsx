@@ -22,8 +22,7 @@ const FAQ = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            When does the system automatically issue carbon certificates to an Aggregator?
           </Typography>
         </AccordionDetails>
       </Accordion>
@@ -35,8 +34,7 @@ const FAQ = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            How to verify emission reports submitted by an Aggregator?
           </Typography>
         </AccordionDetails>
       </Accordion>
@@ -48,8 +46,7 @@ const FAQ = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            How can I check the number of credits contributed by each EV Owner in a specific project?
           </Typography>
         </AccordionDetails>
       </Accordion>
@@ -61,9 +58,8 @@ const FAQ = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
-          </Typography>
+            Can an EV Owner join multiple Aggregators?
+        </Typography>
         </AccordionDetails>
       </Accordion>
       <Accordion defaultExpanded>
@@ -74,8 +70,7 @@ const FAQ = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            malesuada lacus ex, sit amet blandit leo lobortis eget.
+            Would you like to export all administrative data as a summary report?
           </Typography>
         </AccordionDetails>
       </Accordion>

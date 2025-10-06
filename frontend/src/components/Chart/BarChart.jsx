@@ -39,13 +39,58 @@ const BarChart = ({ isDashboard = false }) => {
           },
         },
       }}
-      keys={["hot dog", "burger", "sandwich", "kebab", "fries", "donut"]}
-      indexBy="country"
+      keys={["listed", "revoke", "sold", "active", "pending", "retire"]}
+
+      indexBy="month"
       margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
       padding={0.3}
       valueScale={{ type: "linear" }}
       indexScale={{ type: "band", round: true }}
-      colors={{ scheme: "nivo" }}
+      colors={({ id }) => {
+        switch (id) {
+          case "active":
+            return "#4CAF50"; // xanh lá cây
+          case "pending":
+            return "#42A5F5"; // xanh dương
+          case "listed":
+            return "#FFCA28"; // vàng
+          case "revoke":
+            return "#EF5350"; // đỏ
+          case "sold":
+            return "#AB47BC"; // tím
+          case "retire":
+            return "#9E9E9E"; // xám
+          default:
+            return "#90A4AE"; // dự phòng
+        }
+      }}
+      tooltip={({ id, value, color, indexValue }) => (
+  <div
+    style={{
+      background: "#222",
+      padding: "8px 12px",
+      borderRadius: "6px",
+      color: "#fff",
+      fontSize: "14px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+    }}
+  >
+    <div
+      style={{
+        width: "12px",
+        height: "12px",
+        borderRadius: "50%",
+        background: color,
+      }}
+    ></div>
+    <div>
+      <strong>{id}</strong> — {indexValue}: {value}
+    </div>
+  </div>
+)}
+
       defs={[
         {
           id: "dots",
@@ -76,7 +121,7 @@ const BarChart = ({ isDashboard = false }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "country", // changed
+        legend: isDashboard ? undefined : "month", // changed
         legendPosition: "middle",
         legendOffset: 32,
       }}
@@ -84,7 +129,7 @@ const BarChart = ({ isDashboard = false }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "food", // changed
+        legend: isDashboard ? undefined : "credit", // changed
         legendPosition: "middle",
         legendOffset: -40,
       }}
@@ -121,7 +166,7 @@ const BarChart = ({ isDashboard = false }) => {
       ]}
       role="application"
       barAriaLabel={function (e) {
-        return e.id + ": " + e.formattedValue + " in country: " + e.indexValue;
+        return e.id + ": " + e.formattedValue + " in month: " + e.indexValue;
       }}
     />
   );
