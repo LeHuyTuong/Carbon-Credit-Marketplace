@@ -32,16 +32,21 @@ public class KycServiceImpl implements KycService {
     private final  UserRepository userRepository;
     private final CompanyRepository companyRepository;
 
-    @Override
-    public Long createUser(@Validated(KycRequest.Create.class) KycRequest req) {
-        // check email thông tin kyc đã tồn tại chưa
-
+    private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
         if(user == null){
-            throw new ResourceNotFoundException("User not found");
+            throw new ResourceNotFoundException("User not found with email: " + email);
         }
+        return user;
+    }
+
+    @Override
+    public Long createUser(@Validated(KycRequest.Create.class) KycRequest req) {
+        // check email thông tin kyc đã tồn tại chưa
+        User user = currentUser();
+        String email = user.getEmail();
 
         if(EVOwnerRepository.existsByUserId(user.getId()))
             throw new ResourceNotFoundException("KYC exists" + user.getId());
@@ -70,16 +75,11 @@ public class KycServiceImpl implements KycService {
     }
 
     @Override
-    public Long updateUser(Long id, @Validated(KycRequest.Update.class) KycRequest req) {
+    public Long updateUser( @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
-        if(user == null){
-            throw new ResourceNotFoundException("User not found");
-        }
+        User user = currentUser();
 
-        EVOwner EVOwner = EVOwnerRepository.findById((id))
+        EVOwner EVOwner = EVOwnerRepository.findById(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("kyc.not.found")));
 
         // B1 Set data vào kyc profile
@@ -100,13 +100,7 @@ public class KycServiceImpl implements KycService {
     @Override
     public EVOwner getByUserId() {
         // B1 xem thử có data không
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
-        if(user == null){
-            throw new ResourceNotFoundException("User not found");
-        }
-
+        User user = currentUser();
 
         //B2 Trả Về response
         return  EVOwnerRepository.findByUserId(user.getId())
@@ -117,7 +111,6 @@ public class KycServiceImpl implements KycService {
     public List<KycResponse> getAllKYCUser() {
         return EVOwnerRepository.findAll().stream()
                 .map(EVOwner -> new KycResponse(
-                        EVOwner.getId(),
                         EVOwner.getUser().getId(),
                         EVOwner.getName(),
                         EVOwner.getGender(),
@@ -127,30 +120,85 @@ public class KycServiceImpl implements KycService {
                         EVOwner.getAddress(),
                         EVOwner.getDocumentType(),
                         EVOwner.getDocumentNumber(),
-                        EVOwner.getBirthDate()
+                        EVOwner.getBirthDate(),
+                        EVOwner.getCreateAt(),
+                        EVOwner.getUpdatedAt()
                 )).toList();
     }
 
     @Override
     public Long createCompany(KycCompanyRequest req) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        return 0L;
+        //B1 check tk user
+        User user = currentUser();
+        String email = user.getEmail();
+        //B2 check user dki company
+        Company companyExist = companyRepository.findByUserEmail(email);
+
+        if(companyExist != null){
+            throw new ResourceNotFoundException(Translator.
+                    toLocale(Translator.toLocale("company.exist")));
+        }
+        // khi tạo mới Company cần ko cần EV owner hay vehicle
+        Company company = Company.builder()
+                .user(user)
+                .businessLicense(req.getBusinessLicense())
+                .taxCode(req.getTaxCode())
+                .companyName(req.getCompanyName())
+                .address(req.getAddress())
+                .build();
+
+        companyRepository.save(company);
+
+        return company.getId();
     }
 
     @Override
-    public Long updateCompany(Long id, KycCompanyRequest req) {
-        return 0L;
+    public Long updateCompany(KycCompanyRequest req) {
+        User user = currentUser();
+
+        Company company = companyRepository.findByUserEmail(user.getEmail());
+
+        // B1 Set data vào kyc profile
+        company.setId(company.getId());
+        company.setUser(user);
+        company.setBusinessLicense(req.getBusinessLicense());
+        company.setTaxCode(req.getTaxCode());
+        company.setCompanyName(req.getCompanyName());
+        company.setAddress(req.getAddress());
+        //B2 save lại
+        companyRepository.save(company);
+        log.info("KYC Company Updated : {}" , company);
+        return user.getId();
     }
 
     @Override
-    public Company getByCompanyId(Long companyId) {
-        return null;
+    public Company getByCompanyId() {
+        User user = currentUser();
+        String userEmail =  user.getEmail();
+        Company companyExist = companyRepository.findByUserEmail(userEmail);
+        if(companyExist == null)
+            throw new ResourceNotFoundException(Translator.
+                    toLocale("company.not.found"));
+        return companyRepository.findById(companyExist.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.
+                        toLocale("company.not.found")));
     }
 
     @Override
     public List<KycCompanyResponse> getAllKYCCompany() {
-        return List.of();
+
+//        // tìm list EvOwner thuộc Company
+//        List<EVOwner> EvOwner = EVOwnerRepository.findByCompanyId(companyExist.getId());
+        return companyRepository.findAll().stream()
+                .map(company -> new KycCompanyResponse(
+                        company.getId(),
+                        company.getBusinessLicense(),
+                        company.getTaxCode(),
+                        company.getCompanyName(),
+                        company.getAddress(),
+                        company.getCreateAt(),
+                        company.getUpdatedAt()
+                ) ).toList();
     }
 
 

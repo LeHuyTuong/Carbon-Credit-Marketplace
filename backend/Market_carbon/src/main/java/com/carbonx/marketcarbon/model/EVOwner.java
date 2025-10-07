@@ -22,12 +22,13 @@ import java.time.LocalDate;
 public class EVOwner extends BaseEntity{
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // // PK riêng của ev_owner
+    @Column(name = "user_id")       // PK = users.id
+    private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY) // mỗi user tối đa một EV Owner profile
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId                         // chia sẻ PK với user.id
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; //// FK unique → users.id
+    private User user;
 
     @Column(nullable=false)
     private String name;
