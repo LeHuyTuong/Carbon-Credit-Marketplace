@@ -33,10 +33,6 @@ public class User {
     @JsonIgnore
     private String otpCode;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = true) // cho phép null nếu register chưa có DN
-    @JoinColumn(name = "company_id", nullable = true) // cột FK cho phép NULL, không default 0
-    private Company company;
-
     @Column(name = "otp_expiry_at")
     @JsonIgnore
     LocalDateTime otpExpiryDate;

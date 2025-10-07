@@ -13,7 +13,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;

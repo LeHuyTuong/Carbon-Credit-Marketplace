@@ -7,14 +7,14 @@ import java.util.List;
 
 public interface CompanyService {
     //TODO : join project
-    public void assignProject(Company company, Project project);
-    public void removeProject(Company company, Project project);
-    public List<Project> getProjects(Company company);
+     void assignProject(Company company, Project project);
+     void removeProject(Company company, Project project);
+     List<Project> getProjects(Company company);
 
 
-    public void createCompany(Company company);
-    public void updateCompany(Long id, Company company);
-    public void deleteCompany(Long id);
-    public void getCompanyById(Long id);
-    public List<Company> getAllCompanies();
+     void createCompany(Company company);
+     void updateCompany(Long id, Company company);
+     void deleteCompany(Long id);
+     void getCompanyById(Long id);
+     List<Company> getAllCompanies();
 }

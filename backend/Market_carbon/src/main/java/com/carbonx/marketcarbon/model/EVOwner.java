@@ -2,30 +2,33 @@ package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
-import com.carbonx.marketcarbon.common.KycStatus;
+import com.carbonx.marketcarbon.common.annotation.DocumentNumber;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 
-@Entity
-@Table(name="kyc_profiles", indexes = {
-        @Index(name="idx_kyc_user", columnList = "userId", unique = true)
+@Table(name="ev_owner", indexes = {
+        @Index(name="idx_ev_owner", columnList = "user_id", unique = true)
 })
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class KycProfile extends BaseEntity {
+public class EVOwner extends BaseEntity{
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")       // PK = users.id
     private Long id;
 
-    @Column(nullable=false, unique = true)
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId                         // chia sẻ PK với user.id
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable=false)
     private String name;
@@ -45,19 +48,19 @@ public class KycProfile extends BaseEntity {
     @Column(length=100, unique=true, nullable=false)
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable=false, length=16)
-    private KycStatus kycStatus = KycStatus.NEW; // NONE,PENDING,VERIFIED,REJECTED
-
     @Column(length=64, nullable=false)
     @Enumerated(EnumType.STRING)
     private IDType documentType;
 
-    @Column(length=64, nullable = false, unique=true)
+    @DocumentNumber(message = "document Number invalid format")
     private String documentNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable=false)
     private Gender gender;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id") // nullable: EV Owner có thể chưa thuộc công ty
+    private Company company;
 
 }

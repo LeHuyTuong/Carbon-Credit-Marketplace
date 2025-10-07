@@ -9,8 +9,8 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.ProjectRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.ProjectService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,12 +19,11 @@ import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
+    private final ProjectRepository projectRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void createProject(ProjectRequest req) {
@@ -39,7 +38,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .description(req.getDescription())
                 .status(Status.PENDING)
                 .logo(req.getLogo())
-
                 .build();
 
         projectRepository.save(project);
