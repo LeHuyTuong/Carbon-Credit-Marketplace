@@ -126,7 +126,7 @@ public class VehicleController {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        log.info("Request get vehicle list");
+        log.info("Request get vehicle list  ");
         PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortBy(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -145,7 +145,7 @@ public class VehicleController {
             ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        log.info("Request get vehicle list");
+        log.info("Request get vehicle list ");
         PageResponse<?> data = vehicleControlService.getAllVehiclesWithSortByMultipleColumns(pageNo,pageSize,sortBy);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

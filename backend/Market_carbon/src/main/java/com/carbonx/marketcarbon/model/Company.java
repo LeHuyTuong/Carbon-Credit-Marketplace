@@ -30,7 +30,7 @@ public class Company extends BaseEntity{
     @Column(name = "tax_code", length = 100)
     private String taxCode;
 
-    @Column(name = "company_name", length = 255)
+    @Column(name = "company_name", length = 20)
     private String companyName;
 
     @Column(name = "address", columnDefinition = "TEXT")
@@ -42,8 +42,7 @@ public class Company extends BaseEntity{
     @OneToMany(
             mappedBy = "company",
             fetch = FetchType.LAZY,
-            cascade = { CascadeType.MERGE},
-            orphanRemoval = false
+            cascade = { CascadeType.MERGE}
     )
     private List<Vehicle> vehicles = new ArrayList<>();
 }
