@@ -27,6 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
            JOIN u.roles r
            WHERE r.name = :roleName
            """)
+
         List<User> findByRoleName(@Param("roleName") String roleName);
 
         // Lấy danh sách user theo role name + keyword (fullName hoặc email)

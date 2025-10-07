@@ -107,9 +107,9 @@ public class ReportController {
         String path;
         //nếu là công ty thì sẽ upfile  có tên công ty
         if ("COMPANY".equalsIgnoreCase(uploaderType)) {
-            Company company = companyRepository.findCompanyById(uploaderId)
+            Company company = companyRepository.findById(uploaderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-            path = "upload/company/" + company.getName() + company.getId() + company.getCreateAt();
+            path = "upload/company/" + company.getId() + company.getCreateAt();
         }
         // nếu là CVA thì upload file có tên
         else if ("CVA".equalsIgnoreCase(uploaderType)) {
