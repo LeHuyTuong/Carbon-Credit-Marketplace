@@ -4,7 +4,6 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
 import com.carbonx.marketcarbon.service.ProjectService;
-import com.carbonx.marketcarbon.service.VehicleService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
