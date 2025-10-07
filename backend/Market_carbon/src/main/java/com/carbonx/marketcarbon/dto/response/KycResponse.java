@@ -5,12 +5,12 @@ import com.carbonx.marketcarbon.common.IDType;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 @Data
 @Builder
 @AllArgsConstructor
 public class KycResponse {
-    private Long id;
     private Long userId;
     private String name;
     private Gender gender;
@@ -21,5 +21,8 @@ public class KycResponse {
     private IDType documentType;
     private String documentNumber;
     private LocalDate birthday;
+    OffsetDateTime createAt;
+    OffsetDateTime updatedAt;
+
 }
 

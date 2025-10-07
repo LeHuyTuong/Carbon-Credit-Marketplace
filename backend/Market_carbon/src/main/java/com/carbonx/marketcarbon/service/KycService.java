@@ -13,7 +13,7 @@ import java.util.List;
 public interface KycService {
     Long createUser(KycRequest req);
 
-    Long updateUser(Long id, KycRequest req);
+    Long updateUser( KycRequest req);
 
     EVOwner getByUserId();
 
@@ -21,9 +21,9 @@ public interface KycService {
 
     Long createCompany(KycCompanyRequest req);
 
-    Long updateCompany(Long id, KycCompanyRequest req);
+    Long updateCompany( KycCompanyRequest req);
 
-    Company getByCompanyId(Long  companyId);
+    Company getByCompanyId();
 
     List<KycCompanyResponse> getAllKYCCompany();
 

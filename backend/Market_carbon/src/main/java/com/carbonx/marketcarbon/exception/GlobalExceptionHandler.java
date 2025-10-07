@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.exception;
 
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
+import jakarta.validation.ConstraintDefinitionException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -114,8 +115,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse<Object>> handleOther(Exception ex) {
         log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildErrorResponse("500", "Internal error"));
+                .body(buildErrorResponse("500", errorMsg));
     }
 
     // 400 - Validation
@@ -145,6 +147,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<CommonResponse<Object>> BadCredentialsException(Exception ex) {
+        log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("400", errorMsg));
+    }
+
+    @ExceptionHandler(ConstraintDefinitionException.class)
+    public ResponseEntity<CommonResponse<Object>> ConstraintDefinitionException(Exception ex) {
         log.error("Unhandled error", ex);
         String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

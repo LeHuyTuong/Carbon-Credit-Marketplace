@@ -62,7 +62,7 @@ public class VehicleServiceImpl implements VehicleService {
         if(owner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
-        return vehicleRepository.findByUserId(owner.getId());
+        return vehicleRepository.findByOwnerId(owner.getId());
     }
 
     @Override
