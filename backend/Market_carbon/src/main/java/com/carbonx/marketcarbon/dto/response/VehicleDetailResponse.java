@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.response;
 
+import com.carbonx.marketcarbon.model.Company;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,10 +15,9 @@ public class VehicleDetailResponse {
     private String plateNumber;
     private String brand;
     private String model;
-    private Integer yearOfManufacture;
-    private OffsetDateTime createAt;
+    private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-
-    // sau nay se co them so tin chi carbon ma moi xe co , chi cho thang Aggree biest
+    private Long companyId;
+    //TODO sau nay se co them so tin chi carbon ma moi xe co , chi cho thang Aggree biest
     // va so tien ma EV Owner dc nhan tu xe cua ho
 }
