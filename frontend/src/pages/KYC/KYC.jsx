@@ -1,135 +1,323 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Formik } from "formik";
+import * as Yup from "yup";
+import { useAuth } from "../../context/AuthContext";
+import { Form, Button } from "react-bootstrap";
+import { toast } from "react-toastify";
+import { apiFetch } from '../../utils/apiFetch.js';
+
+//validation schema
+const KYC_SCHEMA = Yup.object().shape({
+  name: Yup.string().required("Full name is required"),
+  phone: Yup.string().required("Phone number is required"),
+  country: Yup.string().required("Country is required"),
+  address: Yup.string().required("Address is required"),
+  birthDate: Yup.date().required("Birth date is required"),
+  documentType: Yup.string().required("Please select a document type"),
+  documentNumber: Yup.string().required("Document number is required"),
+  gender: Yup.string().required("Please select gender"),
+});
 
 export default function KYC() {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    idNumber: "",
-    birthday: "",
+  const { user, token } = useAuth();
+  const nav = useNavigate();
+  const [initialValues, setInitialValues] = useState({
+    name: "",
+    phone: "",
+    country: "",
+    address: "",
+    birthDate: "",
+    email: user?.email || "",
+    documentType: "",
+    documentNumber: "",
     gender: "",
-    placeOfIssue: "",
-    issueDate: ""
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  //fetch KYC
+  useEffect(() => {
+    const fetchKYC = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const data = await apiFetch("/api/v1/kyc", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        const info = data?.response;
+        if (!info) {
+          toast.warn("No KYC record found. Please create one.");
+          return;
+        }
+
+        setInitialValues({
+          id: info.id,
+          name: info.name || "",
+          phone: info.phone || "",
+          country: info.country || "",
+          address: info.address || "",
+          birthDate: info.birthDate || "",
+          email: info.email || user?.email || "",
+          documentType: info.documentType || "",
+          documentNumber: info.documentNumber || "",
+          gender: info.gender?.toLowerCase() || "",
+        });
+      } catch (err) {
+        console.error("Error fetching KYC:", err);
+        toast.error(err.message || "Failed to fetch KYC data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchKYC();
+  }, [token, user]);
+
+  //submit kyc
+  const handleSubmit = async (values) => {
+    setLoading(true);
+    const method = values.id ? "PUT" : "POST";
+    const endpoint = values.id
+      ? `/api/v1/kyc/${values.id}`
+      : "/api/v1/kyc";
+
+    try {
+      await apiFetch(endpoint, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          requestTrace: crypto.randomUUID(),
+          requestDateTime: new Date().toISOString(),
+          data: {
+            name: values.name,
+            phone: values.phone,
+            gender: values.gender.toLowerCase() === "male" ? "MALE" : "FEMALE",
+            country: values.country,
+            address: values.address,
+            documentType: values.documentType,
+            documentNumber: values.documentNumber,
+            birthday: values.birthDate,
+          },
+        }),
+      });
+
+      toast.success(values.id ? "KYC updated successfully!" : "KYC created successfully!");
+
+      //lưu dữ liệu vào localStorage để profile đọc được
+      const key = `kycData_${user.email}`;
+      const profileData = {
+        fullName: values.name,
+        documentNumber: values.documentNumber,
+        birthday: values.birthDate,
+        gender: values.gender,
+        country: values.country,
+        address: values.address,
+        documentType: values.documentType,
+      };
+      localStorage.setItem(key, JSON.stringify(profileData));
+
+      nav("/profile", { replace: true });
+    } catch (err) {
+      console.error("Error submitting KYC:", err);
+      toast.error(err.message || "Save KYC failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form Data:", formData);
-  };
+  if (loading)
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" />
+      </div>
+    );
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="card shadow container">
         <div className="card-body">
-          <h2 className="mb-4">Identity Verification (KYC) Form</h2>
-          <form onSubmit={handleSubmit}>
-            
-            {/*name */}
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label">Full Name</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="Enter first name"
-                />
-              </div>
-            {/*id */}
-              <div className="col-md-6">
-                <label className="form-label">ID Number</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="idNumber"
-                  value={formData.idNumber}
-                  onChange={handleChange}
-                  placeholder="Enter ID number"
-                />
-              </div>
-            </div>
+          <h2 className="mb-4 text-center">Identity Verification (KYC)</h2>
 
-            {/*birthday, gender */}
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label">Birthday</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  name="birthday"
-                  value={formData.birthday}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label d-block">Gender</label>
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    checked={formData.gender === "male"}
-                    onChange={handleChange}
-                  />
-                  <label className="form-check-label">Male</label>
+          <Formik
+            enableReinitialize
+            validationSchema={KYC_SCHEMA}
+            initialValues={initialValues}
+            onSubmit={handleSubmit}
+          >
+            {({
+              handleSubmit,
+              handleChange,
+              handleBlur,
+              values,
+              errors,
+              touched,
+            }) => (
+              <Form noValidate onSubmit={handleSubmit}>
+                {/*full name, phone */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <Form.Label>Full Name</Form.Label>
+                    <Form.Control
+                      name="name"
+                      value={values.name}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.name && !!errors.name}
+                      placeholder="Enter full name"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.name}
+                    </Form.Control.Feedback>
+                  </div>
+                  <div className="col-md-6">
+                    <Form.Label>Phone</Form.Label>
+                    <Form.Control
+                      name="phone"
+                      value={values.phone}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.phone && !!errors.phone}
+                      placeholder="Enter phone number"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.phone}
+                    </Form.Control.Feedback>
+                  </div>
                 </div>
-                <div className="form-check form-check-inline">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    checked={formData.gender === "female"}
-                    onChange={handleChange}
-                  />
-                  <label className="form-check-label">Female</label>
+
+                {/*country, address */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <Form.Label>Country</Form.Label>
+                    <Form.Control
+                      name="country"
+                      value={values.country}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.country && !!errors.country}
+                      placeholder="Enter country"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.country}
+                    </Form.Control.Feedback>
+                  </div>
+                  <div className="col-md-6">
+                    <Form.Label>Address</Form.Label>
+                    <Form.Control
+                      name="address"
+                      value={values.address}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.address && !!errors.address}
+                      placeholder="Enter address"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.address}
+                    </Form.Control.Feedback>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/*issue info*/}
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label">Place Of Issue</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="placeOfIssue"
-                  value={formData.placeOfIssue}
-                  onChange={handleChange}
-                  placeholder="Enter place of issue"
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Issue Date</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="issueDate"
-                  value={formData.issueDate}
-                  onChange={handleChange}
-                  placeholder="Enter issue date"
-                />
-              </div>
-            </div>
+                {/*birthDate, email */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <Form.Label>Birth Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      name="birthDate"
+                      value={values.birthDate}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.birthDate && !!errors.birthDate}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.birthDate}
+                    </Form.Control.Feedback>
+                  </div>
+                  <div className="col-md-6">
+                    <Form.Label>Email</Form.Label>
+                    <Form.Control
+                      type="email"
+                      name="email"
+                      value={values.email}
+                      disabled
+                    />
+                  </div>
+                </div>
 
-            {/*btn submit */}
-            <Link to='/login'>
-              <button type="submit" className="btn btn-primary float-end">
-                Submit
-              </button>
-            </Link>
-          </form>
+                {/*document Type, number */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <Form.Label>Document Type</Form.Label>
+                    <Form.Select
+                      name="documentType"
+                      value={values.documentType}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched.documentType && !!errors.documentType}
+                    >
+                      <option value="">Choose one type</option>
+                      <option value="CCCD">CCCD</option>
+                      <option value="CMND">CMND</option>
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.documentType}
+                    </Form.Control.Feedback>
+                  </div>
+
+                  <div className="col-md-6">
+                    <Form.Label>Document Number</Form.Label>
+                    <Form.Control
+                      name="documentNumber"
+                      value={values.documentNumber}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={
+                        touched.documentNumber && !!errors.documentNumber
+                      }
+                      placeholder="Enter document number"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.documentNumber}
+                    </Form.Control.Feedback>
+                  </div>
+                </div>
+
+                {/*gender */}
+                <div className="mb-3">
+                  <Form.Label>Gender</Form.Label>
+                  <div className="d-flex gap-3">
+                    <Form.Check
+                      type="radio"
+                      name="gender"
+                      value="male"
+                      label="Male"
+                      checked={values.gender === "male"}
+                      onChange={handleChange}
+                      isInvalid={touched.gender && !!errors.gender}
+                    />
+                    <Form.Check
+                      type="radio"
+                      name="gender"
+                      value="female"
+                      label="Female"
+                      checked={values.gender === "female"}
+                      onChange={handleChange}
+                      isInvalid={touched.gender && !!errors.gender}
+                    />
+                  </div>
+                  <div className="text-danger small">
+                    {touched.gender && errors.gender}
+                  </div>
+                </div>
+
+                <Button type="submit" className="float-end">
+                  Save KYC
+                </Button>
+              </Form>
+            )}
+          </Formik>
         </div>
       </div>
     </div>

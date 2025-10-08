@@ -1,7 +1,17 @@
-import { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Formik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 import useRipple from "../../hooks/useRipple";
-import { useForm } from "../../hooks/useForm";
+import { apiFetch } from "../../utils/apiFetch";
+
+const schema = Yup.object().shape({
+  email: Yup.string()
+    .trim()
+    .email("Enter a valid email")
+    .required("Email is required"),
+});
 
 export default function ForgotPassword() {
   const nav = useNavigate();
@@ -9,65 +19,22 @@ export default function ForgotPassword() {
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
-  const validators = {
-    email: (val) => {
-      if (!val.trim()) return "Email is required";
-      if (!/^\S+@\S+\.\S+$/.test(val)) return "Enter a valid email";
-      return "";
-    },
-  };
-
-  const {
-    values,
-    setValue,
-    errors,
-    show,
-    validateForm,
-    markTouched,
-    setSubmitted,
-  } = useForm({ email: "" }, validators);
-
-  // const submit = async (ev) => {
-  //   ev.preventDefault();
-  //   setSubmitted(true);
-  //   if (!validateForm()) return;
-
-  //   setLoading(true);
-  //   await new Promise((r) => setTimeout(r, 1000)); //giả lập API
-  //   setLoading(false);
-  //   nav("/otp", { replace: true, state: { email: values.email, from: 'forgot' } });
-  // };
-
-  //call api
-  const submit = async (ev) => {
-    ev.preventDefault(); //chặn reload trang
-    setSubmitted(true);
-    if (!validateForm()) return;
-
+  const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      const API = import.meta.env.VITE_API_BASE;
-      const res = await fetch(`${API}/api/v1/auth/reset-password-request`, {
+      await apiFetch("/api/v1/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email.trim() }),
       });
 
-      const data = await res.json(); //request thành công, đọc json từ be
-      
-      if (!res.ok) {
-        const message = data?.responseStatus?.responseMessage ||
-                        data?.message || 
-                        "Failed to send reset OTP"
-        throw new Error(message);
-      }
-
-      alert("OTP has been sent to your email. Please check your inbox.");
-
-      //sang otp
-      nav('/otp', { replace: true, state: {email: values.email, from: "forgot"} });
+      toast.success("OTP sent successfully. Please check your email.");
+      nav("/otp", {
+        state: { email: values.email.trim(), from: "forgot" },
+        replace: true,
+      });
     } catch (err) {
-      console.error("Forgot password error:", err.message);
-      alert(err.message);
+      console.error("Forgot password error:", err);
+      toast.error(err.message || "Failed to send reset OTP");
     } finally {
       setLoading(false);
     }
@@ -78,50 +45,70 @@ export default function ForgotPassword() {
       <div className="container auth-container" style={{ maxWidth: 500 }}>
         <div className="card shadow-sm">
           <div className="card-body p-4 p-md-5">
-            <h1 className="h4 mb-4 text-center">Forgot password?</h1>
+            <h1 className="h4 mb-4 text-center">Forgot Password?</h1>
             <p className="mb-4 text-center">
               Please enter the email associated with your account to receive an
               OTP and reset your password.
             </p>
 
-            <form onSubmit={submit} noValidate>
-              {/*email */}
-              <div className="mb-3">
-                <label htmlFor="email" className="form-label">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  className={`form-control form-control-sm ${
-                    show("email") ? "is-invalid" : ""
-                  }`}
-                  value={values.email}
-                  onChange={(e) => setValue("email", e.target.value)}
-                  onBlur={() => markTouched("email")}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                />
-                {show("email") && (
-                  <div className="invalid-feedback">{errors.email}</div>
-                )}
-              </div>
+            <Formik
+              initialValues={{ email: "" }}
+              validationSchema={schema}
+              onSubmit={handleSubmit}
+            >
+              {({
+                handleSubmit,
+                handleChange,
+                handleBlur,
+                values,
+                errors,
+                touched,
+              }) => (
+                <form noValidate onSubmit={handleSubmit}>
+                  {/*email */}
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      className={`form-control form-control-sm ${
+                        touched.email && errors.email ? "is-invalid" : ""
+                      }`}
+                      value={values.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      required
+                    />
+                    {touched.email && errors.email && (
+                      <div className="invalid-feedback">{errors.email}</div>
+                    )}
+                  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary w-100 position-relative overflow-hidden"
-                onClick={(e) => ripple(e, btnRippleRef.current)}
-              >
-                <span ref={btnRippleRef} className="ripple-host" />
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm"></span>
-                ) : (
-                  "Continue"
-                )}
-              </button>
-            </form>
+                  {/*submit button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn btn-primary w-100 position-relative overflow-hidden"
+                    onClick={(e) => ripple(e, btnRippleRef.current)}
+                  >
+                    <span ref={btnRippleRef} className="ripple-host" />
+                    {loading && (
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {loading ? "Sending OTP…" : "Continue"}
+                  </button>
+                </form>
+              )}
+            </Formik>
 
             <p className="mt-3 text-center mb-0">
               <Link to="/login">Back to login page</Link>
