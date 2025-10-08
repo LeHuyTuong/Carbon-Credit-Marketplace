@@ -8,9 +8,9 @@ import com.carbonx.marketcarbon.model.Project;
 import java.util.List;
 
 public interface ProjectService {
-    public void createProject(ProjectRequest req);
-    public void updateProject(Long id, ProjectRequest req);
-    public void deleteProject(Long id);
-    public List<ProjectDetailResponse> findAllProject();
+     void createProject(ProjectRequest req);
+     void updateProject(Long id, ProjectRequest req);
+     void deleteProject(Long id);
+     List<ProjectDetailResponse> findAllProject();
 
 }

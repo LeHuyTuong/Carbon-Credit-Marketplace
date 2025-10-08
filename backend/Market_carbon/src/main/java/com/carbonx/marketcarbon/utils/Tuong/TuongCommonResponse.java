@@ -2,7 +2,6 @@ package com.carbonx.marketcarbon.utils.Tuong;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Data
 @AllArgsConstructor
@@ -15,14 +14,4 @@ public class TuongCommonResponse<T> {
     TuongResponseStatus responseStatus;
     T response;
 
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class ResponseStatus {
-        String responseCode;
-        String responseMessage;
-    }
 }

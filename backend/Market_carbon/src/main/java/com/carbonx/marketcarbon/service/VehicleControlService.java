@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface VehicleControlService {
 
-    public List<VehicleDetailResponse> getAll();
-    public PageResponse<?> getAllVehiclesWithSortBy(int pageNo, int pageSize, String sortBy);
-    public PageResponse<?>  getAllVehiclesWithSortByMultipleColumns(int pageNo, int pageSize, String... sortBy);
-    public PageResponse<?>  getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortBy);
-    public PageResponse<?> getAllVehiclesOfCompanyWithSortBy(int pageNo, int pageSize, String sortBy);
+     List<VehicleDetailResponse> getAll();
+     PageResponse<?> getAllVehiclesWithSortBy(int pageNo, int pageSize, String sortBy);
+     PageResponse<?>  getAllVehiclesWithSortByMultipleColumns(int pageNo, int pageSize, String... sortBy);
+     PageResponse<?>  getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortBy);
+     PageResponse<?> getAllVehiclesOfCompanyWithSortBy(int pageNo, int pageSize, String sortBy);
 }

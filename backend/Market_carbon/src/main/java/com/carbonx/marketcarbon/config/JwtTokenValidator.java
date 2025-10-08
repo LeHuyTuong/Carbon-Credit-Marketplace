@@ -11,12 +11,14 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class JwtTokenValidator extends OncePerRequestFilter {
@@ -25,40 +27,39 @@ public class JwtTokenValidator extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Lấy header Authorization
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
         if (jwt != null && jwt.startsWith("Bearer ")) {
             jwt = jwt.substring(7);
 
             try {
-                // Tạo SecretKey từ SECRET_KEY để verify HMAC-SHA
                 SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
-
-                // Parse + verify chữ ký + hạn token → lấy Claims
                 Claims claims = Jwts.parserBuilder()
                         .setSigningKey(key)
                         .build()
                         .parseClaimsJws(jwt)
                         .getBody();
 
-                // Lấy email từ claim
                 String email = String.valueOf(claims.get("email"));
+                Object rolesObj = claims.get("roles");
 
-                // Lấy danh sách quyền đã nhúng trong claim "roles"
-                String roles = String.valueOf(claims.get("roles"));
+                List<GrantedAuthority> auths = new ArrayList<>();
 
-                // Convert sang List<GrantedAuthority>
-                List<GrantedAuthority> auths = AuthorityUtils.commaSeparatedStringToAuthorityList(roles);
+                if (rolesObj instanceof List<?>) {
+                    for (Object role : (List<?>) rolesObj) {
+                        String roleName = String.valueOf(role);
+                        auths.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+                    }
+                }
+                // ✅ Debug: in ra authorities để bạn kiểm tra khi bị 403
+                System.out.println("==== JwtTokenValidator ====");
+                System.out.println("Email: " + email);
+                auths.forEach(a -> System.out.println("Authority => " + a.getAuthority()));
+                System.out.println("===========================");
 
-                System.out.println("Token: " + email);
-                System.out.println("Roles: " + roles);
-
-                // Tạo Authentication đã xác thực
                 Authentication authentication =
                         new UsernamePasswordAuthenticationToken(email, null, auths);
 
-                // Đưa vào SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (Exception e) {

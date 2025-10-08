@@ -27,24 +27,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
            JOIN u.roles r
            WHERE r.name = :roleName
            """)
+
         List<User> findByRoleName(@Param("roleName") String roleName);
 
         // Lấy danh sách user theo role name + keyword (fullName hoặc email)
         @Query("""
-           SELECT DISTINCT u
-           FROM User u
-           JOIN u.roles r
-           WHERE r.name = :roleName
-             AND (
-                 LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                 OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-             )
-           """)
+    SELECT u FROM User u
+    JOIN u.roles r
+    WHERE (:roleName IS NULL OR r.name = :roleName)
+    AND (:keyword IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    """)
         Page<User> searchByRoleNameAndKeyword(@Param("roleName") String roleName,
                                               @Param("keyword") String keyword,
                                               Pageable pageable);
 
-        // Lấy user theo role name + status
+
+    // Lấy user theo role name + status
         @Query("""
            SELECT DISTINCT u
            FROM User u

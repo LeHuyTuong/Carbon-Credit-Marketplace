@@ -12,14 +12,14 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public interface UserService {
-    public User findUserProfileByJwt(String jwt);
-    public User findUserByEmail(String email);
-    public List<User> findALlUser();
+     User findUserProfileByJwt(String jwt);
+     User findUserByEmail(String email);
+     List<User> findALlUser();
     void updatePassword(User user, String newPassword);
     void sendPasswordResetEmail(User user);
     void sendOtpForgotPassword(EmailRequest request)
             throws MessagingException, UnsupportedEncodingException;
-    public UserResponse createUser(UserCreationRequest request, String otp);
-    public void resetPassword(PasswordCreationRequest request);
-    public void changePassword(String jwt, ChangePasswordRequest req);
+     UserResponse createUser(UserCreationRequest request, String otp);
+     void resetPassword(PasswordCreationRequest request);
+     void changePassword(String jwt, ChangePasswordRequest req);
 }

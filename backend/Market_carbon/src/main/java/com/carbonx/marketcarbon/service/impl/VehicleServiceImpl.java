@@ -5,8 +5,10 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
+import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
@@ -15,19 +17,11 @@ import com.carbonx.marketcarbon.service.VehicleService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -36,10 +30,11 @@ public class VehicleServiceImpl implements VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
 
     @Override
     public Long create(VehicleCreateRequest req) {
-        // Check owwner id is exist
+        // Check owner
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User owner = userRepository.findByEmail(email);
@@ -47,13 +42,17 @@ public class VehicleServiceImpl implements VehicleService {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
 
+        Company company = companyRepository.findById(req.getCompany())
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + req.getCompany()));
+
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
                 .yearOfManufacture(req.getYearOfManufacture())
-                .user(owner)
+                .company(company)
+                .owner(owner)
                 .build();
         // B2 save data on repo
         vehicleRepository.save(vehicle);
@@ -70,7 +69,7 @@ public class VehicleServiceImpl implements VehicleService {
         if(owner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
-        return vehicleRepository.findByUserId(owner.getId());
+        return vehicleRepository.findByOwnerId(owner.getId());
     }
 
     @Override

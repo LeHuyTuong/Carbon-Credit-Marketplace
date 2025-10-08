@@ -11,10 +11,10 @@ import java.util.List;
 
 public interface VehicleService {
     // danh cho EV Owner
-    public Long create(VehicleCreateRequest req);
-    public Long update(Long id, VehicleUpdateRequest req)   ;
-    public void delete(Long id);
-    public List<Vehicle> getOwnerVehicles();
+     Long create(VehicleCreateRequest req);
+     Long update(Long id, VehicleUpdateRequest req)   ;
+     void delete(Long id);
+     List<Vehicle> getOwnerVehicles();
 
 }
 

@@ -3,7 +3,6 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
-import com.carbonx.marketcarbon.model.Project;
 import com.carbonx.marketcarbon.service.ProjectService;
 import com.carbonx.marketcarbon.service.VehicleService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
@@ -25,7 +24,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProjectController {
     private final ProjectService projectService;
-    private final VehicleService vehicleService;
 
     @Operation(summary = "Create Project for Admin", description = "Create Project")
     @PostMapping

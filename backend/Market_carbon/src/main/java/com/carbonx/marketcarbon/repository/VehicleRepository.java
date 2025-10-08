@@ -14,7 +14,7 @@ import java.util.Optional;
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     // EV Owner
-    List<Vehicle> findByUserId(Long userId);
+    List<Vehicle> findByOwnerId(Long ownerId);
 
     // Company
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);

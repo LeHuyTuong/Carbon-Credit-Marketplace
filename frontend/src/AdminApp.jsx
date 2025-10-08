@@ -3,9 +3,12 @@ import { Routes, Route } from "react-router-dom";
 import TopBar from "./pages/Dashboard/Admin/global/Topbar";
 import Sidebar from "./pages/Dashboard/Admin/global/Sidebar";
 import Dashboard from "./pages/Dashboard/Admin/dashboard";
-import Team from "./pages/Dashboard/Admin/team";
-import Invoices from "./pages/Dashboard/Admin/invoices";
-import Contacts from "./pages/Dashboard/Admin/contacts";
+import User_Management from "./pages/Dashboard/Admin/User_Management";
+import Transaction_Management from "./pages/Dashboard/Admin/Transaction_Management";
+import Credit_Management from "./pages/Dashboard/Admin/Credit_Management";
+import Report_Management from "./pages/Dashboard/Admin/Report_Management";
+import EV_Management from "./pages/Dashboard/Admin/EV_Management";
+import Project_Management from "./pages/Dashboard/Admin/Project_Management";
 import Bar from "./pages/Dashboard/Admin/bar";
 import Form from "./pages/Dashboard/Admin/form";
 import Line from "./pages/Dashboard/Admin/line";
@@ -32,9 +35,12 @@ function App() {
             <TopBar setIsSidebar={setIsSidebar} />
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/user_management" element={<User_Management />} />
+              <Route path="/credit_management" element={<Credit_Management />} />
+              <Route path="/transaction_management" element={<Transaction_Management />} />
+              <Route path="/report_management" element={<Report_Management />} />
+              <Route path="/ev_management" element={<EV_Management />} />
+              <Route path="/project_management" element={<Project_Management />} />
               <Route path="/form" element={<Form />} />
               <Route path="/bar" element={<Bar />} />
               <Route path="/pie" element={<Pie />} />
