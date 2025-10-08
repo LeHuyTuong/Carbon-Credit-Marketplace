@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "company")
 @Builder
-public class Company extends BaseEntity{
+public class    Company extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
