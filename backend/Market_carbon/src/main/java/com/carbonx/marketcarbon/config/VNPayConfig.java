@@ -1,7 +1,9 @@
 package com.carbonx.marketcarbon.config;
 
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -13,13 +15,26 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class VNPayConfig {
 
-    public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_Returnurl = "http://localhost:8082/vnpay-payment";
-    public static String vnp_TmnCode = "96OF4LE3";
-    public static String vnp_HashSecret = "0ZPE9CA6K7WGWL0J9T33OU2JLLAKBFJK";
-    public static String vnp_apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+    private final VNPayProperties props;
+
+    // Khai báo static nếu chưa có ở chỗ khác
+    public static String vnp_PayUrl;
+    public static String vnp_Returnurl;
+    public static String vnp_TmnCode;
+    public static String vnp_HashSecret;
+    public static String vnp_apiUrl;
+
+    @PostConstruct
+    public void init() {
+        vnp_PayUrl     = props.getPayUrl();
+        vnp_Returnurl  = props.getReturnUrl();
+        vnp_TmnCode    = props.getTmnCode();
+        vnp_HashSecret = props.getHashSecret();
+        vnp_apiUrl     = props.getApiUrl();
+    }
 
     public static String md5(String message) {
         String digest = null;
