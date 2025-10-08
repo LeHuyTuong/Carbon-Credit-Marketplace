@@ -2,15 +2,18 @@ package com.carbonx.marketcarbon.service.admin;
 
 import com.carbonx.marketcarbon.dto.response.PageResponse;
 import com.carbonx.marketcarbon.dto.response.VehicleDetailResponse;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
+import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.SearchRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.service.VehicleControlService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,16 +29,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@RequiredArgsConstructor
 public class VehicleControlServiceImpl implements VehicleControlService {
 
-    @Autowired
-    private  VehicleRepository vehicleRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private SearchRepository searchRepository;
+    private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
+    private final SearchRepository searchRepository;
+    private final CompanyRepository companyRepository;
 
     @Override
     public PageResponse<?> getAllVehiclesWithSortBy(int pageNo, int pageSize, String sorts) {
@@ -70,12 +70,12 @@ public class VehicleControlServiceImpl implements VehicleControlService {
         List<VehicleDetailResponse> responses = vehiclePage.stream()
                 .map( vehicle -> VehicleDetailResponse.builder()
                         .updatedAt(vehicle.getUpdatedAt())
-                        .createAt(vehicle.getCreateAt())
+                        .createdAt(vehicle.getCreateAt())
                         .plateNumber(vehicle.getPlateNumber())
                         .id(vehicle.getId())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
                         .brand(vehicle.getBrand())
                         .model(vehicle.getModel())
+                        .companyId(vehicle.getCompany().getId())
                         .build())
                 .toList(); // toList return về 1 list của VehicleDetailResponse
 
@@ -118,13 +118,13 @@ public class VehicleControlServiceImpl implements VehicleControlService {
 
         List<VehicleDetailResponse> responses = vehiclePage.stream().
                 map(vehicle -> VehicleDetailResponse.builder()
-                        .createAt(vehicle.getCreateAt())
+                        .createdAt(vehicle.getCreateAt())
                         .updatedAt(vehicle.getUpdatedAt())
                         .plateNumber(vehicle.getPlateNumber())
                         .id(vehicle.getId())
                         .brand(vehicle.getBrand())
                         .model(vehicle.getModel())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
+                        .companyId(vehicle.getCompany().getId())
                         .build())
                 .toList();
 
@@ -176,9 +176,9 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         vehicle.getPlateNumber(),
                         vehicle.getBrand(),
                         vehicle.getModel(),
-                        vehicle.getYearOfManufacture(),
                         vehicle.getCreateAt(),
-                        vehicle.getUpdatedAt()
+                        vehicle.getUpdatedAt(),
+                        vehicle.getCompany().getId()
                 )).toList();
 
         return PageResponse.builder()
@@ -199,9 +199,9 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         vehicle.getPlateNumber(),
                         vehicle.getBrand(),
                         vehicle.getModel(),
-                        vehicle.getYearOfManufacture(),
                         vehicle.getCreateAt(),
-                        vehicle.getUpdatedAt()
+                        vehicle.getUpdatedAt(),
+                        vehicle.getCompany().getId()
                 )).toList(); // return về 1 list của Vehicle
     }
 }

@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "company")
 @Builder
-public class Company extends BaseEntity{
+public class    Company extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,8 +42,8 @@ public class Company extends BaseEntity{
 
     @OneToMany(
             mappedBy = "company",
-            fetch = FetchType.LAZY,
-            cascade = { CascadeType.MERGE}
+            fetch = FetchType.LAZY
     )
+    @JsonIgnore // // CHẶN vòng lặp từ Company -> vehicles -> Vehicle -> company...
     private List<Vehicle> vehicles = new ArrayList<>();
 }

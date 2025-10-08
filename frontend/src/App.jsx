@@ -14,6 +14,9 @@ import TermsOfUse from './pages/Term&Privacy/TermsOfUse.jsx';
 import ManageVehicle from './pages/Dashboard/EVOwner/ManageVehicle/ManageVehicle.jsx';
 
 import KYC from './pages/KYC/KYC.jsx';
+import Profile from './pages/Profile/Profile.jsx';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 //  import AdminApp
 import AdminApp from './AdminApp.jsx';
@@ -50,6 +53,7 @@ export default function App() {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
           <Route path="/kyc" element={<KYC />} />
+          <Route path="/profile" element={<Profile />} />
           <Route
             path="/managevehicle"
             element={
@@ -68,6 +72,15 @@ export default function App() {
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    <ToastContainer
+        position="top-center"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+      />
     </BrowserRouter>
   );
 }

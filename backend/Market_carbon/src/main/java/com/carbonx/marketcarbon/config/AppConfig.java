@@ -38,6 +38,7 @@ public class AppConfig {
             "/api/v1/verify-otp",
             "/api/v1/check-exists-user",
             "/api/v1/send-otp-register",
+            "/api/v1/payment/submitOrder",
     };
 
 
