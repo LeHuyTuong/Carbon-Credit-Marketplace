@@ -14,7 +14,6 @@ public class VehicleDetailResponse {
     private String plateNumber;
     private String brand;
     private String model;
-    private Integer yearOfManufacture;
     private OffsetDateTime createAt;
     private OffsetDateTime updatedAt;
 

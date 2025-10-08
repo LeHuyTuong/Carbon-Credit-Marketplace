@@ -21,10 +21,6 @@ public class Vehicle extends BaseEntity {
     @Column(length=128,  nullable=false)
     private String model;
 
-    @Column( nullable=false)
-    @Min(1950) @Max(2050)
-    private Integer yearOfManufacture;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable =false)
     private User owner;

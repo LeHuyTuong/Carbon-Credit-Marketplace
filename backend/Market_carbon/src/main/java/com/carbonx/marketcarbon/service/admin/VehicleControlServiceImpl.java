@@ -73,7 +73,6 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         .createAt(vehicle.getCreateAt())
                         .plateNumber(vehicle.getPlateNumber())
                         .id(vehicle.getId())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
                         .brand(vehicle.getBrand())
                         .model(vehicle.getModel())
                         .build())
@@ -124,7 +123,6 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         .id(vehicle.getId())
                         .brand(vehicle.getBrand())
                         .model(vehicle.getModel())
-                        .yearOfManufacture(vehicle.getYearOfManufacture())
                         .build())
                 .toList();
 
@@ -176,7 +174,6 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         vehicle.getPlateNumber(),
                         vehicle.getBrand(),
                         vehicle.getModel(),
-                        vehicle.getYearOfManufacture(),
                         vehicle.getCreateAt(),
                         vehicle.getUpdatedAt()
                 )).toList();
@@ -199,7 +196,6 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                         vehicle.getPlateNumber(),
                         vehicle.getBrand(),
                         vehicle.getModel(),
-                        vehicle.getYearOfManufacture(),
                         vehicle.getCreateAt(),
                         vehicle.getUpdatedAt()
                 )).toList(); // return về 1 list của Vehicle

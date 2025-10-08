@@ -44,7 +44,6 @@ public class VehicleServiceImpl implements VehicleService {
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
-                .yearOfManufacture(req.getYearOfManufacture())
                 .owner(owner)
                 .build();
         // B2 save data on repo
@@ -76,7 +75,6 @@ public class VehicleServiceImpl implements VehicleService {
 
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
-        vehicle.setYearOfManufacture(req.getYear());
         vehicle.setPlateNumber(req.getPlateNumber());
         vehicle.setBrand(req.getBrand());
         vehicle.setModel(req.getModel());

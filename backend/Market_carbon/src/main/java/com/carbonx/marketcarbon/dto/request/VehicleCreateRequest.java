@@ -18,12 +18,6 @@ public class VehicleCreateRequest {
     @NotNull(message = "brand is not null")
     private String brand;
 
-    @NotNull(message = "manufacturer is not null")
-    private String manufacturer;
-
-    @NotNull(message = "year of manufacture is not null")
-    private Integer yearOfManufacture;
-
     @NotNull(message = "companyId  is not null")
     private Long company;
 
