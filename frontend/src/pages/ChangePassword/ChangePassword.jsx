@@ -1,48 +1,61 @@
-import { useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useRef, useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Formik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 import useRipple from "../../hooks/useRipple";
-import { useForm } from "../../hooks/useForm";
+import { apiFetch } from "../../utils/apiFetch";
+
+const schema = Yup.object().shape({
+  password: Yup.string()
+    .required("Password is required")
+    .min(8, "At least 8 characters")
+    .matches(/[a-z]/, "Must contain a lowercase letter")
+    .matches(/[A-Z]/, "Must contain an uppercase letter")
+    .matches(/\d/, "Must contain a number")
+    .matches(/[^a-zA-Z0-9]/, "Must contain a special character"),
+  confirm: Yup.string()
+    .oneOf([Yup.ref("password"), null], "Passwords do not match")
+    .required("Please re-enter your password"),
+});
 
 export default function ChangePassword() {
   const nav = useNavigate();
+  const { state } = useLocation(); // nhận { email, otp } từ màn OTP
+  const email = state?.email?.trim();
+  const otp = state?.otp;
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
-  //validator riêng cho change pass
-  const validators = {
-    password: (val) => {
-      if (!val) return 'Password is required';
-      if (val.length < 6) return 'At least 6 characters';
-      return '';
-    },
-    confirm: (val, values) => {
-      if (!val) return 'Please re-enter your password';
-      if (val !== values.password) return 'Passwords do not match';
-      return '';
-    },
-  };
+  //nếu thiếu context => quay lại flow quên mật khẩu
+  useEffect(() => {
+    if (!email || !otp) {
+      toast.warn("Missing reset context. Please start again.");
+      nav("/forgot-password", { replace: true });
+    }
+  }, [email, otp, nav]);
 
-  const {
-    values,
-    setValue,
-    errors,
-    show,
-    validateForm,
-    markTouched,
-    setSubmitted,
-  } = useForm({password: '', confirm: ''}, validators);
-
-  const submit = async (ev) => {
-    ev.preventDefault();
-    setSubmitted(true);
-    if (!validateForm()) return;
-
+  const handleSubmit = async (values) => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800)); //giả lập API
-    setLoading(false);
+    try {
+      await apiFetch("/api/v1/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          otp,
+          password: values.password,
+        }),
+      });
 
-    nav('/login', { replace: true, state: { email: values.email } });
+      toast.success("Password has been reset. Please log in.");
+      nav("/login", { replace: true, state: { email } });
+    } catch (err) {
+      console.error("Reset error:", err);
+      toast.error(err.message || "Reset password failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,68 +65,98 @@ export default function ChangePassword() {
           <div className="card-body p-4 p-md-5">
             <h1 className="h4 mb-4 text-center">Reset Password</h1>
 
-            <form onSubmit={submit} noValidate>
-              {/*password */}
-              <div className="mb-3">
-                <label htmlFor="password" className="form-label">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  className={`form-control form-control-sm ${show('password') ? 'is-invalid' : ''}`}
-                  value={values.password}
-                  onChange={(e) => setValue('password', e.target.value)}
-                  onBlur={() => markTouched('password')}
-                  placeholder="••••••"
-                  autoComplete="new-password"
-                  required
-                />
-                {show('password') && <div className="invalid-feedback">{errors.password}</div>}
-              </div>
+            <Formik
+              initialValues={{ password: "", confirm: "" }}
+              validationSchema={schema}
+              onSubmit={handleSubmit}
+            >
+              {({
+                handleSubmit,
+                handleChange,
+                handleBlur,
+                values,
+                errors,
+                touched,
+              }) => (
+                <form noValidate onSubmit={handleSubmit}>
+                  {/*password */}
+                  <div className="mb-3">
+                    <label htmlFor="password" className="form-label">
+                      New Password
+                    </label>
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      className={`form-control form-control-sm ${
+                        touched.password && errors.password ? "is-invalid" : ""
+                      }`}
+                      value={values.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      required
+                    />
+                    {touched.password && errors.password && (
+                      <div className="invalid-feedback">{errors.password}</div>
+                    )}
+                  </div>
 
-              {/*confirm password */}
-              <div className="mb-3">
-                <label htmlFor="confirm" className="form-label">Re-enter Password</label>
-                <input
-                  id="confirm"
-                  type="password"
-                  className={`form-control form-control-sm ${show('confirm') ? 'is-invalid' : ''}`}
-                  value={values.confirm}
-                  onChange={(e) => setValue('confirm', e.target.value)}
-                  onBlur={() => markTouched('confirm')}
-                  placeholder="••••••"
-                  autoComplete="new-password"
-                  required
-                />
-                {show('confirm') && <div className="invalid-feedback">{errors.confirm}</div>}
-              </div>
+                  {/*confirm password */}
+                  <div className="mb-3">
+                    <label htmlFor="confirm" className="form-label">
+                      Re-enter Password
+                    </label>
+                    <input
+                      id="confirm"
+                      name="confirm"
+                      type="password"
+                      className={`form-control form-control-sm ${
+                        touched.confirm && errors.confirm ? "is-invalid" : ""
+                      }`}
+                      value={values.confirm}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      required
+                    />
+                    {touched.confirm && errors.confirm && (
+                      <div className="invalid-feedback">{errors.confirm}</div>
+                    )}
+                  </div>
 
-              {/*change btn */}
-                <div class="modal-footer gap-2">
-                  <button onClick={() => nav(-2)} //quay lại trang login
-                          type="button" 
-                          className="btn btn-secondary" 
-                          data-bs-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                          type="submit" 
-                          disabled={loading}
-                          className="btn btn-primary"
-                          onClick={(e) => ripple(e, btnRippleRef.current)}
-                        >
-                          <span ref={btnRippleRef} className="ripple-host" />
-                            {loading && (
-                              <span
-                                className="spinner-border spinner-border-sm me-2"
-                                role="status"
-                                aria-hidden="true"
-                              />
-                            )}
-                            {loading ? 'Reset your password…' : 'Save changes'}
-                </button>
-              </div>
-            </form>
+                  {/*action buttons */}
+                  <div className="modal-footer gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => nav("/login", { replace: true })}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn btn-primary position-relative overflow-hidden"
+                      onClick={(e) => ripple(e, btnRippleRef.current)}
+                    >
+                      <span ref={btnRippleRef} className="ripple-host" />
+                      {loading && (
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {loading ? "Resetting..." : "Save changes"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>
