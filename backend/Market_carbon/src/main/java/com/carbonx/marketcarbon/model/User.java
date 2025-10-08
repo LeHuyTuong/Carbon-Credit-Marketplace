@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon.model;
 
-import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -25,9 +24,6 @@ public class User {
     @JsonIgnore
     private String passwordHash;
 
-    @Column( length = 255)
-    private String fullName;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length = 16)
     @Builder.Default
@@ -36,10 +32,6 @@ public class User {
     @Column(name = "otp_code")
     @JsonIgnore
     private String otpCode;
-
-    @ManyToOne(fetch = FetchType.EAGER, optional = true) // cho phép null nếu register chưa có DN
-    @JoinColumn(name = "company_id", nullable = true) // cột FK cho phép NULL, không default 0
-    private Company company;
 
     @Column(name = "otp_expiry_at")
     @JsonIgnore

@@ -43,10 +43,8 @@ public class ReportServiceImpl implements ReportService {
                 String confirm = "This certificate confirms that";
                 cont.showText(confirm);
                 cont.newLine();
+                String fullName = "hehe";
 
-
-                String fullName = (user != null && user.getFullName() != null)
-                        ? user.getFullName() : "Holder";
                 // TODO: thay <CREDITS> bằng dữ liệu thực
                 cont.showText(fullName + " has purchased <CREDITS> CARBON CREDITS");
                 cont.newLine();

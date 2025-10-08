@@ -24,7 +24,12 @@ public enum ErrorCode {
     USER_NOT_EXISTED(404, "User not existed", HttpStatus.NOT_FOUND),
     USER_EXISTED(400, "User existed", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAILED(500, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),
-    ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND);
+    ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND),
+    SELLER_NOT_FOUND(404, "Seller not found", HttpStatus.NOT_FOUND),
+    VEHICLE_NOT_FOUND(404, "Vehicle not found", HttpStatus.NOT_FOUND),
+    REPORT_INVALID_STATE(404,"Report closed",HttpStatus.NOT_FOUND),
+    REPORT_NOT_FOUND(404, "Report not found", HttpStatus.NOT_FOUND),
+    FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND);
 
     private int code;
     private String message;

@@ -82,7 +82,6 @@ public class DataInitializer {
 
                 User user = User.builder()
                         .email(ADMIN_USER_NAME)
-                        .fullName("System Administrator")
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
                         .roles(new HashSet<>(Set.of(adminRole)))
                         .otpCode(null)

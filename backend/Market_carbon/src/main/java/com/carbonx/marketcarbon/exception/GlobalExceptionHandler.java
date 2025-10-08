@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.exception;
 
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
+import jakarta.validation.ConstraintDefinitionException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -113,8 +115,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse<Object>> handleOther(Exception ex) {
         log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildErrorResponse("500", "Internal error"));
+                .body(buildErrorResponse("500", errorMsg));
     }
 
     // 400 - Validation
@@ -137,8 +140,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<CommonResponse<Object>> ResourceNotFoundException(Exception ex) {
         log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", "ID exists "));
+                .body(buildErrorResponse("400", errorMsg));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<CommonResponse<Object>> BadCredentialsException(Exception ex) {
+        log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("400", errorMsg));
+    }
+
+    @ExceptionHandler(ConstraintDefinitionException.class)
+    public ResponseEntity<CommonResponse<Object>> ConstraintDefinitionException(Exception ex) {
+        log.error("Unhandled error", ex);
+        String errorMsg = ex.getMessage();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("400", errorMsg));
     }
 
 }

@@ -9,6 +9,21 @@ const PieChart = () => {
   return (
     <ResponsivePie
       data={data}
+      colors={{ datum: "data.color" }}
+      tooltip={({ datum }) => (
+        <div
+          style={{
+            background: "#222",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            color: "#fff",
+            fontSize: "14px",
+          }}
+        >
+          <strong>{datum.label}</strong>: {datum.value}
+        </div>
+      )}
+
       theme={{
         axis: {
           domain: {
@@ -51,12 +66,13 @@ const PieChart = () => {
       arcLinkLabelsThickness={2}
       arcLinkLabelsColor={{ from: "color" }}
       enableArcLabels={false}
-      arcLabelsRadiusOffset={0.4}
+      arcLabelsRadiusOffset={0.55}
       arcLabelsSkipAngle={7}
       arcLabelsTextColor={{
         from: "color",
-        modifiers: [["darker", 2]],
+        modifiers: [["darker", 3]],
       }}
+
       defs={[
         {
           id: "dots",

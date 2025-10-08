@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+# Ignore local data folder in FE
+frontend/src/data/
+
