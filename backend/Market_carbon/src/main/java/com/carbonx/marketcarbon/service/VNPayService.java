@@ -35,9 +35,12 @@ public class VNPayService {
         String locate = "vn";
         vnp_Params.put("vnp_Locale", locate);
 
-        urlReturn += VNPayConfig.vnp_Returnurl;
-        vnp_Params.put("vnp_ReturnUrl", urlReturn);
-        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+//        urlReturn += VNPayConfig.vnp_Returnurl;
+////        vnp_Params.put("vnp_ReturnUrl", urlReturn);
+//        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+
+        String vnp_ReturnUrl = VNPayConfig.vnp_Returnurl;  // Lấy từ config
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");

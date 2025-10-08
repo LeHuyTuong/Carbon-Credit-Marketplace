@@ -25,6 +25,7 @@ public enum ErrorCode {
     USER_EXISTED(400, "User existed", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAILED(500, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),
     DOCUMENT_NUMBER_INVALID(400, "Currrent Document number is incorrect", HttpStatus.BAD_REQUEST),
+    VEHICLE_PLATE_EXISTS(400, "Vehicle is exist", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND);
 
     private int code;

@@ -3,10 +3,11 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@Controller
 @RequestMapping("/api/v1/payment")
 @RequiredArgsConstructor
 public class PaymentController {

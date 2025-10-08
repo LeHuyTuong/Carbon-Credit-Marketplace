@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <title>Thanh toán</title>
-    <link rel="icon" type="image/png" href="/images/vnpay-logo.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/vnpay-logo.png">
 </head>
 
 <body>
@@ -15,7 +16,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <img th:src="@{/images/vnpay-logo.png}" style="width: 200px" alt="VNPay">
+                    <img th:src="@{/vnpay-logo.png}" style="width: 200px" alt="VNPay">
                     <h2 class="card-title">Thanh Toán Đơn Hàng</h2>
                     <form th:action="@{/api/v1/payment/submitOrder}" method="post">
                         <div class="form-group">

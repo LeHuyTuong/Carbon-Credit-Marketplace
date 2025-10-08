@@ -19,6 +19,6 @@ public class VehicleCreateRequest {
     private String brand;
 
     @NotNull(message = "companyId  is not null")
-    private Long company;
+    private Long companyId;
 
 }
