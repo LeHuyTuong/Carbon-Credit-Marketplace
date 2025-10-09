@@ -43,13 +43,4 @@ public class AuthController {
         return ResponseEntity.ok(ResponseUtil.success("trace-logout", authService.logout(bearer)));
     }
 
-    @PostMapping("/reset-token")
-    public ResponseEntity<CommonResponse<MessageResponse>> resetPassword(@RequestBody ResetPasswordRequest req) {
-        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password", authService.resetPassword(req)));
-    }
-
-    @PostMapping("/reset-password-request")
-    public ResponseEntity<CommonResponse<MessageResponse>> resetPasswordRequest(@RequestParam("email") String email) {
-        return ResponseEntity.ok(ResponseUtil.success("trace-reset-password-request", authService.resetPasswordRequest(email)));
-    }
 }
