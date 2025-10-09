@@ -34,3 +34,6 @@ build/
 # Ignore local data folder in FE
 frontend/src/data/
 
+frontend/*
+
+
