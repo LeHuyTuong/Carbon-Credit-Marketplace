@@ -29,7 +29,12 @@ public enum ErrorCode {
     VEHICLE_NOT_FOUND(404, "Vehicle not found", HttpStatus.NOT_FOUND),
     REPORT_INVALID_STATE(404,"Report closed",HttpStatus.NOT_FOUND),
     REPORT_NOT_FOUND(404, "Report not found", HttpStatus.NOT_FOUND),
-    FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND);
+    FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND),
+    COMPANY_NOT_FOUND(404, "Company not found", HttpStatus.NOT_FOUND),
+    PROJECT_NOT_FOUND(404, "Project not found", HttpStatus.NOT_FOUND),
+    INVALID_STATE_TRANSITION(400, "Invalid state transition",HttpStatus.BAD_REQUEST),
+    DUPLICATE_RESOURCE(400, "Duplicate tittle ",HttpStatus.BAD_REQUEST),
+    INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;
