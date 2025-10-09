@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.OtpPurpose;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
@@ -24,7 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -64,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         newUser.setOtpCode(otp);
         newUser.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
+        newUser.setOtpPurpose(OtpPurpose.REGISTER);
         userRepository.save(newUser);
 
         log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
@@ -106,24 +110,34 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
 
+        // Nếu OTP dùng cho quên mật khẩu → trả token tạm thay vì JWT login
+        if (user.getOtpPurpose() == OtpPurpose.FORGOT_PASSWORD) {
+            user.setOtpCode(null);
+            user.setOtpExpiryDate(null);
+            userRepository.save(user);
+
+            String resetToken = jwtProvider.generateTemporaryToken(user, Duration.ofMinutes(10));
+            AuthResponse response = new AuthResponse();
+            response.setJwt(resetToken);
+            response.setMessage("OTP verified for password reset");
+            response.setRoles(Collections.emptyList());
+            return response;
+        }
+
+        // Nếu OTP dùng cho đăng ký / đăng nhập → cấp JWT login như cũ
         user.setOtpCode(null);
         user.setOtpExpiryDate(null);
         user.setStatus(USER_STATUS.ACTIVE);
         userRepository.save(user);
 
-        String token = jwtProvider.generateToken(user);
-
+        String jwt = jwtProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setJwt(token);
+        authResponse.setJwt(jwt);
         authResponse.setMessage("OTP verified successfully");
-        authResponse.setRoles(
-                user.getRoles().stream()
-                        .map(Role::getName)   // lấy tên role từ entity Role
-                        .toList()
-        );
-
+        authResponse.setRoles(user.getRoles().stream().map(Role::getName).toList());
         return authResponse;
     }
+
 
     @Override
     public AuthResponse login(LoginRequest req) {
@@ -158,29 +172,6 @@ public class AuthServiceImpl implements AuthService {
         return new MessageResponse("Đăng xuất thành công");
     }
 
-    @Override
-    public MessageResponse resetPassword(ResetPasswordRequest req) {
-        PasswordResetToken resetToken = passwordResetTokenService.findByToken(req.getToken());
-        if (resetToken == null) throw new AppException(ErrorCode.UNAUTHORIZED);
-        if (resetToken.isExpired()) {
-            passwordResetTokenService.delete(resetToken);
-            throw new AppException(ErrorCode.INVALID_OTP);
-        }
-
-        User user = resetToken.getUser();
-        userService.updatePassword(user, req.getPassword());
-        passwordResetTokenService.delete(resetToken);
-
-        return new MessageResponse("Password updated successfully");
-    }
-
-    @Override
-    public MessageResponse resetPasswordRequest(String email) {
-        User user = userService.findUserByEmail(email);
-        if (user == null) throw new AppException(ErrorCode.EMAIL_INVALID);
-        userService.sendPasswordResetEmail(user);
-        return new MessageResponse("Password reset email sent successfully");
-    }
 
 
 }
