@@ -1,0 +1,93 @@
+[33mcommit d61c2ba03ddcddd260f37e829ed2d65f587b849e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mUpfileandAWS[m[33m)[m
+Author: giakhiem20051710 <giakhiem20051710@gmail.com>
+Date:   Wed Oct 8 12:38:01 2025 +0700
+
+    chore: stop tracking frontend folder
+
+ frontend/.gitignore                                |   10 [31m-[m
+ frontend/Dockerfile                                |   10 [31m-[m
+ frontend/README.md                                 |  108 [31m-[m
+ frontend/favicon.png                               |  Bin [31m96518[m -> [32m0[m bytes
+ frontend/index.html                                |   15 [31m-[m
+ frontend/package-lock.json                         | 3901 [31m--------------------[m
+ frontend/package.json                              |   49 [31m-[m
+ frontend/src/AdminApp.jsx                          |   59 [31m-[m
+ frontend/src/App.jsx                               |   73 [31m-[m
+ frontend/src/admin.css                             |   35 [31m-[m
+ frontend/src/assets/110832900.jpg                  |  Bin [31m147309[m -> [32m0[m bytes
+ frontend/src/assets/background.png                 |  Bin [31m254735[m -> [32m0[m bytes
+ frontend/src/assets/car-front-fill.svg             |    3 [31m-[m
+ frontend/src/assets/charging-station.png           |  Bin [31m14760[m -> [32m0[m bytes
+ frontend/src/assets/clipboard.png                  |  Bin [31m9580[m -> [32m0[m bytes
+ frontend/src/assets/logo.png                       |  Bin [31m139157[m -> [32m0[m bytes
+ frontend/src/assets/transaction.png                |  Bin [31m31089[m -> [32m0[m bytes
+ frontend/src/assets/vinfast-vfe34.png              |  Bin [31m337755[m -> [32m0[m bytes
+ ...6085100291_e9dc9606a1f54262e26d39713314ff3a.jpg |  Bin [31m248986[m -> [32m0[m bytes
+ frontend/src/components/Chart/BarChart.jsx         |  175 [31m-[m
+ frontend/src/components/Chart/GeographyChart.jsx   |   85 [31m-[m
+ frontend/src/components/Chart/Header.jsx           |   24 [31m-[m
+ frontend/src/components/Chart/LineChart.jsx        |  117 [31m-[m
+ frontend/src/components/Chart/PieChart.jsx         |  125 [31m-[m
+ frontend/src/components/Chart/ProgressCircle.jsx   |   22 [31m-[m
+ frontend/src/components/Chart/StatBox.jsx          |   42 [31m-[m
+ frontend/src/components/Features/Features.jsx      |   88 [31m-[m
+ frontend/src/components/Features/FeaturesAdmin.jsx |    0
+ frontend/src/components/Features/features.css      |   56 [31m-[m
+ frontend/src/components/Footer/Footer.jsx          |   72 [31m-[m
+ frontend/src/components/Footer/footer.css          |   88 [31m-[m
+ frontend/src/components/Hero/Hero.jsx              |   46 [31m-[m
+ frontend/src/components/Hero/HeroAdmin.jsx         |    0
+ frontend/src/components/Hero/hero.css              |   29 [31m-[m
+ frontend/src/components/Navbar/Navbar.jsx          |  155 [31m-[m
+ frontend/src/components/Navbar/SideBar.jsx         |    0
+ frontend/src/components/Navbar/navbar.css          |   67 [31m-[m
+ frontend/src/components/OTPInput/OTPInput.jsx      |   57 [31m-[m
+ frontend/src/components/OTPInput/otpinput.css      |   22 [31m-[m
+ frontend/src/context/AuthContext.jsx               |   51 [31m-[m
+ frontend/src/hooks/useForm.js                      |   43 [31m-[m
+ frontend/src/hooks/useRipple.js                    |   17 [31m-[m
+ frontend/src/main.jsx                              |   19 [31m-[m
+ .../src/pages/ChangePassword/ChangePassword.jsx    |  122 [31m-[m
+ .../Dashboard/Admin/Credit_Management/index.jsx    |  147 [31m-[m
+ .../pages/Dashboard/Admin/EV_Management/index.jsx  |   82 [31m-[m
+ .../Dashboard/Admin/Project_Management/index.jsx   |  126 [31m-[m
+ .../Dashboard/Admin/Report_Management/index.jsx    |  104 [31m-[m
+ .../Admin/Transaction_Management/index.jsx         |  143 [31m-[m
+ .../Dashboard/Admin/User_Management/index.jsx      |  150 [31m-[m
+ frontend/src/pages/Dashboard/Admin/bar/index.jsx   |   16 [31m-[m
+ .../pages/Dashboard/Admin/calendar/calendar.jsx    |  131 [31m-[m
+ .../src/pages/Dashboard/Admin/contacts/index.jsx   |  103 [31m-[m
+ .../src/pages/Dashboard/Admin/dashboard/index.jsx  |  284 [31m--[m
+ frontend/src/pages/Dashboard/Admin/faq/index.jsx   |   81 [31m-[m
+ frontend/src/pages/Dashboard/Admin/form/index.jsx  |  154 [31m-[m
+ .../src/pages/Dashboard/Admin/geography/index.jsx  |   24 [31m-[m
+ .../src/pages/Dashboard/Admin/global/Sidebar.jsx   |  249 [31m--[m
+ .../src/pages/Dashboard/Admin/global/Topbar.jsx    |   54 [31m-[m
+ .../src/pages/Dashboard/Admin/invoices/index.jsx   |   83 [31m-[m
+ frontend/src/pages/Dashboard/Admin/line/index.jsx  |   16 [31m-[m
+ frontend/src/pages/Dashboard/Admin/pie/index.jsx   |   16 [31m-[m
+ frontend/src/pages/Dashboard/Admin/team/index.jsx  |  109 [31m-[m
+ frontend/src/pages/Dashboard/CCBuyer/Dashboard.jsx |    0
+ frontend/src/pages/Dashboard/CCBuyer/Wallet.jsx    |    0
+ frontend/src/pages/Dashboard/CCBuyer/index.js      |    0
+ frontend/src/pages/Dashboard/Company/Dashboard.jsx |    0
+ .../src/pages/Dashboard/Company/ListCredits.jsx    |    0
+ frontend/src/pages/Dashboard/Company/index.js      |    0
+ .../EVOwner/ManageVehicle/ManageVehicle.jsx        |  236 [31m--[m
+ .../Dashboard/EVOwner/ManageVehicle/manage.css     |  126 [31m-[m
+ .../src/pages/ForgotPassword/ForgotPassword.jsx    |  134 [31m-[m
+ frontend/src/pages/Home/Home.jsx                   |   14 [31m-[m
+ frontend/src/pages/KYC/KYC.jsx                     |  137 [31m-[m
+ frontend/src/pages/Login/Login.jsx                 |  165 [31m-[m
+ frontend/src/pages/Market/Marketplace.jsx          |    3 [31m-[m
+ frontend/src/pages/OTP/OTP.jsx                     |  146 [31m-[m
+ frontend/src/pages/OTP/otp.css                     |   24 [31m-[m
+ frontend/src/pages/Register/Register.jsx           |  242 [31m--[m
+ frontend/src/pages/Term&Privacy/Privacy.jsx        |  109 [31m-[m
+ frontend/src/pages/Term&Privacy/TermsOfUse.jsx     |  104 [31m-[m
+ frontend/src/styles/style.css                      |   82 [31m-[m
+ frontend/src/theme.js                              |  214 [31m--[m
+ frontend/src/utils/SanitizeData.js                 |   41 [31m-[m
+ frontend/src/utils/carbonCalculator.js             |    0
+ frontend/vite.config.js                            |   41 [31m-[m
+ 86 files changed, 9675 deletions(-)
