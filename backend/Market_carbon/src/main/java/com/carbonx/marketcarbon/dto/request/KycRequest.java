@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.dto.request;
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
@@ -36,10 +37,11 @@ public class KycRequest {
     @NotEmpty(message = "documentNumber is not empty ")
     private String documentNumber;
 
-    @NotNull(groups = Update.class)
-    @JsonProperty("birthDate")
-    @JsonFormat(pattern = "yyyy-MM-dd")      // parse "2005-04-21" -> LocalDate
-    private LocalDate birthday;
+    @NotNull(groups = {Create.class, Update.class})
+    @JsonAlias({"birthDate", "birthday"})
+    @JsonFormat(pattern = "yyyy-MM-dd")// parse date
+    private LocalDate birthDate;
+
 
     public interface Create{} // tách riêng , email được create
     public interface Update{} // update ko được đổi email

@@ -1,0 +1,85 @@
+/*background*/
+.auth-hero {
+  background-image: var(--bg-url, url('../assets/background.png'));
+  background-size: cover;
+  background-position: center;
+  padding-top: 60px;
+}
+
+.auth-hero .card-body > h1.h4 {
+  overflow: visible !important;
+  height: auto !important;     
+}
+
+
+.auth-container {
+  max-width: 520px; 
+}
+
+.auth-container h1.h4 {
+  overflow: visible !important;
+  height: auto !important;   
+}
+
+.ripple-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0.5;
+  background: #fff; 
+  animation: ripple-kf 600ms ease-out forwards;
+}
+@keyframes ripple-kf {
+  to { transform: scale(2.4); opacity: 0; }
+}
+.btn-primary { 
+  background:#21f648ff; 
+  border-color:#21f648ff; 
+  color:#ffffffff; 
+}
+.btn-primary:hover { 
+  background:#66f583; 
+  border-color:#86EFAC; 
+}
+
+.btn-outline-secondary{
+  background:rgb(230, 232, 230); 
+  border-color:rgb(230, 232, 230); 
+  color:rgb(0, 0, 0); 
+}
+.btn-outline-secondary:hover{
+  background:#d0cece; 
+  border-color:#d0cece; 
+}
+/*giữ màu xanh khi disabled */
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background: #21f648ff !important;
+  border-color: #21f648ff !important;
+  color: #ffffffff !important;
+  opacity: 0.7;
+}
+.btn-primary:active,
+.btn-primary.active {
+  background: #21f648ff !important;
+  border-color: #21f648ff !important;
+  color: #ffffffff !important;
+  opacity: 0.7;
+}
+
+/*khi nhấn vào item trong dropdown */
+.dropdown-menu .dropdown-item:active {
+  background-color: #21f648 !important;
+  color: #fff !important;
+}
+
+#password::placeholder,
+#confirm::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}

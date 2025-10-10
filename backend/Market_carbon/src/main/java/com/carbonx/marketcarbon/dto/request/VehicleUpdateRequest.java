@@ -7,6 +7,5 @@ public class VehicleUpdateRequest {
     private String plateNumber;
     private String model;
     private String brand;
-    private String manufacturer;
-    private Integer year;
+    private Long companyId;
 }

@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 
 
+import com.carbonx.marketcarbon.dto.response.VehicleResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
@@ -33,7 +34,7 @@ public class VehicleServiceImpl implements VehicleService {
     private final CompanyRepository companyRepository;
 
     @Override
-    public Long create(VehicleCreateRequest req) {
+    public VehicleResponse create(VehicleCreateRequest req) {
         // Check owner
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -41,39 +42,49 @@ public class VehicleServiceImpl implements VehicleService {
         if(owner == null){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
-
-        Company company = companyRepository.findById(req.getCompany())
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + req.getCompany()));
+        if(vehicleRepository.existsByPlateNumber(req.getPlateNumber())){
+            throw new AppException(ErrorCode.VEHICLE_PLATE_EXISTS);
+        }
+        Company company = companyRepository.findById(req.getCompanyId()).orElseThrow(
+                () -> new ResourceNotFoundException("Company not found: id = " + req.getCompanyId()));
 
         // B1 add data form request
         Vehicle vehicle = Vehicle.builder()
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
-                .yearOfManufacture(req.getYearOfManufacture())
-                .company(company)
                 .owner(owner)
+                .company(company)
                 .build();
         // B2 save data on repo
         vehicleRepository.save(vehicle);
 
         log.info("Vehicle created: {}", vehicle.getBrand());
-        return vehicle.getId();
+        return VehicleResponse.builder()
+                .id(vehicle.getId())
+                .plateNumber(req.getPlateNumber())
+                .brand(req.getBrand())
+                .model(req.getModel())
+                .companyId(company.getId())
+                .build();
     }
 
     // cho EV Owner . ko trả về thời gian tạo và thời gian update
-    public List<Vehicle> getOwnerVehicles() {
+    public List<VehicleResponse> getOwnerVehicles() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User owner =  userRepository.findByEmail(email);
         if(owner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
-        return vehicleRepository.findByOwnerId(owner.getId());
+        return vehicleRepository.findByOwnerId(owner.getId())
+                .stream()
+                .map(VehicleResponse::from)
+                .toList();
     }
 
     @Override
-    public Long update(Long id, VehicleUpdateRequest req) {
+    public VehicleResponse update(Long id, VehicleUpdateRequest req) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User owner = userRepository.findByEmail(email);
@@ -83,14 +94,29 @@ public class VehicleServiceImpl implements VehicleService {
 
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow( () -> new ResourceNotFoundException("Vehicle not found") );
-        vehicle.setYearOfManufacture(req.getYear());
+
+        if(vehicleRepository.existsByPlateNumber(req.getPlateNumber())){
+            throw new AppException(ErrorCode.VEHICLE_PLATE_EXISTS);
+        }
+
+        Company company = companyRepository.findById(req.getCompanyId()).orElseThrow(
+                () -> new ResourceNotFoundException("Company not found: id = " + req.getCompanyId()));
+
         vehicle.setPlateNumber(req.getPlateNumber());
         vehicle.setBrand(req.getBrand());
         vehicle.setModel(req.getModel());
+        vehicle.setOwner(owner);
+        vehicle.setCompany(company);
 
         vehicleRepository.save(vehicle);
         log.info("Vehicle updated successfully");
-        return vehicle.getId();
+        return VehicleResponse.builder()
+                .id(vehicle.getId())
+                .plateNumber(req.getPlateNumber())
+                .brand(req.getBrand())
+                .model(req.getModel())
+                .companyId(company.getId())
+                .build();
     }
 
     @Override
