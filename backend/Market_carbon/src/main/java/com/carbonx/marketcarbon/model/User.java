@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.model;
 
+import com.carbonx.marketcarbon.common.OtpPurpose;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -39,6 +40,10 @@ public class User {
     @Column(name = "otp_expiry_at")
     @JsonIgnore
     LocalDateTime otpExpiryDate;
+
+    @Column(name = "otp_purpose")
+    @Enumerated(EnumType.STRING)
+    private OtpPurpose otpPurpose;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

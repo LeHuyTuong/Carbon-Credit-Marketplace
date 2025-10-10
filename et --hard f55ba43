@@ -1,0 +1,71 @@
+[33mf55ba43[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mUpfileandAWS[m[33m, [m[1;31morigin/UpfileandAWS[m[33m)[m HEAD@{0}: checkout: moving from main to UpfileandAWS
+[33m07895ae[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{1}: pull origin main --allow-unrelated-histories: Fast-forward
+[33m2247973[m HEAD@{2}: checkout: moving from UpfileandAWS to main
+[33mf55ba43[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mUpfileandAWS[m[33m, [m[1;31morigin/UpfileandAWS[m[33m)[m HEAD@{3}: Branch: renamed refs/heads/clean-upfileandaws to refs/heads/UpfileandAWS
+[33mf55ba43[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mUpfileandAWS[m[33m, [m[1;31morigin/UpfileandAWS[m[33m)[m HEAD@{5}: commit (initial): Clean AWS credentials and keep safe config
+[33m42a37a9[m HEAD@{6}: checkout: moving from 42a37a9ed6c24db168d91f815a71926f95c13004 to UpfileandAWS
+[33m42a37a9[m HEAD@{7}: commit: update Admin, CVA, report through file, charging, authentication, add aws s3
+[33m4b44bb9[m HEAD@{8}: checkout: moving from 068b0883644a2345e4b475dc0606963ef9252b6f to 4b44bb96bd0be4fcf3c2ec0ed8a60033e62a9dc7
+[33m068b088[m HEAD@{9}: checkout: moving from afafd61ef31029fe90a9fc4e066121d4ea886ebf to 068b0883644a2345e4b475dc0606963ef9252b6f
+[33mafafd61[m HEAD@{10}: checkout: moving from fix to afafd61ef31029fe90a9fc4e066121d4ea886ebf
+[33m69e01b8[m[33m ([m[1;31morigin/fix[m[33m, [m[1;32mfix[m[33m)[m HEAD@{11}: commit: fix bug
+[33mbf00c3e[m HEAD@{12}: pull --no-stat -v --progress origin main: Fast-forward
+[33md7cd438[m HEAD@{13}: commit: fix bug
+[33m6fa8672[m HEAD@{14}: commit (merge): Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into fix
+[33m0979b69[m HEAD@{15}: commit (merge): Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into fix
+[33m4b44bb9[m HEAD@{16}: commit: Update admin feature
+[33m484c1fe[m HEAD@{17}: pull --no-stat -v --progress origin main: Fast-forward
+[33m87c33a8[m HEAD@{18}: commit: Update RBAC
+[33mafafd61[m HEAD@{19}: reset: moving to HEAD
+[33mafafd61[m HEAD@{20}: reset: moving to HEAD
+[33mafafd61[m HEAD@{21}: reset: moving to HEAD
+[33mafafd61[m HEAD@{22}: commit: fix Cors
+[33m083be01[m HEAD@{23}: commit: changePassword
+[33m068b088[m HEAD@{24}: commit: fix AuthController
+[33m456d466[m HEAD@{25}: commit: complete feature login/register/otp/forgot password
+[33m759e24b[m HEAD@{26}: pull --no-stat -v --progress origin main: Fast-forward
+[33m852a119[m HEAD@{27}: reset: moving to 852a11996b4e3f82c87f9a6b7f92738e5b2a563a
+[33m759e24b[m HEAD@{28}: pull --no-stat -v --progress origin main: Fast-forward
+[33m852a119[m HEAD@{29}: commit: fixxxx
+[33m3dbe21e[m HEAD@{30}: commit (merge): Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into fix
+[33m1182a18[m HEAD@{31}: commit: save local changes
+[33m6613885[m HEAD@{32}: checkout: moving from 6613885a9103451666282ed554733f9b26bbe4ec to fix
+[33m6613885[m HEAD@{33}: checkout: moving from ResetpasswordFeature to 6613885a9103451666282ed554733f9b26bbe4ec
+[33m99775b2[m[33m ([m[1;32mResetpasswordFeature[m[33m)[m HEAD@{34}: commit (merge): Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into ResetpasswordFeature
+[33mb6bcf86[m HEAD@{35}: commit: fix bug
+[33m9308e4a[m HEAD@{36}: pull --no-stat -v --progress origin main: Fast-forward
+[33m1ab5ecf[m[33m ([m[1;31morigin/ResetpasswordFeature[m[33m)[m HEAD@{37}: commit (merge): Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into ResetpasswordFeature
+[33m6a4fa16[m HEAD@{38}: commit: add DTO contain request and response
+[33m6613885[m HEAD@{39}: commit: Update response, request, common, mapper
+[33mb450644[m HEAD@{40}: commit: add global exception handler with unified response format
+[33m947d33b[m HEAD@{41}: commit (merge): Update jwt and global Exception
+[33mcf0e2ff[m[33m ([m[1;32mVehicleFeature[m[33m)[m HEAD@{42}: checkout: moving from VehicleFeature to ResetpasswordFeature
+[33mcf0e2ff[m[33m ([m[1;32mVehicleFeature[m[33m)[m HEAD@{43}: commit: resetpassword
+[33m25a6489[m HEAD@{44}: commit: Vehicle test feature
+[33m9fc643c[m[33m ([m[1;32mfeature/ResponseUtils[m[33m)[m HEAD@{45}: checkout: moving from feature/ResponseUtils to VehicleFeature
+[33m9fc643c[m[33m ([m[1;32mfeature/ResponseUtils[m[33m)[m HEAD@{46}: commit: update login and verifyOtp
+[33m5513e71[m HEAD@{47}: commit: update login and verifyOtp
+[33mcbc815b[m HEAD@{48}: pull --no-stat -v --progress origin main: Fast-forward
+[33m37ba551[m[33m ([m[1;31morigin/feature/ResponseUtils[m[33m)[m HEAD@{49}: commit: update login and verifyOtp
+[33m5fc62f2[m[33m ([m[1;32mfeature/RegisterAndLogin-api[m[33m)[m HEAD@{50}: checkout: moving from feature/RegisterAndLogin-api to feature/ResponseUtils
+[33m5fc62f2[m[33m ([m[1;32mfeature/RegisterAndLogin-api[m[33m)[m HEAD@{51}: commit: change response and update login/register
+[33mba7492a[m HEAD@{52}: commit: Update Login success
+[33m8bcbb75[m HEAD@{53}: pull --no-stat -v --progress origin main: Fast-forward
+[33m3502027[m HEAD@{54}: commit: Update Login success
+[33m19b7c51[m HEAD@{55}: checkout: moving from test to feature/RegisterAndLogin-api
+[33m19b7c51[m HEAD@{56}: commit: Update Register success
+[33m16d9bbd[m HEAD@{57}: rebase (finish): returning to refs/heads/test
+[33m16d9bbd[m HEAD@{58}: rebase (pick): Update AppConfig
+[33m2375277[m HEAD@{59}: rebase (pick): fix JwtTokenValidator
+[33m1bb9acb[m HEAD@{60}: rebase (reword): complete register with JWT
+[33m5c9cd1f[m HEAD@{61}: rebase: fast-forward
+[33m2247973[m HEAD@{62}: rebase (start): checkout 22479732c9720a2f804fff6a3bef37d9e56cfa56
+[33m79acbbe[m HEAD@{63}: commit: Update AppConfig
+[33mb9dda08[m HEAD@{64}: commit: fix JwtTokenValidator
+[33m5c9cd1f[m HEAD@{65}: commit: complete login with JWT
+[33m2247973[m HEAD@{66}: checkout: moving from test to test
+[33m2247973[m HEAD@{67}: branch: Reset to origin/test
+[33m03d494a[m HEAD@{68}: checkout: moving from main to test
+[33m2247973[m HEAD@{69}: checkout: moving from test to main
+[33m03d494a[m HEAD@{70}: checkout: moving from main to test
+[33m2247973[m HEAD@{71}: clone: from github.com:LeHuyTuong/Carbon-Credit-Marketplace.git

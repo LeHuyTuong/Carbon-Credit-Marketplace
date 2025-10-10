@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.model;
 
-import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.common.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
@@ -17,7 +17,7 @@ public class Project extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false,  length = 20)
+    @Column(unique = true, nullable = false,  length = 100)
     private String title;
 
     @Column(nullable = false,  length = 255)
@@ -29,10 +29,31 @@ public class Project extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,  length = 10)
-    private Status status;
+    private ProjectStatus status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "company_id")
     private Company company;
 
+    @Column(name = "parent_project_id")
+    private Long parentProjectId;
+
+    @Column(columnDefinition = "TEXT")
+    private String commitments;            // Cam kết giảm phát thải
+
+    @Column(columnDefinition = "TEXT")
+    private String technicalIndicators;    // Các chỉ số kỹ thuật
+
+    @Column(columnDefinition = "TEXT")
+    private String measurementMethod;      // Phương pháp đo lường
+
+    @Column(length = 255)
+    private String legalDocsUrl;           // Link tài liệu pháp lý (S3/…)
+
+    // ==== Thông tin thẩm định của CVA/đơn vị thẩm định ====
+    @Column(length = 100)
+    private String reviewer;               // Tài khoản/tên đơn vị thẩm định
+
+    @Column(columnDefinition = "TEXT")
+    private String reviewNote;             // Nhận xét khi duyệt
 }

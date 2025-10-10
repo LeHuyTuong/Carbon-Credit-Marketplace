@@ -3,7 +3,6 @@ package com.carbonx.marketcarbon.model;
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.annotation.DocumentNumber;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -43,7 +42,7 @@ public class EVOwner extends BaseEntity{
     @Column(length=100, nullable = false)
     private String address;
 
-    @Column(name = "birth_date", nullable = false)
+    @Column(nullable=false)
     private LocalDate birthDate;
 
     @Column(length=100, unique=true, nullable=false)

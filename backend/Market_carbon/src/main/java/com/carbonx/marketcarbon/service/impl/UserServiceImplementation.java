@@ -1,10 +1,8 @@
     package com.carbonx.marketcarbon.service.impl;
 
     import com.carbonx.marketcarbon.config.JwtProvider;
-    import com.carbonx.marketcarbon.dto.request.ChangePasswordRequest;
-    import com.carbonx.marketcarbon.dto.request.EmailRequest;
-    import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
-    import com.carbonx.marketcarbon.dto.request.UserCreationRequest;
+    import com.carbonx.marketcarbon.dto.request.*;
+    import com.carbonx.marketcarbon.dto.response.MessageResponse;
     import com.carbonx.marketcarbon.dto.response.UserResponse;
     import com.carbonx.marketcarbon.exception.AppException;
     import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -80,21 +78,7 @@
             userRepository.save(user);
         }
 
-        @Override
-        public void sendPasswordResetEmail(User user) {
-            // Generate a random token (you might want to use a library for this)
-            String resetToken = generateRandomToken();
 
-            // Calculate expiry date
-            Date expiryDate = calculateExpiryDate();
-
-            // Save the token in the database
-            PasswordResetToken passwordResetToken = new PasswordResetToken(resetToken,user,expiryDate);
-            passwordResetTokenRepository.save(passwordResetToken);
-
-            // Send an email containing the reset link
-            sendEmail(user.getEmail(), "Password Reset", "Click the following link to reset your password: http://localhost:3000/account/reset-password?token=" + resetToken);
-        }
 
         @Transactional
         public void sendOtpForgotPassword(EmailRequest request)
@@ -173,25 +157,26 @@
             return cal.getTime();
         }
 
+        @Override
         @Transactional
-        public void resetPassword(PasswordCreationRequest request){
-            User user = userRepository.findByEmail(request.getEmail());
-            if (user == null) {
-                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        public MessageResponse resetPassword(ResetPasswordRequest req, String bearerToken) {
+            // ✅ Lấy email từ JWT reset token (header Authorization)
+            String jwt = bearerToken.replace("Bearer ", "");
+            String email = jwtProvider.getEmailFromJwtToken(jwt);
+
+            User user = userRepository.findByEmail(email);
+            if (user == null) throw new AppException(ErrorCode.USER_NOT_EXISTED);
+
+            // ✅ Kiểm tra confirmPassword
+            if (!req.getPassword().equals(req.getConfirmPassword())) {
+                throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
             }
 
-            if (user.getOtpCode() == null || !user.getOtpCode().equals(request.getOtp())) {
-                throw new AppException(ErrorCode.INVALID_OTP);
-            }
-
-            if (user.getOtpExpiryDate() == null || user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
-                throw new AppException(ErrorCode.INVALID_OTP);
-            }
-
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-            user.setOtpCode(null);
-            user.setOtpExpiryDate(null);
+            // ✅ Cập nhật mật khẩu
+            user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
             userRepository.save(user);
+
+            return new MessageResponse("Password updated successfully");
         }
 
         private static String generateOtp(){
