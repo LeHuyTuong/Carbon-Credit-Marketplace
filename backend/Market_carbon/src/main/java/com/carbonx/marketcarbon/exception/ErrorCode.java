@@ -34,6 +34,7 @@ public enum ErrorCode {
     PROJECT_NOT_FOUND(404, "Project not found", HttpStatus.NOT_FOUND),
     INVALID_STATE_TRANSITION(400, "Invalid state transition",HttpStatus.BAD_REQUEST),
     DUPLICATE_RESOURCE(400, "Duplicate tittle ",HttpStatus.BAD_REQUEST),
+    VEHICLE_PLATE_EXISTS(400, "Vehicle plate already exists", HttpStatus.CONFLICT),
     INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST);
 
     private int code;
