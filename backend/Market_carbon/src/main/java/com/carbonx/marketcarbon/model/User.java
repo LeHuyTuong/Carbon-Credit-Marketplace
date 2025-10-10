@@ -1,12 +1,15 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.USER_STATUS;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -45,5 +48,14 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @OneToOne
+    @JsonBackReference
+    private Wallet wallet;
+
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    @JsonIgnore
+    private List<PaymentOrder> paymentOrders = new ArrayList<>();
 }
 

@@ -7,10 +7,10 @@ import com.carbonx.marketcarbon.model.Wallet;
 public interface WalletService {
 
     // Hiện Ví
-    Wallet getUserWallet(User user) throws WalletException;
+    Wallet getUserWallet() throws WalletException;
 
     // nạp tiền vào ví
-    Wallet addBalanceToWallet(Wallet wallet, Long money) throws WalletException;
+    Wallet addBalanceToWallet(Long money) throws WalletException;
 
     // tìm ví
     Wallet findWalletById(Long id) throws WalletException;
