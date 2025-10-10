@@ -1,0 +1,114 @@
+[33md61c2ba[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix-clean-history[m[33m, [m[1;31morigin/fix-clean-history[m[33m, [m[1;32mUpfileandAWS[m[33m)[m chore: stop tracking frontend folder
+[33m86a9b8f[m Fix
+[33m5145d38[m Merge pull request #40 from LeHuyTuong/fix
+[33m453af17[m Merge branch 'main' into fix
+[33m30ec552[m Merge pull request #39 from LeHuyTuong/test
+[33mfde347c[m Update admin feature
+[33m80fa230[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Market-Trading- into test
+[33mbe6e418[m Project + upload download File
+[33m8384af6[m fix call api
+[33m30dcd96[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Credit-Marketplace into test
+[33mdb96550[m update manage  vehicle, code kyc
+[33md3e87aa[m Merge pull request #38 from LeHuyTuong/fix
+[33mc46f60a[m Update RBAC
+[33mef0a8e4[m Merge pull request #37 from LeHuyTuong/test
+[33m8ab3685[m Add CORS
+[33m71c61b1[m Fix
+[33m0784d74[m Merge pull request #36 from LeHuyTuong/fix
+[33m2bf2ca0[m Merge pull request #35 from LeHuyTuong/test
+[33mb40cff8[m Fix Vehicle , Add project
+[33me4e9c9e[m WIP: frontend before rebase
+[33m9c35f2c[m chore: ignore frontend/src/data folder
+[33m3aff31e[m FE: cập nhật tính năng Admin Dashboard + chỉnh sửa FE
+[33mb29ca64[m test fetch API
+[33madfc398[m fix Cors
+[33mda4174d[m Merge pull request #34 from LeHuyTuong/test
+[33m8981f27[m Merge branch 'main' into test
+[33m4d61726[m Sovle conflicts
+[33mcfa429a[m Merge pull request #33 from LeHuyTuong/fix
+[33m0b27137[m Docker file , Enterprise , Project
+[33m056f816[m favicon + OTP flows; refactor AuthContext; fix code
+[33m7c27f60[m changePassword
+[33mfa7025c[m fix AuthController
+[33mf7e8e9c[m complete feature login/register/otp/forgot password
+[33m5e0d39f[m Merge pull request #32 from LeHuyTuong/test
+[33m36e6697[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Market-Trading- into test
+[33mbfd103b[m Sort Search Vehicle
+[33m65097bf[m Merge branch 'rescue-9e55e49' into test
+[33me114a37[m Merge branch 'main' of https://github.com/LeHuyTuong/Carbon-Market-Trading- into test
+[33m9e55e49[m Search Sort Vehicle
+[33mdc71f9e[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Credit-Marketplace into test
+[33m299ac7e[m feat: update frontend components and add new hooks/pages
+[33mba46578[m Merge pull request #28 from LeHuyTuong/fix
+[33m96a5326[m fixxxx
+[33m2d19a6d[m Merge branch 'main' of github.com:LeHuyTuong/Carbon-Credit-Marketplace into fix
+[33mb24595b[m save local changes
+[33m049b867[m Merge remote-tracking branch 'origin/main' into test
+[33m780d775[m Refactor Folder
+[33m6e65c20[m Fix
+[33m07acc66[m Update response, request, common, mapper
+[33me989c75[m add global exception handler with unified response format
+[33m814a251[m Merge pull request #24 from LeHuyTuong/test
+[33m5cb2a67[m Merge branch 'main' into test
+[33mf01c19c[m Change Message to Service Controller
+[33mec666e6[m Merge pull request #23 from LeHuyTuong/ResetpasswordFeature
+[33md450a5c[m Update jwt and global Exception
+[33m9530cbf[m[33m ([m[1;32mVehicleFeature[m[33m)[m resetpassword
+[33m700b842[m Merge pull request #22 from LeHuyTuong/test
+[33m59d2471[m[33m ([m[1;32m17-fix-kyc-vehicle-mapping-with-email-owner_id-of-user[m[33m)[m Merge remote-tracking branch 'origin/test' into test
+[33m93f687b[m PDF
+[33m24c3e48[m report PDF + user ID with vehicle & kyc
+[33mc4c54c3[m Merge pull request #21 from LeHuyTuong/test
+[33mfff0eea[m code Frontend
+[33m96fa8e1[m Merge pull request #20 from LeHuyTuong/test
+[33m32cadb5[m code frontend
+[33mee39f11[m chore(frontend): add .gitignore to exclude node artifacts
+[33mbcc0b9e[m Merge pull request #19 from LeHuyTuong/test
+[33m1ac69d0[m Change config
+[33m6b8fb89[m Vehicle && KYC testing without mapping
+[33m709aec7[m update login and verifyOtp
+[33m79e6ea9[m update login and verifyOtp
+[33mfa73e4f[m update login and verifyOtp
+[33mdee869f[m Merge pull request #16 from LeHuyTuong/test
+[33m343e029[m Vehicle test feature
+[33mc236ace[m Merge branch 'test' of https://github.com/LeHuyTuong/Carbon-Credit-Marketplace into test
+[33mc05ef99[m code Frontend
+[33m369da68[m[33m ([m[1;32mfeature/ResponseUtils[m[33m)[m update login and verifyOtp
+[33m3f193f4[m update login and verifyOtp
+[33m4dd2bf7[m Merge pull request #15 from LeHuyTuong/test
+[33m262d012[m Done Vehicle , KYC
+[33mc6a34b4[m Merge pull request #14 from LeHuyTuong/feature/ResponseUtils
+[33meacfa15[m update login and verifyOtp
+[33m839767b[m Merge pull request #13 from LeHuyTuong/feature/ResponseUtils
+[33mfe745c4[m[33m ([m[1;32mfeature/RegisterAndLogin-api[m[33m)[m change response and update login/register
+[33m0947ebf[m Merge pull request #12 from LeHuyTuong/feature/RegisterAndLogin-api
+[33m10b864a[m Update Login success
+[33mc538841[m Merge pull request #11 from LeHuyTuong/test
+[33m24602f6[m Merge pull request #10 from LeHuyTuong/feature/RegisterAndLogin-api
+[33m9b8f68f[m Gen OTP && Send OTP Email
+[33mbb6ab8e[m Update Login success
+[33m51e2ac2[m Update Register success
+[33m6e6ab95[m Update AppConfig
+[33m6bc6cc8[m fix JwtTokenValidator
+[33m52814b8[m complete register with JWT
+[33me41a96a[m Merge pull request #9 from LeHuyTuong/test
+[33mff5e89c[m test fix
+[33m6685b38[m Merge pull request #8 from LeHuyTuong/test
+[33m503c86b[m Init Frontend
+[33mcea3a4b[m Merge pull request #7 from LeHuyTuong/test
+[33m05339ae[m Change gitignore
+[33m2107287[m implement JWT provider
+[33m267d7f1[m Merge pull request #6 from LeHuyTuong/test
+[33ma7a7538[m Create test for CRUD Vehicle Services
+[33mfd62da7[m Merge pull request #5 from LeHuyTuong/test
+[33ma680ecd[m CRUD Vehicle
+[33mdc43c6f[m CRUD Vehicle
+[33m25582f8[m Merge pull request #4 from LeHuyTuong/test
+[33m2140794[m Database v1.2
+[33m4fcecae[m Merge pull request #3 from LeHuyTuong/test
+[33mc93c82b[m fix: update DB config and API logic
+[33mde6e31e[m build project chuan Restfull API(controler/service/repository/entity/DTO
+[33mb891464[m Init project
+[33m6911bdb[m Merge pull request #1 from LeHuyTuong/test
+[33m186307c[m DataBase Init
+[33macedb5a[m first commit
