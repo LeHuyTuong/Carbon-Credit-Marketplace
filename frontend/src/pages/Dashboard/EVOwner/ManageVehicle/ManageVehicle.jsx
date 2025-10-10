@@ -3,6 +3,7 @@ import "./manage.css";
 import { Button, Modal, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import { getVehicles, createVehicle, updateVehicle, deleteVehicle } from "../api/vehicleApi";
 
 const schema = Yup.object().shape({
   plate: Yup.string().required("License plate is required"),
@@ -12,46 +13,29 @@ const schema = Yup.object().shape({
 });
 
 export default function Manage() {
-  const [vehicles, setVehicles] = useState([
-    { id: 1, code: "EV-0001", plate: "30H-123.45", brand: "VinFast", model: "VF e34", company: "Vinfast", credits: "0.2" },
-    { id: 2, code: "EV-0002", plate: "30H-999.99", brand: "Tesla", model: "Model 3", company: "Tesla", credits: "0.4" },
-  ]);
 
-  const [show, setShow] = useState(false);
-  const [editData, setEditData] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
 
-  const handleClose = () => setShow(false);
-  const handleAdd = () => {
-    setEditData(null);
-    setShow(true);
+  const fetchVehicles = async () => {
+    const data = await getVehicles();
+    setVehicles(data);
   };
 
-  const handleDelete = (id) => {
+  const handleAdd = async (values) => {
+    const newVehicle = await createVehicle(values);
+    setVehicles((prev) => [...prev, newVehicle]);
+  };
+
+  const handleEdit = async (id, values) => {
+    const updatedVehicle = await updateVehicle(id, values);
+    setVehicles((prev) =>
+      prev.map((v) => (v.id === id ? updatedVehicle : v))
+    );
+  };
+
+  const handleDelete = async (id) => {
+    await deleteVehicle(id);
     setVehicles((prev) => prev.filter((v) => v.id !== id));
-  };
-
-  const handleEdit = (vehicle) => {
-    setEditData(vehicle);
-    setShow(true);
-  };
-
-  const handleSubmit = (values) => {
-    if (editData) {
-      //edit xe
-      setVehicles((prev) =>
-        prev.map((v) => (v.id === editData.id ? { ...v, ...values } : v))
-      );
-    } else {
-      //add xe
-      const newVehicle = {
-        ...values,
-        id: Date.now(),
-        code: "EV-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0"),
-      };
-      setVehicles((prev) => [...prev, newVehicle]);
-    }
-    setShow(false);
-    setEditData(null);
   };
 
   return (
