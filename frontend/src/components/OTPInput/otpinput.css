@@ -1,0 +1,22 @@
+.otp-hidden-input{
+  position:absolute; 
+  opacity:0; 
+  width:1px; 
+  height:1px; 
+  pointer-events:none;
+}
+
+.otp-box{
+  width:56px; height:56px; border-radius:10px;
+  font-weight:700; font-size:1.2rem;
+  background:#fff; color:#111;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid rgba(0,0,0,.15);
+}
+
+.otp-focus{
+  border-color:#2ee66b;
+  box-shadow:0 0 0 .25rem rgba(46,230,107,.25);
+}
+
+

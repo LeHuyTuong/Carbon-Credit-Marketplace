@@ -62,7 +62,7 @@ public class KycServiceImpl implements KycService {
                 .address(req.getAddress())
                 .documentType(req.getDocumentType())
                 .documentNumber(req.getDocumentNumber())
-                .birthDate(req.getBirthday())
+                .birthDate(req.getBirthDate())
                 .build();
 
         // B2 lưu data vào repo
@@ -89,7 +89,7 @@ public class KycServiceImpl implements KycService {
         EVOwner.setAddress(req.getAddress());
         EVOwner.setDocumentType(req.getDocumentType());
         EVOwner.setDocumentNumber(req.getDocumentNumber());
-        EVOwner.setBirthDate(req.getBirthday());
+        EVOwner.setBirthDate(req.getBirthDate());
 
         //B2 save lại
         EVOwnerRepository.save(EVOwner);
