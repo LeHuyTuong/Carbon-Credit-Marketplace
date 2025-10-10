@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.dto.request.ChangePasswordRequest;
 import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
+import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -117,20 +118,23 @@ public class UserController {
     }
 
     @PostMapping("/reset-password")
-    CommonResponse<Void> resetPassword(@RequestBody @Valid PasswordCreationRequest request ){
-        userService.resetPassword(request);
+    public CommonResponse<MessageResponse> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request,
+            @RequestHeader("Authorization") String bearerToken) {
 
-        return CommonResponse.<Void>builder()
+        MessageResponse result = userService.resetPassword(request, bearerToken);
+
+        return CommonResponse.<MessageResponse>builder()
                 .requestTrace(UUID.randomUUID().toString())
                 .responseDateTime(OffsetDateTime.now())
-                .responseStatus(
-                        new CommonResponse.ResponseStatus(
-                                String.valueOf(HttpStatus.OK.value()),
-                                "Reset Password Successfully"
-                        )
-                )
+                .responseStatus(new CommonResponse.ResponseStatus(
+                        String.valueOf(HttpStatus.OK.value()),
+                        result.getMessage()
+                ))
+                .responseData(result)
                 .build();
     }
+
     @PostMapping("/change-password")
     public ResponseEntity<CommonResponse<MessageResponse>> changePassword(
             @RequestHeader("Authorization") String bearerToken,

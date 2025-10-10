@@ -24,9 +24,17 @@ public enum ErrorCode {
     USER_NOT_EXISTED(404, "User not existed", HttpStatus.NOT_FOUND),
     USER_EXISTED(400, "User existed", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAILED(500, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),
-    DOCUMENT_NUMBER_INVALID(400, "Currrent Document number is incorrect", HttpStatus.BAD_REQUEST),
-    VEHICLE_PLATE_EXISTS(400, "Vehicle is exist", HttpStatus.NOT_FOUND),
-    ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND);
+    ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND),
+    SELLER_NOT_FOUND(404, "Seller not found", HttpStatus.NOT_FOUND),
+    VEHICLE_NOT_FOUND(404, "Vehicle not found", HttpStatus.NOT_FOUND),
+    REPORT_INVALID_STATE(404,"Report closed",HttpStatus.NOT_FOUND),
+    REPORT_NOT_FOUND(404, "Report not found", HttpStatus.NOT_FOUND),
+    FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND),
+    COMPANY_NOT_FOUND(404, "Company not found", HttpStatus.NOT_FOUND),
+    PROJECT_NOT_FOUND(404, "Project not found", HttpStatus.NOT_FOUND),
+    INVALID_STATE_TRANSITION(400, "Invalid state transition",HttpStatus.BAD_REQUEST),
+    DUPLICATE_RESOURCE(400, "Duplicate tittle ",HttpStatus.BAD_REQUEST),
+    INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;

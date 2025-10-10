@@ -15,6 +15,4 @@ public interface AuthService {
     AuthResponse verifyOtp(VerifyOtpRequest req);
     AuthResponse login(LoginRequest req);
     MessageResponse logout(String bearerToken);
-    MessageResponse resetPassword(ResetPasswordRequest req);
-    MessageResponse resetPasswordRequest(String email);
 }

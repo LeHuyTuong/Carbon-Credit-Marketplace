@@ -80,17 +80,17 @@ public class DataInitializer {
                 Role roleADM = roleRepository.findByName(PredefinedRole.ADMIN_ROLE)
                         .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
 
-                    User user = User.builder()
-                            .email(ADMIN_USER_NAME)
-                            .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
-                            .roles(new HashSet<>(Set.of(adminRole)))
-                            .otpCode(null)
-                            .otpExpiryDate(LocalDateTime.now().plusMinutes(5)) // optional, có thể để null
-                            .build();
+                User user = User.builder()
+                        .email(ADMIN_USER_NAME)
+                        .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .roles(new HashSet<>(Set.of(adminRole)))
+                        .otpCode(null)
+                        .otpExpiryDate(LocalDateTime.now().plusMinutes(5)) // optional, có thể để null
+                        .build();
 
-                    userRepository.save(user);
-                    log.warn("Admin user created with default password: 123456, please change it!");
-                }
+                userRepository.save(user);
+                log.warn("Admin user created with default password: 123456, please change it!");
+            }
 
             log.info("Application initialization completed.");
         };
