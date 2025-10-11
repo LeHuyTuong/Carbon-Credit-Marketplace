@@ -5,6 +5,9 @@ import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettin
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Header from "@/components/Chart/Header.jsx";
+import { Link } from "react-router-dom";
+import { useState } from "react"; //thêm để quản lý dữ liệu
+import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
 
 const accessConfig = {
   admin: {
@@ -13,7 +16,7 @@ const accessConfig = {
     bg: "greenAccent.600",
   },
   cva: {
-    label: "CVA", // đổi tên hiển thị mà ko cần đổi data BE
+    label: "CVA", 
     icon: <SecurityOutlinedIcon />,
     bg: "greenAccent.700",
   },
@@ -29,10 +32,23 @@ const accessConfig = {
   },
 
 };
-
+localStorage.removeItem("userData");
 const Team = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+
+
+  // lưu dữ liệu (để có thể xóa hàng)
+  const [data, setData] = useState(() => {
+  const saved = localStorage.getItem("userData");
+  return saved ? JSON.parse(saved) : mockDataTeam;
+});
+
+  // thêm hàm xóa
+  const handleDelete = (id) => {
+    setData(data.filter((item) => item.id !== id));
+  };
   const columns = [
     { field: "id", headerName: "" },
     { field: "userid", headerName: "User ID" },
@@ -84,24 +100,56 @@ const Team = () => {
     {
       field: "accesslevel",
       headerName: "Access Level",
-      flex: 1,
+      flex: 1.3,
       renderCell: ({ row: { access } }) => {
         const config = accessConfig[access] || {};
         return (
           <Box
-            width="60%"
-            m="0 auto"
-            p="5px"
             display="flex"
+            alignItems="center"
             justifyContent="center"
-            backgroundColor={config.bg ? colors[config.bg.split(".")[0]][config.bg.split(".")[1]] : colors.grey[700]}
-            borderRadius="4px"
+            width="100%"
+            height="100%"
           >
-            {config.icon}
-            <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
-              {config.label || access}
-            </Typography>
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              width="100px"
+              py="6px"
+              borderRadius="6px"
+              sx={{
+                backgroundColor: config.bg
+                  ? colors[config.bg.split(".")[0]][config.bg.split(".")[1]]
+                  : colors.grey[700],
+              }}
+            >
+              {config.icon}
+              <Typography color={colors.grey[100]} sx={{ ml: "6px" }}>
+                {config.label || access}
+              </Typography>
+            </Box>
           </Box>
+        );
+      },
+    },
+    {
+      field: "action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link to={`/admin/view_user/${params.row.id}`} style={{ textDecoration: "none" }}>
+              <div className="viewButton">View</div>
+            </Link>
+            <div
+              className="deleteButton"
+              onClick={() => handleDelete(params.row.id)}
+            >
+              Delete
+            </div>
+          </div>
         );
       },
     },
@@ -109,7 +157,7 @@ const Team = () => {
   ];
 
   return (
-    <Box m="20px">
+    <Box m="20px" className="actionadmin">
       <Header title="USERS" subtitle="Managing the Users" />
       <Box
         m="40px 0 0 0"
@@ -138,9 +186,26 @@ const Team = () => {
           "& .MuiCheckbox-root": {
             color: `${colors.greenAccent[200]} !important`,
           },
+          "& .MuiTablePagination-root": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+            marginTop: 0,
+            marginBottom: 0,
+            lineHeight: "normal",
+          },
+          "& .MuiTablePagination-select": {
+            marginTop: "0 !important",
+            marginBottom: "0 !important",
+            paddingTop: "0 !important",
+            paddingBottom: "0 !important",
+          },
         }}
       >
-        <DataGrid checkboxSelection rows={mockDataTeam} columns={columns} />
+        {/* Dùng state `data` thay vì mockDataTeam để có thể xóa */}
+        <DataGrid checkboxSelection rows={data} columns={columns} />
       </Box>
     </Box>
   );

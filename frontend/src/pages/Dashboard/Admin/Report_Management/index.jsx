@@ -2,16 +2,26 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
 
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  // lưu dữ liệu (để có thể xóa hàng)
+  const [data, setData] = useState(mockDataReports);
+  // thêm hàm xóa
+  const handleDelete = (id) => {
+    setData(data.filter((item) => item.id !== id));
+  };
   const columns = [
     { field: "id", headerName: "" },
     { field: "reportid", headerName: "Report ID", flex: 1 },
     {
       field: "aggregator",
-      headerName: "Aggregator",
+      headerName: "Company",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -21,7 +31,7 @@ const Invoices = () => {
       flex: 1,
     },
     {
-      field: "totalevowner", 
+      field: "totalevowner",
       headerName: "Total Ev_Owner",
       flex: 1,
     },
@@ -30,7 +40,6 @@ const Invoices = () => {
       headerName: "Submission Date",
       flex: 1,
     },
-    
     {
       field: "status",// Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
       headerName: "Status",
@@ -59,11 +68,31 @@ const Invoices = () => {
         );
       },
     },
-    
+    {
+      field: "action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link to={`/admin/view_report/${params.row.id}`} style={{ textDecoration: "none" }}>
+              <div className="viewButton">View</div>
+            </Link>
+            <div
+              className="deleteButton"
+              onClick={() => handleDelete(params.row.id)}
+            >
+              Delete
+            </div>
+          </div>
+        );
+      },
+    },
+
   ];
 
   return (
-    <Box m="20px">
+    <Box m="20px" className="actionadmin">
       <Header title="REPORTS" subtitle="List of reports" />
       <Box
         m="40px 0 0 0"
@@ -92,9 +121,25 @@ const Invoices = () => {
           "& .MuiCheckbox-root": {
             color: `${colors.greenAccent[200]} !important`,
           },
+          "& .MuiTablePagination-root": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+            marginTop: 0,
+            marginBottom: 0,
+            lineHeight: "normal",
+          },
+          "& .MuiTablePagination-select": {
+            marginTop: "0 !important",
+            marginBottom: "0 !important",
+            paddingTop: "0 !important",
+            paddingBottom: "0 !important",
+          },
         }}
       >
-        <DataGrid checkboxSelection rows={mockDataReports} columns={columns} />
+        <DataGrid checkboxSelection rows={data} columns={columns} />
       </Box>
     </Box>
   );

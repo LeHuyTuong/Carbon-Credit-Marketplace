@@ -8,8 +8,21 @@ const Form = () => {
   const isNonMobile = useMediaQuery("(min-width:600px)");
 
   const handleFormSubmit = (values) => {
-    console.log(values);
-  };
+  const formData = new FormData();
+  Object.keys(values).forEach((key) => {
+    formData.append(key, values[key]);
+  });
+
+  // Debug xem file có được upload đúng không
+  console.log("Uploaded avatar:", values.avatar);
+  console.log("All form values:", values);
+
+  // Sau này bạn có thể gửi formData qua API:
+  // axios.post("/api/users", formData, {
+  //   headers: { "Content-Type": "multipart/form-data" },
+  // });
+};
+
 
   return (
     <Box m="20px">
@@ -36,7 +49,53 @@ const Form = () => {
               sx={{
                 "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
               }}
+            > 
+               {/*nút upload*/}
+              <Box
+              gridColumn="span 4"
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              gap="10px"
             >
+              <input
+                id="avatar"
+                name="avatar"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.currentTarget.files[0];
+                  handleChange({
+                    target: {
+                      name: "avatar",
+                      value: file,
+                    },
+                  });
+                }}
+              />
+              <label htmlFor="avatar">
+                <Button variant="outlined" component="span" color="secondary">
+                  Upload Avatar
+                </Button>
+              </label>
+
+              {/* Ảnh xem trước */}
+              {values.avatar && (
+                <Box mt={2}>
+                  <img
+                    src={URL.createObjectURL(values.avatar)}
+                    alt="Avatar Preview"
+                    width="120"
+                    height="120"
+                    style={{ borderRadius: "50%", objectFit: "cover" }}
+                  />
+                </Box>
+              )}
+              {touched.avatar && errors.avatar && (
+                <div style={{ color: "red", fontSize: "14px" }}>{errors.avatar}</div>
+              )}
+            </Box>
               <TextField
                 fullWidth
                 variant="filled"
@@ -116,6 +175,8 @@ const Form = () => {
                 sx={{ gridColumn: "span 4" }}
               />
             </Box>
+            
+
             <Box display="flex" justifyContent="end" mt="20px">
               <Button type="submit" color="secondary" variant="contained">
                 Create New User
@@ -149,6 +210,7 @@ const initialValues = {
   contact: "",
   address1: "",
   address2: "",
+  avatar: null,
 };
 
 export default Form;
