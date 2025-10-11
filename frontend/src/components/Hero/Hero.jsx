@@ -29,7 +29,7 @@ export default function Hero() {
               {!isAuthenticated && (
                 <a href="/register" className="btn btn-brand btn-lg">Sign up now</a>
               )}
-              <a href="#how" className="btn btn-outline-primary btn-lg">Learn more</a>
+              <a href="#about" className="btn btn-outline-primary btn-lg">Learn more</a>
             </div>
 
             {/*badge benefits*/}

@@ -258,8 +258,8 @@ export default function KYC() {
                       isInvalid={touched.documentType && !!errors.documentType}
                     >
                       <option value="">Choose one type</option>
-                      <option value="CCCD">CCCD</option>
-                      <option value="CMND">CMND</option>
+                      <option value="CCCD">Citizen Identification Card</option>
+                      <option value="CMND">Identity Card</option>
                     </Form.Select>
                     <Form.Control.Feedback type="invalid">
                       {errors.documentType}

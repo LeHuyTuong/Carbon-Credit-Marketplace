@@ -1,0 +1,60 @@
+.wallet-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #0d1b1e, #000);
+  color: #eaeaea;
+}
+
+.text-accent {
+  color: #00ffcc;
+}
+
+.glass-card {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 200, 0.15);
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(0, 255, 150, 0.05);
+  max-width: 600px;
+  transition: 0.3s ease;
+}
+.glass-card:hover {
+  box-shadow: 0 0 35px rgba(0, 255, 150, 0.15);
+  transform: translateY(-3px);
+}
+
+.wallet-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 110px;
+  height: 90px;
+  border-radius: 10px;
+  background: transparent;
+  border: 2px solid;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+.wallet-action:hover {
+  background-color: rgba(0, 255, 200, 0.15);
+  transform: translateY(-2px);
+}
+
+.wallet-history {
+  width: 100%;
+  max-width: 800px;
+}
+
+.history-list {
+  background: rgba(15, 15, 15, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 255, 150, 0.05);
+}
+
+.history-item {
+  padding: 15px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.history-item:last-child {
+  border-bottom: none;
+}

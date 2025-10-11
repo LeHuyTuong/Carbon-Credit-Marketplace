@@ -1,26 +1,33 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from './context/AuthContext.jsx';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+import { useAuth } from "./context/AuthContext.jsx";
 
-import Navbar from './components/Navbar/Navbar.jsx';
-import Home from './pages/Home/Home.jsx';
-import Login from './pages/Login/Login.jsx';
-import Register from './pages/Register/Register.jsx';
-import ForgotPassword from './pages/ForgotPassword/ForgotPassword.jsx';
-import ChangePassword from './pages/ChangePassword/ChangePassword.jsx';
-import Marketplace from './pages/Market/Marketplace.jsx';
-import OTP from './pages/OTP/OTP.jsx';
-import Privacy from './pages/Term&Privacy/Privacy.jsx';
-import TermsOfUse from './pages/Term&Privacy/TermsOfUse.jsx';
-import ManageVehicle from './pages/Dashboard/EVOwner/ManageVehicle/ManageVehicle.jsx';
-
-import KYC from './pages/KYC/KYC.jsx';
-import Profile from './pages/Profile/Profile.jsx';
+import Navbar from "./components/Navbar/Navbar.jsx";
+import Home from "./pages/Home/Home.jsx";
+import Login from "./pages/Login/Login.jsx";
+import Register from "./pages/Register/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword/ForgotPassword.jsx";
+import ChangePassword from "./pages/ChangePassword/ChangePassword.jsx";
+import Marketplace from "./pages/Dashboard/Company/Marketplace/Marketplace.jsx";
+import OTP from "./pages/OTP/OTP.jsx";
+import Privacy from "./pages/Term&Privacy/Privacy.jsx";
+import TermsOfUse from "./pages/Term&Privacy/TermsOfUse.jsx";
+import ManageVehicle from "./pages/Dashboard/EVOwner/ManageVehicle/ManageVehicle.jsx";
+import Wallet from "./pages/Wallet/Wallet.jsx";
+import KYC from "./pages/KYC/KYC.jsx";
+import Profile from "./pages/Profile/Profile.jsx";
+import Order from "./pages/Dashboard/Company/Order/Order.jsx";
+import PaymentDetail from "./pages/PaymentDetail/PaymentDetail.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 //  import AdminApp
-import AdminApp from './AdminApp.jsx';
-
+import AdminApp from "./AdminApp.jsx";
 
 function Layout() {
   return (
@@ -55,6 +62,14 @@ export default function App() {
           <Route path="/kyc" element={<KYC />} />
           <Route path="/profile" element={<Profile />} />
           <Route
+            path="/wallet"
+            element={
+              <RequireAuth>
+                <Wallet />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/managevehicle"
             element={
               <RequireAuth>
@@ -67,12 +82,14 @@ export default function App() {
         {/*routes không có navbar */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<TermsOfUse />} />
-         {/*Route riêng cho admin, không Navbar */}
+        <Route path="/order" element={<Order />} />
+        <Route path="/payment-detail" element={<PaymentDetail />} />
+        {/*Route riêng cho admin, không Navbar */}
         <Route path="/admin/*" element={<AdminApp />} />
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    <ToastContainer
+      <ToastContainer
         position="top-center"
         autoClose={2500}
         hideProgressBar={false}
