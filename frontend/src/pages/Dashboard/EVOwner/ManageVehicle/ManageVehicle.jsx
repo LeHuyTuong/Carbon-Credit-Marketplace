@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./manage.css";
 import { Button, Modal, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { getVehicles, createVehicle, updateVehicle, deleteVehicle } from "../api/vehicleApi";
+import {
+  getVehicles,
+  createVehicle,
+  updateVehicle,
+  deleteVehicle,
+} from "../ManageVehicle/manageApi";
 
 const schema = Yup.object().shape({
   plate: Yup.string().required("License plate is required"),
@@ -13,40 +18,87 @@ const schema = Yup.object().shape({
 });
 
 export default function Manage() {
-
   const [vehicles, setVehicles] = useState([]);
+  const [show, setShow] = useState(false);
+  const [editData, setEditData] = useState(null);
 
+  //lấy danh sách xe
   const fetchVehicles = async () => {
-    const data = await getVehicles();
-    setVehicles(data);
+    try {
+      const res = await getVehicles();
+      setVehicles(res.response || []);
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách xe:", err.message);
+    }
   };
 
-  const handleAdd = async (values) => {
-    const newVehicle = await createVehicle(values);
-    setVehicles((prev) => [...prev, newVehicle]);
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  //mở modal thêm xe
+  const handleAdd = () => {
+    setEditData(null);
+    setShow(true);
   };
 
-  const handleEdit = async (id, values) => {
-    const updatedVehicle = await updateVehicle(id, values);
-    setVehicles((prev) =>
-      prev.map((v) => (v.id === id ? updatedVehicle : v))
-    );
+  //mở modal update
+  const handleEdit = (vehicle) => {
+    setEditData(vehicle);
+    setShow(true);
   };
 
+  //xóa xe
   const handleDelete = async (id) => {
-    await deleteVehicle(id);
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
+    if (!window.confirm("Bạn có chắc muốn xóa xe này?")) return;
+    try {
+      await deleteVehicle(id);
+      await fetchVehicles();
+    } catch (err) {
+      alert("Không thể xóa xe: " + err.message);
+    }
+  };
+
+  //submit (thêm hoặc sửa)
+  const handleSubmit = async (values) => {
+    try {
+      const payload = {
+        plateNumber: values.plate,
+        model: values.model,
+        brand: values.brand,
+        manufacturer: values.company,
+        yearOfManufacture: 2025, //hoặc có thể thêm field cho người dùng nhập
+      };
+
+      if (editData) {
+        await updateVehicle(editData.id, payload);
+      } else {
+        await createVehicle({ ownerId: 1, ...payload });
+      }
+
+      await fetchVehicles();
+      setShow(false);
+      setEditData(null);
+    } catch (err) {
+      alert("Lỗi khi lưu xe: " + err.message);
+    }
+  };
+
+  const handleClose = () => {
+    setShow(false);
+    setEditData(null);
   };
 
   return (
     <>
       <div className="vehicle-search-section">
-        <h1 className="title">Your vehicles</h1>
+        <h1 className="title">Your Vehicles</h1>
         <Button className="mb-3" onClick={handleAdd}>
           Add Vehicle
         </Button>
       </div>
 
+      {/*modal thêm/sửa */}
       <VehicleModal
         show={show}
         onHide={handleClose}
@@ -58,12 +110,12 @@ export default function Manage() {
         <table className="vehicle-table">
           <thead>
             <tr>
-              <th>Vehicle ID</th>
+              <th>ID</th>
               <th>License Plate</th>
               <th>Brand</th>
               <th>Model</th>
-              <th>Company</th>
-              <th>Credits</th>
+              <th>Manufacturer</th>
+              <th>Year</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -71,12 +123,12 @@ export default function Manage() {
             {vehicles.length > 0 ? (
               vehicles.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.code}</td>
-                  <td>{row.plate}</td>
+                  <td>{row.id}</td>
+                  <td>{row.plateNumber}</td>
                   <td>{row.brand}</td>
                   <td>{row.model}</td>
-                  <td>{row.company}</td>
-                  <td>{row.credits}</td>
+                  <td>{row.manufacturer}</td>
+                  <td>{row.yearOfManufacture}</td>
                   <td className="action-buttons">
                     <button
                       className="action-btn edit"
@@ -95,7 +147,7 @@ export default function Manage() {
               ))
             ) : (
               <tr>
-                <td colSpan="10" className="no-data">
+                <td colSpan="7" className="no-data">
                   <h5>No vehicles yet</h5>
                   <p>Add your vehicle to get started.</p>
                 </td>
@@ -108,12 +160,13 @@ export default function Manage() {
   );
 }
 
+//modal thêm/sửa xe
 function VehicleModal({ show, onHide, data, onSubmit }) {
   const initialValues = {
-    plate: data?.plate ?? "",
+    plate: data?.plateNumber ?? "",
     brand: data?.brand ?? "",
     model: data?.model ?? "",
-    company: data?.company ?? "",
+    company: data?.manufacturer ?? "",
   };
 
   return (
@@ -186,7 +239,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="formCompany">
-                <Form.Label>Company</Form.Label>
+                <Form.Label>Manufacturer</Form.Label>
                 <Form.Select
                   name="company"
                   value={values.company}
@@ -194,9 +247,10 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                   onBlur={handleBlur}
                   isInvalid={touched.company && !!errors.company}
                 >
-                  <option value="">Choose one company</option>
+                  <option value="">Choose one manufacturer</option>
                   <option value="Vinfast">Vinfast</option>
                   <option value="Tesla">Tesla</option>
+                  <option value="Toyota">Toyota</option>
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.company}

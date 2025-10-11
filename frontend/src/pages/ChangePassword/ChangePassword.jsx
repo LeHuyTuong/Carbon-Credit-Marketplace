@@ -5,6 +5,7 @@ import * as Yup from "yup";
 import { toast } from "react-toastify";
 import useRipple from "../../hooks/useRipple";
 import { apiFetch } from "../../utils/apiFetch";
+import { useAuth } from "../../context/AuthContext";
 
 const schema = Yup.object().shape({
   password: Yup.string()
@@ -20,6 +21,7 @@ const schema = Yup.object().shape({
 });
 
 export default function ChangePassword() {
+  const { user, token } = useAuth();
   const nav = useNavigate();
   const { state } = useLocation(); // nhận { email, otp } từ màn OTP
   const email = state?.email?.trim();
@@ -30,6 +32,7 @@ export default function ChangePassword() {
 
   //nếu thiếu context => quay lại flow quên mật khẩu
   useEffect(() => {
+    if (!user) return;
     if (!email || !otp) {
       toast.warn("Missing reset context. Please start again.");
       nav("/forgot-password", { replace: true });
@@ -41,10 +44,10 @@ export default function ChangePassword() {
     try {
       await apiFetch("/api/v1/reset-password", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          email,
-          otp,
           password: values.password,
+          confirmPassword: values.confirm,
         }),
       });
 
