@@ -1,20 +1,28 @@
 import { Box } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
-import { mockDataCredits } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
 import { useTheme } from "@mui/material";
+import { Link } from "react-router-dom";
+import { useState } from "react"; //thêm để quản lý dữ liệu
+import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
 
 const Contacts = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // lưu dữ liệu (để có thể xóa hàng)
+  const [data, setData] = useState(mockDataCredits);
+  // thêm hàm xóa
+  const handleDelete = (id) => {
+    setData(data.filter((item) => item.id !== id));
+  };
   const columns = [
-    { field: "id", headerName: "", },
+    { field: "id", headerName: "", flex: 0.5 },
     { field: "creditid", headerName: "Credit ID", },
     {
       field: "aggregator",
-      headerName: "Aggregator",
+      headerName: "Company",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -23,7 +31,7 @@ const Contacts = () => {
       field: "projectname",
       headerName: "Project Name",
       flex: 1,
-      
+
     },
     {
       field: "numbercredit",
@@ -69,7 +77,7 @@ const Contacts = () => {
               height: "100%",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "left",
             }}
           >
             <span
@@ -94,13 +102,34 @@ const Contacts = () => {
       flex: 1,
     },
     { field: "linkedcertificate", headerName: "Linked Certificate", flex: 1 },
+    {
+      field: "action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link to={`/admin/view_credit/${params.row.id}`} style={{ textDecoration: "none" }}>
+              <div className="viewButton">View</div>
+            </Link>
+            <div
+              className="deleteButton"
+              onClick={() => handleDelete(params.row.id)}
+            >
+              Delete
+            </div>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
-    <Box m="20px">
+    <Box m="20px" className="actionadmin">
       <Header
         title="CREDITS"
         subtitle="List of Carbon Credits in the System"
+
       />
       <Box
         m="40px 0 0 0"
@@ -132,10 +161,26 @@ const Contacts = () => {
           "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
             color: `${colors.grey[100]} !important`,
           },
+          "& .MuiTablePagination-root": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+            marginTop: 0,
+            marginBottom: 0,
+            lineHeight: "normal",
+          },
+          "& .MuiTablePagination-select": {
+            marginTop: "0 !important",
+            marginBottom: "0 !important",
+            paddingTop: "0 !important",
+            paddingBottom: "0 !important",
+          },
         }}
       >
         <DataGrid
-          rows={mockDataCredits}
+          rows={data}
           columns={columns}
           components={{ Toolbar: GridToolbar }}
         />

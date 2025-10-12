@@ -4,6 +4,7 @@ import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/theme";
+import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
@@ -16,7 +17,6 @@ import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutl
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import image from "@/assets/z5596085100291_e9dc9606a1f54262e26d39713314ff3a.jpg";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -93,13 +93,17 @@ const Sidebar = () => {
           {!isCollapsed && (
             <Box mb="25px">
               <Box display="flex" justifyContent="center" alignItems="center">
-                <img
-                  alt="profile-user"
-                  width="100px"
-                  height="100px"
-                  src={`${image}`}
-                  style={{ cursor: "pointer", borderRadius: "50%" }}
+                <AdminPanelSettings
+                  sx={{
+                    fontSize: "100px",
+                    color: colors.greenAccent[500],
+                    cursor: "pointer",
+                    backgroundColor: colors.primary[400],
+                    borderRadius: "50%",
+                    padding: "10px",
+                  }}
                 />
+
               </Box>
               <Box textAlign="center">
                 <Typography
@@ -111,7 +115,7 @@ const Sidebar = () => {
                   Tin Bao
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                  Admin
+                 Super Admin
                 </Typography>
               </Box>
             </Box>

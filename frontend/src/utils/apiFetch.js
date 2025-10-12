@@ -1,5 +1,21 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
+  
+  //ưu tiên đọc token từ AuthContext
+  let token;
+  try {
+    const authData =
+      JSON.parse(sessionStorage.getItem("auth")) ||
+      JSON.parse(localStorage.getItem("auth"));
+    token = authData?.token;
+  } catch {
+    token = null;
+  }
+
+  //giữ lại token cũ nếu project trước đây lưu ở "token"
+  if (!token) {
+    token = localStorage.getItem("token");
+  }
 
   const config = {
     method: options.method || "GET",
@@ -8,6 +24,7 @@ export async function apiFetch(path, options = {}) {
       Accept: "*/*",
       "X-Request-Trace": crypto.randomUUID(),
       "X-Request-DateTime": new Date().toISOString(),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   };

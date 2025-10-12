@@ -3,12 +3,20 @@ import { Routes, Route } from "react-router-dom";
 import TopBar from "./pages/Dashboard/Admin/global/Topbar";
 import Sidebar from "./pages/Dashboard/Admin/global/Sidebar";
 import Dashboard from "./pages/Dashboard/Admin/dashboard";
-import User_Management from "./pages/Dashboard/Admin/User_Management";
-import Transaction_Management from "./pages/Dashboard/Admin/Transaction_Management";
-import Credit_Management from "./pages/Dashboard/Admin/Credit_Management";
-import Report_Management from "./pages/Dashboard/Admin/Report_Management";
-import EV_Management from "./pages/Dashboard/Admin/EV_Management";
-import Project_Management from "./pages/Dashboard/Admin/Project_Management";
+import User_Management from "./pages/Dashboard/Admin/User_Management/index.jsx";
+import Transaction_Management from "./pages/Dashboard/Admin/Transaction_Management/index.jsx";
+import Credit_Management from "./pages/Dashboard/Admin/Credit_Management/index.jsx";
+import Report_Management from "./pages/Dashboard/Admin/Report_Management/index.jsx";
+import EV_Management from "./pages/Dashboard/Admin/EV_Management/index.jsx";
+import Project_Management from "./pages/Dashboard/Admin/Project_Management/index.jsx";
+import View_Profile from "./pages/Dashboard/Admin/profile/view.jsx";
+import Edit_Profile from "./pages/Dashboard/Admin/profile/edit.jsx";
+import User_View from "./pages/Dashboard/Admin/User_Management/view.jsx";
+import Transaction_View from "./pages/Dashboard/Admin/Transaction_Management/view.jsx";
+import Credit_View from "./pages/Dashboard/Admin/Credit_Management/view.jsx";
+import Report_View from "./pages/Dashboard/Admin/Report_Management/view.jsx";
+import EV_View from "./pages/Dashboard/Admin/EV_Management/view.jsx";
+import Project_View from "./pages/Dashboard/Admin/Project_Management/view.jsx";
 import Bar from "./pages/Dashboard/Admin/bar";
 import Form from "./pages/Dashboard/Admin/form";
 import Line from "./pages/Dashboard/Admin/line";
@@ -18,8 +26,9 @@ import Geography from "./pages/Dashboard/Admin/geography";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import Calendar from "./pages/Dashboard/Admin/calendar/Calendar.jsx";
-// 👇 import css admin riêng
+//  import css admin riêng
 import "./admin.css";
+
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -48,6 +57,15 @@ function App() {
               <Route path="/faq" element={<FAQ />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/geography" element={<Geography />} />
+              <Route path="/view_profile_admin" element={<View_Profile />} />
+              <Route path="/edit_profile_admin" element={<Edit_Profile />} />
+              <Route path="/view_user/:id" element={<User_View />} />
+              <Route path="/view_credit/:id" element={<Credit_View />} />
+              <Route path="/view_transaction/:id" element={<Transaction_View />} />
+              <Route path="/view_report/:id" element={<Report_View />} />
+              <Route path="/view_EV/:id" element={<EV_View />} />
+              <Route path="/view_project/:id" element={<Project_View />} />
+              <Route path="*" element={<Dashboard />} />
             </Routes>
           </main>
         </div>

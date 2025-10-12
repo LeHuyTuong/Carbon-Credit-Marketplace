@@ -70,7 +70,6 @@ export default function Profile() {
       }
     };
 
-
     fetchKYC();
   }, [token, user]);
 
@@ -100,7 +99,14 @@ export default function Profile() {
       </div>
     );
 
-  if (!kycData) return <KYC />;
+  if (!kycData) {
+    return (
+      <div className="text-center mt-5">
+        <h4>Please complete your KYC to view your profile</h4>
+        <Button onClick={() => nav("/kyc")}>Start KYC</Button>
+      </div>
+    );
+  }
 
   // profile info
   return (
@@ -311,13 +317,16 @@ function UpdateModal({ show, onHide, data, kycId, token, onSuccess }) {
 
               <Form.Group className="mb-3">
                 <Form.Label>Document Type</Form.Label>
-                <Form.Control
+                <Form.Select
                   name="documentType"
                   value={values.documentType}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   isInvalid={touched.documentType && !!errors.documentType}
-                />
+                >
+                  <option value="CCCD">Citizen Identification Card</option>
+                  <option value="CMND">Identity Card</option>
+                </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.documentType}
                 </Form.Control.Feedback>
