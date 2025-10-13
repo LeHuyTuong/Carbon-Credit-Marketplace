@@ -7,6 +7,7 @@ import useRipple from "../../hooks/useRipple";
 import { apiFetch } from "../../utils/apiFetch";
 import { useAuth } from "../../context/AuthContext";
 
+//validate
 const schema = Yup.object().shape({
   password: Yup.string()
     .required("Password is required")
@@ -21,24 +22,24 @@ const schema = Yup.object().shape({
 });
 
 export default function ChangePassword() {
-  const { user, token } = useAuth();
   const nav = useNavigate();
   const { state } = useLocation(); // nhận { email, otp } từ màn OTP
   const email = state?.email?.trim();
   const otp = state?.otp;
+  const token = state?.token; //nhận jwt từ OTP
   const ripple = useRipple();
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
   //nếu thiếu context => quay lại flow quên mật khẩu
   useEffect(() => {
-    if (!user) return;
-    if (!email || !otp) {
+    if (!email || !otp || !token) {
       toast.warn("Missing reset context. Please start again.");
       nav("/forgot-password", { replace: true });
     }
   }, [email, otp, nav]);
 
+  //xử lý submit
   const handleSubmit = async (values) => {
     setLoading(true);
     try {

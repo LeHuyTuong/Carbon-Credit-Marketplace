@@ -1,17 +1,20 @@
-import React from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext.jsx';  
-import logo from '../../assets/logo.png';
+import React from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
+import logo from "../../assets/logo.png";
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
-  
+
   //active state cho EV
-  const isEV = pathname.startsWith('/ev') || pathname.startsWith('/managevehicle');         
-  const isCredits = pathname.startsWith('/credits'); 
-  const linkCls = ({ isActive }) => `nav-link px-3 ${isActive ? 'is-active' : ''}`;
-  const ddItemCls = ({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`;
+  const isEV =
+    pathname.startsWith("/ev") || pathname.startsWith("/managevehicle");
+  const isCredits = pathname.startsWith("/credits");
+  const linkCls = ({ isActive }) =>
+    `nav-link px-3 ${isActive ? "is-active" : ""}`;
+  const ddItemCls = ({ isActive }) =>
+    `dropdown-item ${isActive ? "active" : ""}`;
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top bg-dark bg-opacity-25 navbar-dark">
@@ -40,20 +43,28 @@ export default function Navbar() {
           {/* left group */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
-              <NavLink end to="/home" className={linkCls}>HOME</NavLink>
+              <NavLink end to="/home" className={linkCls}>
+                HOME
+              </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/marketplace" className={linkCls}>MARKETPLACE</NavLink>
+              <NavLink to="/marketplace" className={linkCls}>
+                MARKETPLACE
+              </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/reports" className={linkCls}>REPORT</NavLink>
+              <NavLink to="/reports" className={linkCls}>
+                REPORT
+              </NavLink>
             </li>
 
             {/*ev */}
             <li className="nav-item dropdown">
               <a
                 href="#"
-                className={`nav-link dropdown-toggle px-3 ${isEV ? 'is-active-parent' : ''}`}
+                className={`nav-link dropdown-toggle px-3 ${
+                  isEV ? "is-active-parent" : ""
+                }`}
                 id="evDropdown"
                 role="button"
                 data-bs-toggle="dropdown"
@@ -62,20 +73,32 @@ export default function Navbar() {
                 ELECTRIC VEHICLE
               </a>
               <ul className="dropdown-menu" aria-labelledby="evDropdown">
-                <li><NavLink to="/managevehicle" className={ddItemCls}>Manage vehicle</NavLink></li>
-                <li><NavLink to="/ev/transactions" className={ddItemCls}>Personal transaction</NavLink></li>
+                <li>
+                  <NavLink to="/managevehicle" className={ddItemCls}>
+                    Manage vehicle
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/ev/transactions" className={ddItemCls}>
+                    Personal transaction
+                  </NavLink>
+                </li>
               </ul>
             </li>
 
             <li className="nav-item">
-              <NavLink to="/wallet" className={linkCls}>E-WALLET</NavLink>
+              <NavLink to="/wallet" className={linkCls}>
+                E-WALLET
+              </NavLink>
             </li>
 
             {/*credits */}
             <li className="nav-item dropdown">
               <a
                 href="#"
-                className={`nav-link dropdown-toggle px-3 ${isCredits ? 'is-active-parent' : ''}`}
+                className={`nav-link dropdown-toggle px-3 ${
+                  isCredits ? "is-active-parent" : ""
+                }`}
                 id="creditsDropdown"
                 role="button"
                 data-bs-toggle="dropdown"
@@ -84,7 +107,11 @@ export default function Navbar() {
                 CREDITS
               </a>
               <ul className="dropdown-menu" aria-labelledby="creditsDropdown">
-                <li><NavLink to="/credits/list" className={ddItemCls}>Credit list</NavLink></li>
+                <li>
+                  <NavLink to="/credits/list" className={ddItemCls}>
+                    Credit list
+                  </NavLink>
+                </li>
               </ul>
             </li>
           </ul>
@@ -94,10 +121,17 @@ export default function Navbar() {
             {!isAuthenticated ? (
               <>
                 <li className="nav-item">
-                  <NavLink to="/login" className={linkCls}>LOGIN</NavLink>
+                  <NavLink to="/login" className={linkCls}>
+                    LOGIN
+                  </NavLink>
                 </li>
                 <li className="nav-item">
-                  <NavLink to="/register" className="btn btn-outline-light ms-lg-2">SIGN UP</NavLink>
+                  <NavLink
+                    to="/register"
+                    className="btn btn-outline-light ms-lg-2"
+                  >
+                    SIGN UP
+                  </NavLink>
                 </li>
               </>
             ) : (
@@ -117,8 +151,15 @@ export default function Navbar() {
                       <i className="bi bi-bell"></i>
                     </span>
                   </a>
-                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown">
-                    <li><span className="dropdown-item-text">No new notifications</span></li>
+                  <ul
+                    className="dropdown-menu dropdown-menu-end"
+                    aria-labelledby="notifDropdown"
+                  >
+                    <li>
+                      <span className="dropdown-item-text">
+                        No new notifications
+                      </span>
+                    </li>
                   </ul>
                 </li>
 
@@ -136,18 +177,46 @@ export default function Navbar() {
                       <i className="bi bi-person"></i>
                     </span>
                   </a>
-                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><NavLink to="/profile" className="dropdown-item">Profile</NavLink></li>
-                    <li><NavLink to="/wallet" className="dropdown-item">Wallet</NavLink></li>
-                    <li><NavLink to="/managevehicle" className="dropdown-item">My vehicles</NavLink></li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li><button className="dropdown-item" onClick={logout}>Logout</button></li>
+                  <ul
+                    className="dropdown-menu dropdown-menu-end"
+                    aria-labelledby="userDropdown"
+                    data-bs-auto-close="true"
+                  >
+                    <li>
+                      <NavLink
+                        className="dropdown-item"
+                        to={
+                          user?.role === "COMPANY"
+                            ? "/profile-company"
+                            : "/profile"
+                        }
+                      >
+                        Profile
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/wallet" className="dropdown-item">
+                        Wallet
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/managevehicle" className="dropdown-item">
+                        My vehicles
+                      </NavLink>
+                    </li>
+                    <li>
+                      <hr className="dropdown-divider" />
+                    </li>
+                    <li>
+                      <button className="dropdown-item" onClick={logout}>
+                        Logout
+                      </button>
+                    </li>
                   </ul>
                 </li>
               </>
             )}
           </ul>
-
         </div>
       </div>
     </nav>
