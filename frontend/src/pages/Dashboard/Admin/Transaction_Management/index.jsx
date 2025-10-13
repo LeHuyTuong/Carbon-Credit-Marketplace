@@ -4,14 +4,16 @@ import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { mockDataInvoices} from "@/data/mockData";
+
+import { mockDataInvoices } from "@/data/mockData";
+
 const Transaction = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataInvoices);
   // thêm hàm xóa
-  
+
   const columns = [
     { field: "id", headerName: "" },
     { field: "transactionid", headerName: "Transaction ID", flex: 1 },
@@ -77,7 +79,7 @@ const Transaction = () => {
       ),
     },
     {
-      field: "status",// chú ý tên field này phải trùng với tên trong mockData, 3 loại là pending/paid/failed
+      field: "status", // chú ý tên field này phải trùng với tên trong mockData, 3 loại là pending/paid/failed
       headerName: "Status",
       flex: 0.5,
       renderCell: ({ row: { status } }) => {
@@ -105,21 +107,22 @@ const Transaction = () => {
       },
     },
     {
-          field: "action",
-          headerName: "Action",
-          flex: 0.8,
-          renderCell: (params) => {
-            return (
-              <div className="cellAction">
-                <Link to={`/admin/view_transaction/${params.row.id}`} style={{ textDecoration: "none" }}>
-                  <div className="viewButton">View</div>
-                </Link>
-                
-              </div>
-            );
-          },
-        },
-    
+      field: "action",
+      headerName: "Action",
+      flex: 0.8,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link
+              to={`/admin/view_transaction/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
+              <div className="viewButton">View</div>
+            </Link>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
@@ -157,11 +160,12 @@ const Transaction = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",

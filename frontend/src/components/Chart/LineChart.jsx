@@ -61,7 +61,7 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
         tickSize: 0,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined :"month", // added
+        legend: isDashboard ? undefined : "month", // added
         legendOffset: 36,
         legendPosition: "middle",
       }}
