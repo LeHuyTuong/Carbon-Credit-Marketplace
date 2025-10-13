@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Formik } from "formik";
 import * as Yup from "yup";
 
+//validate
 const schema = Yup.object().shape({
   email: Yup.string()
     .email("Enter a valid email")
@@ -20,16 +21,23 @@ const schema = Yup.object().shape({
     .oneOf([Yup.ref("password"), null], "Passwords do not match")
     .required("Please re-enter your password"),
   role: Yup.string().required("Please choose your role"),
-  agree: Yup.boolean()
-    .oneOf([true], "You must agree to the Terms of Use & Privacy Policy"),
+  agree: Yup.boolean().oneOf(
+    [true],
+    "You must agree to the Terms of Use & Privacy Policy"
+  ),
 });
 
+//map role from frontend to backend
 const mapRoleToBackend = (r) => {
   switch (r) {
-    case "ev": return "EV_OWNER";
-    case "bis": return "COMPANY";
-    case "cv": return "CVA";
-    default: return "";
+    case "ev":
+      return "EV_OWNER";
+    case "bis":
+      return "COMPANY";
+    case "cv":
+      return "CVA";
+    default:
+      return "";
   }
 };
 
@@ -39,6 +47,7 @@ export default function Register() {
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
+  //xử lý đăng ký
   const handleRegister = async (values) => {
     const roleBackend = mapRoleToBackend(values.role);
     if (!roleBackend) {
@@ -56,11 +65,11 @@ export default function Register() {
           email: values.email.trim(),
           password: values.password,
           confirmPassword: values.confirm,
-          fullName: values.email.split("@")[0],
           roleName: roleBackend,
         }),
       });
 
+      //chỉ parse json khi response có body
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -72,7 +81,10 @@ export default function Register() {
       }
 
       toast.success("Registration successful! Please verify your email.");
-      nav("/otp", { replace: true, state: { email: values.email, from: "register" } });
+      nav("/otp", {
+        replace: true,
+        state: { email: values.email, from: "register" },
+      });
     } catch (err) {
       console.error("Register error:", err.message);
       toast.error(err.message || "Registration failed");
@@ -110,12 +122,16 @@ export default function Register() {
                 <form noValidate onSubmit={handleSubmit}>
                   {/* email */}
                   <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email</label>
+                    <label htmlFor="email" className="form-label">
+                      Email
+                    </label>
                     <input
                       id="email"
                       name="email"
                       type="email"
-                      className={`form-control ${touched.email && errors.email ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        touched.email && errors.email ? "is-invalid" : ""
+                      }`}
                       value={values.email}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -130,12 +146,16 @@ export default function Register() {
 
                   {/* password */}
                   <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Password</label>
+                    <label htmlFor="password" className="form-label">
+                      Password
+                    </label>
                     <input
                       id="password"
                       name="password"
                       type="password"
-                      className={`form-control ${touched.password && errors.password ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        touched.password && errors.password ? "is-invalid" : ""
+                      }`}
                       value={values.password}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -150,12 +170,16 @@ export default function Register() {
 
                   {/* confirm password */}
                   <div className="mb-3">
-                    <label htmlFor="confirm" className="form-label">Re-enter Password</label>
+                    <label htmlFor="confirm" className="form-label">
+                      Re-enter Password
+                    </label>
                     <input
                       id="confirm"
                       name="confirm"
                       type="password"
-                      className={`form-control ${touched.confirm && errors.confirm ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        touched.confirm && errors.confirm ? "is-invalid" : ""
+                      }`}
                       value={values.confirm}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -170,20 +194,28 @@ export default function Register() {
 
                   {/* role */}
                   <div className="mb-3">
-                    <label htmlFor="role" className="form-label">Role</label>
+                    <label htmlFor="role" className="form-label">
+                      Role
+                    </label>
                     <select
                       id="role"
                       name="role"
-                      className={`form-select ${touched.role && errors.role ? "is-invalid" : ""}`}
+                      className={`form-select ${
+                        touched.role && errors.role ? "is-invalid" : ""
+                      }`}
                       value={values.role}
                       onChange={handleChange}
                       onBlur={handleBlur}
                       required
                     >
                       <option value="">Choose your role</option>
-                      <option value="ev">Electric Vehicle Owner (EV Owner)</option>
+                      <option value="ev">
+                        Electric Vehicle Owner (EV Owner)
+                      </option>
                       <option value="bis">Company</option>
-                      <option value="cv">Carbon Verification & Audit (CVA)</option>
+                      <option value="cv">
+                        Carbon Verification & Audit (CVA)
+                      </option>
                     </select>
                     {touched.role && errors.role && (
                       <div className="invalid-feedback">{errors.role}</div>
@@ -193,7 +225,9 @@ export default function Register() {
                   {/* agree */}
                   <div className="form-check mb-3">
                     <input
-                      className={`form-check-input ${touched.agree && errors.agree ? "is-invalid" : ""}`}
+                      className={`form-check-input ${
+                        touched.agree && errors.agree ? "is-invalid" : ""
+                      }`}
                       type="checkbox"
                       id="agree"
                       name="agree"
@@ -206,7 +240,9 @@ export default function Register() {
                       <Link to="/privacy">Privacy Policy</Link>
                     </label>
                     {touched.agree && errors.agree && (
-                      <div className="invalid-feedback d-block">{errors.agree}</div>
+                      <div className="invalid-feedback d-block">
+                        {errors.agree}
+                      </div>
                     )}
                   </div>
 

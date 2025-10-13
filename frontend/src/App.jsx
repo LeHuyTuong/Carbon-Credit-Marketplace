@@ -23,6 +23,9 @@ import KYC from "./pages/KYC/KYC.jsx";
 import Profile from "./pages/Profile/Profile.jsx";
 import Order from "./pages/Dashboard/Company/Order/Order.jsx";
 import PaymentDetail from "./pages/PaymentDetail/PaymentDetail.jsx";
+import KYCCompany from "./pages/Dashboard/Company/KYCCompany/KYCCompany.jsx";
+import ProfileCompany from "./pages/Dashboard/Company/ProfileCompany/ProfileCompany.jsx";
+import RoleRoute from "./components/RoleRoute.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -59,8 +62,40 @@ export default function App() {
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
-          <Route path="/kyc" element={<KYC />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/kyc"
+            element={
+              <RoleRoute allowedRoles={["EV_OWNER", "USER"]}>
+                <KYC />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <RoleRoute allowedRoles={["EV_OWNER", "USER"]}>
+                <Profile />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/kyc-company"
+            element={
+              <RoleRoute allowedRoles={["COMPANY"]}>
+                <KYCCompany />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/profile-company"
+            element={
+              <RoleRoute allowedRoles={["COMPANY"]}>
+                <ProfileCompany />
+              </RoleRoute>
+            }
+          />
           <Route
             path="/wallet"
             element={
