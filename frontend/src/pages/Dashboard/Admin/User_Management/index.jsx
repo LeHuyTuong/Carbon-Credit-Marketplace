@@ -8,7 +8,7 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react"; //thêm để quản lý dữ liệu
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-
+import { mockDataTeam } from "@/data/mockData";
 const accessConfig = {
   admin: {
     label: "Admin",
@@ -25,8 +25,8 @@ const accessConfig = {
     icon: <LockOpenOutlinedIcon />,
     bg: "greenAccent.700",
   },
-  cc_buyer: {
-    label: "CC-Buyer",
+  company: {
+    label: "Company",
     icon: <LockOpenOutlinedIcon />,
     bg: "greenAccent.700",
   },
@@ -45,10 +45,7 @@ const Team = () => {
   return saved ? JSON.parse(saved) : mockDataTeam;
 });
 
-  // thêm hàm xóa
-  const handleDelete = (id) => {
-    setData(data.filter((item) => item.id !== id));
-  };
+  
   const columns = [
     { field: "id", headerName: "" },
     { field: "userid", headerName: "User ID" },
@@ -143,12 +140,7 @@ const Team = () => {
             <Link to={`/admin/view_user/${params.row.id}`} style={{ textDecoration: "none" }}>
               <div className="viewButton">View</div>
             </Link>
-            <div
-              className="deleteButton"
-              onClick={() => handleDelete(params.row.id)}
-            >
-              Delete
-            </div>
+            
           </div>
         );
       },
