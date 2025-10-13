@@ -22,7 +22,6 @@ const PieChart = () => {
           <strong>{datum.label}</strong>: {datum.value}
         </div>
       )}
-
       theme={{
         axis: {
           domain: {
@@ -71,7 +70,6 @@ const PieChart = () => {
         from: "color",
         modifiers: [["darker", 3]],
       }}
-
       defs={[
         {
           id: "dots",
