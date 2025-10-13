@@ -6,17 +6,14 @@ import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useState } from "react"; //thêm để quản lý dữ liệu
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-
+import { mockDataCredits} from "@/data/mockData";
 const Contacts = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataCredits);
-  // thêm hàm xóa
-  const handleDelete = (id) => {
-    setData(data.filter((item) => item.id !== id));
-  };
+  
   const columns = [
     { field: "id", headerName: "", flex: 0.5 },
     { field: "creditid", headerName: "Credit ID", },
@@ -112,12 +109,7 @@ const Contacts = () => {
             <Link to={`/admin/view_credit/${params.row.id}`} style={{ textDecoration: "none" }}>
               <div className="viewButton">View</div>
             </Link>
-            <div
-              className="deleteButton"
-              onClick={() => handleDelete(params.row.id)}
-            >
-              Delete
-            </div>
+            
           </div>
         );
       },

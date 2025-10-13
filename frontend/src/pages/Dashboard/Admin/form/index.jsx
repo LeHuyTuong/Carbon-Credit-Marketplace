@@ -1,28 +1,29 @@
-import { Box, Button, TextField } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Snackbar, Alert } from "@mui/material";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { useState } from "react";
 import Header from "@/components/Chart/Header.jsx";
 
 const Form = () => {
   const isNonMobile = useMediaQuery("(min-width:600px)");
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const handleFormSubmit = (values) => {
-  const formData = new FormData();
-  Object.keys(values).forEach((key) => {
-    formData.append(key, values[key]);
-  });
+  const handleFormSubmit = (values, { resetForm }) => {
+    const formData = new FormData();
+    Object.keys(values).forEach((key) => {
+      formData.append(key, values[key]);
+    });
 
-  // Debug xem file có được upload đúng không
-  console.log("Uploaded avatar:", values.avatar);
-  console.log("All form values:", values);
+    console.log("Uploaded avatar:", values.avatar);
+    console.log("All form values:", values);
 
-  // Sau này bạn có thể gửi formData qua API:
-  // axios.post("/api/users", formData, {
-  //   headers: { "Content-Type": "multipart/form-data" },
-  // });
-};
+    // Gửi formData qua API ở đây nếu cần
+    // axios.post("/api/users", formData, { headers: { "Content-Type": "multipart/form-data" } });
 
+    setOpenSnackbar(true);
+    resetForm();
+  };
 
   return (
     <Box m="20px">
@@ -40,6 +41,7 @@ const Form = () => {
           handleBlur,
           handleChange,
           handleSubmit,
+          setFieldValue,
         }) => (
           <form onSubmit={handleSubmit}>
             <Box
@@ -49,83 +51,72 @@ const Form = () => {
               sx={{
                 "& > div": { gridColumn: isNonMobile ? undefined : "span 4" },
               }}
-            > 
-               {/*nút upload*/}
-              <Box
-              gridColumn="span 4"
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              gap="10px"
             >
-              <input
-                id="avatar"
-                name="avatar"
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(event) => {
-                  const file = event.currentTarget.files[0];
-                  handleChange({
-                    target: {
-                      name: "avatar",
-                      value: file,
-                    },
-                  });
-                }}
-              />
-              <label htmlFor="avatar">
-                <Button variant="outlined" component="span" color="secondary">
-                  Upload Avatar
-                </Button>
-              </label>
+              {/* Upload Avatar */}
+              <Box
+                gridColumn="span 4"
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                gap="10px"
+              >
+                <input
+                  id="avatar"
+                  name="avatar"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    const file = event.currentTarget.files[0];
+                    setFieldValue("avatar", file);
+                  }}
+                />
+                <label htmlFor="avatar">
+                  <Button variant="outlined" component="span" color="secondary">
+                    Upload Avatar
+                  </Button>
+                </label>
 
-              {/* Ảnh xem trước */}
-              {values.avatar && (
-                <Box mt={2}>
-                  <img
-                    src={URL.createObjectURL(values.avatar)}
-                    alt="Avatar Preview"
-                    width="120"
-                    height="120"
-                    style={{ borderRadius: "50%", objectFit: "cover" }}
-                  />
-                </Box>
-              )}
-              {touched.avatar && errors.avatar && (
-                <div style={{ color: "red", fontSize: "14px" }}>{errors.avatar}</div>
-              )}
-            </Box>
+                {values.avatar && (
+                  <Box mt={2}>
+                    <img
+                      src={URL.createObjectURL(values.avatar)}
+                      alt="Avatar Preview"
+                      width="120"
+                      height="120"
+                      style={{
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "2px solid #888",
+                      }}
+                    />
+                  </Box>
+                )}
+                {touched.avatar && errors.avatar && (
+                  <div style={{ color: "red", fontSize: "14px" }}>{errors.avatar}</div>
+                )}
+              </Box>
+
+              {/* Name */}
               <TextField
                 fullWidth
                 variant="filled"
                 type="text"
-                label="First Name"
+                label="Full Name"
                 onBlur={handleBlur}
                 onChange={handleChange}
-                value={values.firstName}
-                name="firstName"
-                error={!!touched.firstName && !!errors.firstName}
-                helperText={touched.firstName && errors.firstName}
-                sx={{ gridColumn: "span 2" }}
+                value={values.name}
+                name="name"
+                error={!!touched.name && !!errors.name}
+                helperText={touched.name && errors.name}
+                sx={{ gridColumn: "span 4" }}
               />
+
+              {/* Email */}
               <TextField
                 fullWidth
                 variant="filled"
-                type="text"
-                label="Last Name"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.lastName}
-                name="lastName"
-                error={!!touched.lastName && !!errors.lastName}
-                helperText={touched.lastName && errors.lastName}
-                sx={{ gridColumn: "span 2" }}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
+                type="email"
                 label="Email"
                 onBlur={handleBlur}
                 onChange={handleChange}
@@ -133,50 +124,77 @@ const Form = () => {
                 name="email"
                 error={!!touched.email && !!errors.email}
                 helperText={touched.email && errors.email}
-                sx={{ gridColumn: "span 4" }}
+                sx={{ gridColumn: "span 2" }}
               />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                label="Contact Number"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.contact}
-                name="contact"
-                error={!!touched.contact && !!errors.contact}
-                helperText={touched.contact && errors.contact}
-                sx={{ gridColumn: "span 4" }}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                label="Address 1"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.address1}
-                name="address1"
-                error={!!touched.address1 && !!errors.address1}
-                helperText={touched.address1 && errors.address1}
-                sx={{ gridColumn: "span 4" }}
-              />
-              <TextField
-                fullWidth
-                variant="filled"
-                type="text"
-                label="Address 2"
-                onBlur={handleBlur}
-                onChange={handleChange}
-                value={values.address2}
-                name="address2"
-                error={!!touched.address2 && !!errors.address2}
-                helperText={touched.address2 && errors.address2}
-                sx={{ gridColumn: "span 4" }}
-              />
-            </Box>
-            
 
+              {/* Password */}
+              <TextField
+                fullWidth
+                variant="filled"
+                type="password"
+                label="Password"
+                onBlur={handleBlur}
+                onChange={handleChange}
+                value={values.password}
+                name="password"
+                error={!!touched.password && !!errors.password}
+                helperText={touched.password && errors.password}
+                sx={{ gridColumn: "span 2" }}
+              />
+
+              {/* Phone */}
+              <TextField
+                fullWidth
+                variant="filled"
+                type="text"
+                label="Phone"
+                onBlur={handleBlur}
+                onChange={handleChange}
+                value={values.phone}
+                name="phone"
+                error={!!touched.phone && !!errors.phone}
+                helperText={touched.phone && errors.phone}
+                sx={{ gridColumn: "span 2" }}
+              />
+
+              {/* Role */}
+              <TextField
+                select
+                fullWidth
+                variant="filled"
+                label="Role"
+                onBlur={handleBlur}
+                onChange={handleChange}
+                value={values.role}
+                name="role"
+                error={!!touched.role && !!errors.role}
+                helperText={touched.role && errors.role}
+                sx={{ gridColumn: "span 1" }}
+              >
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="cva">CVA</MenuItem>
+              </TextField>
+
+              {/* Status */}
+              <TextField
+                select
+                fullWidth
+                variant="filled"
+                label="Status"
+                onBlur={handleBlur}
+                onChange={handleChange}
+                value={values.status}
+                name="status"
+                error={!!touched.status && !!errors.status}
+                helperText={touched.status && errors.status}
+                sx={{ gridColumn: "span 1" }}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </TextField>
+            </Box>
+
+            {/* Submit Button */}
             <Box display="flex" justifyContent="end" mt="20px">
               <Button type="submit" color="secondary" variant="contained">
                 Create New User
@@ -185,31 +203,52 @@ const Form = () => {
           </form>
         )}
       </Formik>
+
+      {/* Snackbar Success */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          🎉 Tạo tài khoản thành công!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
+// Validation schema
 const phoneRegExp =
   /^((\+[1-9]{1,4}[ -]?)|(\([0-9]{2,3}\)[ -]?)|([0-9]{2,4})[ -]?)*?[0-9]{3,4}[ -]?[0-9]{3,4}$/;
 
 const checkoutSchema = yup.object().shape({
-  firstName: yup.string().required("required"),
-  lastName: yup.string().required("required"),
-  email: yup.string().email("invalid email").required("required"),
-  contact: yup
+  name: yup.string().required("Name is required"),
+  email: yup.string().email("Invalid email").required("Email is required"),
+  password: yup.string().min(6, "Password must be at least 6 characters").required("Required"),
+  phone: yup
     .string()
     .matches(phoneRegExp, "Phone number is not valid")
-    .required("required"),
-  address1: yup.string().required("required"),
-  address2: yup.string().required("required"),
+    .required("Phone is required"),
+  role: yup.string().oneOf(["admin", "cva"], "Invalid role").required("Role is required"),
+  status: yup.string().oneOf(["active", "inactive"], "Invalid status").required("Status is required"),
+  avatar: yup.mixed().required("Avatar is required"),
 });
+
+// Default values
 const initialValues = {
-  firstName: "",
-  lastName: "",
+  name: "",
   email: "",
-  contact: "",
-  address1: "",
-  address2: "",
+  password: "",
+  phone: "",
+  role: "",
+  status: "",
   avatar: null,
 };
 
