@@ -4,16 +4,14 @@ import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-
+import { mockDataInvoices} from "@/data/mockData";
 const Transaction = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataInvoices);
   // thêm hàm xóa
-  const handleDelete = (id) => {
-    setData(data.filter((item) => item.id !== id));
-  };
+  
   const columns = [
     { field: "id", headerName: "" },
     { field: "transactionid", headerName: "Transaction ID", flex: 1 },
@@ -116,12 +114,7 @@ const Transaction = () => {
                 <Link to={`/admin/view_transaction/${params.row.id}`} style={{ textDecoration: "none" }}>
                   <div className="viewButton">View</div>
                 </Link>
-                <div
-                  className="deleteButton"
-                  onClick={() => handleDelete(params.row.id)}
-                >
-                  Delete
-                </div>
+                
               </div>
             );
           },

@@ -11,7 +11,7 @@ import GeographyChart from "@/components/Chart/GeographyChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
-
+import { mockTransactions } from "@/data/mockData.js";
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

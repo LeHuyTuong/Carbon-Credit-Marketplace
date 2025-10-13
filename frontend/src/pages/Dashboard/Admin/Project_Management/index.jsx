@@ -5,17 +5,14 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-
+import { mockDataProjects } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
     const [data, setData] = useState(mockDataProjects);
-    // thêm hàm xóa
-    const handleDelete = (id) => {
-      setData(data.filter((item) => item.id !== id));
-    };
+    
   const columns = [
     { field: "id", headerName: "" },
     { field: "projectid", headerName: "Project ID", flex: 1 },
@@ -101,12 +98,7 @@ const Invoices = () => {
                 <Link to={`/admin/view_project/${params.row.id}`} style={{ textDecoration: "none" }}>
                   <div className="viewButton">View</div>
                 </Link>
-                <div
-                  className="deleteButton"
-                  onClick={() => handleDelete(params.row.id)}
-                >
-                  Delete
-                </div>
+                
               </div>
             );
           },
