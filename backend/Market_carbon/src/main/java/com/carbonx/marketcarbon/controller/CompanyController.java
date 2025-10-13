@@ -60,6 +60,21 @@ public class CompanyController {
         return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
     }
 
+    @Operation(summary = "Import CSV (Company register for existing projects)")
+    @PostMapping(path = "/import-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<TuongCommonResponse<ImportReport>> importCsv(
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        ImportReport result = companyService.importCsv(file);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, result));
+    }
+
     @Operation(summary = "Send Project to Review (Company)")
     @PostMapping("/{id}/send-to-review")
     public ResponseEntity<TuongCommonResponse<ProjectResponse>> sendToReview(
@@ -75,18 +90,5 @@ public class CompanyController {
         return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
     }
 
-    @Operation(summary = "Import CSV (Company register for existing projects)")
-    @PostMapping(path = "/import-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<ImportReport>> importCsv(
-            @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
-        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        ImportReport result = companyService.importCsv(file);
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, result));
-    }
 }
