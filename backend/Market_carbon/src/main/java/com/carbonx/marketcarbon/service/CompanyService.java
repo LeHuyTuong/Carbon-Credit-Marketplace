@@ -21,9 +21,4 @@ public interface CompanyService {
      Page<ProjectResponse> listBaseProjectChoices(Pageable pageable);
 
 
- void createCompany(Company company);
-     void updateCompany(Long id, Company company);
-     void deleteCompany(Long id);
-     void getCompanyById(Long id);
-     List<Company> getAllCompanies();
 }

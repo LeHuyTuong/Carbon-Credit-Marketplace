@@ -40,21 +40,21 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class CompanyServiceImpl implements CompanyService {
+
     private final CompanyRepository companyRepository;
     private final VehicleRepository vehicleRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final UserRepository userRepository;
 
-
     @Override
     public void assignProject(Company company, Project project) {
-
+        // business logic nếu cần
     }
 
     @Override
     public void removeProject(Company company, Project project) {
-
+        // business logic nếu cần
     }
 
     @Override
@@ -103,19 +103,24 @@ public class CompanyServiceImpl implements CompanyService {
                     .build();
         }
 
+        // 1) Lấy user & company hiện tại
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found");
         }
-
         Company company = companyRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found for user"));
 
+        // 2) Định nghĩa header CSV: CHỈ gồm field DN phải nộp (khớp ProjectSubmitRequest)
         CSVFormat fmt = CSVFormat.DEFAULT.builder()
-                .setHeader("baseProjectId", "title", "description", "logo",
-                        "commitments", "technicalIndicators", "measurementMethod", "legalDocsUrl")
+                .setHeader(
+                        "baseProjectId",
+                        "companyCommitment",
+                        "technicalIndicators",
+                        "measurementMethod"
+                )
                 .setSkipHeaderRecord(true)
                 .setTrim(true)
                 .build();
@@ -124,7 +129,8 @@ public class CompanyServiceImpl implements CompanyService {
         List<ProjectCsvRow> validRows = new ArrayList<>();
         int line = 1;
 
-        Set<Long> parentIdsInCsv = new HashSet<>();
+        // chặn trùng baseProjectId trong chính file CSV
+        Set<Long> baseIdsInCsv = new HashSet<>();
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
@@ -132,21 +138,22 @@ public class CompanyServiceImpl implements CompanyService {
 
             for (CSVRecord r : parser) {
                 line++;
-                Map<String, String> cols = echoColumns(r);
+                Map<String, String> cols = echoColumnsBatchSubmit(r);
                 try {
-                    ProjectCsvRow row = mapRecordWithoutCompany(r);
-                    validateRow(row);
+                    ProjectCsvRow row = mapRecordForBatchSubmit(r);
+                    validateBatchSubmitRow(row);
 
-                    if (!projectRepository.existsById(row.getBaseProjectId())) {
-                        throw new AppException(ErrorCode.PROJECT_NOT_FOUND);
-                    }
+                    // 3) Base project phải là project gốc (company = null)
+                    Project base = projectRepository.findByIdAndCompanyIsNull(row.getBaseProjectId())
+                            .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-                    if (!parentIdsInCsv.add(row.getBaseProjectId())) {
+                    // 4) Chặn trùng trong CSV
+                    if (!baseIdsInCsv.add(row.getBaseProjectId())) {
                         throw new AppException(ErrorCode.ONE_APPLICATION_PER_PROJECT);
                     }
 
-                    if (projectRepository.existsByCompanyIdAndParentProjectId(
-                            company.getId(), row.getBaseProjectId())) {
+                    // 5) Chặn nếu công ty đã nộp trước đó cho base này
+                    if (projectRepository.existsByCompanyIdAndParentProjectId(company.getId(), base.getId())) {
                         throw new AppException(ErrorCode.ONE_APPLICATION_PER_PROJECT);
                     }
 
@@ -170,23 +177,33 @@ public class CompanyServiceImpl implements CompanyService {
             }
         }
 
+        // Nếu có bất kỳ dòng lỗi => rollback toàn bộ batch
         long failed = rowResults.stream().filter(r -> !r.isSuccess()).count();
         if (failed > 0) {
             throw new CsvBatchException(rowResults);
         }
+
+        // 6) Lưu tất cả dòng hợp lệ: copy meta từ base, gắn parent, ghi dữ liệu DN nộp
         for (ProjectCsvRow row : validRows) {
-            Project project = Project.builder()
-                    .title(row.getTitle())
-                    .description(row.getDescription())
-                    .logo(row.getLogo())
+            Project base = projectRepository.findByIdAndCompanyIsNull(row.getBaseProjectId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+            Project submission = Project.builder()
+                    // meta từ base project do Admin tạo
+                    .title(base.getTitle())
+                    .description(base.getDescription())
+                    .logo(base.getLogo())
+                    // trạng thái & liên kết
                     .status(ProjectStatus.PENDING_REVIEW)
                     .company(company)
-                    .commitments(row.getCommitments())
+                    .parentProjectId(base.getId())
+                    // dữ liệu DN nộp
+                    .commitments(row.getCompanyCommitment())
                     .technicalIndicators(row.getTechnicalIndicators())
                     .measurementMethod(row.getMeasurementMethod())
-                    .legalDocsUrl(row.getLegalDocsUrl())
                     .build();
-            projectRepository.save(project);
+
+            projectRepository.save(submission);
         }
 
         return ImportReport.builder()
@@ -207,16 +224,16 @@ public class CompanyServiceImpl implements CompanyService {
         Company company = companyRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found for user"));
 
-        // 2) lấy project gốc
+        // 2) lấy project gốc (Admin)
         Project base = projectRepository.findByIdAndCompanyIsNull(baseProjectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        //  1 công ty / 1 base project
+        // 3) 1 company / 1 base project
         if (projectRepository.existsByCompanyIdAndParentProjectId(company.getId(), base.getId())) {
             throw new AppException(ErrorCode.ONE_APPLICATION_PER_PROJECT);
         }
 
-        // 4) tạo hồ sơ NHÁP cho công ty (company có thể sửa các field sau đó)
+        // 4) tạo hồ sơ NHÁP cho công ty (company sẽ bổ sung & submit sau)
         Project draft = Project.builder()
                 .title(base.getTitle())
                 .description(base.getDescription())
@@ -224,9 +241,9 @@ public class CompanyServiceImpl implements CompanyService {
                 .status(ProjectStatus.DRAFT)
                 .company(company)
                 .parentProjectId(base.getId())
-                .commitments(base.getCommitments())
-                .technicalIndicators(base.getTechnicalIndicators())
-                .measurementMethod(base.getMeasurementMethod())
+                .commitments(null)
+                .technicalIndicators(null)
+                .measurementMethod(null)
                 .legalDocsUrl(base.getLegalDocsUrl())
                 .build();
 
@@ -242,36 +259,24 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
 
-    private ProjectCsvRow mapRecordWithoutCompany(CSVRecord r) {
+    private ProjectCsvRow mapRecordForBatchSubmit(CSVRecord r) {
         return ProjectCsvRow.builder()
                 .baseProjectId(parseLong(getRequired(r, "baseProjectId"), "baseProjectId"))
-                .title(getRequired(r, "title"))
-                .description(getRequired(r, "description"))
-                .logo(getRequired(r, "logo"))
-                .commitments(getRequired(r, "commitments"))
+                .companyCommitment(getRequired(r, "companyCommitment"))
                 .technicalIndicators(getRequired(r, "technicalIndicators"))
                 .measurementMethod(getRequired(r, "measurementMethod"))
-                .legalDocsUrl(getRequired(r, "legalDocsUrl"))
                 .build();
     }
 
-    private void validateRow(ProjectCsvRow row) {
+    private void validateBatchSubmitRow(ProjectCsvRow row) {
         if (row.getBaseProjectId() == null || row.getBaseProjectId() <= 0)
             throw new AppException(ErrorCode.CSV_BASE_PROJECT_ID_INVALID);
-        if (isBlank(row.getTitle()))
-            throw new AppException(ErrorCode.CSV_TITLE_MISSING);
-        if (isBlank(row.getDescription()))
-            throw new AppException(ErrorCode.CSV_DESCRIPTION_MISSING);
-        if (isBlank(row.getLogo()))
-            throw new AppException(ErrorCode.CSV_LOGO_MISSING);
-        if (isBlank(row.getCommitments()))
+        if (isBlank(row.getCompanyCommitment()))
             throw new AppException(ErrorCode.CSV_COMMITMENTS_MISSING);
         if (isBlank(row.getTechnicalIndicators()))
             throw new AppException(ErrorCode.CSV_TECHNICAL_INDICATORS_MISSING);
         if (isBlank(row.getMeasurementMethod()))
             throw new AppException(ErrorCode.CSV_MEASUREMENT_METHOD_MISSING);
-        if (isBlank(row.getLegalDocsUrl()))
-            throw new AppException(ErrorCode.CSV_LEGAL_DOCS_URL_MISSING);
     }
 
     private boolean isBlank(String s) {
@@ -295,13 +300,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     private static ErrorCode errorCodeForKey(String key) {
         switch (key) {
-            case "title":               return ErrorCode.CSV_TITLE_MISSING;
-            case "description":         return ErrorCode.CSV_DESCRIPTION_MISSING;
-            case "logo":                return ErrorCode.CSV_LOGO_MISSING;
-            case "commitments":         return ErrorCode.CSV_COMMITMENTS_MISSING;
+            case "companyCommitment":   return ErrorCode.CSV_COMMITMENTS_MISSING;
             case "technicalIndicators": return ErrorCode.CSV_TECHNICAL_INDICATORS_MISSING;
             case "measurementMethod":   return ErrorCode.CSV_MEASUREMENT_METHOD_MISSING;
-            case "legalDocsUrl":        return ErrorCode.CSV_LEGAL_DOCS_URL_MISSING;
             case "baseProjectId":       return ErrorCode.CSV_BASE_PROJECT_ID_INVALID;
             default:                    return ErrorCode.CSV_MISSING_FIELD;
         }
@@ -319,41 +320,12 @@ public class CompanyServiceImpl implements CompanyService {
         try { return r.get(key); } catch (Exception e) { return null; }
     }
 
-    private static Map<String, String> echoColumns(CSVRecord r) {
+    private static Map<String, String> echoColumnsBatchSubmit(CSVRecord r) {
         Map<String, String> m = new LinkedHashMap<>();
         m.put("baseProjectId", getSafe(r, "baseProjectId"));
-        m.put("title", getSafe(r, "title"));
-        m.put("description", getSafe(r, "description"));
-        m.put("logo", getSafe(r, "logo"));
-        m.put("commitments", getSafe(r, "commitments"));
+        m.put("companyCommitment", getSafe(r, "companyCommitment"));
         m.put("technicalIndicators", getSafe(r, "technicalIndicators"));
         m.put("measurementMethod", getSafe(r, "measurementMethod"));
-        m.put("legalDocsUrl", getSafe(r, "legalDocsUrl"));
         return m;
-    }
-
-    @Override
-    public void createCompany(Company company) {
-
-    }
-
-    @Override
-    public void updateCompany(Long id, Company company) {
-
-    }
-
-    @Override
-    public void deleteCompany(Long id) {
-
-    }
-
-    @Override
-    public void getCompanyById(Long id) {
-
-    }
-
-    @Override
-    public List<Company> getAllCompanies() {
-        return List.of();
     }
 }
