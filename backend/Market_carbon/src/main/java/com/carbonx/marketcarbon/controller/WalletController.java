@@ -59,7 +59,6 @@ public class WalletController {
         TuongCommonResponse<Wallet> response = new TuongCommonResponse<>(trace, now , rs ,wallet );
         return ResponseEntity.ok(response);
     }
-//    TODO : đợi upload method thanh toán là paypal rồi làm tiếp
 //    @PutMapping("/api/wallet/deposit")
 //    public ResponseEntity<TuongCommonResponse<Wallet>> addMoneyToWallet(
 //            @RequestHeader("Authorization") String bearerToken,

@@ -11,4 +11,5 @@ public enum ProjectStatus {
     CVA_APPROVED,
     PENDING_REVIEW,
     ADMIN_APPROVED,
+    DRAFT,
 }

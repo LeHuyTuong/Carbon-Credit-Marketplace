@@ -30,4 +30,7 @@ public class ProjectResponse {
 
     // Thời gian tạo
     private OffsetDateTime createdAt;
+
+    // tên CVA reviewer
+    private String finalReviewer;   // tên Admin reviewer
 }
