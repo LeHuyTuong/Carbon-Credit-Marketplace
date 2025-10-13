@@ -16,7 +16,7 @@ const accessConfig = {
     bg: "greenAccent.600",
   },
   cva: {
-    label: "CVA", 
+    label: "CVA",
     icon: <SecurityOutlinedIcon />,
     bg: "greenAccent.700",
   },
@@ -30,20 +30,17 @@ const accessConfig = {
     icon: <LockOpenOutlinedIcon />,
     bg: "greenAccent.700",
   },
-
 };
 localStorage.removeItem("userData");
 const Team = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-
-
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(() => {
-  const saved = localStorage.getItem("userData");
-  return saved ? JSON.parse(saved) : mockDataTeam;
-});
+    const saved = localStorage.getItem("userData");
+    return saved ? JSON.parse(saved) : mockDataTeam;
+  });
 
   
   const columns = [
@@ -137,7 +134,10 @@ const Team = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/admin/view_user/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/admin/view_user/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
             
@@ -145,7 +145,6 @@ const Team = () => {
         );
       },
     },
-
   ];
 
   return (
@@ -183,11 +182,12 @@ const Team = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",

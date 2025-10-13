@@ -38,7 +38,7 @@ const Invoices = () => {
       flex: 1,
     },
     {
-      field: "status",// Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
+      field: "status", // Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
       headerName: "Status",
       flex: 1,
       renderCell: ({ row: { status } }) => {
@@ -72,7 +72,10 @@ const Invoices = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/admin/view_report/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/admin/view_report/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
             
@@ -80,7 +83,6 @@ const Invoices = () => {
         );
       },
     },
-
   ];
 
   return (
@@ -118,11 +120,12 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",
