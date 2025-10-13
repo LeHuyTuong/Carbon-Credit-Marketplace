@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.model.Permission;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Role;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -34,11 +33,6 @@ public class CustomUserServiceImpl implements UserDetailsService {
         // map role
         for (Role role : user.getRoles()) {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
-
-            // map permission của role
-            for (Permission perm : role.getPermissions()) {
-                authorities.add(new SimpleGrantedAuthority(perm.getCode()));
-            }
         }
 
         return new org.springframework.security.core.userdetails.User(
