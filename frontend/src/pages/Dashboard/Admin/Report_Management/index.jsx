@@ -5,17 +5,14 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-
+import { mockDataReports } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataReports);
-  // thêm hàm xóa
-  const handleDelete = (id) => {
-    setData(data.filter((item) => item.id !== id));
-  };
+  
   const columns = [
     { field: "id", headerName: "" },
     { field: "reportid", headerName: "Report ID", flex: 1 },
@@ -41,7 +38,7 @@ const Invoices = () => {
       flex: 1,
     },
     {
-      field: "status",// Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
+      field: "status", // Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
       headerName: "Status",
       flex: 1,
       renderCell: ({ row: { status } }) => {
@@ -75,20 +72,17 @@ const Invoices = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/admin/view_report/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/admin/view_report/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
-            <div
-              className="deleteButton"
-              onClick={() => handleDelete(params.row.id)}
-            >
-              Delete
-            </div>
+            
           </div>
         );
       },
     },
-
   ];
 
   return (
@@ -126,11 +120,12 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",
