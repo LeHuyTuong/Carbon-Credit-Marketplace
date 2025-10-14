@@ -1,7 +1,5 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.common.WalletTransactionType;
-import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.User;
@@ -42,6 +40,7 @@ public class WalletServiceImpl implements WalletService {
     public Wallet generateWallet(User user) {
         //B1 create wallet
         Wallet wallet = new  Wallet();
+        wallet.setBalance(BigDecimal.ZERO);
         //B2 Set user , moi vi duoc 1 user
         wallet.setUser(user);
         //B3 luu lai vi theo user

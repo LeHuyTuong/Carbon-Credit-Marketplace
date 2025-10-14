@@ -4,7 +4,6 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
 import com.carbonx.marketcarbon.exception.WalletException;
-import com.carbonx.marketcarbon.model.Order;
 import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
@@ -30,13 +29,11 @@ import java.util.UUID;
 @Slf4j
 public class WalletController {
     private final WalletService walletService;
-    private final UserService userService;
     private final WalletTransactionService  walletTransactionService;
     private final PaymentService paymentService;
-    private final OrderService orderService;
 
     @Operation(summary = "User wallet" , description = "API get own wallet")
-    @PostMapping
+    @GetMapping
     public ResponseEntity<TuongCommonResponse<Wallet>> getUserWallet (
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
@@ -54,7 +51,7 @@ public class WalletController {
     }
 
     @Operation(summary = "deposit money " , description = "API deposit money ")
-    @PutMapping("/amount/{amount}")
+    @PutMapping("/deposit/amount/{amount}")
     public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -113,20 +110,21 @@ public class WalletController {
         TuongCommonResponse<List<WalletTransaction>> response = new TuongCommonResponse<>(trace, now , rs ,transactions );
         return ResponseEntity.ok(response);
     }
-// TODO
-//    @PutMapping("/order/{orderId}/pay")
-//    public ResponseEntity<TuongCommonResponse<Wallet>> payOrder(
-//            @PathVariable("orderId") Long orderId,
-//            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-//            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
-//    )throws Exception{
-//        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-//        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-//
-//        Order order = orderService.getOrderById(orderId);
-//        Wallet wallet = walletService.;
-//    }
+/*
 
+    @PutMapping("/order/{orderId}/pay")
+    public ResponseEntity<TuongCommonResponse<Wallet>> payOrder(
+            @PathVariable("orderId") Long orderId,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    )throws Exception{
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
+        Order order = orderService.getOrderById(orderId);
+
+    }
+
+*/
 
 }
