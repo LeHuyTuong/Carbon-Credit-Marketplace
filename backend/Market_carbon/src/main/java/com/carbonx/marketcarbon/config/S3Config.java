@@ -24,7 +24,7 @@ public class S3Config {
 
     @Bean
     public S3Client s3Client() {
-        System.out.println("✅ S3Client initializing with region: " + region);
+        System.out.println(" S3Client initializing with region: " + region);
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(

@@ -51,7 +51,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                         auths.add(new SimpleGrantedAuthority("ROLE_" + roleName));
                     }
                 }
-                // ✅ Debug: in ra authorities để bạn kiểm tra khi bị 403
+                //  Debug: in ra authorities để bạn kiểm tra khi bị 403
                 System.out.println("==== JwtTokenValidator ====");
                 System.out.println("Email: " + email);
                 auths.forEach(a -> System.out.println("Authority => " + a.getAuthority()));
