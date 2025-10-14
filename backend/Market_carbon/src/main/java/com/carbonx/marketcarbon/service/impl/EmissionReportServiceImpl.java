@@ -38,7 +38,6 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private final StorageService storageService;
     private final S3StorageServiceImpl s3StorageServiceImpl;
 
-    // ===================== create & submit, rồi sinh CSV cho CVA =====================
     @Override
     @Transactional
     public EmissionReportResponse createAndSubmit(EmissionReportCreateRequest req) {
@@ -116,7 +115,6 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 .build();
     }
 
-    // ===================== upload multiple user evidences (đã nâng cấp kèm cleanup) =====================
     @Transactional
     public List<EvidenceFileDto> uploadMultiple(Long reportId, List<MultipartFile> files) {
         EmissionReport r = mustReport(reportId);
@@ -204,7 +202,6 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         return sanitized.isBlank() ? "file" : sanitized;
     }
 
-    // ===================== CVA/Admin placeholders (chưa triển khai) =====================
     @Override public EvidenceFile cvaCheckEvidence(Long evidenceId, EvidenceCheckRequest req, Long cvaUserId) { return null; }
     @Override public EmissionReport cvaReview(Long reportId, CvaReviewRequest req, Long cvaUserId) { return null; }
     @Override public EmissionReport adminDecision(Long reportId, AdminDecisionRequest req, Long adminUserId) { return null; }

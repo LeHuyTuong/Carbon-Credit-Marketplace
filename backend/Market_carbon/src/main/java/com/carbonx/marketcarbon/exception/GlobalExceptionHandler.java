@@ -18,6 +18,8 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -160,5 +162,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorResponse("400", errorMsg));
     }
+
+    @ExceptionHandler(CsvBatchException.class)
+    public ResponseEntity<?> handleCsvBatchException(CsvBatchException ex) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("total", ex.getErrors().size());
+        response.put("success", 0);
+        response.put("failed", ex.getErrors().size());
+        response.put("results", ex.getErrors());
+        Map<String, Object> body = Map.of(
+                "requestTrace", UUID.randomUUID().toString(),
+                "responseStatus", Map.of("responseCode", "400", "responseMessage", "Failed"),
+                "response", response
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
 
 }

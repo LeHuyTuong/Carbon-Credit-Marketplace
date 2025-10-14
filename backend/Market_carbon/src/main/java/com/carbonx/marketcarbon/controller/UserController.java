@@ -99,7 +99,7 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/send-otp")
+    @PostMapping("/send-otp-forgot")
     CommonResponse<Void> sendOtpForgotPassword(@RequestBody EmailRequest request)
             throws MessagingException, UnsupportedEncodingException {
 

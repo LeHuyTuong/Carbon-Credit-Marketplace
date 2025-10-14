@@ -36,12 +36,6 @@ public class ReportController {
     private final CompanyRepository companyRepository;
     private final FileService fileService;
 
-
-    //Client chỉ click link là tải; nếu gọi bằng code, dùng fetch/
-    //Mục đích: DTO “gói” thông tin file để trả về trong JSON.
-    //fileName: tên gợi ý khi lưu.
-    //contentType: loại MIME (ở đây "application/pdf").
-    //base64: nội dung file (bytes) đã mã hoá base64 để đi trong JSON.
     record FilePayload(String fileName, String contentType, String base64) {
     }
 
@@ -67,7 +61,6 @@ public class ReportController {
         return ResponseEntity.ok(ResponseUtil.success(trace, payload));
     }
 
-    // -- TEST POSTMAN WITHOUT FRONTEND
     @Operation(summary = "Download file PDF for Company ", description = "API help CVA download file PDF for Company ")
     @GetMapping("/download/{id}")
     public void downloadRaw(
@@ -91,10 +84,6 @@ public class ReportController {
         resp.flushBuffer();
     }
 
-
-    // TODO vì chưa có JWT nên sẽ test bằng
-    //  @RequestParam("uploaderType") String uploaderType, // "COMPANY" hoặc "CVA"
-    //  @RequestParam(value = "companyId", required = false) Long companyId,
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CommonResponse<String>> uploadFile(
              @RequestParam("uploaderType") String uploaderType,
