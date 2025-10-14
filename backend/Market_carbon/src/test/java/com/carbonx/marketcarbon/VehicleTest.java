@@ -30,7 +30,6 @@ public class VehicleTest {
         vehicle.setBrand("Vinfast");
         vehicle.setModel("VF3");
         vehicle.setPlateNumber("vietnam-70000");
-        vehicle.setYearOfManufacture(2025);
 
         vehicle = vehicleRepository.save(vehicle);
         Long vehicleId = vehicle.getId();
@@ -44,7 +43,6 @@ public class VehicleTest {
         vehicle.setPlateNumber("vietnam-70001");
         vehicle.setBrand("Toyota");
         vehicle.setModel("Corolla");
-        vehicle.setYearOfManufacture(2020);
 
         Vehicle saved = vehicleRepository.save(vehicle);
         Vehicle found = vehicleRepository.findById(saved.getId()).orElse(null);
@@ -59,14 +57,12 @@ public class VehicleTest {
         vehicle1.setPlateNumber("vietnam-80001");
         vehicle1.setBrand("Hyundai");
         vehicle1.setModel("Accent");
-        vehicle1.setYearOfManufacture(2021);
 
         Vehicle vehicle2 = new Vehicle();
         vehicle2.setId(202L);
         vehicle2.setPlateNumber("vietnam-80002");
         vehicle2.setBrand("Kia");
         vehicle2.setModel("Morning");
-        vehicle2.setYearOfManufacture(2022);
 
         vehicleRepository.save(vehicle1);
         vehicleRepository.save(vehicle2);
@@ -78,8 +74,7 @@ public class VehicleTest {
                 + ", Owner ID: " + v.getId()
                 + ", Plate Number: " + v.getPlateNumber()
                 + ", Brand: " + v.getBrand()
-                + ", Model: " + v.getModel()
-                + ", Year: " + v.getYearOfManufacture());
+                + ", Model: " + v.getModel());
         }
     }
 
@@ -91,7 +86,6 @@ public class VehicleTest {
         vehicle.setPlateNumber("vietnam-70002");
         vehicle.setBrand("Honda");
         vehicle.setModel("Civic");
-        vehicle.setYearOfManufacture(2019);
 
         Vehicle saved = vehicleRepository.save(vehicle);
         saved.setBrand("Mazda");
@@ -106,7 +100,6 @@ public class VehicleTest {
         vehicle.setPlateNumber("vietnam-70003");
         vehicle.setBrand("Ford");
         vehicle.setModel("Focus");
-        vehicle.setYearOfManufacture(2018);
 
         Vehicle saved = vehicleRepository.save(vehicle);
         Long id = saved.getId();

@@ -19,6 +19,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -72,16 +74,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     }
 
-    // TODO get all
-    //    @Override
-    //    public List<PaymentOrderResponse> getAllPaymentByUser() {
-    //        User user = currentUser();
-    //        return paymentOrderRepository.findPaymentById(user.getId());
-    //    }
+    @Override
+    public List<PaymentOrder> getAllPaymentByUser() {
+        User user = currentUser();
+        return paymentOrderRepository.findPaymentByUserId(user.getId());
+    }
 
     @Override
     public PaymentOrder getPaymentOrderById(Long id) {
-        User user = currentUser();
         return paymentOrderRepository.findPaymentById(id);
     }
 

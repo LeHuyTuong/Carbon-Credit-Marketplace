@@ -1,25 +1,17 @@
 package com.carbonx.marketcarbon.dto.request;
 
-import com.carbonx.marketcarbon.common.OrderType;
-import com.carbonx.marketcarbon.model.CarbonCredit;
-import com.carbonx.marketcarbon.model.OrderItem;
-import com.carbonx.marketcarbon.model.User;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
+@Builder
 public class OrderRequest {
 
-    private User user;
+    private Long buyerCompanyId;
 
-    @Enumerated(EnumType.STRING)
-    private OrderItem orderItem;
+    private Long listingId;
 
-    @Enumerated(EnumType.STRING)
-    private OrderType  orderType;
-
-    private CarbonCredit  carbonCredit;
-
-    
+    private BigDecimal quantity;
 }
