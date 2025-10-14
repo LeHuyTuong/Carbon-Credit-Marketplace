@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fullcalendar/core": "^6.1.19",
@@ -18,8 +19,10 @@
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@mui/icons-material": "^7.3.3",
-    "@mui/material": "^7.3.3",
+    "@mui/material": "^7.3.4",
     "@mui/x-data-grid": "^8.13.1",
+    "@mui/x-date-pickers": "^8.14.0",
+    "@mui/x-date-pickers-pro": "^8.14.0",
     "@nivo/bar": "^0.99.0",
     "@nivo/core": "^0.99.0",
     "@nivo/geo": "^0.99.0",
@@ -30,6 +33,7 @@
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "dayjs": "^1.11.18",
     "formik": "^2.4.6",
     "mdb-react-ui-kit": "^9.0.0",
     "react": "^18.3.1",
@@ -46,6 +50,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.2",
     "path": "^0.12.7",
+    "sass-embedded": "^1.93.2",
     "vite": "^5.4.10"
   }
 }

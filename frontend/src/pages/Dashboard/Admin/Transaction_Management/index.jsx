@@ -1,12 +1,19 @@
 import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
-import { mockDataInvoices } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
+import { Link } from "react-router-dom";
+import { useState } from "react";
 
-const Invoices = () => {
+import { mockDataInvoices } from "@/data/mockData";
+
+const Transaction = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  // lưu dữ liệu (để có thể xóa hàng)
+  const [data, setData] = useState(mockDataInvoices);
+  // thêm hàm xóa
+
   const columns = [
     { field: "id", headerName: "" },
     { field: "transactionid", headerName: "Transaction ID", flex: 1 },
@@ -52,12 +59,12 @@ const Invoices = () => {
     {
       field: "date",
       headerName: "Date",
-      flex: 1,
+      flex: 0.7,
     },
     {
       field: "cost",
       headerName: "Cost",
-      flex: 1,
+      flex: 0.5,
       renderCell: (params) => (
         <Box
           display="flex"
@@ -72,9 +79,9 @@ const Invoices = () => {
       ),
     },
     {
-      field: "status",// chú ý tên field này phải trùng với tên trong mockData, 3 loại là pending/paid/failed
+      field: "status", // chú ý tên field này phải trùng với tên trong mockData, 3 loại là pending/paid/failed
       headerName: "Status",
-      flex: 1,
+      flex: 0.5,
       renderCell: ({ row: { status } }) => {
         const statusColorMap = {
           pending: colors.grey[300],
@@ -99,11 +106,27 @@ const Invoices = () => {
         );
       },
     },
-    
+    {
+      field: "action",
+      headerName: "Action",
+      flex: 0.8,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link
+              to={`/admin/view_transaction/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
+              <div className="viewButton">View</div>
+            </Link>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
-    <Box m="20px">
+    <Box m="20px" className="actionadmin">
       <Header title="TRANSACTIONS" subtitle="List of Transactions" />
       <Box
         m="40px 0 0 0"
@@ -132,12 +155,29 @@ const Invoices = () => {
           "& .MuiCheckbox-root": {
             color: `${colors.greenAccent[200]} !important`,
           },
+          "& .MuiTablePagination-root": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
+          "& .MuiTablePagination-select": {
+            marginTop: "0 !important",
+            marginBottom: "0 !important",
+            paddingTop: "0 !important",
+            paddingBottom: "0 !important",
+          },
         }}
       >
-        <DataGrid checkboxSelection rows={mockDataInvoices} columns={columns} />
+        <DataGrid checkboxSelection rows={data} columns={columns} />
       </Box>
     </Box>
   );
 };
 
-export default Invoices;
+export default Transaction;
