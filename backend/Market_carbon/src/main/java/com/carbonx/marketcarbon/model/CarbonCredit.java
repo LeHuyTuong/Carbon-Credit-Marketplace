@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,6 +27,12 @@ public class CarbonCredit extends BaseEntity{
     private CreditStatus status;
 
     private LocalDateTime issueAt;
+
+    @JsonProperty("name")
+    private String name;
+
+    @JsonProperty("current_price")
+    private double currentPrice;
 
     @ManyToOne
     @JoinColumn(name = "charging_data_id")

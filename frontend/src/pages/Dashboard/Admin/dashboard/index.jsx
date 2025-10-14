@@ -1,6 +1,5 @@
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/theme";
-import { mockTransactions } from "@/data/mockData";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import EmailIcon from "@mui/icons-material/Email";
 import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
@@ -12,7 +11,7 @@ import GeographyChart from "@/components/Chart/GeographyChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
-
+import { mockTransactions } from "@/data/mockData.js";
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

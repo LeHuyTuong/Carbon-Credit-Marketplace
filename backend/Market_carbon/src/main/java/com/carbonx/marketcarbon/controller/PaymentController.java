@@ -1,47 +1,49 @@
 package com.carbonx.marketcarbon.controller;
 
-import com.carbonx.marketcarbon.service.VNPayService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.carbonx.marketcarbon.common.PaymentMethod;
+import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
+import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
+import com.carbonx.marketcarbon.service.PaymentService;
+import com.carbonx.marketcarbon.service.WalletService;
+import com.carbonx.marketcarbon.service.WalletTransactionService;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
+import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.stripe.exception.StripeException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
 @RequestMapping("/api/v1/payment")
+@RestController
 @RequiredArgsConstructor
 public class PaymentController {
-    private final VNPayService vnPayService;
+    private final PaymentService paymentService;
 
-    @GetMapping("")
-    public String home(){
-        return "index";
-    }
+    @PostMapping
+    public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> paymentHandler(
+            @Valid @RequestBody TuongCommonRequest<@Valid PaymentOrderRequest> req,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
+    throws StripeException {
 
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-    @PostMapping("/submitOrder")
-    public String submidOrder(@RequestParam("amount") int orderTotal,
-                              @RequestParam("orderInfo") String orderInfo,
-                              HttpServletRequest request){
-        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-        String vnpayUrl = vnPayService.createOrder(orderTotal, orderInfo, baseUrl);
-        return "redirect:" + vnpayUrl;
-    }
-
-    @GetMapping("/vnpay-payment")
-    public String GetMapping(HttpServletRequest request, Model model){
-        int paymentStatus =vnPayService.orderReturn(request);
-
-        String orderInfo = request.getParameter("vnp_OrderInfo");
-        String paymentTime = request.getParameter("vnp_PayDate");
-        String transactionId = request.getParameter("vnp_TransactionNo");
-        String totalPrice = request.getParameter("vnp_Amount");
-
-        model.addAttribute("orderId", orderInfo);
-        model.addAttribute("totalPrice", totalPrice);
-        model.addAttribute("paymentTime", paymentTime);
-        model.addAttribute("transactionId", transactionId);
-
-        return paymentStatus == 1 ? "ordersuccess" : "orderfail";
+        PaymentOrderResponse order = paymentService.createOrder(req.getData());
+        PaymentOrderResponse response = new PaymentOrderResponse();
+        if(req.getData().getPaymentMethod().equals(PaymentMethod.STRIPE)){
+            response = paymentService.createStripePaymentLink(req.getData(), order.getId());
+        }
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<PaymentOrderResponse> resp = new TuongCommonResponse<>(trace, now , rs, response);
+        return ResponseEntity.ok(resp);
     }
 }

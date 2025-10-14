@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import KYC from "../KYC/KYC.jsx";
 import { useAuth } from "../../context/AuthContext";
 import { Modal, Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { apiFetch } from "../../utils/apiFetch";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const { user, token } = useAuth();
@@ -13,6 +13,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const nav = useNavigate();
 
   //lấy dữ liệu KYC từ backend
   useEffect(() => {
@@ -21,22 +22,20 @@ export default function Profile() {
     const fetchKYC = async () => {
       setLoading(true);
       try {
-        const data = await apiFetch("/api/v1/kyc", {
+        const data = await apiFetch("/api/v1/kyc/user", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: {},
         });
 
         const info = data.response;
-
-        //nếu backend không trả response hoặc null -> chưa có KYC
+        //nếu chưa có KYC thì chuyển sang màn KYC
         if (!info) {
           console.warn("User has no KYC yet");
           setKycData(null);
           return;
         }
 
+        //map dữ liệu từ backend sang form
         const mappedData = {
           fullName: info.name,
           documentNumber: info.documentNumber,
@@ -50,26 +49,27 @@ export default function Profile() {
         };
 
         setKycData(mappedData);
-        setKycId(info.id);
-
-        localStorage.setItem(
-          `kycData_${user.email}`,
-          JSON.stringify(mappedData)
-        );
+        // } catch (err) {
+        //   //nếu 404 thì chưa có KYC
+        //   if (err.message.includes("404") ) setKycData(null);
+        //   else setError("Error fetching KYC");
       } catch (err) {
-        //nếu server trả lỗi 404 hoặc không có dữ liệu, chuyển sang màn KYC
-        if (err.message.includes("404") || err.message.includes("not found")) {
-          console.warn("No KYC record found for this user.");
+        console.error("Error fetching KYC:", err);
+
+        // xử lý trường hợp chưa có KYC
+        if (
+          err.status === 404 ||
+          err.status === 500 ||
+          err.message?.toLowerCase()?.includes("kyc not found")
+        ) {
           setKycData(null);
         } else {
-          console.error("Error fetching KYC:", err);
-          setError("Internal error");
+          setError(err.message || "Error fetching KYC");
         }
       } finally {
         setLoading(false);
       }
     };
-
 
     fetchKYC();
   }, [token, user]);
@@ -100,7 +100,14 @@ export default function Profile() {
       </div>
     );
 
-  if (!kycData) return <KYC />;
+  if (!kycData) {
+    return (
+      <div className="d-flex flex-column justify-content-center align-items-center text-center vh-100">
+        <h4>Please complete your KYC to view your profile</h4>
+        <Button onClick={() => nav("/kyc")}>Start KYC</Button>
+      </div>
+    );
+  }
 
   // profile info
   return (
@@ -146,38 +153,34 @@ export default function Profile() {
 
 //update profile modal
 function UpdateModal({ show, onHide, data, kycId, token, onSuccess }) {
+  //validate form
   const schema = Yup.object().shape({
     fullName: Yup.string().required("Full name is required"),
     phone: Yup.string().required("Phone is required"),
     address: Yup.string().required("Address is required"),
   });
 
+  //gửi cập nhật lên backend
   const handleUpdate = async (values) => {
     try {
-      const payload = {
-        requestTrace: crypto.randomUUID(),
-        requestDateTime: new Date().toISOString(),
-        data: {
-          name: values.fullName,
-          phone: values.phone,
-          gender: values.gender === "Male" ? "MALE" : "FEMALE",
-          country: values.country,
-          address: values.address,
-          documentType: values.documentType,
-          documentNumber: values.documentNumber,
-          birthday: values.birthday,
-        },
-      };
-
-      const res = await apiFetch(`/api/v1/kyc/${kycId}`, {
+      await apiFetch("/api/v1/kyc/user", {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          requestTrace: crypto.randomUUID(),
+          requestDateTime: new Date().toISOString(),
+          data: {
+            name: values.fullName,
+            phone: values.phone,
+            gender: values.gender === "Male" ? "MALE" : "FEMALE",
+            country: values.country,
+            address: values.address,
+            documentType: values.documentType,
+            documentNumber: values.documentNumber,
+            birthDate: values.birthday,
+          },
+        }),
       });
 
-      //nếu BE trả về id hoặc status OK thì update UI
       onSuccess(values);
     } catch (err) {
       console.error("Error updating KYC:", err);
@@ -311,13 +314,16 @@ function UpdateModal({ show, onHide, data, kycId, token, onSuccess }) {
 
               <Form.Group className="mb-3">
                 <Form.Label>Document Type</Form.Label>
-                <Form.Control
+                <Form.Select
                   name="documentType"
                   value={values.documentType}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   isInvalid={touched.documentType && !!errors.documentType}
-                />
+                >
+                  <option value="CCCD">Citizen Identification Card</option>
+                  <option value="CMND">Identity Card</option>
+                </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.documentType}
                 </Form.Control.Feedback>
