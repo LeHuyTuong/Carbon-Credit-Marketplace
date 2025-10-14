@@ -5,7 +5,6 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
-import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
@@ -133,16 +132,16 @@ public class KycController {
 
     @Operation(summary = "KYC company", description = "API get info company")
     @GetMapping("/company")
-    public ResponseEntity<TuongCommonResponse<Company>> getKycCompany(
+    public ResponseEntity<TuongCommonResponse<KycCompanyResponse>> getKycCompany(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        Company kyc = kycService.getByCompanyId();
+        KycCompanyResponse kyc = kycService.getByCompanyId();
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Company> response = new TuongCommonResponse<>(trace, now, rs, kyc);
+        TuongCommonResponse<KycCompanyResponse> response = new TuongCommonResponse<>(trace, now, rs, kyc);
         return ResponseEntity.ok(response);
     }
 

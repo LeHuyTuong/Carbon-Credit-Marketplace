@@ -193,12 +193,12 @@ public class ProjectServiceImpl implements ProjectService {
         Project p = projectRepository.findByIdWithCompany(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        // ✅ chỉ duyệt nếu CVA đã phê duyệt
+        //  chỉ duyệt nếu CVA đã phê duyệt
         if (p.getStatus() != ProjectStatus.CVA_APPROVED) {
             throw new AppException(ErrorCode.INVALID_STATE_TRANSITION);
         }
 
-        // ✅ chỉ cho phép ADMIN_APPROVED hoặc REJECTED
+        //  chỉ cho phép ADMIN_APPROVED hoặc REJECTED
         if (status != ProjectStatus.ADMIN_APPROVED && status != ProjectStatus.REJECTED) {
             throw new AppException(ErrorCode.INVALID_FINAL_APPROVAL_STATUS);
         }

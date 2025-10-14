@@ -31,11 +31,20 @@ public enum ErrorCode {
     REPORT_NOT_FOUND(404, "Report not found", HttpStatus.NOT_FOUND),
     FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND),
     COMPANY_NOT_FOUND(404, "Company not found", HttpStatus.NOT_FOUND),
+    COMPANY_IS_EXIST(404, "Company is exist", HttpStatus.NOT_FOUND),
     PROJECT_NOT_FOUND(404, "Project not found", HttpStatus.NOT_FOUND),
     INVALID_STATE_TRANSITION(400, "Invalid state transition",HttpStatus.BAD_REQUEST),
     DUPLICATE_RESOURCE(400, "Duplicate tittle ",HttpStatus.BAD_REQUEST),
     VEHICLE_PLATE_EXISTS(400, "Vehicle plate already exists", HttpStatus.CONFLICT),
-    INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST);
+    INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST),
+    WALLET_NOT_ENOUGH_MONEY(400, "Wallet not enough money to withdrawal", HttpStatus.BAD_REQUEST),
+    WITHDRAWAL_MONEY_INVALID_AMOUNT(400, "Amount must be a integer number >= 0 ",  HttpStatus.BAD_REQUEST),
+    LISTING_IS_NOT_AVAILABLE(400, "Listing is not available", HttpStatus.BAD_REQUEST),
+    AMOUNT_IS_NOT_VALID(400, "AMOUNT must be position",  HttpStatus.BAD_REQUEST),
+    AMOUNT_IS_NOT_ENOUGH(400, "AMOUNT request must be lower than available ",  HttpStatus.BAD_REQUEST),
+    ORDER_IS_NOT_PENDING(400, "Order is not pending", HttpStatus.BAD_REQUEST),
+    WALLET_IS_NOT_ENOUGH_MONEY(400, "Wallet is not enough money ", HttpStatus.BAD_REQUEST),
+    COMPANY_NOT_OWN(400, "Company not own this carbon credit block ", HttpStatus.BAD_REQUEST),;
 
     private int code;
     private String message;

@@ -1,17 +1,19 @@
 package com.carbonx.marketcarbon.config;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -24,15 +26,17 @@ import java.util.List;
 public class JwtTokenValidator extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
-        if (jwt != null && jwt.startsWith("Bearer ")) {
-            jwt = jwt.substring(7);
+        try {
+            if (jwt != null && jwt.startsWith("Bearer ")) {
+                jwt = jwt.substring(7);
 
-            try {
                 SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
                 Claims claims = Jwts.parserBuilder()
                         .setSigningKey(key)
@@ -43,30 +47,46 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                 String email = String.valueOf(claims.get("email"));
                 Object rolesObj = claims.get("roles");
 
-                List<GrantedAuthority> auths = new ArrayList<>();
-
+                List<GrantedAuthority> authorities = new ArrayList<>();
                 if (rolesObj instanceof List<?>) {
                     for (Object role : (List<?>) rolesObj) {
-                        String roleName = String.valueOf(role);
-                        auths.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
                     }
                 }
-                // ✅ Debug: in ra authorities để bạn kiểm tra khi bị 403
-                System.out.println("==== JwtTokenValidator ====");
-                System.out.println("Email: " + email);
-                auths.forEach(a -> System.out.println("Authority => " + a.getAuthority()));
-                System.out.println("===========================");
 
                 Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, auths);
-
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            } catch (Exception e) {
-                throw new BadCredentialsException("invalid token...");
             }
-        }
 
-        filterChain.doFilter(request, response);
+            // tiếp tục các filter khác nếu không có lỗi
+            filterChain.doFilter(request, response);
+
+        } catch (ExpiredJwtException e) {
+            handleException(response, HttpStatus.UNAUTHORIZED, "Token expired");
+        } catch (MalformedJwtException e) {
+            handleException(response, HttpStatus.UNAUTHORIZED, "Malformed token");
+        } catch (UnsupportedJwtException e) {
+            handleException(response, HttpStatus.UNAUTHORIZED, "Unsupported token");
+        } catch (IllegalArgumentException e) {
+            handleException(response, HttpStatus.UNAUTHORIZED, "Invalid token payload");
+        } catch (Exception e) {
+            handleException(response, HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+        }
+    }
+
+    private void handleException(HttpServletResponse response,
+                                 HttpStatus status,
+                                 String message) throws IOException {
+        // Ngắt luôn, không cho qua filter chain
+        response.setStatus(status.value());
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(String.format("""
+            {
+              "code": %d,
+              "status": "%s",
+              "message": "%s"
+            }
+            """, status.value(), status.name(), message));
     }
 }

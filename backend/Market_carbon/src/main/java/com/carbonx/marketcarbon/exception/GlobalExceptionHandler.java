@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<CommonResponse<Object>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(buildErrorResponse("403", "Forbidden"));
+                .body(buildErrorResponse("403", "This role is Forbidden for this feature"));
     }
 
     // 404 - Not Found (custom)
@@ -142,7 +142,7 @@ public class GlobalExceptionHandler {
         log.error("Unhandled error", ex);
         String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", errorMsg));
+                .body(buildErrorResponse("404", errorMsg));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

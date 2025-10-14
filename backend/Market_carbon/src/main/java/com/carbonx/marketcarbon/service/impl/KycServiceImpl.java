@@ -1,10 +1,11 @@
 package com.carbonx.marketcarbon.service.impl;
 
 
-import com.carbonx.marketcarbon.config.Translator;
 import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EVOwner;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -42,6 +44,7 @@ public class KycServiceImpl implements KycService {
         return user;
     }
 
+    @Transactional
     @Override
     public Long createUser(@Validated(KycRequest.Create.class) KycRequest req) {
         // check email thông tin kyc đã tồn tại chưa
@@ -74,13 +77,14 @@ public class KycServiceImpl implements KycService {
         return user.getId();
     }
 
+    @Transactional
     @Override
     public Long updateUser( @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
         User user = currentUser();
 
         EVOwner EVOwner = EVOwnerRepository.findById(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("kyc.not.found")));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         // B1 Set data vào kyc profile
         EVOwner.setName(req.getName());
@@ -104,7 +108,7 @@ public class KycServiceImpl implements KycService {
 
         //B2 Trả Về response
         return  EVOwnerRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
     @Override
@@ -126,6 +130,7 @@ public class KycServiceImpl implements KycService {
                 )).toList();
     }
 
+    @Transactional
     @Override
     public Long createCompany(KycCompanyRequest req) {
         //B1 check tk user
@@ -135,8 +140,7 @@ public class KycServiceImpl implements KycService {
         Company companyExist = companyRepository.findByUserEmail(email);
 
         if(companyExist != null){
-            throw new ResourceNotFoundException(Translator.
-                    toLocale(Translator.toLocale("company.exist")));
+            throw new AppException(ErrorCode.COMPANY_IS_EXIST);
         }
         // khi tạo mới Company cần ko cần EV owner hay vehicle
         Company company = Company.builder()
@@ -152,6 +156,7 @@ public class KycServiceImpl implements KycService {
         return company.getId();
     }
 
+    @Transactional
     @Override
     public Long updateCompany(KycCompanyRequest req) {
         User user = currentUser();
@@ -172,16 +177,21 @@ public class KycServiceImpl implements KycService {
     }
 
     @Override
-    public Company getByCompanyId() {
+    public KycCompanyResponse getByCompanyId() {
         User user = currentUser();
         String userEmail =  user.getEmail();
         Company companyExist = companyRepository.findByUserEmail(userEmail);
         if(companyExist == null)
-            throw new ResourceNotFoundException(Translator.
-                    toLocale("company.not.found"));
-        return companyRepository.findById(companyExist.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(Translator.
-                        toLocale("company.not.found")));
+            throw new ResourceNotFoundException("Company not found");
+        return  KycCompanyResponse.builder()
+                 .id(companyExist.getId())
+                 .companyName(companyExist.getCompanyName())
+                 .taxCode(companyExist.getTaxCode())
+                 .businessLicense(companyExist.getBusinessLicense())
+                 .address(companyExist.getAddress())
+                 .createAt(companyExist.getCreateAt())
+                 .updatedAt(companyExist.getUpdatedAt())
+                 .build();
     }
 
     @Override
