@@ -19,7 +19,7 @@
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@mui/icons-material": "^7.3.3",
-    "@mui/material": "^7.3.3",
+    "@mui/material": "^7.3.4",
     "@mui/x-data-grid": "^8.13.1",
     "@mui/x-date-pickers": "^8.14.0",
     "@mui/x-date-pickers-pro": "^8.14.0",

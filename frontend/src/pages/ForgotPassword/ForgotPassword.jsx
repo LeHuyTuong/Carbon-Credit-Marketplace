@@ -22,6 +22,13 @@ export default function ForgotPassword() {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
+      //kiểm tra user tồn tại
+      await apiFetch("/api/v1/check-exists-user", {
+        method: "POST",
+        body: JSON.stringify({ email: values.email.trim() }),
+      });
+
+      //gửi mã otp
       await apiFetch("/api/v1/send-otp", {
         method: "POST",
         body: JSON.stringify({ email: values.email.trim() }),
