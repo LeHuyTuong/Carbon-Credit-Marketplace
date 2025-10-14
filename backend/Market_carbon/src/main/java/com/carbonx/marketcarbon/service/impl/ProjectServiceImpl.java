@@ -148,6 +148,66 @@ public class ProjectServiceImpl implements ProjectService {
 //        p.setStatus(ProjectStatus.UNDER_REVIEW);
 //        Project saved = projectRepository.save(p);
 //        return projectMapper.toResponse(saved);
+//        return null;
+    }
+
+    @Override
+    public ProjectResponse sendToReview(Long projectId) {
+        Project p = projectRepository.findById(projectId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+        p.setStatus(ProjectStatus.UNDER_REVIEW);
+        Project saved = projectRepository.save(p);
+        return projectMapper.toResponse(saved);
+    }
+
+    // 🧾 Bước 2: CVA thẩm định hồ sơ
+    @Override
+    public ProjectResponse review(ProjectReviewRequest request) {
+        Project p = projectRepository.findByIdWithCompany(request.getProjectId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+        // Chỉ được thẩm định khi đang chờ duyệt
+        if (p.getStatus() != ProjectStatus.PENDING_REVIEW && p.getStatus() != ProjectStatus.UNDER_REVIEW) {
+            throw new AppException(ErrorCode.INVALID_STATE_TRANSITION);
+        }
+
+        p.setReviewer(request.getReviewer());
+        p.setReviewNote(request.getReviewNote());
+
+        if (request.getDecision() == ProjectStatus.CVA_APPROVED) {
+            p.setStatus(ProjectStatus.CVA_APPROVED);
+        } else {
+            p.setStatus(ProjectStatus.REJECTED);
+        }
+
+        Project saved = projectRepository.save(p);
+        return projectMapper.toResponse(saved);
+    }
+
+    // 🛠️ Bước 3: Admin xác nhận cuối cùng
+    @Override
+    public ProjectResponse finalApprove(Long projectId, String reviewer, ProjectStatus status) {
+        Project p = projectRepository.findByIdWithCompany(projectId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+        //  chỉ duyệt nếu CVA đã phê duyệt
+        if (p.getStatus() != ProjectStatus.CVA_APPROVED) {
+            throw new AppException(ErrorCode.INVALID_STATE_TRANSITION);
+        }
+
+        //  chỉ cho phép ADMIN_APPROVED hoặc REJECTED
+        if (status != ProjectStatus.ADMIN_APPROVED && status != ProjectStatus.REJECTED) {
+            throw new AppException(ErrorCode.INVALID_FINAL_APPROVAL_STATUS);
+        }
+
+        p.setReviewer(reviewer);
+        p.setStatus(status);
+
+        Project saved = projectRepository.save(p);
+        return projectMapper.toResponse(saved);
+    }
+
+
 //    }
 
     //  Bước 2: CVA thẩm định hồ sơ

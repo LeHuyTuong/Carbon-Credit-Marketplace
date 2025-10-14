@@ -1,15 +1,19 @@
 package com.carbonx.marketcarbon.service;
 
-import com.carbonx.marketcarbon.dto.request.CreateOrderRequest;
-import com.carbonx.marketcarbon.model.Order;
-import org.hibernate.mapping.List;
+import com.carbonx.marketcarbon.dto.request.OrderRequest;
+import com.carbonx.marketcarbon.dto.response.OrderResponse;
+
+import java.util.List;
 
 public interface OrderService {
 
-    Order createOrder(CreateOrderRequest request );
+    OrderResponse createOrder(OrderRequest request );
 
-    Order getOrderById(Long orderId);
+    OrderResponse getOrderById(Long orderId);
 
-//    List<Order> getAllOrders();
+    List<OrderResponse> getUserOrders();
 
+    void cancelOrder(Long orderId);
+
+    void completeOrder(Long orderId);
 }

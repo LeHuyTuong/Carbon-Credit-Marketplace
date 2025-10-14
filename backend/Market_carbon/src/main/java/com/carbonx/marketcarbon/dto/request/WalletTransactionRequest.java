@@ -1,8 +1,11 @@
 package com.carbonx.marketcarbon.dto.request;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.model.Order;
 import com.carbonx.marketcarbon.model.Wallet;
 import lombok.*;
+
+import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor
@@ -10,8 +13,10 @@ import lombok.*;
 @Builder
 public class WalletTransactionRequest {
     private Wallet wallet;
+    private Order order;
     private WalletTransactionType type;
-    private String transfer;
-    private String purpose;
-    private Long amount;
+    private String description;
+    private BigDecimal balanceBefore;
+    private BigDecimal balanceAfter;
+    private BigDecimal amount;
 }
