@@ -76,7 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
 
         projectRepository.save(project);
-        log.info("✅ Project '{}' created by admin {}", project.getTitle(), email);
+        log.info(" Project '{}' created by admin {}", project.getTitle(), email);
 
         return projectMapper.toResponse(project);
     }
@@ -163,7 +163,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.toResponse(saved);
     }
 
-    // 🧾 Bước 2: CVA thẩm định hồ sơ
+    //  Bước 2: CVA thẩm định hồ sơ
     @Override
     public ProjectResponse review(ProjectReviewRequest request) {
         Project p = projectRepository.findByIdWithCompany(request.getProjectId())
@@ -193,12 +193,12 @@ public class ProjectServiceImpl implements ProjectService {
         Project p = projectRepository.findByIdWithCompany(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        // ✅ chỉ duyệt nếu CVA đã phê duyệt
+        //  chỉ duyệt nếu CVA đã phê duyệt
         if (p.getStatus() != ProjectStatus.CVA_APPROVED) {
             throw new AppException(ErrorCode.INVALID_STATE_TRANSITION);
         }
 
-        // ✅ chỉ cho phép ADMIN_APPROVED hoặc REJECTED
+        //  chỉ cho phép ADMIN_APPROVED hoặc REJECTED
         if (status != ProjectStatus.ADMIN_APPROVED && status != ProjectStatus.REJECTED) {
             throw new AppException(ErrorCode.INVALID_FINAL_APPROVAL_STATUS);
         }
@@ -272,11 +272,11 @@ public class ProjectServiceImpl implements ProjectService {
                     ProjectCsvRow row = mapRecordWithoutCompany(r);
                     validateRow(row);
 
-                    // ✅ Kiểm tra base project (admin tạo)
+                    //  Kiểm tra base project (admin tạo)
                     Project baseProject = projectRepository.findById(row.getBaseProjectId())
                             .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-                    // ✅ Tạo project mới cho company
+                    //  Tạo project mới cho company
                     Project project = Project.builder()
                             .title(row.getTitle())
                             .description(row.getDescription())

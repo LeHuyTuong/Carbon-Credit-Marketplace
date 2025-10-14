@@ -34,7 +34,7 @@ public class ProjectController {
     private final ProjectService projectService;
 
     // ==============================================
-    // 1️⃣ CREATE PROJECT
+    // CREATE PROJECT
     // ==============================================
     @Operation(summary = "Create Project (Admin only)")
     @PostMapping
@@ -54,7 +54,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 2️⃣ UPDATE PROJECT
+    // UPDATE PROJECT
     // ==============================================
     @Operation(summary = "Update Project Information")
     @PutMapping("/{id}")
@@ -75,7 +75,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 3️⃣ DELETE PROJECT
+    // DELETE PROJECT
     // ==============================================
     @Operation(summary = "Delete Project by ID")
     @DeleteMapping("/{id}")
@@ -95,7 +95,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 4️⃣ GET ALL PROJECT DETAILS
+    //  GET ALL PROJECT DETAILS
     // ==============================================
     @Operation(summary = "Get All Project Details")
     @GetMapping
@@ -114,7 +114,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 5️⃣ SUBMIT PROJECT
+    // SUBMIT PROJECT
     // ==============================================
     @Operation(summary = "Submit Project (Company)")
     @PostMapping("/submit")
@@ -134,7 +134,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 6️⃣ SEND TO REVIEW
+    // SEND TO REVIEW
     // ==============================================
     @Operation(summary = "Send Project to Review (Company)")
     @PostMapping("/{id}/send-to-review")
@@ -152,7 +152,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 7️⃣ REVIEW PROJECT
+    // 7REVIEW PROJECT
     // ==============================================
     @Operation(summary = "CVA thẩm định hồ sơ dự án", description = "CVA xem xét hồ sơ, duyệt hoặc từ chối theo tiêu chuẩn quốc gia/quốc tế")
     @PostMapping("/review")
@@ -195,7 +195,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 9️⃣ GET PROJECT BY ID
+    //  GET PROJECT BY ID
     // ==============================================
     @Operation(summary = "Get Project by ID")
     @GetMapping("/{id}")
@@ -213,7 +213,7 @@ public class ProjectController {
     }
 
     // ==============================================
-    // 🔟 IMPORT CSV
+    // IMPORT CSV
     // ==============================================
     @Operation(summary = "Import CSV (Company register for existing projects)")
     @PostMapping("/import-csv")
@@ -243,7 +243,7 @@ public class ProjectController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        // ✅ chỉ còn 3 tham số
+        //  chỉ còn 3 tham số
         ProjectResponse data = projectService.finalApprove(id, req.getReviewer(), req.getStatus());
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),

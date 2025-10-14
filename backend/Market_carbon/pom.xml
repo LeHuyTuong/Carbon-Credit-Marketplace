@@ -11,7 +11,7 @@
 
 	<name>spring-rest-auth-vehicles-kyc</name>
 
-	<!-- ✅ Cấu hình chung -->
+	<!--  Cấu hình chung -->
 	<properties>
 		<java.version>17</java.version>
 		<spring-boot.version>3.3.3</spring-boot.version>
@@ -23,7 +23,7 @@
 		<lombok.version>1.18.34</lombok.version>
 	</properties>
 
-	<!-- ✅ Quản lý version phụ thuộc -->
+	<!--  Quản lý version phụ thuộc -->
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -36,7 +36,7 @@
 		</dependencies>
 	</dependencyManagement>
 
-	<!-- ✅ Danh sách dependency -->
+	<!--  Danh sách dependency -->
 	<dependencies>
 
 		<!-- Spring Boot core -->
@@ -106,7 +106,7 @@
 			<version>${mapstruct.version}</version>
 		</dependency>
 
-		<!-- ✅ Bridge giữa Lombok và MapStruct -->
+		<!-- Bridge giữa Lombok và MapStruct -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok-mapstruct-binding</artifactId>
@@ -179,7 +179,7 @@
         </dependency>
 	</dependencies>
 
-	<!-- ✅ Build plugins -->
+	<!--  Build plugins -->
 	<build>
 		<plugins>
 			<plugin>
