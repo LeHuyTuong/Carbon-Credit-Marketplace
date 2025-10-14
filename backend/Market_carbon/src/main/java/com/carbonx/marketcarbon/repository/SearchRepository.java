@@ -21,10 +21,9 @@ public class SearchRepository {
     private EntityManager em;
 
     public PageResponse<?> getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortBy) {
-        //B1 query list vehicle
-        // sử dụng alias , mật danh trong JPA
+
         StringBuilder sqlQuery = new StringBuilder("select new com.carbonx.marketcarbon.dto.response.VehicleDetailResponse(v.id, v.plateNumber, v.brand, v.model, v.yearOfManufacture, v.createAt, v.updatedAt)" +
-                " from Vehicle v where 1=1");           // package
+                " from Vehicle v where 1=1");
 
         if(StringUtils.hasLength(search)){
             sqlQuery.append(" and (lower(v.plateNumber) like lower(:plateNumber))")
@@ -33,13 +32,11 @@ public class SearchRepository {
         }
 
         if(StringUtils.hasLength(search)){
-            //firstName : asc|desc
             Pattern pattern = Pattern.compile("(\\w+)[,:](asc|desc)?",  Pattern.CASE_INSENSITIVE);
-            // co 3 group
+
             Matcher matcher = pattern.matcher(search);
 
             if(matcher.find()){
-                // xử lý sort
                 String col = matcher.group(1);
                 String dir = matcher.group(2) == null ? "asc" : matcher.group(2).toLowerCase();
                 sqlQuery.append(String.format(" order by v.%s %s", col, dir));
@@ -55,8 +52,8 @@ public class SearchRepository {
             selectQuery.setParameter("model", kw);
         }
 
-        selectQuery.setFirstResult(pageNo); // vị trí của records. of set trong câu lệnh query, setFirstResult sẽ là 100 , là pageN
-        selectQuery.setMaxResults(pageSize); // truyền vào max records
+        selectQuery.setFirstResult(pageNo);
+        selectQuery.setMaxResults(pageSize);
 
         List<?> vehicles = selectQuery.getResultList();
 
@@ -87,7 +84,7 @@ public class SearchRepository {
         return PageResponse.builder()
                 .pageNo(pageNo)
                 .pageSize(pageSize)
-                .totalPages(page.getTotalPages()) // kieu long nen can parseInt
+                .totalPages(page.getTotalPages())
                 .items(page.stream().toList())
                 .build();
     }

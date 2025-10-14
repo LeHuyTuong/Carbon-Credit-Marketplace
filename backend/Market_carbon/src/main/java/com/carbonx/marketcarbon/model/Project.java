@@ -6,7 +6,13 @@ import lombok.*;
 import org.hibernate.validator.constraints.URL;
 
 @Entity
-@Table(name = "project")
+@Table(
+        name = "project",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_project_company_parent",
+                        columnNames = {"company_id","parent_project_id"})
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,7 +23,7 @@ public class Project extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false,  length = 100)
+    @Column( nullable = false,  length = 100)
     private String title;
 
     @Column(nullable = false,  length = 255)
@@ -51,9 +57,17 @@ public class Project extends BaseEntity {
     private String legalDocsUrl;           // Link tài liệu pháp lý (S3/…)
 
     // ==== Thông tin thẩm định của CVA/đơn vị thẩm định ====
-    @Column(length = 100)
-    private String reviewer;               // Tài khoản/tên đơn vị thẩm định
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewer_id")
+    private Cva reviewer;               // Tài khoản/tên đơn vị thẩm định
 
     @Column(columnDefinition = "TEXT")
     private String reviewNote;             // Nhận xét khi duyệt
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "final_reviewer_id")
+    private Admin finalReviewer;
+
+    @Column(columnDefinition = "TEXT")
+    private String finalReviewNote;
 }
