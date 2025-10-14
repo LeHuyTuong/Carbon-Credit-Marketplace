@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FileUploadTestController {
 
-    private final S3Service s3Service; // service bạn dùng để upload lên AWS S3
+    private final S3Service s3Service;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<String> uploadTest(@RequestParam("files") List<MultipartFile> files) {

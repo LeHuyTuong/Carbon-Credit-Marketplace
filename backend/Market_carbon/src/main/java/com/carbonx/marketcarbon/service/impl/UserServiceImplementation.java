@@ -1,5 +1,6 @@
     package com.carbonx.marketcarbon.service.impl;
 
+    import com.carbonx.marketcarbon.common.OtpPurpose;
     import com.carbonx.marketcarbon.config.JwtProvider;
     import com.carbonx.marketcarbon.dto.request.*;
     import com.carbonx.marketcarbon.dto.response.MessageResponse;
@@ -94,6 +95,7 @@
 
             user.setOtpCode(otp);
             user.setOtpExpiryDate(expiryDate);
+            user.setOtpPurpose(OtpPurpose.FORGOT_PASSWORD);
 
             String subject = "Your OTP Code";
             String content = String.format(
@@ -160,19 +162,19 @@
         @Override
         @Transactional
         public MessageResponse resetPassword(ResetPasswordRequest req, String bearerToken) {
-            // ✅ Lấy email từ JWT reset token (header Authorization)
+            //  Lấy email từ JWT reset token (header Authorization)
             String jwt = bearerToken.replace("Bearer ", "");
             String email = jwtProvider.getEmailFromJwtToken(jwt);
 
             User user = userRepository.findByEmail(email);
             if (user == null) throw new AppException(ErrorCode.USER_NOT_EXISTED);
 
-            // ✅ Kiểm tra confirmPassword
+            //  Kiểm tra confirmPassword
             if (!req.getPassword().equals(req.getConfirmPassword())) {
                 throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
             }
 
-            // ✅ Cập nhật mật khẩu
+            //  Cập nhật mật khẩu
             user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
             userRepository.save(user);
 

@@ -26,21 +26,22 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class AppConfig {
 
-    private static final String[] PUBLIC_ENDPOINT = {
-            "/api/v1/auth/token",
-            "/api/v1/register",
-            "/api/v1/auth/logout",
-            "/api/v1/auth/introspect",
-            "/api/v1/auth/refresh",
-            "/api/v1/auth/outbound/authentication",
-            "/api/v1/create-password",
-            "/api/v1/send-otp",
-            "/api/v1/reset-password",
-            "/api/v1/verify-otp",
-            "/api/v1/check-exists-user",
-            "/api/v1/send-otp-register",
-    };
+    private final JwtTokenValidator jwtTokenValidator;
 
+    private static final String[] PUBLIC_ENDPOINT = {
+            "/api/v1/auth/register",
+            "/api/v1/auth/verify-otp",
+            "/api/v1/auth/login",
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/reset-password",
+            "/api/v1/auth/token",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/send-otp",
+            "/api/v1/auth/send-otp-register",
+            "/api/v1/auth/check-exists-user",
+            "/api/v1/auth/outbound/authentication",
+            "/api/v1/send-otp-forgot"
+    };
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -49,40 +50,34 @@ public class AppConfig {
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
-                .addFilterBefore(new JwtTokenValidator(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtTokenValidator, UsernamePasswordAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
 
-
-    // CORS Configuration
     private CorsConfigurationSource corsConfigurationSource() {
-        return new CorsConfigurationSource() {
-            @Override
-            public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-                CorsConfiguration cfg = new CorsConfiguration();
-                cfg.setAllowedOrigins(Arrays.asList(
-                        "http://localhost:3000",
-                        "http://localhost:4200",
-                        "http://localhost:5173",
-                        "http://127.0.0.1:*",
-                        "http://192.168.*.*:*",
-                        "https://carbonx.io.vn"
-                ));
-                cfg.setAllowedMethods(Collections.singletonList("*"));
-                cfg.setAllowCredentials(true);
-                cfg.setAllowedHeaders(Collections.singletonList("*"));
-                cfg.setExposedHeaders(Arrays.asList("Authorization"));
-                cfg.setMaxAge(3600L);
-                return cfg;
-            }
+        return request -> {
+            CorsConfiguration cfg = new CorsConfiguration();
+            cfg.setAllowedOrigins(Arrays.asList(
+                    "http://localhost:3000",
+                    "http://localhost:4200",
+                    "http://localhost:5173",
+                    "http://127.0.0.1:*",
+                    "http://192.168.*.*:*",
+                    "https://carbonx.io.vn"
+            ));
+            cfg.setAllowedMethods(Collections.singletonList("*"));
+            cfg.setAllowCredentials(true);
+            cfg.setAllowedHeaders(Collections.singletonList("*"));
+            cfg.setExposedHeaders(Arrays.asList("Authorization"));
+            cfg.setMaxAge(3600L);
+            return cfg;
         };
     }
 
@@ -90,5 +85,4 @@ public class AppConfig {
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 }

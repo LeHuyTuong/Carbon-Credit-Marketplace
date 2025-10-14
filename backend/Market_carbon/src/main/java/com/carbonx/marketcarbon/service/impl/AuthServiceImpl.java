@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(null);
-        authResponse.setMessage("Đăng ký thành công. OTP đã được gửi, vui lòng xác nhận.");
+        authResponse.setMessage("Registration successful. An OTP has been sent, please verify.");
         authResponse.setRoles(
                 newUser.getRoles().stream()
                         .map(Role::getName)
@@ -154,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(token);
-        authResponse.setMessage("Login thành công");
+        authResponse.setMessage("Login successful");
         authResponse.setRoles(
                 user.getRoles().stream()
                         .map(Role::getName)   // lấy tên role từ entity Role
@@ -169,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
         if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        return new MessageResponse("Đăng xuất thành công");
+        return new MessageResponse("logout successful");
     }
 
 
