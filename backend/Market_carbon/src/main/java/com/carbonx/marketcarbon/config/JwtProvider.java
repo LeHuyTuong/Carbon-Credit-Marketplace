@@ -20,7 +20,6 @@ import java.util.Set;
 @Service
 public class JwtProvider {
 
-    //  Dùng secret key cố định từ JwtConstant, đảm bảo độ dài >= 32 ký tự
     private final SecretKey key = Keys.hmacShaKeyFor(
             JwtConstant.SECRET_KEY.getBytes(StandardCharsets.UTF_8)
     );
@@ -28,6 +27,7 @@ public class JwtProvider {
     /**
      *  Tạo token đăng nhập (token chính)
      */
+
     public String generateToken(User user) {
         return Jwts.builder()
                 .setIssuedAt(new Date())
@@ -46,6 +46,7 @@ public class JwtProvider {
      * Dùng trong luồng Forgot Password sau khi OTP được xác minh.
      * Token này chỉ có thời hạn ngắn (ví dụ 10 phút) và không chứa roles.
      */
+
     public String generateTemporaryToken(User user, Duration validity) {
         long expireMs = validity.toMillis();
         return Jwts.builder()
@@ -77,6 +78,7 @@ public class JwtProvider {
     /**
      *  Giải mã token để lấy mục đích (purpose)
      */
+
     public String getPurposeFromJwt(String jwt) {
         if (jwt.startsWith("Bearer ")) {
             jwt = jwt.substring(7);
@@ -94,6 +96,7 @@ public class JwtProvider {
     /**
      * Gộp danh sách quyền thành chuỗi (phục vụ logging)
      */
+
     public String populateAuthorities(Collection<? extends GrantedAuthority> collection) {
         Set<String> auths = new HashSet<>();
         for (GrantedAuthority authority : collection) {
