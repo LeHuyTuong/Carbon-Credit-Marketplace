@@ -1,12 +1,10 @@
 import PropTypes from 'prop-types';
-import {Link} from 'react-router-dom';
-// material-ui
+import { Link } from 'react-router-dom';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-// assets
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import ProfileOutlined from '@ant-design/icons/ProfileOutlined';
 import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
@@ -15,34 +13,41 @@ import WalletOutlined from '@ant-design/icons/WalletOutlined';
 
 // ==============================|| HEADER PROFILE - PROFILE TAB ||============================== //
 
-export default function ProfileTab({onClose}) {
+export default function ProfileTab({ role, onClose, handleLogout }) {
+  // Định nghĩa base path theo role
+  const basePath = role === 'admin' ? '/admin' : '/cva';
+
   return (
     <List component="nav" sx={{ p: 0, '& .MuiListItemIcon-root': { minWidth: 32 } }}>
-      <ListItemButton component={Link} to='/admin/view_profile_admin' onClick={onClose} >
+      <ListItemButton component={Link} to={`${basePath}/view_profile_${role}`} onClick={onClose}>
         <ListItemIcon>
           <UserOutlined />
         </ListItemIcon>
         <ListItemText primary="View Profile" />
       </ListItemButton>
-      <ListItemButton component={Link} to='/admin/edit_profile_admin' onClick={onClose}>
+
+      <ListItemButton component={Link} to={`${basePath}/edit_profile_${role}`} onClick={onClose}>
         <ListItemIcon>
-          <EditOutlined/>
+          <EditOutlined />
         </ListItemIcon>
-        <ListItemText primary=" Edit Profile"/>
+        <ListItemText primary="Edit Profile" />
       </ListItemButton>
+
       <ListItemButton onClick={onClose}>
         <ListItemIcon>
           <ProfileOutlined />
         </ListItemIcon>
         <ListItemText primary="Social Profile" />
       </ListItemButton>
+
       <ListItemButton onClick={onClose}>
         <ListItemIcon>
           <WalletOutlined />
         </ListItemIcon>
         <ListItemText primary="Billing" />
       </ListItemButton>
-      <ListItemButton onClick={onClose}>
+
+      <ListItemButton onClick={handleLogout}>
         <ListItemIcon>
           <LogoutOutlined />
         </ListItemIcon>
@@ -52,4 +57,8 @@ export default function ProfileTab({onClose}) {
   );
 }
 
-ProfileTab.propTypes = { handleLogout: PropTypes.func };
+ProfileTab.propTypes = {
+  role: PropTypes.oneOf(['admin', 'cva']).isRequired,
+  onClose: PropTypes.func,
+  handleLogout: PropTypes.func,
+};

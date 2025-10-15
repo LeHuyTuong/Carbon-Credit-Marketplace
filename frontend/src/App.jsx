@@ -35,6 +35,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 //  import AdminApp
 import AdminApp from "./AdminApp.jsx";
+//  import CVAApp
+import CVAApp from "./CVAApp.jsx";
 
 function Layout() {
   return (
@@ -129,6 +131,7 @@ export default function App() {
         <Route path="/detail-project" element={<DetailProject />} />
         {/*Route riêng cho admin, không Navbar */}
         <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/cva/*" element={<CVAApp />} />
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
