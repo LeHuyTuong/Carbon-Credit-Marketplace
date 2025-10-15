@@ -1,25 +1,61 @@
-import { Box, Button, TextField, MenuItem, Snackbar, Alert, Paper } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Snackbar,
+  Alert,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Chart/Header.jsx";
+import { createProject } from "@/apiAdmin/projectAdmin.js";
 
 const NewProjectForm = () => {
   const isNonMobile = useMediaQuery("(min-width:800px)");
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const [loading, setLoading] = useState(false);
 
-  const handleFormSubmit = (values, { resetForm }) => {
-    console.log("Form values:", values);
-    // Gửi API ở đây nếu cần
-    setOpenSnackbar(true);
-    resetForm();
+  const handleFormSubmit = async (values, { resetForm }) => {
+    const payload = {
+      title: values.title,
+      description: values.description,
+      logo: values.logo,
+      commitments: values.commitments,
+      technicalIndicators: values.technicalIndicators,
+      measurementMethod: values.measurementMethod,
+      legalDocsUrl: values.legalDocsUrl,
+    };
+
+    console.log("📦 Payload to API:", payload);
+
+    try {
+      setLoading(true);
+      const response = await createProject(payload);
+      console.log("✅ API Response:", response);
+
+      setSnackbarMessage("🎉 Project created successfully!");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      resetForm();
+    } catch (error) {
+      console.error("❌ Error creating project:", error);
+      setSnackbarMessage(error.message || "Failed to create project. Please try again.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box m="20px">
-      {/* Header + nút Back */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="CREATE PROJECT" subtitle="Create a new carbon project" />
         <Button
@@ -29,7 +65,6 @@ const NewProjectForm = () => {
           color="secondary"
           sx={{
             height: "fit-content",
-            alignSelf: "flex-start",
             textTransform: "none",
             fontWeight: 600,
           }}
@@ -38,7 +73,6 @@ const NewProjectForm = () => {
         </Button>
       </Box>
 
-      {/* Form Container */}
       <Paper
         elevation={3}
         sx={{
@@ -68,115 +102,97 @@ const NewProjectForm = () => {
                 gridTemplateColumns={isNonMobile ? "repeat(2, 1fr)" : "repeat(1, 1fr)"}
                 gap="30px"
               >
-                {/* Title */}
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="text"
                   label="Title"
+                  name="title"
+                  value={values.title}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.title}
-                  name="title"
                   error={!!touched.title && !!errors.title}
                   helperText={touched.title && errors.title}
                 />
-
-                {/* Logo */}
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="text"
                   label="Logo URL"
+                  name="logo"
+                  value={values.logo}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.logo}
-                  name="logo"
                   error={!!touched.logo && !!errors.logo}
                   helperText={touched.logo && errors.logo}
                 />
-
-                {/* Description */}
                 <TextField
                   fullWidth
                   variant="filled"
                   multiline
                   minRows={3}
                   label="Description"
+                  name="description"
+                  value={values.description}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.description}
-                  name="description"
                   error={!!touched.description && !!errors.description}
                   helperText={touched.description && errors.description}
                   sx={{ gridColumn: "span 2" }}
                 />
-
-                {/* Commitments */}
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="text"
                   label="Commitments"
+                  name="commitments"
+                  value={values.commitments}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.commitments}
-                  name="commitments"
                   error={!!touched.commitments && !!errors.commitments}
                   helperText={touched.commitments && errors.commitments}
                 />
-
-                {/* Technical Indicator */}
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="text"
-                  label="Technical Indicator"
+                  label="Technical Indicators"
+                  name="technicalIndicators"
+                  value={values.technicalIndicators}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.technicalIndicator}
-                  name="technicalIndicator"
-                  error={!!touched.technicalIndicator && !!errors.technicalIndicator}
-                  helperText={touched.technicalIndicator && errors.technicalIndicator}
+                  error={!!touched.technicalIndicators && !!errors.technicalIndicators}
+                  helperText={touched.technicalIndicators && errors.technicalIndicators}
                 />
-
-                {/* Measurement Method */}
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="text"
                   label="Measurement Method"
+                  name="measurementMethod"
+                  value={values.measurementMethod}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.measurementMethod}
-                  name="measurementMethod"
                   error={!!touched.measurementMethod && !!errors.measurementMethod}
                   helperText={touched.measurementMethod && errors.measurementMethod}
                 />
-
-                {/* Status */}
                 <TextField
-                  select
                   fullWidth
                   variant="filled"
-                  label="Status"
+                  label="Legal Docs URL"
+                  name="legalDocsUrl"
+                  value={values.legalDocsUrl}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.status}
-                  name="status"
-                  error={!!touched.status && !!errors.status}
-                  helperText={touched.status && errors.status}
-                >
-                  <MenuItem value="Is_Open">Is Open</MenuItem>
-                  <MenuItem value="Coming_Soon">Coming Soon</MenuItem>
-                  <MenuItem value="Ended">Ended</MenuItem>
-                </TextField>
+                  error={!!touched.legalDocsUrl && !!errors.legalDocsUrl}
+                  helperText={touched.legalDocsUrl && errors.legalDocsUrl}
+                />
               </Box>
 
-              {/* Submit Button */}
               <Box display="flex" justifyContent="flex-end" mt="30px">
-                <Button type="submit" color="secondary" variant="contained">
-                  Create Project
+                <Button
+                  type="submit"
+                  color="secondary"
+                  variant="contained"
+                  disabled={loading}
+                  startIcon={loading && <CircularProgress size={20} color="inherit" />}
+                >
+                  {loading ? "Creating..." : "Create Project"}
                 </Button>
               </Box>
             </form>
@@ -184,38 +200,33 @@ const NewProjectForm = () => {
         </Formik>
       </Paper>
 
-      {/* Snackbar Success */}
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setOpenSnackbar(false)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={() => setOpenSnackbar(false)}
-          severity="success"
+          severity={snackbarSeverity}
           variant="filled"
           sx={{ width: "100%" }}
         >
-          🎉 Project created successfully!
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>
   );
 };
 
-// Validation schema
 const checkoutSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
   description: yup.string().required("Description is required"),
   logo: yup.string().url("Invalid URL").required("Logo URL is required"),
   commitments: yup.string().required("Commitments are required"),
-  technicalIndicator: yup.string().required("Technical indicator is required"),
+  technicalIndicators: yup.string().required("Technical indicators are required"),
   measurementMethod: yup.string().required("Measurement method is required"),
-  status: yup
-    .string()
-    .oneOf(["Is_Open", "Coming_Soon", "Ended"], "Invalid status")
-    .required("Status is required"),
+  legalDocsUrl: yup.string().url("Invalid URL").required("Legal docs URL is required"),
 });
 
 const initialValues = {
@@ -223,9 +234,9 @@ const initialValues = {
   description: "",
   logo: "",
   commitments: "",
-  technicalIndicator: "",
+  technicalIndicators: "",
   measurementMethod: "",
-  status: "",
+  legalDocsUrl: "",
 };
 
 export default NewProjectForm;
