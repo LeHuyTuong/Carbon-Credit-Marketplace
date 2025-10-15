@@ -300,8 +300,8 @@ const Topbar = () => {
                         </Box>
 
                         <Box sx={{ p: 1.5 }}>
-                          {value === 0 && <ProfileTab onClose={handleClose} />}
-                          {value === 1 && <SettingTab onClose={handleClose} />}
+                          {value === 0 && <ProfileTab role="admin" onClose={handleClose} />}
+                          {value === 1 && <SettingTab role="admin" onClose={handleClose} />}
                         </Box>
                       </MainCard>
                     </div>

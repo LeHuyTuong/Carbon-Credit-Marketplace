@@ -22,6 +22,7 @@ public class Wallet {
     private Long id;
 
     @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @OneToOne
@@ -32,5 +33,8 @@ public class Wallet {
     @JsonIgnore
     private Company company;
 
-    private BigDecimal balance =  BigDecimal.ZERO;
+    private BigDecimal balance =  BigDecimal.ZERO; // for currency
+
+    @Column(precision = 18, scale = 4)
+    private BigDecimal carbonCreditBalance = BigDecimal.ZERO; // For carbon credits
 }

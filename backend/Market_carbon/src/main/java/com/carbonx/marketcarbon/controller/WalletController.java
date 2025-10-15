@@ -50,7 +50,7 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "deposit money " , description = "API deposit money ")
+    @Operation(summary = "deposit money add money to Wallet  " , description = "API deposit money ")
     @PutMapping("/deposit/amount/{amount}")
     public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
             @PathVariable("amount") Long amount,
@@ -60,7 +60,7 @@ public class WalletController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        Wallet wallet = walletService.addBalanceToWallet(amount);
+        walletService.addBalanceToWallet(amount);
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url("deposit success");
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
@@ -69,6 +69,7 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Set status pending to success ", description = "API change status to confirm money in wallet ")
     @PostMapping("/deposit")
     public ResponseEntity<TuongCommonResponse<Wallet>> addMoneyToWallet(
             @RequestParam(name = "order_id") Long orderId,
