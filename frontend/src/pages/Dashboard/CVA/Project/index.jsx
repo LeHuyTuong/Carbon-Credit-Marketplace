@@ -1,25 +1,18 @@
-import { Box, Typography, useTheme, Button } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { tokens } from "@/theme";
+import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataProjects } from "@/data/mockData";
-
+import { mockDataProjectsCVA } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const navigate = useNavigate();
 
-  const [data] = useState(mockDataProjects);
-
-
-  
-
-  
-
-
+  // lưu dữ liệu (để có thể xóa hàng)
+    const [data, setData] = useState(mockDataProjectsCVA);
+    
   const columns = [
     { field: "id", headerName: "" },
     { field: "projectid", headerName: "Project ID", flex: 1 },
@@ -41,32 +34,22 @@ const Invoices = () => {
       ),
     },
     {
-      field: "shortdescription",
-      headerName: "Short Description",
+      field: "projecttype",
+      headerName: "Project Type",
       flex: 1.5,
-      renderCell: (params) => (
-        <Typography
-          sx={{
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.4,
-          }}
-        >
-          {params.value}
-        </Typography>
-      ),
+      
     },
-
-    { field: "starteddate", headerName: "Started Date", flex: 1 },
-
     {
-      field: "totalexpectedcredits",
-      headerName: "Total Expected Credits",
+      field: "numberofcreditsrecorded", 
+      headerName: "Number of Credits Recorded",
       flex: 1,
     },
-
-
-
+    {
+      field: "starteddate", 
+      headerName: "Started Date",
+      flex: 1,
+    },
+    
     {
       field: "status",
       headerName: "Status",
@@ -78,7 +61,12 @@ const Invoices = () => {
           Ended: colors.redAccent[500],
         };
         return (
-          <Box display="flex" alignItems="center" justifyContent="left" height="100%">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="left"
+            height="100%"
+          >
             <Typography
               color={statusColorMap[status] || colors.grey[100]}
               fontWeight="600"
@@ -91,56 +79,39 @@ const Invoices = () => {
       },
     },
     {
-      field: "action",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => {
-        return (
-          <div className="cellAction">
-
-            <Link
-              to={`/admin/view_project/${params.row.id}`}
-              style={{ textDecoration: "none" }}
-            >
-
-            <Link to={`/admin/view_project/${params.row.id}`} style={{ textDecoration: "none" }}>
-
-              <div className="viewButton">View</div>
-            </Link>
-          </div>
-        );
-      },
-    },
+          field: "action",
+          headerName: "Action",
+          flex: 1,
+          renderCell: (params) => {
+            return (
+              <div className="cellAction">
+                <Link to={`/cva/view_project/${params.row.id}`} style={{ textDecoration: "none" }}>
+                  <div className="viewButton">View</div>
+                </Link>
+                
+              </div>
+            );
+          },
+        },
+    
   ];
 
   return (
     <Box m="20px" className="actionadmin">
-      {/* Header + Add New button */}
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="PROJECTS" subtitle="List of projects" />
-        <Button
-          variant="contained"
-          color="success"
-          onClick={() => navigate("/admin/new_project")} // hoặc alert nếu chưa có trang add
-          sx={{
-            height: "40px",
-            borderRadius: "8px",
-            textTransform: "none",
-            fontWeight: 600,
-          }}
-        >
-          + Add New
-        </Button>
-      </Box>
-
-      {/* DataGrid */}
+      <Header title="PROJECTS" subtitle="List of projects" />
       <Box
         m="40px 0 0 0"
         height="75vh"
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-cell": { borderBottom: "none" },
-          "& .name-column--cell": { color: colors.greenAccent[300] },
+          "& .MuiDataGrid-root": {
+            border: "none",
+          },
+          "& .MuiDataGrid-cell": {
+            borderBottom: "none",
+          },
+          "& .name-column--cell": {
+            color: colors.greenAccent[300],
+          },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -160,12 +131,11 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
-            {
-              marginTop: 0,
-              marginBottom: 0,
-              lineHeight: "normal",
-            },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+            marginTop: 0,
+            marginBottom: 0,
+            lineHeight: "normal",
+          },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",

@@ -1,6 +1,6 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useContext } from "react";
-import { ColorModeContext, tokens } from "@/theme";
+import { ColorModeContext, tokens } from "@/themeCVA";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
@@ -300,8 +300,8 @@ const Topbar = () => {
                         </Box>
 
                         <Box sx={{ p: 1.5 }}>
-                          {value === 0 && <ProfileTab role="admin" onClose={handleClose} />}
-                          {value === 1 && <SettingTab role="admin" onClose={handleClose} />}
+                          {value === 0 && <ProfileTab role="cva" onClose={handleClose} />}
+                          {value === 1 && <SettingTab role="cva" onClose={handleClose} />}
                         </Box>
                       </MainCard>
                     </div>

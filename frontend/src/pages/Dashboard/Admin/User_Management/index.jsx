@@ -6,9 +6,10 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
-import { useState } from "react"; //thêm để quản lý dữ liệu
+import { useState,useEffect } from "react"; //thêm để quản lý dữ liệu
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataTeam } from "@/data/mockData";
+// import { mockDataTeam } from "@/data/mockData";
+import { getAllUsers } from "@/apiAdmin/userAdmin.js"; // hàm gọi API lấy dữ liệu người dùng
 const accessConfig = {
   admin: {
     label: "Admin",
@@ -31,16 +32,46 @@ const accessConfig = {
     bg: "greenAccent.700",
   },
 };
-localStorage.removeItem("userData");
+
 const Team = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  // Quản lý dữ liệu user
+  const [data, setData] = useState([]);
 
-  // lưu dữ liệu (để có thể xóa hàng)
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem("userData");
-    return saved ? JSON.parse(saved) : mockDataTeam;
-  });
+
+  //  Gọi API khi load trang
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const response = await getAllUsers();
+
+        // Nếu API trả về dữ liệu trong response.responseData
+        if (response?.responseData) {
+          const users = response.responseData.map((u, index) => ({
+            id: index + 1,
+            userid: u.id,
+            name: u.fullName,
+            status: u.status,
+            phone: u.phone,
+            email: u.email,
+            date: u.createdAt,
+            access: u.role,
+          }));
+          setData(users);
+          localStorage.setItem("userData", JSON.stringify(users));
+        } else {
+          console.error("No user data found:", response);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    }
+
+    fetchUsers();
+  }, []);
+
+
 
   
   const columns = [
@@ -196,7 +227,7 @@ const Team = () => {
           },
         }}
       >
-        {/* Dùng state `data` thay vì mockDataTeam để có thể xóa */}
+        
         <DataGrid checkboxSelection rows={data} columns={columns} />
       </Box>
     </Box>
