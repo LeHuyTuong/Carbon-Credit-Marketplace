@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./manage.css";
-import { Button, Modal, Form } from "react-bootstrap";
+import { Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import {
@@ -22,6 +22,11 @@ export default function Manage() {
   const [vehicles, setVehicles] = useState([]);
   const [show, setShow] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    variant: "success",
+  });
 
   //lấy danh sách xe
   const fetchVehicles = async () => {
@@ -55,8 +60,9 @@ export default function Manage() {
     try {
       await deleteVehicle(id);
       await fetchVehicles();
+      showToast("Vehicle deleted successfully");
     } catch (err) {
-      alert("Không thể xóa xe: " + err.message);
+      showToast("Cannot delete vehicle: " + err.message, "danger");
     }
   };
 
@@ -64,12 +70,10 @@ export default function Manage() {
   const handleSubmit = async (values) => {
     try {
       const payload = {
-        data: {
-          plateNumber: values.plate,
-          model: values.model,
-          brand: values.brand,
-          companyId: Number(values.company), //đổi từ string sang số
-        },
+        plateNumber: values.plate,
+        model: values.model,
+        brand: values.brand,
+        companyId: Number(values.company), //đổi từ string sang số
       };
 
       if (editData) {
@@ -79,16 +83,22 @@ export default function Manage() {
       }
 
       await fetchVehicles();
+      showToast("Vehicle saved successfully");
       setShow(false);
       setEditData(null);
     } catch (err) {
-      alert("Lỗi khi lưu xe: " + err.message);
+      showToast("Failed to save vehicle: " + err.message, "danger");
     }
   };
 
   const handleClose = () => {
     setShow(false);
     setEditData(null);
+  };
+
+  const showToast = (message, variant = "success") => {
+    setToast({ show: true, message, variant });
+    setTimeout(() => setToast({ show: false, message: "", variant }), 3000);
   };
 
   return (
@@ -156,6 +166,17 @@ export default function Manage() {
           </tbody>
         </table>
       </div>
+      <ToastContainer position="bottom-end" className="p-3">
+        <Toast
+          onClose={() => setToast({ ...toast, show: false })}
+          show={toast.show}
+          bg={toast.variant}
+          delay={3000}
+          autohide
+        >
+          <Toast.Body className="text-white">{toast.message}</Toast.Body>
+        </Toast>
+      </ToastContainer>
     </>
   );
 }

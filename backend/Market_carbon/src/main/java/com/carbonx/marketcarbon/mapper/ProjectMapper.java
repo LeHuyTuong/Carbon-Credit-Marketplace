@@ -11,6 +11,8 @@ import org.mapstruct.Mappings;
 public interface ProjectMapper {
 
     @Mapping(source = "company.companyName", target = "companyName")
+    @Mapping(target = "reviewer", expression = "java(project.getReviewer() != null ? project.getReviewer().getName() : null)")
+    @Mapping(target = "finalReviewer", expression = "java(project.getFinalReviewer() != null ? project.getFinalReviewer().getName() : null)")
     ProjectResponse toResponse(Project project);
 
 }

@@ -28,7 +28,7 @@ public class EmissionReport {
     @ManyToOne(optional = false)
     Vehicle vehicle;             // xe liên quan
 
-    String period;               // "2025-09" hoặc "2025-Q4"
+    String period;
 
     @Column(precision = 12, scale = 4)
     BigDecimal calculatedCo2;
