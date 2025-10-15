@@ -15,7 +15,12 @@ const KYC_SCHEMA = Yup.object().shape({
   address: Yup.string().required("Address is required"),
   birthDate: Yup.date().required("Birth date is required"),
   documentType: Yup.string().required("Please select a document type"),
-  documentNumber: Yup.string().required("Document number is required"),
+  documentNumber: Yup.string()
+    .matches(
+      /^(?!000)\d{3}[0-3]\d{2}(?!000000)\d{6}$/,
+      "Document number must be 12 digits and follow CCCD format"
+    )
+    .required("Document number is required"),
   gender: Yup.string().required("Please select gender"),
 });
 
@@ -35,6 +40,7 @@ export default function KYC() {
     gender: "",
   });
   const [loading, setLoading] = useState(false);
+  const [hasExisting, setHasExisting] = useState(false);
 
   //fetch KYC
   useEffect(() => {
@@ -49,29 +55,34 @@ export default function KYC() {
 
         //kiểm tra response và gán dữ liệu vào form
         const info = data?.response;
-        if (!info) {
-          toast.warn("No KYC record found. Please create one.");
-          return;
+        if (info) {
+          setHasExisting(true);
+          //gán dữ liệu
+          setInitialValues({
+            id: info.id,
+            name: info.name || "",
+            phone: info.phone || "",
+            country: info.country || "",
+            address: info.address || "",
+            birthDate: info.birthDate || "",
+            email: info.email || user?.email || "",
+            documentType: info.documentType || "",
+            documentNumber: info.documentNumber || "",
+            gender: info.gender === "MALE" ? "male" : "female",
+          });
+        } else {
+          setHasExisting(false);
+          toast.info("No KYC record found. Please create one.");
         }
-
-        //gán dữ liệu
-        setInitialValues({
-          id: info.id,
-          name: info.name || "",
-          phone: info.phone || "",
-          country: info.country || "",
-          address: info.address || "",
-          birthDate: info.birthDate || "",
-          email: info.email || user?.email || "",
-          documentType: info.documentType || "",
-          documentNumber: info.documentNumber || "",
-          gender: info.gender === "MALE" ? "male" : "female",
-        });
       } catch (err) {
         console.error("Error fetching KYC:", err);
-        // chỉ hiển thị toast khi không phải lỗi BE i18n
-        if (!err.message.includes("No message found under code")) {
-          toast.error(err.message || "Failed to fetch KYC info");
+        // 400 hoặc 404 nghĩa là chưa có KYC, không hiển thị lỗi
+        if (err.status === 400 || err.status === 404) {
+          setHasExisting(false);
+        } else {
+          toast.error(
+            "Failed to load KYC information. Please try again later."
+          );
         }
       } finally {
         setLoading(false);
@@ -84,7 +95,7 @@ export default function KYC() {
   //submit kyc
   const handleSubmit = async (values) => {
     setLoading(true);
-    const hasExisting = !!initialValues.name;
+    //chọn method phù hợp
     const method = hasExisting ? "PUT" : "POST";
 
     //gọi API lưu KYC
@@ -97,16 +108,16 @@ export default function KYC() {
           data: {
             name: values.name,
             phone: values.phone,
-            gender: values.gender.toUpperCase(),
+            gender: values.gender === "male" ? "MALE" : "FEMALE",
             country: values.country,
             address: values.address,
             documentType: values.documentType,
             documentNumber: values.documentNumber,
-            birthDate: values.birthDate,
+            birthDate: values.birthDate.split("T")[0], //chỉ lấy phần date
           },
         }),
       });
-
+      //thông báo thành công
       toast.success(
         hasExisting ? "KYC updated successfully!" : "KYC created successfully!"
       );

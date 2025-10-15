@@ -33,7 +33,6 @@ public class CustomUserServiceImpl implements UserDetailsService {
         // map role
         for (Role role : user.getRoles()) {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
-
         }
 
         return new org.springframework.security.core.userdetails.User(

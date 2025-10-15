@@ -21,19 +21,14 @@ public class Admin {
 
     @Column(unique = true) String code;
     @Column(nullable = false) String name;
-    @Column(nullable = false) String email;
     String phone;
-    String department;
-    @Column(name="position_title") String positionTitle;
 
     @Column(name="is_super_admin", nullable = false) Boolean isSuperAdmin;
 
-    @Column(name="approval_limit", precision = 18, scale = 2) java.math.BigDecimal approvalLimit;
+    @Column(name="position_title",nullable = false) String positionTitle;
 
     @Enumerated(EnumType.STRING) @Column(nullable = false)
     USER_STATUS status;
-
-    @Column(columnDefinition="text") String notes;
 
     OffsetDateTime createdAt; OffsetDateTime updatedAt;
     @PrePersist void preP(){

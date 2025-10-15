@@ -8,6 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface CvaRepository extends JpaRepository<Cva, Long> {
-    Optional<Cva> findByUser_Id(Long userId);
-    Optional<Cva> findByCode(String code);
+    Optional<Cva> findByUserId(Long userId);
+    Optional<Cva> findByEmail(String email);
+    boolean existsByUserId(Long userId);
 }

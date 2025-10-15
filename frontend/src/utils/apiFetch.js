@@ -1,6 +1,6 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
-  
+
   //ưu tiên đọc token từ AuthContext
   let token;
   try {
@@ -20,19 +20,38 @@ export async function apiFetch(path, options = {}) {
   //tạo traceId và datetime
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
-  
-  //cấu hình fetch
+
+  // //cấu hình fetch
+  // const config = {
+  //   method: options.method || "GET",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     Accept: "*/*",
+  //     "X-Request-Trace": crypto.randomUUID(),
+  //     "X-Request-DateTime": new Date().toISOString(),
+  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  //     ...(options.headers || {}),
+  //   },
+  // };
+
+  const headers = {
+    Accept: "*/*",
+    "X-Request-Trace": crypto.randomUUID(),
+    "X-Request-DateTime": new Date().toISOString(),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  // Chỉ thêm Content-Type nếu có body (hoặc không phải GET)
+  if (options.body && (options.method || "GET") !== "GET") {
+    headers["Content-Type"] = "application/json";
+  }
+
   const config = {
     method: options.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "*/*",
-      "X-Request-Trace": crypto.randomUUID(),
-      "X-Request-DateTime": new Date().toISOString(),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
+    headers,
   };
+
 
   //tự động thêm trace và datetime vào body (nếu payload là JSON)
   if (config.method !== "GET" && options.body) {
@@ -56,13 +75,41 @@ export async function apiFetch(path, options = {}) {
   const res = await fetch(`${API}${path}`, config);
   const data = await res.json().catch(() => ({}));
 
-  //nếu không ok thì ném lỗi
+  //nếu lỗi, log chi tiết và ném lỗi với thông báo phù hợp
   if (!res.ok) {
-    const msg =
-      data?.responseStatus?.responseMessage ||
-      data?.message ||
-      `Request failed with status ${res.status}`;
-    const error = new Error(msg);
+    console.error("API Error:", { path, status: res.status, data });
+    let userMessage;
+    switch (true) {
+      case path.includes("/auth/login"):
+        userMessage = "Login failed. Please check your credentials.";
+        break;
+      case path.includes("/auth/register"):
+        userMessage = "Registration failed. Please try again.";
+        break;
+      case path.includes("/auth/change-password"):
+        userMessage = "Password change failed. Please try again.";
+        break;
+      case path.includes("/auth/reset-password"):
+        userMessage = "Password reset failed. Please try again.";
+        break;
+      case path.includes("/kyc"):
+        userMessage = "KYC verification failed. Please try again.";
+        break;
+      case path.includes("/wallet"):
+        userMessage = "Wallet transaction failed. Please try again.";
+        break;
+      case path.includes("/withdrawal"):
+        userMessage = "Withdrawal request failed. Please try again.";
+        break;
+      case path.includes("/projects"):
+        userMessage = "Project operation failed. Please try again.";
+        break;
+      default:
+        userMessage = "Something went wrong. Please try again later.";
+        break;
+    }
+
+    const error = new Error(userMessage);
     error.status = res.status;
     throw error;
   }

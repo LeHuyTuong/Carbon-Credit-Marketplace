@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -8,26 +9,14 @@ import org.hibernate.validator.constraints.URL;
 @Data
 public class ProjectSubmitRequest {
     @NotNull
-    private Long companyId;
+    private Long baseProjectId; // Dự án mà công ty tham gia
 
     @NotBlank
-    private String title;
+    private String companyCommitment; // Cam kết cụ thể của doanh nghiệp
 
     @NotBlank
-    private String description;
-
-    @URL
-    @NotBlank
-    private String logo;
+    private String technicalIndicators; // Chỉ số kỹ thuật thực tế của doanh nghiệp
 
     @NotBlank
-    private String commitments;
-
-    @NotBlank
-    private String technicalIndicators;
-
-    @NotBlank
-    private String measurementMethod;
-
-    private String legalDocsUrl; // có thể để trống, upload sau
+    private String measurementMethod; // Phương pháp đo lường phát thải hoặc giảm phát thải
 }
