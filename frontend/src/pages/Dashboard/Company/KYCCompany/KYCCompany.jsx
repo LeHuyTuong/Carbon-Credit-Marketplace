@@ -46,9 +46,11 @@ export default function KYCCompany() {
         });
       } catch (err) {
         console.error("Error fetching company KYC:", err);
-        // chỉ hiển thị toast khi không phải lỗi BE i18n
-        if (!err.message.includes("No message found under code")) {
-          toast.error(err.message || "Failed to fetch KYC Company info");
+        // 400 hoặc 404 không hiển thị lỗi
+        if (err.status === 400 || err.status === 404) {
+          // không làm gì cả, chỉ giữ form trống
+        } else {
+          toast.error("Failed to load company KYC. Please try again later.");
         }
       } finally {
         setLoading(false);
@@ -82,7 +84,7 @@ export default function KYCCompany() {
           ? "Company KYC updated successfully!"
           : "Company KYC created successfully!"
       );
-      nav("/company/profile", { replace: true });
+      nav("/profile-company", { replace: true });
     } catch (err) {
       console.error("Error submitting company KYC:", err);
       toast.error(err.message || "Failed to save company KYC");
@@ -101,7 +103,7 @@ export default function KYCCompany() {
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
-      <div className="card shadow container">
+      <div className="card shadow" style={{ maxWidth: "500px", width: "100%" }}>
         <div className="card-body">
           <h2 className="mb-4 text-center">Company KYC</h2>
 
