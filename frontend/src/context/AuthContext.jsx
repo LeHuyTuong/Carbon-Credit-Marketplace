@@ -20,14 +20,21 @@ function readPersistedAuth() {
 
 export function AuthProvider({ children }) {
   //lấy data đã lưu cho remember me
-  const [{ user, token, role }, setAuth] = useState(() => readPersistedAuth());
+  const [{ user, token, role, companyId }, setAuth] = useState(() => ({
+    ...{ user: null, token: null, role: null, companyId: null },
+    ...readPersistedAuth(),
+  }));
 
   const login = (nextUser, nextToken, remember = false) => {
     const payload = {
       user: nextUser,
       token: nextToken,
-      role: nextUser?.role || null, //lấy role từ user
+      role: Array.isArray(nextUser?.roles)
+        ? nextUser.roles.map((r) => r.name)
+        : nextUser?.role || null,
+      companyId: nextUser?.companyId || nextUser?.id || null,
     };
+
     setAuth(payload);
 
     //lưu vào storage
@@ -39,7 +46,7 @@ export function AuthProvider({ children }) {
 
   // logout
   const logout = () => {
-    setAuth({ user: null, token: null, role: null });
+    setAuth({ user: null, token: null, role: null, companyId: null });
     sessionStorage.removeItem("auth");
     localStorage.removeItem("auth");
   };
@@ -50,11 +57,13 @@ export function AuthProvider({ children }) {
       user,
       token,
       role,
+      companyId,
+      primaryRole: Array.isArray(role) ? role[0] : role,
       isAuthenticated: !!token,
       login,
       logout,
     }),
-    [user, token, role]
+    [user, token, role, companyId]
   );
 
   // tự động logout khi token hết hạn
