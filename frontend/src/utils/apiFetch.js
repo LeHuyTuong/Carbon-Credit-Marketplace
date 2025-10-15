@@ -1,8 +1,8 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
-  // 🔹 Lấy token từ localStorage / sessionStorage
-  let token = null;
+  //ưu tiên đọc token từ AuthContext
+  let token;
   try {
     const authData =
       JSON.parse(sessionStorage.getItem("auth")) ||
@@ -12,14 +12,15 @@ export async function apiFetch(path, options = {}) {
     token = null;
   }
 
-  // 🔹 fallback: nếu cũ lưu ở "token"
-  if (!token) token = localStorage.getItem("token");
+  //giữ lại token cũ nếu project trước đây lưu ở "token"
+  if (!token) {
+    token = localStorage.getItem("token");
+  }
 
-  // 🔹 Tạo traceId và thời gian
+  //tạo traceId và datetime
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
 
-  
   // //cấu hình fetch
   // const config = {
   //   method: options.method || "GET",
@@ -53,34 +54,28 @@ export async function apiFetch(path, options = {}) {
 
 
   //tự động thêm trace và datetime vào body (nếu payload là JSON)
-
   if (config.method !== "GET" && options.body) {
-    let bodyObj;
-    try {
-      bodyObj = typeof options.body === "string" ? JSON.parse(options.body) : options.body;
-    } catch {
-      bodyObj = options.body;
+    let body = options.body;
+
+    //nếu payload là object, gắn thêm trace + datetime vào body
+    if (typeof body === "object") {
+      body = {
+        requestTrace: traceId,
+        requestDateTime: dateTime,
+        ...body,
+      };
+      config.body = JSON.stringify(body);
+    } else {
+      config.body = body; // fallback nếu đã stringify trước
     }
-
-    // ✅ Bọc payload vào "data"
-    config.body = JSON.stringify({
-      requestTrace: traceId,
-      requestDateTime: dateTime,
-      data: bodyObj,
-    });
   }
+  console.log("Fetching:", `${API}${path}`, config); //debug
 
-  console.log("🚀 Fetching:", `${API}${path}`, config);
-
-  // 🔹 Thực thi fetch
+  //thực hiện fetch
   const res = await fetch(`${API}${path}`, config);
   const data = await res.json().catch(() => ({}));
 
-
   //nếu lỗi, log chi tiết và ném lỗi với thông báo phù hợp
-
-  // 🔹 Xử lý lỗi
- 
   if (!res.ok) {
     console.error("API Error:", { path, status: res.status, data });
     let userMessage;
