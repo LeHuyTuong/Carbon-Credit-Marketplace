@@ -27,7 +27,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id", nullable = false)
-    private MarketplaceListing marketplaceListing;
+    private MarketPlaceListing marketplaceListing;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carbon_credit_id" , nullable = false)

@@ -68,7 +68,6 @@ public class WalletServiceImpl implements WalletService {
         Long id = user.getId();
         Wallet wallet = walletRepository.findByUserId(id);
 
-        wallet.getBalance().add(BigDecimal.valueOf(money));
         wallet.setBalance(wallet.getBalance().add(BigDecimal.valueOf(money)));
 
         walletRepository.save(wallet);
