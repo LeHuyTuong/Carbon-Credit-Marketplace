@@ -69,7 +69,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         carbonCreditRepository.save(creditToSell);
 
         //4 create a new listing to marketplace
-        MarketplaceListing newListing = MarketplaceListing.builder()
+        MarketPlaceListing newListing = MarketPlaceListing.builder()
                 .company(sellerCompany)
                 .carbonCredit(creditToSell)
                 .quantity(request.getQuantity())
@@ -79,7 +79,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .expiresAt(request.getExpirationDate())
                 .build();
 
-        MarketplaceListing savedListing = marketplaceListingRepository.save(newListing);
+        MarketPlaceListing savedListing = marketplaceListingRepository.save(newListing);
         return MarketplaceListingResponse.builder()
                 .listingId(savedListing.getId())
                 .quantity(savedListing.getQuantity())
@@ -93,7 +93,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     @Override
     public List<MarketplaceListingResponse> getActiveListing() {
-        List<MarketplaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDateTime.now());
+        List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDateTime.now());
 
         return activeListings.stream()
                 .map(listing -> MarketplaceListingResponse.builder()

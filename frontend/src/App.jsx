@@ -36,6 +36,7 @@ import "react-toastify/dist/ReactToastify.css";
 //  import AdminApp
 import AdminApp from "./AdminApp.jsx";
 
+
 function Layout() {
   return (
     <>
@@ -129,6 +130,7 @@ export default function App() {
         <Route path="/detail-project" element={<DetailProject />} />
         {/*Route riêng cho admin, không Navbar */}
         <Route path="/admin/*" element={<AdminApp />} />
+        
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

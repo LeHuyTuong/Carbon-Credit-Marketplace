@@ -61,12 +61,12 @@ public class Project extends BaseEntity {
     @JoinColumn(name = "reviewer_id")
     private Cva reviewer;               // Tài khoản/tên đơn vị thẩm định
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private Admin finalReviewer;
+
     @Column(columnDefinition = "TEXT")
     private String reviewNote;             // Nhận xét khi duyệt
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "final_reviewer_id")
-    private Admin finalReviewer;
 
     @Column(columnDefinition = "TEXT")
     private String finalReviewNote;

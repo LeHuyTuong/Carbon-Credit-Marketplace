@@ -1,6 +1,6 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
-  
+
   //ưu tiên đọc token từ AuthContext
   let token;
   try {
@@ -20,7 +20,7 @@ export async function apiFetch(path, options = {}) {
   //tạo traceId và datetime
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
-  
+
   // //cấu hình fetch
   // const config = {
   //   method: options.method || "GET",
