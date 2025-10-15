@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "marketplace_listings")
-public class MarketplaceListing {
+public class MarketPlaceListing {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

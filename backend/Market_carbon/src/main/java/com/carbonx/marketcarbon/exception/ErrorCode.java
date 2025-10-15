@@ -44,7 +44,12 @@ public enum ErrorCode {
     AMOUNT_IS_NOT_ENOUGH(400, "AMOUNT request must be lower than available ",  HttpStatus.BAD_REQUEST),
     ORDER_IS_NOT_PENDING(400, "Order is not pending", HttpStatus.BAD_REQUEST),
     WALLET_IS_NOT_ENOUGH_MONEY(400, "Wallet is not enough money ", HttpStatus.BAD_REQUEST),
-    COMPANY_NOT_OWN(400, "Company not own this carbon credit block ", HttpStatus.BAD_REQUEST),;
+    COMPANY_NOT_OWN(400, "Company not own this carbon credit block ", HttpStatus.BAD_REQUEST),
+    ADMIN_NOT_FOUND(400, "Admin not found", HttpStatus.NOT_FOUND),
+    CVA_NOT_APPROVED(400, "CVA did not approved", HttpStatus.BAD_REQUEST),
+    CVA_NOT_FOUND(400, "CVA not found", HttpStatus.NOT_FOUND),
+    CARBON_CREDIT_NOT_PENDING(400, "Carbon Credit Not pending", HttpStatus.BAD_REQUEST),;
+    ;
 
     private int code;
     private String message;

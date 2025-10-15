@@ -51,8 +51,12 @@ public class Project extends BaseEntity {
     private String legalDocsUrl;           // Link tài liệu pháp lý (S3/…)
 
     // ==== Thông tin thẩm định của CVA/đơn vị thẩm định ====
-    @Column(length = 100)
+    @Column(length = 20)
     private String reviewer;               // Tài khoản/tên đơn vị thẩm định
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private Admin finalReviewer;
 
     @Column(columnDefinition = "TEXT")
     private String reviewNote;             // Nhận xét khi duyệt

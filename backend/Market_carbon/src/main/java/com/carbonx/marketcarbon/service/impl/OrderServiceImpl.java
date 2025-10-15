@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
         Company buyerCompany = currentCompany(user);
 
         //1 find listing user want to buy
-        MarketplaceListing listing = marketplaceListingRepository.findById(request.getListingId())
+        MarketPlaceListing listing = marketplaceListingRepository.findById(request.getListingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
 
         // 2 check conditional > 0
@@ -160,7 +160,7 @@ public class OrderServiceImpl implements OrderService {
 
         //B2 get company buy , sell , listing
         Company buyerCompany = order.getCompany();
-        MarketplaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
+        MarketPlaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
         Company sellerCompany = listing.getCompany();
 
