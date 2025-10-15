@@ -23,9 +23,20 @@ export default function Wallet() {
 
   //load wallet and history
   useEffect(() => {
-    fetchWallet();
-    fetchTransactions();
-  }, []);
+    //nếu url có order_id & payment_id thì gọi api xác nhận nạp tiền
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get("order_id");
+    const paymentId = params.get("payment_id");
+
+    //có data thì gọi
+    if (orderId && paymentId) {
+      confirmDeposit(orderId, paymentId);
+    } else {
+      //nếu không có order_id thì load ví bình thường
+      fetchWallet();
+      fetchTransactions();
+    }
+  }, [location.search]); //chạy lại effect khi query đổi
 
   const fetchWallet = async () => {
     try {
@@ -36,9 +47,11 @@ export default function Wallet() {
     }
   };
 
+  //lịch sử giao dịch
   const fetchTransactions = async () => {
     try {
-      if (!wallet?.id) return; // chờ wallet load xong
+      if (!wallet?.id) return; //chờ wallet load xong
+
       const reqPayload = {
         requestTrace: crypto.randomUUID(),
         requestDateTime: new Date().toISOString(),
@@ -47,12 +60,10 @@ export default function Wallet() {
         },
       };
 
-      const res = await apiFetch(
-        `/api/v1/wallet/transactions?req=${encodeURIComponent(
-          JSON.stringify(reqPayload)
-        )}`,
-        { method: "GET" }
-      );
+      const res = awaitapiFetch("/api/v1/wallet/transactions", {
+        method: "POST",
+        body: reqPayload,
+      });
       setTransactions(res.response || []);
     } catch (err) {
       console.error("Failed to fetch transactions:", err);
@@ -102,6 +113,41 @@ export default function Wallet() {
     } finally {
       setLoading(false);
       setShowDepositModal(false);
+    }
+  };
+
+  //xác nhận trạng thái thanh toán
+  const confirmDeposit = async (orderId, paymentId) => {
+    setLoading(true);
+    try {
+      const res = await apiFetch(
+        `/api/v1/wallet/deposit?order_id=${orderId}&payment_id=${paymentId}`,
+        {
+          method: "POST",
+        }
+      );
+
+      setToast({
+        show: true,
+        msg: "Deposit successful! Balance updated.",
+        type: "success",
+      });
+
+      //reload ví sau khi cộng tiền thành công
+      await fetchWallet();
+      await fetchTransactions();
+
+      //xóa params khỏi url (ko gọi lại api khi reload)
+      nav("/wallet", { replace: true });
+    } catch (err) {
+      console.error("Deposit confirmation failed:", err);
+      setToast({
+        show: true,
+        msg: err.message || "Failed to confirm deposit.",
+        type: "danger",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
