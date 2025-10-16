@@ -35,7 +35,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 //  import AdminApp
 import AdminApp from "./AdminApp.jsx";
-
+//  import AdminApp
+import CVAApp from "./CVAApp.jsx";
 
 function Layout() {
   return (
@@ -67,6 +68,8 @@ export default function App() {
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
+          <Route path="/detail-project" element={<DetailProject />} />
+
           <Route
             path="/kyc"
             element={
@@ -127,10 +130,9 @@ export default function App() {
         <Route path="/deposit" element={<Deposit />} />
         <Route path="/register-project" element={<RegisterProject />} />
         <Route path="/list-projects" element={<ListProjects />} />
-        <Route path="/detail-project" element={<DetailProject />} />
         {/*Route riêng cho admin, không Navbar */}
         <Route path="/admin/*" element={<AdminApp />} />
-        
+        <Route path="/cva/*" element={<CVAApp />} />
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

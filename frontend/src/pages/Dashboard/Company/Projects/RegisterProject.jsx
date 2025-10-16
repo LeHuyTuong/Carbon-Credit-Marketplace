@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { useAuth } from "../../../../context/AuthContext";
 import { FaArrowLeft } from "react-icons/fa";
+import { useCompanyProfile } from "../../../../hooks/useCompanyProfile";
 
 // validation schema
 const PROJECT_SCHEMA = Yup.object().shape({
@@ -20,14 +21,15 @@ const PROJECT_SCHEMA = Yup.object().shape({
 export default function RegisterProject() {
   const nav = useNavigate();
   const { user } = useAuth();
+  const { company, loading: companyLoading } = useCompanyProfile();
   const [loading, setLoading] = useState(false);
 
   //initial form values
   const initialValues = {
-    companyName: "",
-    businessLicense: "",
-    taxCode: "",
-    address: "",
+    companyName: company.companyName || "",
+    businessLicense: company.businessLicense || "",
+    taxCode: company.taxCode || "",
+    address: company.address || "",
     documents: "",
   };
 
@@ -44,7 +46,7 @@ export default function RegisterProject() {
             businessLicense: values.businessLicense,
             taxCode: values.taxCode,
             address: values.address,
-            documents: values.document,
+            documents: values.documents,
           },
         },
       });
@@ -68,7 +70,7 @@ export default function RegisterProject() {
     }
   };
 
-  if (loading)
+  if (loading || companyLoading)
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-primary" />

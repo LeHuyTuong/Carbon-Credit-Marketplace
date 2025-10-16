@@ -21,12 +21,9 @@ export default function Profile() {
     const fetchKYC = async () => {
       setLoading(true);
       try {
-        const data = await apiFetch("/api/v1/kyc/user", {
-          method: "GET",
-          headers: {},
-        });
-
+        const data = await apiFetch("/api/v1/kyc/user", { method: "GET" });
         const info = data.response;
+
         //nếu chưa có KYC thì chuyển sang màn KYC
         if (!info) {
           console.warn("User has no KYC yet");
