@@ -1,7 +1,7 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
-  //ưu tiên đọc token từ AuthContext
+  // Lấy token từ AuthContext hoặc localStorage/sessionStorage
   let token;
   try {
     const authData =
@@ -12,37 +12,24 @@ export async function apiFetch(path, options = {}) {
     token = null;
   }
 
-  //giữ lại token cũ nếu project trước đây lưu ở "token"
   if (!token) {
     token = localStorage.getItem("token");
   }
 
-  //tạo traceId và datetime
+  // Tạo traceId và datetime
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
 
-  // //cấu hình fetch
-  // const config = {
-  //   method: options.method || "GET",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     Accept: "*/*",
-  //     "X-Request-Trace": crypto.randomUUID(),
-  //     "X-Request-DateTime": new Date().toISOString(),
-  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  //     ...(options.headers || {}),
-  //   },
-  // };
-
+  // Tạo headers
   const headers = {
     Accept: "*/*",
-    "X-Request-Trace": crypto.randomUUID(),
-    "X-Request-DateTime": new Date().toISOString(),
+    "X-Request-Trace": traceId,
+    "X-Request-DateTime": dateTime,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
-  // Chỉ thêm Content-Type nếu có body (hoặc không phải GET)
+  // Chỉ thêm Content-Type nếu có body và method khác GET
   if (options.body && (options.method || "GET") !== "GET") {
     headers["Content-Type"] = "application/json";
   }
@@ -52,32 +39,22 @@ export async function apiFetch(path, options = {}) {
     headers,
   };
 
-
-  //tự động thêm trace và datetime vào body (nếu payload là JSON)
+  // Thêm body nếu có, stringify nếu là object
   if (config.method !== "GET" && options.body) {
-    let body = options.body;
-
-    //nếu payload là object, gắn thêm trace + datetime vào body
-    if (typeof body === "object") {
-      body = {
-        requestTrace: traceId,
-        requestDateTime: dateTime,
-        ...body,
-      };
-      config.body = JSON.stringify(body);
-    } else {
-      config.body = body; // fallback nếu đã stringify trước
-    }
+    config.body =
+      typeof options.body === "object" ? JSON.stringify(options.body) : options.body;
   }
-  console.log("Fetching:", `${API}${path}`, config); //debug
 
-  //thực hiện fetch
+  console.log("Fetching:", `${API}${path}`, config); // debug
+
+  // Thực hiện fetch
   const res = await fetch(`${API}${path}`, config);
   const data = await res.json().catch(() => ({}));
 
-  //nếu lỗi, log chi tiết và ném lỗi với thông báo phù hợp
+  // Nếu lỗi, log chi tiết và ném error
   if (!res.ok) {
     console.error("API Error:", { path, status: res.status, data });
+
     let userMessage;
     switch (true) {
       case path.includes("/auth/login"):

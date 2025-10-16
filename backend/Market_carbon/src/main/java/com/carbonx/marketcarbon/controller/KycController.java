@@ -53,7 +53,7 @@ public class KycController {
     @Operation(summary = "Update KYC for User", description = "Update KYC profile for the current user")
     @PutMapping("/user")
     public ResponseEntity<TuongCommonResponse<Long>> updateUser(
-            @Validated(KycRequest.Update.class) @RequestBody TuongCommonRequest<KycRequest> req,
+            @Valid @Validated(KycRequest.Update.class) @RequestBody TuongCommonRequest<KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -103,7 +103,7 @@ public class KycController {
     @Operation(summary = "Create KYC for Company", description = "Create KYC profile for the company of current user")
     @PostMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> createCompany(
-            @Validated(KycCompanyRequest.Create.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+            @Valid @Validated(KycCompanyRequest.Create.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -120,7 +120,7 @@ public class KycController {
     @Operation(summary = "Update KYC for Company", description = "Update KYC profile for the company of current user")
     @PutMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> updateCompany(
-            @Validated(KycCompanyRequest.Update.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+            @Valid @Validated(KycCompanyRequest.Update.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 

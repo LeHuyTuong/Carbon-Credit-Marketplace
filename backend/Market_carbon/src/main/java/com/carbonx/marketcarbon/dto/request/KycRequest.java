@@ -2,9 +2,12 @@ package com.carbonx.marketcarbon.dto.request;
 
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
+import com.carbonx.marketcarbon.common.annotation.DocumentNumber;
 import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,6 +24,7 @@ public class KycRequest {
     @PhoneNumber(message = "phone invalid format")
     private String phone;
 
+    @Enumerated(EnumType.STRING)
     private Gender gender;
 
     @NotNull(message = "country is not null")
@@ -33,6 +37,7 @@ public class KycRequest {
     private IDType documentType;
 
     @NotEmpty(message = "documentNumber is not empty ")
+    @DocumentNumber
     private String documentNumber;
 
     @NotNull(groups = {Create.class, Update.class})
