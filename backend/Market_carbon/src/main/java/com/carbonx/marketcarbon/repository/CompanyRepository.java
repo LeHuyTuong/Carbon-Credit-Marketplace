@@ -15,19 +15,24 @@ import java.util.Optional;
 @Repository
 public interface CompanyRepository extends JpaRepository<Company, Long> {
 
+    // Tìm công ty qua email user
     Company findByUserEmail(String email);
 
     boolean existsById(Long companyId);
 
+    // Tìm công ty qua userId
     @Query("SELECT c FROM Company c WHERE c.user.id = :userId")
     Optional<Company> findByUserId(@Param("userId") Long userId);
 
     @Query("""
-           select distinct c from Project p
-           join p.company c
-           where p.status in :statuses
+           SELECT DISTINCT c
+           FROM Company c
+           JOIN c.applications a
+           JOIN a.project p
+           WHERE p.status IN :statuses
            """)
-    Page<Company> findCompaniesHavingProjectsIn(@Param("statuses") Collection<ProjectStatus> statuses,
-                                                Pageable pageable);
+    Page<Company> findCompaniesHavingProjectsIn(
+            @Param("statuses") Collection<ProjectStatus> statuses,
+            Pageable pageable
+    );
 }
-
