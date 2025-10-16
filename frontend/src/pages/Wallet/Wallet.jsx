@@ -208,7 +208,7 @@ export default function Wallet() {
 
         <div className="d-flex justify-content-center gap-3 flex-wrap">
           <button
-            className="wallet-action border-success text-success"
+            className="wallet-action border-info text-info"
             onClick={handleAddMoney}
             disabled={loading}
           >
@@ -222,10 +222,6 @@ export default function Wallet() {
           >
             <i className="bi bi-download fs-5"></i>
             <span>{loading ? "Checking..." : "Withdraw"}</span>
-          </button>
-          <button className="wallet-action border-info text-info">
-            <i className="bi bi-shuffle fs-5"></i>
-            <span>Transfer</span>
           </button>
         </div>
       </div>

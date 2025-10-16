@@ -29,6 +29,7 @@ import RoleRoute from "./components/RoleRoute.jsx";
 import RegisterProject from "./pages/Dashboard/Company/Projects/RegisterProject.jsx";
 import ListProjects from "./pages/Dashboard/Company/Projects/ListProjects.jsx";
 import DetailProject from "./pages/Dashboard/Company/Projects/DetailProject.jsx";
+import ManageCredits from "./pages/Dashboard/Company/ManageCredits/ManageCredits.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
           <Route path="/detail-project" element={<DetailProject />} />
+          <Route path="/manage-credits" element={<ManageCredits />} />
 
           <Route
             path="/kyc"
