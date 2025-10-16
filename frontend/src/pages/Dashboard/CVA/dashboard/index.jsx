@@ -1,10 +1,10 @@
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/themeCVA";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import EmailIcon from "@mui/icons-material/Email";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import TrafficIcon from "@mui/icons-material/Traffic";
+import ReportIcon from "@mui/icons-material/Report";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import WorkIcon from "@mui/icons-material/Work";
 import Header from "@/components/Chart/Header.jsx";
 import LineChart from "@/components/Chart/LineChart.jsx";
 import GeographyChart from "@/components/Chart/GeographyChart.jsx";
@@ -22,20 +22,7 @@ const Dashboard = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD-CARBON VERIFICATION AUTHORITY" subtitle="Welcome to your dashboard" />
 
-        <Box>
-          <Button
-            sx={{
-              backgroundColor: colors.blueAccent[700],
-              color: colors.grey[100],
-              fontSize: "14px",
-              fontWeight: "bold",
-              padding: "10px 20px",
-            }}
-          >
-            <DownloadOutlinedIcon sx={{ mr: "10px" }} />
-            Download Reports
-          </Button>
-        </Box>
+        
       </Box>
 
       {/* GRID & CHARTS */}
@@ -59,7 +46,7 @@ const Dashboard = () => {
             progress="0.75"
             increase="+14%"
             icon={
-              <EmailIcon
+              <ReportIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
@@ -74,11 +61,11 @@ const Dashboard = () => {
         >
           <StatBox
             title="5,732"
-            subtitle="Transactions"
+            subtitle="Credits"
             progress="0.50"
             increase="+21%"
             icon={
-              <PointOfSaleIcon
+              <CreditCardIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
@@ -93,11 +80,11 @@ const Dashboard = () => {
         >
           <StatBox
             title="32,441"
-            subtitle="Users"
+            subtitle="Companies"
             progress="0.30"
             increase="+5%"
             icon={
-              <PersonAddIcon
+              <CorporateFareIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
@@ -112,11 +99,11 @@ const Dashboard = () => {
         >
           <StatBox
             title="1,325,134"
-            subtitle="Electric-Vehicles"
+            subtitle="Projects"
             progress="0.80"
             increase="+43%"
             icon={
-              <TrafficIcon
+              < WorkIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
