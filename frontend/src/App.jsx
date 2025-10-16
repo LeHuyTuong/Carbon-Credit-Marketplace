@@ -6,7 +6,6 @@ import {
   Outlet,
 } from "react-router-dom";
 import { useAuth } from "./context/AuthContext.jsx";
-
 import Navbar from "./components/Navbar/Navbar.jsx";
 import Home from "./pages/Home/Home.jsx";
 import Login from "./pages/Login/Login.jsx";
