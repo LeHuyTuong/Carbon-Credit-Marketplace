@@ -17,9 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Slf4j
@@ -83,7 +81,6 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
 
     @Override
     public ProjectApplicationResponse cvaDecision(Long applicationId, boolean approved, String note) {
-        // 1️⃣ Lấy user hiện tại từ token
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -93,20 +90,16 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         User user = userRepository.findByEmail(email);
         if (user == null) throw new AppException(ErrorCode.CVA_NOT_FOUND);
 
-        // 2️⃣ Tìm CVA tương ứng với user
         Cva reviewer = cvaRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
 
-        // 3️⃣ Tìm đơn
         ProjectApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        // 4️⃣ Kiểm tra trạng thái hiện tại
         if (app.getStatus() != ApplicationStatus.UNDER_REVIEW && app.getStatus() != ApplicationStatus.NEEDS_REVISION) {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        // 5️⃣ Cập nhật kết quả duyệt
         app.setReviewer(reviewer);
         app.setReviewNote(note);
         app.setStatus(approved ? ApplicationStatus.CVA_APPROVED : ApplicationStatus.CVA_REJECTED);
@@ -118,7 +111,7 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
 
     @Override
     public ProjectApplicationResponse adminFinalDecision(Long applicationId, boolean approved, String note) {
-        // 1️⃣ Lấy user hiện tại từ token
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -128,20 +121,16 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         User user = userRepository.findByEmail(email);
         if (user == null) throw new AppException(ErrorCode.ADMIN_NOT_FOUND);
 
-        // 2️⃣ Tìm Admin tương ứng với user đó
         Admin admin = adminRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.ADMIN_NOT_FOUND));
 
-        // 3️⃣ Tìm hồ sơ
         ProjectApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        // 4️⃣ Chỉ cho phép duyệt nếu đã được CVA phê duyệt trước đó
         if (app.getStatus() != ApplicationStatus.CVA_APPROVED) {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        // 5️⃣ Cập nhật kết quả duyệt
         app.setFinalReviewer(admin);
         app.setFinalReviewNote(note);
         app.setStatus(approved ? ApplicationStatus.ADMIN_APPROVED : ApplicationStatus.ADMIN_REJECTED);

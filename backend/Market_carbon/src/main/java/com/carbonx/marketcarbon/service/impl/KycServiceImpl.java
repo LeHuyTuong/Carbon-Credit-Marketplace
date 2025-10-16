@@ -175,16 +175,24 @@ public class KycServiceImpl implements KycService {
     }
 
     @Override
-    public Company getByCompanyId() {
+    public KycCompanyResponse getByCompanyId() {
         User user = currentUser();
-        String userEmail =  user.getEmail();
-        Company companyExist = companyRepository.findByUserEmail(userEmail);
-        if(companyExist == null)
-            throw new ResourceNotFoundException(Translator.
-                    toLocale("company.not.found"));
-        return companyRepository.findById(companyExist.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(Translator.
-                        toLocale("company.not.found")));
+        String userEmail = user.getEmail();
+
+        Company company = companyRepository.findByUserEmail(userEmail);
+        if (company == null) {
+            throw new ResourceNotFoundException(Translator.toLocale("company.not.found"));
+        }
+
+        return KycCompanyResponse.builder()
+                .id(company.getId())
+                .businessLicense(company.getBusinessLicense())
+                .taxCode(company.getTaxCode())
+                .companyName(company.getCompanyName())
+                .address(company.getAddress())
+                .createAt(company.getCreateAt())
+                .updatedAt(company.getUpdatedAt())
+                .build();
     }
 
     @Override
