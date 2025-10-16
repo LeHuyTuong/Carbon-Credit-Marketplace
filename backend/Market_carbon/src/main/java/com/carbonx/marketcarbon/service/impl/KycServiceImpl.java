@@ -3,17 +3,16 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.Translator;
-import com.carbonx.marketcarbon.dto.request.KycAdminRequest;
-import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
-import com.carbonx.marketcarbon.dto.request.KycCvaRequest;
+import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.KycAdminResponse;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycCvaResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
-import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +33,7 @@ public class KycServiceImpl implements KycService {
     private final CompanyRepository companyRepository;
     private final CvaRepository cvaRepository;
     private final AdminRepository adminRepository;
+    private final EVOwnerRepository evOwnerRepository;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -296,12 +296,8 @@ public class KycServiceImpl implements KycService {
 
         Admin admin = Admin.builder()
                 .user(user)
-                .code(req.getCode())
                 .name(req.getName())
                 .phone(req.getPhone())
-                .positionTitle(req.getPositionTitle())
-                .isSuperAdmin(Boolean.TRUE.equals(req.getIsSuperAdmin()))
-                .status(USER_STATUS.ACTIVE)
                 .build();
 
         adminRepository.save(admin);
@@ -318,8 +314,6 @@ public class KycServiceImpl implements KycService {
 
         admin.setName(req.getName());
         admin.setPhone(req.getPhone());
-        admin.setPositionTitle(req.getPositionTitle());
-        admin.setIsSuperAdmin(req.getIsSuperAdmin());
 
         adminRepository.save(admin);
         log.info("🛠️ Admin KYC updated for {}", user.getEmail());
@@ -335,16 +329,39 @@ public class KycServiceImpl implements KycService {
 
         return KycAdminResponse.builder()
                 .id(admin.getId())
-                .code(admin.getCode())
                 .name(admin.getName())
                 .email(admin.getUser().getEmail()) // 🔹 lấy từ User
                 .phone(admin.getPhone())
-                .isSuperAdmin(admin.getIsSuperAdmin())
-                .positionTitle(admin.getPositionTitle())
-                .status(admin.getStatus())
-                .createdAt(admin.getCreatedAt())
                 .updatedAt(admin.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public Long createKycEVOwner(KycEvOwnerRequest req) {
+        User user = currentUser();
+
+        // Kiểm tra xem KYC đã tồn tại chưa
+        if (evOwnerRepository.existsByUserId(user.getId())) {
+            throw new AppException(ErrorCode.KYC_EXISTED);
+        }
+
+        // Tạo bản ghi mới
+        EVOwner evOwner = EVOwner.builder()
+                .user(user)
+                .email(user.getEmail())
+                .name(req.getName())
+                .phone(req.getPhone())
+                .country(req.getCountry())
+                .address(req.getAddress())
+                .birthDate(req.getBirthDate())
+                .documentType(req.getDocumentType())
+                .documentNumber(req.getDocumentNumber())
+                .gender(req.getGender())
+                .build();
+
+        evOwnerRepository.save(evOwner);
+        log.info(" KYC created for EV Owner: {}", user.getEmail());
+        return evOwner.getId();
     }
 
 }

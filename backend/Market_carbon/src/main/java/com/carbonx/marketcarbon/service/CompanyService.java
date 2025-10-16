@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.dto.request.ProjectRegisterRequest;
 import com.carbonx.marketcarbon.dto.request.importing.ImportReport;
 import com.carbonx.marketcarbon.dto.response.ProjectResponse;
 import com.carbonx.marketcarbon.model.Company;
@@ -12,12 +13,8 @@ import java.util.List;
 
 public interface CompanyService {
     //TODO : join project
-     void assignProject(Company company, Project project);
-     void removeProject(Company company, Project project);
      List<Project> getProjects(Company company);
-     ProjectResponse sendToReview(Long projectId);
-     ImportReport importCsv(MultipartFile file);
-     ProjectResponse applyToBaseProject(Long baseProjectId);              // Company chọn base project -> tạo hồ sơ nháp
+      ProjectResponse registerAndSubmit(ProjectRegisterRequest req);
      Page<ProjectResponse> listBaseProjectChoices(Pageable pageable);
 
 
