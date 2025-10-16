@@ -6,16 +6,15 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
 
+import { mockDataEV } from "@/data/mockData";
+
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataEV);
-  // thêm hàm xóa
-  const handleDelete = (id) => {
-    setData(data.filter((item) => item.id !== id));
-  };
+
   const columns = [
     { field: "id", headerName: "" },
     { field: "evid", headerName: "EV ID", flex: 1 },
@@ -39,7 +38,6 @@ const Invoices = () => {
       field: "yearofmanufacture",
       headerName: " Year of manufacture",
       flex: 1,
-
     },
     {
       field: "aggregator",
@@ -51,7 +49,6 @@ const Invoices = () => {
       field: "status",
       headerName: "Status",
       flex: 1,
-
     },
     {
       field: "action",
@@ -60,20 +57,16 @@ const Invoices = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/admin/view_EV/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/admin/view_EV/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
-            <div
-              className="deleteButton"
-              onClick={() => handleDelete(params.row.id)}
-            >
-              Delete
-            </div>
           </div>
         );
       },
     },
-
   ];
 
   return (
@@ -111,19 +104,18 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",
             paddingTop: "0 !important",
             paddingBottom: "0 !important",
           },
-
-
         }}
       >
         <DataGrid checkboxSelection rows={data} columns={columns} />

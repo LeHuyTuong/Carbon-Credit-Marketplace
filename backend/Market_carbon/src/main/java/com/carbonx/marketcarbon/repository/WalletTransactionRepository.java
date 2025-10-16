@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, Long> {
     // list theo danh sách order gần nhất
-    List<WalletTransaction> findByWalletOrderByCreateAtDesc(Wallet wallet);
+    List<WalletTransaction> findByWalletOrderByCreatedAtDesc(Wallet wallet);
 }

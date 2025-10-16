@@ -19,7 +19,7 @@
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@mui/icons-material": "^7.3.3",
-    "@mui/material": "^7.3.3",
+    "@mui/material": "^7.3.4",
     "@mui/x-data-grid": "^8.13.1",
     "@mui/x-date-pickers": "^8.14.0",
     "@mui/x-date-pickers-pro": "^8.14.0",
@@ -29,6 +29,7 @@
     "@nivo/line": "^0.99.0",
     "@nivo/pie": "^0.99.0",
     "@reduxjs/toolkit": "^2.9.0",
+    "axios": "^1.12.2",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.0",
@@ -51,6 +52,6 @@
     "@vitejs/plugin-react": "^4.3.2",
     "path": "^0.12.7",
     "sass-embedded": "^1.93.2",
-    "vite": "^5.4.10"
+    "vite": "^5.4.20"
   }
 }

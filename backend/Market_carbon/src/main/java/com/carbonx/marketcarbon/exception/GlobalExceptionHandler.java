@@ -18,6 +18,8 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<CommonResponse<Object>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(buildErrorResponse("403", "Forbidden"));
+                .body(buildErrorResponse("403", "This role is Forbidden for this feature"));
     }
 
     // 404 - Not Found (custom)
@@ -142,7 +144,7 @@ public class GlobalExceptionHandler {
         log.error("Unhandled error", ex);
         String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", errorMsg));
+                .body(buildErrorResponse("404", errorMsg));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -160,5 +162,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorResponse("400", errorMsg));
     }
+
+    @ExceptionHandler(CsvBatchException.class)
+    public ResponseEntity<?> handleCsvBatchException(CsvBatchException ex) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("total", ex.getErrors().size());
+        response.put("success", 0);
+        response.put("failed", ex.getErrors().size());
+        response.put("results", ex.getErrors());
+        Map<String, Object> body = Map.of(
+                "requestTrace", UUID.randomUUID().toString(),
+                "responseStatus", Map.of("responseCode", "400", "responseMessage", "Failed"),
+                "response", response
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
 
 }

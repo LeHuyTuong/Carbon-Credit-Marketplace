@@ -5,7 +5,7 @@ import * as Yup from "yup";
 import { useAuth } from "../../context/AuthContext";
 import { Form, Button } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { apiFetch } from '../../utils/apiFetch.js';
+import { apiFetch } from "../../utils/apiFetch.js";
 
 //validation schema
 const KYC_SCHEMA = Yup.object().shape({
@@ -15,13 +15,19 @@ const KYC_SCHEMA = Yup.object().shape({
   address: Yup.string().required("Address is required"),
   birthDate: Yup.date().required("Birth date is required"),
   documentType: Yup.string().required("Please select a document type"),
-  documentNumber: Yup.string().required("Document number is required"),
+  documentNumber: Yup.string()
+    .matches(
+      /^(?!000)\d{3}[0-3]\d{2}(?!000000)\d{6}$/,
+      "Document number must be 12 digits and follow CCCD format"
+    )
+    .required("Document number is required"),
   gender: Yup.string().required("Please select gender"),
 });
 
 export default function KYC() {
   const { user, token } = useAuth();
   const nav = useNavigate();
+  //khởi tạo formik
   const [initialValues, setInitialValues] = useState({
     name: "",
     phone: "",
@@ -34,39 +40,50 @@ export default function KYC() {
     gender: "",
   });
   const [loading, setLoading] = useState(false);
+  const [hasExisting, setHasExisting] = useState(false);
 
   //fetch KYC
   useEffect(() => {
     const fetchKYC = async () => {
+      //kiểm tra token
       if (!token) return;
       setLoading(true);
       try {
-        const data = await apiFetch("/api/v1/kyc", {
+        const data = await apiFetch("/api/v1/kyc/user", {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        })
-
-        const info = data?.response;
-        if (!info) {
-          toast.warn("No KYC record found. Please create one.");
-          return;
-        }
-
-        setInitialValues({
-          id: info.id,
-          name: info.name || "",
-          phone: info.phone || "",
-          country: info.country || "",
-          address: info.address || "",
-          birthDate: info.birthDate || "",
-          email: info.email || user?.email || "",
-          documentType: info.documentType || "",
-          documentNumber: info.documentNumber || "",
-          gender: info.gender?.toLowerCase() || "",
         });
+
+        //kiểm tra response và gán dữ liệu vào form
+        const info = data?.response;
+        if (info) {
+          setHasExisting(true);
+          //gán dữ liệu
+          setInitialValues({
+            id: info.id,
+            name: info.name || "",
+            phone: info.phone || "",
+            country: info.country || "",
+            address: info.address || "",
+            birthDate: info.birthDate || "",
+            email: info.email || user?.email || "",
+            documentType: info.documentType || "",
+            documentNumber: info.documentNumber || "",
+            gender: info.gender === "MALE" ? "male" : "female",
+          });
+        } else {
+          setHasExisting(false);
+          toast.info("No KYC record found. Please create one.");
+        }
       } catch (err) {
         console.error("Error fetching KYC:", err);
-        toast.error(err.message || "Failed to fetch KYC data");
+        // 400 hoặc 404 nghĩa là chưa có KYC, không hiển thị lỗi
+        if (err.status === 400 || err.status === 404) {
+          setHasExisting(false);
+        } else {
+          toast.error(
+            "Failed to load KYC information. Please try again later."
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -78,50 +95,38 @@ export default function KYC() {
   //submit kyc
   const handleSubmit = async (values) => {
     setLoading(true);
-    const method = values.id ? "PUT" : "POST";
-    const endpoint = values.id
-      ? `/api/v1/kyc/${values.id}`
-      : "/api/v1/kyc";
+    //chọn method phù hợp
+    const method = hasExisting ? "PUT" : "POST";
 
+    //gọi API lưu KYC
     try {
-      await apiFetch(endpoint, {
+      await apiFetch("/api/v1/kyc/user", {
         method,
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           requestTrace: crypto.randomUUID(),
           requestDateTime: new Date().toISOString(),
           data: {
             name: values.name,
             phone: values.phone,
-            gender: values.gender.toLowerCase() === "male" ? "MALE" : "FEMALE",
+            gender: values.gender === "male" ? "MALE" : "FEMALE",
             country: values.country,
             address: values.address,
             documentType: values.documentType,
             documentNumber: values.documentNumber,
-            birthday: values.birthDate,
+            birthDate: values.birthDate.split("T")[0], //chỉ lấy phần date
           },
         }),
       });
+      //thông báo thành công
+      toast.success(
+        hasExisting ? "KYC updated successfully!" : "KYC created successfully!"
+      );
 
-      toast.success(values.id ? "KYC updated successfully!" : "KYC created successfully!");
-
-      //lưu dữ liệu vào localStorage để profile đọc được
-      const key = `kycData_${user.email}`;
-      const profileData = {
-        fullName: values.name,
-        documentNumber: values.documentNumber,
-        birthday: values.birthDate,
-        gender: values.gender,
-        country: values.country,
-        address: values.address,
-        documentType: values.documentType,
-      };
-      localStorage.setItem(key, JSON.stringify(profileData));
-
+      //quay về profile
       nav("/profile", { replace: true });
     } catch (err) {
       console.error("Error submitting KYC:", err);
-      toast.error(err.message || "Save KYC failed. Please try again.");
+      toast.error(err.message || "Failed to save KYC");
     } finally {
       setLoading(false);
     }

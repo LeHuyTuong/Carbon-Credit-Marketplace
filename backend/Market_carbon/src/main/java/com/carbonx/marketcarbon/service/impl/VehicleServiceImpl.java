@@ -7,9 +7,11 @@ import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.Company;
+import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.repository.CompanyRepository;
+import com.carbonx.marketcarbon.repository.EVOwnerRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
@@ -32,14 +34,16 @@ public class VehicleServiceImpl implements VehicleService {
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
+    private final EVOwnerRepository evOwnerRepository;
 
     @Override
     public VehicleResponse create(VehicleCreateRequest req) {
         // Check owner
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User owner = userRepository.findByEmail(email);
-        if(owner == null){
+        EVOwner evOwner = evOwnerRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        if(evOwner == null){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
         if(vehicleRepository.existsByPlateNumber(req.getPlateNumber())){
@@ -53,7 +57,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .plateNumber(req.getPlateNumber())
                 .brand(req.getBrand())
                 .model(req.getModel())
-                .owner(owner)
+                .evOwner(evOwner)
                 .company(company)
                 .build();
         // B2 save data on repo
@@ -77,7 +81,7 @@ public class VehicleServiceImpl implements VehicleService {
         if(owner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
-        return vehicleRepository.findByOwnerId(owner.getId())
+        return vehicleRepository.findByEvOwner_Id(owner.getId())
                 .stream()
                 .map(VehicleResponse::from)
                 .toList();
@@ -87,8 +91,9 @@ public class VehicleServiceImpl implements VehicleService {
     public VehicleResponse update(Long id, VehicleUpdateRequest req) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User owner = userRepository.findByEmail(email);
-        if(owner == null){
+        EVOwner evOwner = evOwnerRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("EV Owner not found with email: " + email));
+        if(evOwner == null){
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
 
@@ -105,7 +110,7 @@ public class VehicleServiceImpl implements VehicleService {
         vehicle.setPlateNumber(req.getPlateNumber());
         vehicle.setBrand(req.getBrand());
         vehicle.setModel(req.getModel());
-        vehicle.setOwner(owner);
+        vehicle.setEvOwner(evOwner);
         vehicle.setCompany(company);
 
         vehicleRepository.save(vehicle);

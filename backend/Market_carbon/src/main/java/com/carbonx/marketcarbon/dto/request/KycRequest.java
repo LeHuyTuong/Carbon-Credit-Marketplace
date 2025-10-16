@@ -5,8 +5,6 @@ import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.annotation.PhoneNumber;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

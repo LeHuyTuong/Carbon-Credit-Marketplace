@@ -18,8 +18,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     boolean existsByPlateNumber(String plateNumber);
 
     // EV Owner
-    @EntityGraph(attributePaths = "company") // tránh bị N+1 khi lấy companyId
-    List<Vehicle> findByOwnerId(Long ownerId);
+    @EntityGraph(attributePaths = "company") // tránh N+1 khi lấy company
+    List<Vehicle> findByEvOwner_Id(Long evOwnerId);
 
     // Company
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
