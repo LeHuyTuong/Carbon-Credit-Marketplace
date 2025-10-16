@@ -20,11 +20,11 @@ import java.util.List;
 public class EmissionReportController {
     private final EmissionReportService report;
 
-    @PostMapping
-    @PreAuthorize("hasRole('COMPANY')")
-    public EmissionReportResponse createAndSubmit(@RequestBody EmissionReportCreateRequest req) {
-        return report.createAndSubmit(req);
-    }
+//    @PostMapping
+//    @PreAuthorize("hasRole('COMPANY')")
+//    public EmissionReportResponse createAndSubmit(@RequestBody EmissionReportCreateRequest req) {
+//        return report.createAndSubmit(req);
+//    }
 
 //    @PostMapping(value = "/{id}/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    @PreAuthorize("hasRole('COMPANY')")

@@ -46,4 +46,7 @@ public class Company extends BaseEntity{
             orphanRemoval = false
     )
     private List<Vehicle> vehicles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectApplication> applications = new ArrayList<>();
 }

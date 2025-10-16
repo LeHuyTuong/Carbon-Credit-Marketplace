@@ -280,5 +280,20 @@ public class KycController {
         TuongCommonResponse<KycAdminResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
+    @Operation(summary = "Create KYC for EV Owner", description = "EV Owner submits identification information for verification")
+    @PostMapping("/kycEv")
+    public ResponseEntity<TuongCommonResponse<Long>> createKyc(
+            @Valid @RequestBody KycEvOwnerRequest req,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        Long id = kycService.createKycEVOwner(req); // gọi logic cũ trong service
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "KYC created successfully");
+
+        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, id));
+    }
 
 }

@@ -38,6 +38,13 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(404, "Payment not found.", HttpStatus.NOT_FOUND),
     CVA_NOT_FOUND(404, "CVA not found.", HttpStatus.NOT_FOUND),
     ADMIN_NOT_FOUND(404, "Admin not found.", HttpStatus.NOT_FOUND),
+    KYC_EXISTED(404,"KYC_EXISTED", HttpStatus.CONFLICT),
+    TITTLE_DUPLICATED(401, "tittle duplicated", HttpStatus.CONFLICT),
+    APPLICATION_EXISTED(401, "Application exist", HttpStatus.CONFLICT),
+    APPLICATION_NOT_FOUND(404, "Application not found", HttpStatus.NOT_FOUND),
+    INVALID_STATUS(400, "Invalid application status", HttpStatus.BAD_REQUEST),
+    INVALID_STATUS_TRANSITION(400, "Invalid status transition", HttpStatus.BAD_REQUEST),
+
 
     // VALIDATION & STATE
     VEHICLE_PLATE_EXISTS(409, "Vehicle plate already exists.", HttpStatus.CONFLICT),
