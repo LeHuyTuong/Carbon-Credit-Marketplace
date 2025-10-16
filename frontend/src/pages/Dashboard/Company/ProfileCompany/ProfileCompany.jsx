@@ -1,52 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
+import { useCompanyProfile } from "../../../../hooks/useCompanyProfile";
 
 export default function CompanyProfile() {
-  const [companyData, setCompanyData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { company, loading, error } = useCompanyProfile();
   const [showModal, setShowModal] = useState(false);
   const nav = useNavigate();
-
-  // fetch KYC company info
-  useEffect(() => {
-    const fetchCompany = async () => {
-      setLoading(true);
-      try {
-        const data = await apiFetch("/api/v1/kyc/company", { method: "GET" });
-        const info = data.response;
-
-        if (!info) {
-          setCompanyData(null);
-          return;
-        }
-
-        // map fields to match form
-        const mapped = {
-          businessLicense: info.businessLicense,
-          taxCode: info.taxCode,
-          companyName: info.companyName,
-          address: info.address,
-        };
-        setCompanyData(mapped);
-      } catch (err) {
-        console.error("Error fetching company:", err);
-        if (err.status === 404 || err.status === 400) {
-          setCompanyData(null);
-        } else {
-          setError(err.message || "Failed to fetch company info");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompany();
-  }, []);
 
   if (loading)
     return (
@@ -55,7 +18,6 @@ export default function CompanyProfile() {
       </div>
     );
 
-  // show error
   if (error)
     return (
       <div className="text-center mt-5 text-danger">
@@ -63,8 +25,7 @@ export default function CompanyProfile() {
       </div>
     );
 
-  // if no company data, prompt to complete KYC
-  if (!companyData) {
+  if (!company) {
     return (
       <div className="d-flex flex-column justify-content-center align-items-center text-center vh-100">
         <h4>Please complete your Company KYC to view your profile</h4>
@@ -83,7 +44,7 @@ export default function CompanyProfile() {
 
         {/* display company info */}
         <div className="row g-3">
-          {Object.entries(companyData).map(([key, value]) => (
+          {Object.entries(company).map(([key, value]) => (
             <div key={key}>
               <label className="fw-semibold text-muted text-capitalize">
                 {key}
@@ -104,11 +65,8 @@ export default function CompanyProfile() {
         <UpdateCompanyModal
           show={showModal}
           onHide={() => setShowModal(false)}
-          data={companyData}
-          onSuccess={(updated) => {
-            setCompanyData(updated);
-            setShowModal(false);
-          }}
+          data={company}
+          onSuccess={() => window.location.reload()} // refresh page sau update
         />
       </div>
     </div>
@@ -124,19 +82,20 @@ function UpdateCompanyModal({ show, onHide, data, onSuccess }) {
     address: Yup.string().required("Address is required"),
   });
 
-  // handle form submission
   const handleUpdate = async (values) => {
     try {
       await apiFetch("/api/v1/kyc/company", {
         method: "PUT",
-        body: {
+        body: JSON.stringify({
+          requestTrace: crypto.randomUUID(),
+          requestDateTime: new Date().toISOString(),
           data: {
             businessLicense: values.businessLicense,
             taxCode: values.taxCode,
             companyName: values.companyName,
             address: values.address,
           },
-        },
+        }),
       });
       onSuccess(values);
     } catch (err) {
