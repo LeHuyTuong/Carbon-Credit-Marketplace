@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/themeCVA";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
@@ -11,10 +12,48 @@ import GeographyChart from "@/components/Chart/GeographyChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
-import { mockTransactions } from "@/data/mockData.js";
+import { apiFetch } from "@/utils/apiFetch";
+
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [applications, setApplications] = useState([]);
+  const [stats, setStats] = useState({
+    reports: 0,
+    transactions: 0,
+    users: 0,
+    vehicles: 0,
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Nếu API yêu cầu token
+        const token = localStorage.getItem("token");
+
+        const response = await apiFetch.get("/api/v1/project-applications", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = response.data.data || [];
+
+        setApplications(data);
+        setStats({
+          reports: data.length,
+          transactions: 5732,
+          users: 32441,
+          vehicles: 1325134,
+        });
+      } catch (error) {
+        console.error("❌ Failed to fetch dashboard data:", error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
 
   return (
     <Box m="20px">
@@ -54,7 +93,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,254"
+            title={stats.reports.toLocaleString()}
             subtitle="Reports"
             progress="0.75"
             increase="+14%"
@@ -73,7 +112,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="5,732"
+            title={stats.transactions.toLocaleString()}
             subtitle="Transactions"
             progress="0.50"
             increase="+21%"
@@ -92,7 +131,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="32,441"
+            title={stats.users.toLocaleString()}
             subtitle="Users"
             progress="0.30"
             increase="+5%"
@@ -111,7 +150,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,325,134"
+            title={stats.vehicles.toLocaleString()}
             subtitle="Electric-Vehicles"
             progress="0.80"
             increase="+43%"
@@ -181,10 +220,10 @@ const Dashboard = () => {
             <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
               Recent Transactions
             </Typography>
-          </Box>
-          {mockTransactions.map((transaction, i) => (
+          </Box>          
+          {applications.map((app, i) => (
             <Box
-              key={`${transaction.txId}-${i}`}
+              key={`${app.id}-${i}`}
               display="flex"
               justifyContent="space-between"
               alignItems="center"
@@ -197,15 +236,15 @@ const Dashboard = () => {
                   variant="h5"
                   fontWeight="600"
                 >
-                  {transaction.txId}
+                  {`App #${app.id}`}
                 </Typography>
                 <Typography color={colors.grey[100]}>
-                  {transaction.user}
+                  {app.companyName}
                 </Typography>
               </Box>
-              <Box color={colors.grey[100]}>{transaction.date}</Box>
+              <Box color={colors.grey[100]}>{new Date(app.submittedAt).toLocaleDateString()}</Box>
               <Box
-                backgroundColor={colors.greenAccent[500]}
+                backgroundColor={colors.blueAccent[600]}
                 p="5px 10px"
                 borderRadius="4px"
               >

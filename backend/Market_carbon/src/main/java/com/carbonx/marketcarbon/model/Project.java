@@ -42,6 +42,10 @@ public class Project extends BaseEntity {
     @Column(length = 255)
     private String legalDocsUrl;
 
+    @URL(message = "Logo must be a valid URL")
+    @Column(length = 255, nullable = true)
+    private String logo;
+
     // Liên kết ngược: Một Project có thể có nhiều đơn đăng ký
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectApplication> applications = new ArrayList<>();
