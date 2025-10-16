@@ -28,9 +28,11 @@ export default function Wallet() {
     const orderId = params.get("order_id");
     const paymentId = params.get("payment_id");
 
+    console.log("orderId:", orderId, "paymentId:", paymentId);
+
     //có data thì gọi
-    if (orderId && paymentId) {
-      confirmDeposit(orderId, paymentId);
+    if (orderId) {
+      confirmDeposit(orderId, paymentId || "");
     } else {
       //nếu không có order_id thì load ví bình thường
       fetchWallet();
@@ -48,11 +50,24 @@ export default function Wallet() {
   };
 
   //lịch sử giao dịch
+  // const fetchTransactions = async () => {
+  //   try {
+  //     if (!wallet?.id) return; //chờ wallet load xong
+
+  //     const res = await apiFetch("/api/v1/wallet/transactions", {
+  //       method: "GET",
+  //     });
+
+  //     setTransactions(res.response || []);
+  //   } catch (err) {
+  //     console.error("Failed to fetch transactions:", err);
+  //   }
+  // };
   const fetchTransactions = async () => {
     try {
-      if (!wallet?.id) return; //chờ wallet load xong
+      if (!wallet?.id) return;
 
-      const reqPayload = {
+      const reqObject = {
         requestTrace: crypto.randomUUID(),
         requestDateTime: new Date().toISOString(),
         data: {
@@ -60,10 +75,13 @@ export default function Wallet() {
         },
       };
 
-      const res = awaitapiFetch("/api/v1/wallet/transactions", {
-        method: "POST",
-        body: reqPayload,
+      // ⚠️ Không encodeURIComponent nữa, để BE nhận đúng JSON string
+      const query = JSON.stringify(reqObject);
+
+      const res = await apiFetch(`/api/v1/wallet/transactions?req=${query}`, {
+        method: "GET",
       });
+
       setTransactions(res.response || []);
     } catch (err) {
       console.error("Failed to fetch transactions:", err);

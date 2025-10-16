@@ -81,7 +81,7 @@ export default function Features() {
                       className="btn btn-primary position-relative overflow-hidden mt-3"
                       onClick={(e) => {
                         ripple(e, e.currentTarget);
-                        nav("/marketplace");
+                        nav("/detail-project");
                       }}
                     >
                       Go to Marketplace
