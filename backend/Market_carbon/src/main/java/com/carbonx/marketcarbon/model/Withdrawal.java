@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,12 +20,19 @@ public class Withdrawal {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Status  status;
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
-    private Long amount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_details_id")
+    private PaymentDetails paymentDetails;
+
+    private BigDecimal amount;
 
     @ManyToOne
     private User user;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime requestedAt;
+
+    private LocalDateTime processedAt;
 }

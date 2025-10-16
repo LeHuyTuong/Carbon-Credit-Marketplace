@@ -1,10 +1,14 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.User;
+import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
 import com.carbonx.marketcarbon.service.WithdrawalService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +27,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
     private final UserRepository userRepository;
     private final WithdrawalRepository withdrawalRepository;
+    private final WalletRepository walletRepository;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -36,14 +42,25 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Override
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
+        Wallet wallet =  walletRepository.findByUserId(user.getId());
+        if(amount <= 0){
+            throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
+        }
         //B1 tạo request withdrawal
-        Withdrawal withdrawal = Withdrawal.builder()
-                .amount(amount)
-                .status(Status.PENDING)
-                .createdAt(LocalDateTime.now())
-                .user(user)
-                .build();
-        return withdrawalRepository.save(withdrawal);
+
+        BigDecimal withdrawalAmount = BigDecimal.valueOf(amount);
+
+        if(wallet.getBalance().compareTo(withdrawalAmount) >= 0 ){
+            Withdrawal withdrawal = Withdrawal.builder()
+                    .amount(withdrawalAmount)
+                    .status(Status.PENDING)
+                    .requestedAt(LocalDateTime.now())
+                    .user(user)
+                    .build();
+            return withdrawalRepository.save(withdrawal);
+        }else{
+            throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+        }
     }
 
     @Override
@@ -55,7 +72,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         }
 
         Withdrawal withdrawalRequest = withdrawal.get();
-        withdrawalRequest.setCreatedAt(LocalDateTime.now());
+        withdrawalRequest.setProcessedAt(LocalDateTime.now());
         if(accept){
             withdrawalRequest.setStatus(Status.SUCCEEDED);
         }else{

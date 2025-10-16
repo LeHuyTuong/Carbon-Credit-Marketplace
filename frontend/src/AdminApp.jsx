@@ -17,6 +17,7 @@ import Credit_View from "./pages/Dashboard/Admin/Credit_Management/view.jsx";
 import Report_View from "./pages/Dashboard/Admin/Report_Management/view.jsx";
 import EV_View from "./pages/Dashboard/Admin/EV_Management/view.jsx";
 import Project_View from "./pages/Dashboard/Admin/Project_Management/view.jsx";
+import New_Project from "./pages/Dashboard/Admin/Project_Management/newProject.jsx";
 import Bar from "./pages/Dashboard/Admin/bar";
 import Form from "./pages/Dashboard/Admin/form";
 import Line from "./pages/Dashboard/Admin/line";
@@ -65,6 +66,7 @@ function App() {
               <Route path="/view_report/:id" element={<Report_View />} />
               <Route path="/view_EV/:id" element={<EV_View />} />
               <Route path="/view_project/:id" element={<Project_View />} />
+              <Route path="/new_project" element={<New_Project />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
           </main>

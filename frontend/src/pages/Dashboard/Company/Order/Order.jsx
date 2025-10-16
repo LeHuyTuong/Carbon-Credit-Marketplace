@@ -47,7 +47,7 @@ export default function Order() {
     <div className="auth-hero min-vh-100 d-flex flex-column align-items-center py-4 bg-light">
       <div className="w-100 text-center mt-1">
         <Button
-          variant="outline-success"
+          variant="outline-info"
           size="lg"
           className="d-flex align-items-center gap-2"
           onClick={() => nav("/marketplace")}

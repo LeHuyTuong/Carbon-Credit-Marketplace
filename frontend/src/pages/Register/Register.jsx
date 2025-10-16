@@ -95,9 +95,9 @@ export default function Register() {
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
-      <div className="container" style={{ maxWidth: 500 }}>
+      <div className="container px-3" style={{ maxWidth: 500 }}>
         <div className="card shadow-sm">
-          <div className="card-body p-2 p-md-4">
+          <div className="card-body p-3 p-md-4">
             <h1 className="h4 mb-2 text-center">Sign up</h1>
 
             <Formik
