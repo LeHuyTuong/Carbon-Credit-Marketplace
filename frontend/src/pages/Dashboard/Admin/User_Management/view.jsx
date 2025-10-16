@@ -158,7 +158,20 @@ const ViewUser = () => {
               InputProps={{ readOnly: true }}
             />
           </Grid>
-
+          
+          {/* Hiện field Company nếu access === "company" */}
+          {editedUser.access === "company" && (
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Company"
+                fullWidth
+                value={editedUser.company || "CarbonTech Solutions"} // giá trị mẫu
+                InputProps={{ readOnly: !editMode }}
+                onChange={(e) => handleChange("company", e.target.value)}
+              />
+            </Grid>
+          )}
+          
           <Grid item xs={12} md={6}>
             {editMode ? (
               <Box>
@@ -171,7 +184,6 @@ const ViewUser = () => {
                   onChange={(e) => handleChange("access", e.target.value)}
                 >
                   <MenuItem value="ev_owner">Ev-Owner</MenuItem>
-                  <MenuItem value="cc_buyer">CC-Buyer</MenuItem>
                   <MenuItem value="company">Company</MenuItem>
                   <MenuItem value="cva">CVA</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
@@ -186,6 +198,8 @@ const ViewUser = () => {
               />
             )}
           </Grid>
+
+          
 
           <Grid item xs={12} md={6}>
             {editMode ? (

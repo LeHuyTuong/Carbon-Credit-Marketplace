@@ -1,5 +1,12 @@
 /*background*/
 .auth-hero {
+  background-image: var(--bg-url, url('../assets/background.jpg'));
+  background-size: cover;
+  background-position: center;
+  padding-top: 60px;
+}
+
+.auth-hero2 {
   background-image: var(--bg-url, url('../assets/background.png'));
   background-size: cover;
   background-position: center;
@@ -82,4 +89,10 @@
 #password::placeholder,
 #confirm::placeholder {
   color: rgba(0, 0, 0, 0.4);
+}
+.payment-detail ~ .modal-backdrop.show {
+  background-image: url('../assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 1 !important;
 }

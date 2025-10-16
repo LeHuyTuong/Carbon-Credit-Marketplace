@@ -1,7 +1,7 @@
 import { useTheme } from "@mui/material";
 import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "@/theme";
-
+import { mockBarData as data } from "@/data/mockData";
 const BarChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -39,7 +39,6 @@ const BarChart = ({ isDashboard = false }) => {
         },
       }}
       keys={["listed", "revoke", "sold", "active", "pending", "retire"]}
-
       indexBy="month"
       margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
       padding={0.3}
@@ -64,32 +63,31 @@ const BarChart = ({ isDashboard = false }) => {
         }
       }}
       tooltip={({ id, value, color, indexValue }) => (
-  <div
-    style={{
-      background: "#222",
-      padding: "8px 12px",
-      borderRadius: "6px",
-      color: "#fff",
-      fontSize: "14px",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-    }}
-  >
-    <div
-      style={{
-        width: "12px",
-        height: "12px",
-        borderRadius: "50%",
-        background: color,
-      }}
-    ></div>
-    <div>
-      <strong>{id}</strong> — {indexValue}: {value}
-    </div>
-  </div>
-)}
-
+        <div
+          style={{
+            background: "#222",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            color: "#fff",
+            fontSize: "14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <div
+            style={{
+              width: "12px",
+              height: "12px",
+              borderRadius: "50%",
+              background: color,
+            }}
+          ></div>
+          <div>
+            <strong>{id}</strong> — {indexValue}: {value}
+          </div>
+        </div>
+      )}
       defs={[
         {
           id: "dots",

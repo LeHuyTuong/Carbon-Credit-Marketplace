@@ -13,6 +13,5 @@ public class ProjectReviewRequest {
     @NotNull
     private ProjectStatus decision; // APPROVED hoặc REJECTED
 
-    private String reviewer; // ví dụ "cva.lethanh"
     private String reviewNote;
 }

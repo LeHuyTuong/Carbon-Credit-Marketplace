@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./manage.css";
-import { Button, Modal, Form } from "react-bootstrap";
+import { Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import {
@@ -10,6 +10,7 @@ import {
   deleteVehicle,
 } from "../ManageVehicle/manageApi";
 
+//validation schema
 const schema = Yup.object().shape({
   plate: Yup.string().required("License plate is required"),
   brand: Yup.string().required("Brand is required"),
@@ -21,6 +22,11 @@ export default function Manage() {
   const [vehicles, setVehicles] = useState([]);
   const [show, setShow] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    variant: "success",
+  });
 
   //lấy danh sách xe
   const fetchVehicles = async () => {
@@ -54,8 +60,9 @@ export default function Manage() {
     try {
       await deleteVehicle(id);
       await fetchVehicles();
+      showToast("Vehicle deleted successfully");
     } catch (err) {
-      alert("Không thể xóa xe: " + err.message);
+      showToast("Cannot delete vehicle: " + err.message, "danger");
     }
   };
 
@@ -66,27 +73,32 @@ export default function Manage() {
         plateNumber: values.plate,
         model: values.model,
         brand: values.brand,
-        manufacturer: values.company,
-        yearOfManufacture: 2025, //hoặc có thể thêm field cho người dùng nhập
+        companyId: Number(values.company), //đổi từ string sang số
       };
 
       if (editData) {
         await updateVehicle(editData.id, payload);
       } else {
-        await createVehicle({ ownerId: 1, ...payload });
+        await createVehicle({ ownerId: 1, ...payload.data }); //giả sử ownerId là 1
       }
 
       await fetchVehicles();
+      showToast("Vehicle saved successfully");
       setShow(false);
       setEditData(null);
     } catch (err) {
-      alert("Lỗi khi lưu xe: " + err.message);
+      showToast("Failed to save vehicle: " + err.message, "danger");
     }
   };
 
   const handleClose = () => {
     setShow(false);
     setEditData(null);
+  };
+
+  const showToast = (message, variant = "success") => {
+    setToast({ show: true, message, variant });
+    setTimeout(() => setToast({ show: false, message: "", variant }), 3000);
   };
 
   return (
@@ -114,8 +126,7 @@ export default function Manage() {
               <th>License Plate</th>
               <th>Brand</th>
               <th>Model</th>
-              <th>Manufacturer</th>
-              <th>Year</th>
+              <th>Company ID</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -127,8 +138,7 @@ export default function Manage() {
                   <td>{row.plateNumber}</td>
                   <td>{row.brand}</td>
                   <td>{row.model}</td>
-                  <td>{row.manufacturer}</td>
-                  <td>{row.yearOfManufacture}</td>
+                  <td>{row.companyId}</td>
                   <td className="action-buttons">
                     <button
                       className="action-btn edit"
@@ -147,7 +157,7 @@ export default function Manage() {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="no-data">
+                <td colSpan="6" className="no-data">
                   <h5>No vehicles yet</h5>
                   <p>Add your vehicle to get started.</p>
                 </td>
@@ -156,6 +166,17 @@ export default function Manage() {
           </tbody>
         </table>
       </div>
+      <ToastContainer position="bottom-end" className="p-3">
+        <Toast
+          onClose={() => setToast({ ...toast, show: false })}
+          show={toast.show}
+          bg={toast.variant}
+          delay={3000}
+          autohide
+        >
+          <Toast.Body className="text-white">{toast.message}</Toast.Body>
+        </Toast>
+      </ToastContainer>
     </>
   );
 }
@@ -166,7 +187,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     plate: data?.plateNumber ?? "",
     brand: data?.brand ?? "",
     model: data?.model ?? "",
-    company: data?.manufacturer ?? "",
+    company: data?.companyId ?? "",
   };
 
   return (
@@ -239,7 +260,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
               </Form.Group>
 
               <Form.Group className="mb-3" controlId="formCompany">
-                <Form.Label>Manufacturer</Form.Label>
+                <Form.Label>Company ID</Form.Label>
                 <Form.Select
                   name="company"
                   value={values.company}
@@ -248,9 +269,9 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                   isInvalid={touched.company && !!errors.company}
                 >
                   <option value="">Choose one manufacturer</option>
-                  <option value="Vinfast">Vinfast</option>
-                  <option value="Tesla">Tesla</option>
-                  <option value="Toyota">Toyota</option>
+                  <option value="1">Vinfast</option>
+                  <option value="2">Tesla</option>
+                  <option value="3">Toyota</option>
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.company}

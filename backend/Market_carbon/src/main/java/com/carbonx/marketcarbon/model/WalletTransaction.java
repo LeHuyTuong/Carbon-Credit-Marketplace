@@ -6,27 +6,45 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletTransaction extends BaseEntity {
+@Data
+public class WalletTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id", nullable = false)
     private Wallet wallet;
 
-    private WalletTransactionType type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
 
-    private String transferId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WalletTransactionType transactionType;
 
-    private String purpose;
+    @Column(length = 500)
+    private String description;
 
-    private Long amount;
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal balanceBefore;
+
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal balanceAfter;
+
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal amount;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

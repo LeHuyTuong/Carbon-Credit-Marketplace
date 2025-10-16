@@ -1,19 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import OTPInputs from '../../components/OTPInput/OTPInput';
-import './otp.css';
-import { apiFetch } from '../../utils/apiFetch';
-import { toast } from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import OTPInputs from "../../components/OTPInput/OTPInput";
+import "./otp.css";
+import { apiFetch } from "../../utils/apiFetch";
+import { toast } from "react-toastify";
 
 export default function VerifyOtp() {
   const nav = useNavigate();
   const { state } = useLocation();
-  const email = state?.email || 'user@example.com';
-
-  const [otp, setOtp] = useState('');
+  const email = state?.email || "user@example.com";
+  const [otp, setOtp] = useState("");
   const [sec, setSec] = useState(60);
   const [loading, setLoading] = useState(false);
-  
+
   //nếu truy cập thẳng, điều hướng về login
   useEffect(() => {
     if (!state?.from) {
@@ -24,7 +23,7 @@ export default function VerifyOtp() {
 
   //đếm ngược thời gian
   useEffect(() => {
-    const t = setInterval(() => setSec(s => (s > 0 ? s - 1 : 0)), 1000);
+    const t = setInterval(() => setSec((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -39,19 +38,27 @@ export default function VerifyOtp() {
         body: JSON.stringify({ email, otpCode: otp }),
       });
 
+      //kiểm tra responseCode từ server
       const resStatus = data?.responseStatus?.responseCode;
       const message = data?.responseStatus?.responseMessage || "";
+      const jwt = data?.responseData?.jwt;
 
+      //kiểm tra responseCode
       if (resStatus !== "200" && resStatus?.toUpperCase() !== "SUCCESS") {
         throw new Error(message || "Invalid or expired OTP");
       }
 
+      //điều hướng dựa trên luồng
       if (state?.from === "register") {
         toast.success("Account verified successfully!");
         nav("/login", { replace: true });
       } else if (state?.from === "forgot") {
+        if (!jwt) {
+          toast.error("Missing reset jwt from server");
+          return;
+        }
         toast.success("OTP verified! You can now reset your password.");
-        nav("/change", { state: { email, otp } });
+        nav("/change", { state: { email, otp, token: jwt } });
       } else {
         toast.info("Unknown flow");
         nav("/home", { replace: true });
@@ -66,6 +73,7 @@ export default function VerifyOtp() {
 
   //gửi lại mã otp
   const resend = async (ev) => {
+    //chặn spam nút gửi lại
     ev?.preventDefault?.();
     if (sec > 0 || loading) return;
     setLoading(true);

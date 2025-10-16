@@ -10,25 +10,27 @@ import lombok.*;
 @Table(name="vehicles")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Vehicle extends BaseEntity {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "plate_number",length=64, unique = true, nullable=false)
+    @Column(name = "plate_number", length = 64, unique = true, nullable = false)
     private String plateNumber;
 
-    @Column(length=128, nullable=false)
+    @Column(length = 128, nullable = false)
     private String brand;
 
-    @Column(length=128,  nullable=false)
+    @Column(length = 128, nullable = false)
     private String model;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable =false)
-    private User owner;
+    @JoinColumn(name = "ev_owner_id", nullable = false)
+    @JsonIgnoreProperties({"vehicles", "hibernateLazyInitializer", "handler"})
+    private EVOwner evOwner;
 
-    @ManyToOne(fetch=FetchType.LAZY, optional = false)
-    @JoinColumn(name="company_id", nullable=false)
-    @JsonIgnoreProperties({"vehicles", "hibernateLazyInitializer", "handler"}) // chặn lặp
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "company_id", nullable = false)
+    @JsonIgnoreProperties({"vehicles", "hibernateLazyInitializer", "handler"})
     private Company company;
-
 }

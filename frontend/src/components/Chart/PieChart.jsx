@@ -1,7 +1,7 @@
 import { ResponsivePie } from "@nivo/pie";
 import { tokens } from "@/theme";
 import { useTheme } from "@mui/material";
-
+import { mockPieData as data } from "@/data/mockData";
 const PieChart = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -22,7 +22,6 @@ const PieChart = () => {
           <strong>{datum.label}</strong>: {datum.value}
         </div>
       )}
-
       theme={{
         axis: {
           domain: {
@@ -71,7 +70,6 @@ const PieChart = () => {
         from: "color",
         modifiers: [["darker", 3]],
       }}
-
       defs={[
         {
           id: "dots",

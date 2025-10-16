@@ -7,7 +7,7 @@ import java.util.List;
 public interface WithdrawalService {
     Withdrawal requestWithdrawal(Long amount);
 
-    Withdrawal processWithdrawal(Long withdrawalId, boolean accept) throws Exception;
+    Withdrawal processWithdrawal(Long  withdrawalId, boolean accept) throws Exception;
 
     List<Withdrawal> getUsersWithdrawalHistory();
 

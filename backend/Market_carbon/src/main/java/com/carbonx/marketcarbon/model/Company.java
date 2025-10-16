@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "company")
+@Table(name = "companies")
 @Builder
 public class Company extends BaseEntity{
 
@@ -30,7 +30,7 @@ public class Company extends BaseEntity{
     @Column(name = "tax_code", length = 100)
     private String taxCode;
 
-    @Column(name = "company_name", length = 255)
+    @Column(name = "company_name", length = 15)
     private String companyName;
 
     @Column(name = "address", columnDefinition = "TEXT")
@@ -39,11 +39,19 @@ public class Company extends BaseEntity{
     @OneToMany(mappedBy = "company")
     private List<EVOwner> evOwners = new ArrayList<>();
 
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CarbonCredit> carbonCredits = new ArrayList<>();
+
+    @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Wallet wallet;
+
     @OneToMany(
             mappedBy = "company",
             fetch = FetchType.LAZY,
-            cascade = { CascadeType.MERGE},
-            orphanRemoval = false
+            cascade = { CascadeType.MERGE}
     )
     private List<Vehicle> vehicles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectApplication> applications = new ArrayList<>();
 }

@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { Formik } from "formik";
 import * as Yup from "yup";
 
+// validation schema
 const schema = Yup.object().shape({
   email: Yup.string()
     .email("Enter a valid email")
@@ -38,23 +39,23 @@ export default function Login() {
         body: JSON.stringify(values),
       });
 
+      // parse json response
       const data = await res.json().catch(() => ({}));
 
+      // lỗi từ server
       if (!res.ok) {
         const message =
           data?.responseStatus?.responseMessage ||
           data?.message ||
-          (res.status === 400
-            ? "Invalid email or password"
-            : "Login failed");
+          (res.status === 400 ? "Invalid email or password" : "Login failed");
         throw new Error(message);
       }
 
       const token = data?.responseData?.jwt;
-      const roles = data?.responseData?.role;
+      const roles = data?.responseData?.roles;
       if (!token) throw new Error("Missing token from server");
 
-      const user = { email: values.email, role: roles };
+      const user = { email: values.email, role: roles?.[0] || "USER" };
       login(user, token, remember);
 
       nav("/home", { replace: true });
@@ -122,9 +123,7 @@ export default function Login() {
                       type="password"
                       name="password"
                       className={`form-control ${
-                        touched.password && errors.password
-                          ? "is-invalid"
-                          : ""
+                        touched.password && errors.password ? "is-invalid" : ""
                       }`}
                       value={values.password}
                       onChange={handleChange}
@@ -148,10 +147,7 @@ export default function Login() {
                         checked={remember}
                         onChange={(e) => setRemember(e.target.checked)}
                       />
-                      <label
-                        className="form-check-label"
-                        htmlFor="remember"
-                      >
+                      <label className="form-check-label" htmlFor="remember">
                         Remember me
                       </label>
                     </div>
@@ -175,10 +171,7 @@ export default function Login() {
             </Formik>
 
             <div className="text-center text-muted my-3">— or —</div>
-            <button
-              type="button"
-              className="btn btn-outline-secondary w-100"
-            >
+            <button type="button" className="btn btn-outline-secondary w-100">
               Login with Google
             </button>
 
