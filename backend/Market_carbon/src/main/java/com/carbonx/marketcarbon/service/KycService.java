@@ -25,7 +25,7 @@ public interface KycService {
 
     Long updateCompany(KycCompanyRequest req);
 
-    Company getByCompanyId();
+    KycCompanyResponse getByCompanyId();
 
     List<KycCompanyResponse> getAllKYCCompany();
 

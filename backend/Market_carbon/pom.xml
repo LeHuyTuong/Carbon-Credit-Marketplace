@@ -11,6 +11,7 @@
 
 	<name>spring-rest-auth-vehicles-kyc</name>
 
+	<!--  Cấu hình chung -->
 	<properties>
 		<java.version>17</java.version>
 		<spring-boot.version>3.3.3</spring-boot.version>
@@ -22,6 +23,7 @@
 		<lombok.version>1.18.34</lombok.version>
 	</properties>
 
+	<!--  Quản lý version phụ thuộc -->
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -34,6 +36,7 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<!--  Danh sách dependency -->
 	<dependencies>
 
 		<dependency>
@@ -144,6 +147,12 @@
 			<artifactId>pdfbox</artifactId>
 			<version>2.0.34</version>
 		</dependency>
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-csv -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+        </dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

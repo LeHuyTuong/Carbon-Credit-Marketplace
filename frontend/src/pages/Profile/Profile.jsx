@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 export default function Profile() {
   const { user, token } = useAuth();
   const [kycData, setKycData] = useState(null);
-  const [kycId, setKycId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -22,12 +21,9 @@ export default function Profile() {
     const fetchKYC = async () => {
       setLoading(true);
       try {
-        const data = await apiFetch("/api/v1/kyc/user", {
-          method: "GET",
-          headers: {},
-        });
-
+        const data = await apiFetch("/api/v1/kyc/user", { method: "GET" });
         const info = data.response;
+
         //nếu chưa có KYC thì chuyển sang màn KYC
         if (!info) {
           console.warn("User has no KYC yet");
@@ -139,7 +135,6 @@ export default function Profile() {
           show={showModal}
           onHide={() => setShowModal(false)}
           data={kycData}
-          kycId={kycId}
           token={token}
           onSuccess={(updated) => {
             setKycData(updated);
@@ -152,7 +147,7 @@ export default function Profile() {
 }
 
 //update profile modal
-function UpdateModal({ show, onHide, data, kycId, token, onSuccess }) {
+function UpdateModal({ show, onHide, data, token, onSuccess }) {
   //validate form
   const schema = Yup.object().shape({
     fullName: Yup.string().required("Full name is required"),
@@ -176,7 +171,7 @@ function UpdateModal({ show, onHide, data, kycId, token, onSuccess }) {
             address: values.address,
             documentType: values.documentType,
             documentNumber: values.documentNumber,
-            birthDate: values.birthday,
+            birthDate: values.birthday?.split("T")[0], //chỉ lấy phần date
           },
         }),
       });

@@ -44,13 +44,12 @@ public class WithdrawalController {
         Wallet userWallet = walletService.getUserWallet();
 
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
-        walletService.addBalanceToWallet(withdrawal.getAmount());
+        walletService.addBalanceToWallet(withdrawal.getAmount().longValue());
 
         WalletTransactionRequest walletTransactionRequest =  WalletTransactionRequest.builder()
                 .wallet(userWallet)
                 .type(WalletTransactionType.WITH_DRAWL)
-                .transfer(null)
-                .purpose("Bank account withdrawl")
+                .description("Bank account withdrawl")
                 .amount(withdrawal.getAmount())
                 .build();
 
@@ -75,7 +74,7 @@ public class WithdrawalController {
 
         Withdrawal withdrawal = withdrawalService.processWithdrawal(id, accept);
         if(!accept){
-            walletService.addBalanceToWallet(withdrawal.getAmount());
+            walletService.addBalanceToWallet(withdrawal.getAmount().longValue());
         }
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),

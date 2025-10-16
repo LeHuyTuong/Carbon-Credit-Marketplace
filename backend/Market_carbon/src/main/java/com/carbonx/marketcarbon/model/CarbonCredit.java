@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,16 +16,33 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Builder
-public class CarbonCredit extends BaseEntity{
+public class CarbonCredit{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // A unique identifier for this batch of credits, as requested.
+    @Column(unique = true, nullable = false)
+    private String creditCode;
+
     private BigDecimal carbonCredit;
-    private Long companyId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @JsonIgnore
+    private Company company;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    @JsonIgnore
+    private Project project;
 
     @Enumerated(EnumType.STRING)
-    private CreditStatus status;
+    private CreditStatus status = CreditStatus.PENDING;
+
+    private int amount; // số lượng tín chỉ có
+
+    private int listedAmount = 0; // số lượng tín chỉ đang niêm yết
 
     private LocalDateTime issueAt;
 
@@ -34,7 +52,10 @@ public class CarbonCredit extends BaseEntity{
     @JsonProperty("current_price")
     private double currentPrice;
 
-    @ManyToOne
-    @JoinColumn(name = "charging_data_id")
-    private ChargingData chargingData;
+    // Getter to extract the year from issueAt, fulfilling the "năm phát sinh" requirement
+    @Transient
+    @JsonProperty("vintageYear")
+    public Integer getVintageYear() {
+        return issueAt != null ? issueAt.getYear() : null;
+    }
 }
