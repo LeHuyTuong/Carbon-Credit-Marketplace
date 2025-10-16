@@ -18,7 +18,6 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
 
     List<ProjectApplication> findByCompany_User_EmailOrderBySubmittedAtDesc(String email);
     List<ProjectApplication> findByCompany_User_EmailAndStatusOrderBySubmittedAtDesc(String email, ApplicationStatus status);
-    // ✅ Admin xem danh sách đơn đã CVA duyệt
     List<ProjectApplication> findByStatusOrderBySubmittedAtDesc(ApplicationStatus status);
     Page<ProjectApplication> findByStatus(ApplicationStatus status, Pageable pageable);
 }
