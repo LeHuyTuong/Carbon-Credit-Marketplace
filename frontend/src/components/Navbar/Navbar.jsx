@@ -164,7 +164,7 @@ export default function Navbar() {
                 </li>
 
                 {/*btn person */}
-                <li className="nav-item dropdown">
+                {/* <li className="nav-item dropdown">
                   <a
                     href="#"
                     className="nav-link dropdown-toggle no-caret p-0"
@@ -212,6 +212,99 @@ export default function Navbar() {
                         Logout
                       </button>
                     </li>
+                  </ul>
+                </li> */}
+                <li className="nav-item dropdown">
+                  <a
+                    href="#"
+                    className="nav-link dropdown-toggle no-caret p-0"
+                    id="userDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <span className="icon-btn">
+                      <i className="bi bi-person"></i>
+                    </span>
+                  </a>
+
+                  <ul
+                    className="dropdown-menu dropdown-menu-end"
+                    aria-labelledby="userDropdown"
+                    data-bs-auto-close="true"
+                  >
+                    {/* Company role */}
+                    {user?.role === "COMPANY" ? (
+                      <>
+                        <li>
+                          <NavLink
+                            to="/profile-company"
+                            className="dropdown-item"
+                          >
+                            Profile
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/manage-credits"
+                            className="dropdown-item"
+                          >
+                            Manage Credits
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/company/orders"
+                            className="dropdown-item"
+                          >
+                            Orders
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink to="/wallet" className="dropdown-item">
+                            Wallet
+                          </NavLink>
+                        </li>
+                        <li>
+                          <hr className="dropdown-divider" />
+                        </li>
+                        <li>
+                          <button className="dropdown-item" onClick={logout}>
+                            Logout
+                          </button>
+                        </li>
+                      </>
+                    ) : (
+                      /* Default user */
+                      <>
+                        <li>
+                          <NavLink to="/profile" className="dropdown-item">
+                            Profile
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink to="/wallet" className="dropdown-item">
+                            Wallet
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/managevehicle"
+                            className="dropdown-item"
+                          >
+                            My Vehicles
+                          </NavLink>
+                        </li>
+                        <li>
+                          <hr className="dropdown-divider" />
+                        </li>
+                        <li>
+                          <button className="dropdown-item" onClick={logout}>
+                            Logout
+                          </button>
+                        </li>
+                      </>
+                    )}
                   </ul>
                 </li>
               </>

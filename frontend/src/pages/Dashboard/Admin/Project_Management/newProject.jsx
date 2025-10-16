@@ -24,19 +24,19 @@ const NewProjectForm = () => {
 
   const handleFormSubmit = async (values, { resetForm }) => {
     const payload = {
-  requestTrace: `trace_${Date.now()}`,  // ID theo dõi request
-  requestDateTime: new Date().toISOString(),  // thời gian gửi
-  data: {
-    title: values.title,
-    description: values.description,
-    logo: values.logo,
-    commitments: values.commitments,
-    technicalIndicators: values.technicalIndicators,
-    measurementMethod: values.measurementMethod,
-    legalDocsUrl: values.legalDocsUrl,
-  },
-};
- 44 
+      requestTrace: `trace_${Date.now()}`, // ID theo dõi request
+      requestDateTime: new Date().toISOString(), // thời gian gửi
+      data: {
+        title: values.title,
+        description: values.description,
+        logo: values.logo,
+        commitments: values.commitments,
+        technicalIndicators: values.technicalIndicators,
+        measurementMethod: values.measurementMethod,
+        legalDocsUrl: values.legalDocsUrl,
+      },
+    };
+    44;
     console.log(" Payload to API:", payload);
 
     try {
@@ -51,11 +51,16 @@ const NewProjectForm = () => {
         setOpenSnackbar(true);
         resetForm();
       } else {
-        throw new Error(response?.responseStatus?.responseMessage || "Failed to create project");
+        throw new Error(
+          response?.responseStatus?.responseMessage ||
+            "Failed to create project"
+        );
       }
     } catch (error) {
       console.error("Error creating project:", error);
-      setSnackbarMessage(error.message || "Failed to create project. Please try again.");
+      setSnackbarMessage(
+        error.message || "Failed to create project. Please try again."
+      );
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     } finally {
@@ -80,18 +85,33 @@ const NewProjectForm = () => {
 
       <Paper
         elevation={3}
-        sx={{ p: 4, maxWidth: "1000px", mx: "auto", borderRadius: 3, backgroundColor: "background.paper" }}
+        sx={{
+          p: 4,
+          maxWidth: "1000px",
+          mx: "auto",
+          borderRadius: 3,
+          backgroundColor: "background.paper",
+        }}
       >
         <Formik
           onSubmit={handleFormSubmit}
           initialValues={initialValues}
           validationSchema={checkoutSchema}
         >
-          {({ values, errors, touched, handleBlur, handleChange, handleSubmit }) => (
+          {({
+            values,
+            errors,
+            touched,
+            handleBlur,
+            handleChange,
+            handleSubmit,
+          }) => (
             <form onSubmit={handleSubmit}>
               <Box
                 display="grid"
-                gridTemplateColumns={isNonMobile ? "repeat(2, 1fr)" : "repeat(1, 1fr)"}
+                gridTemplateColumns={
+                  isNonMobile ? "repeat(2, 1fr)" : "repeat(1, 1fr)"
+                }
                 gap="30px"
               >
                 <TextField
@@ -149,8 +169,13 @@ const NewProjectForm = () => {
                   value={values.technicalIndicators}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  error={!!touched.technicalIndicators && !!errors.technicalIndicators}
-                  helperText={touched.technicalIndicators && errors.technicalIndicators}
+                  error={
+                    !!touched.technicalIndicators &&
+                    !!errors.technicalIndicators
+                  }
+                  helperText={
+                    touched.technicalIndicators && errors.technicalIndicators
+                  }
                 />
                 <TextField
                   fullWidth
@@ -160,8 +185,12 @@ const NewProjectForm = () => {
                   value={values.measurementMethod}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  error={!!touched.measurementMethod && !!errors.measurementMethod}
-                  helperText={touched.measurementMethod && errors.measurementMethod}
+                  error={
+                    !!touched.measurementMethod && !!errors.measurementMethod
+                  }
+                  helperText={
+                    touched.measurementMethod && errors.measurementMethod
+                  }
                 />
                 <TextField
                   fullWidth
@@ -182,7 +211,9 @@ const NewProjectForm = () => {
                   color="secondary"
                   variant="contained"
                   disabled={loading}
-                  startIcon={loading && <CircularProgress size={20} color="inherit" />}
+                  startIcon={
+                    loading && <CircularProgress size={20} color="inherit" />
+                  }
                 >
                   {loading ? "Creating..." : "Create Project"}
                 </Button>
@@ -216,9 +247,14 @@ const checkoutSchema = yup.object().shape({
   description: yup.string().required("Description is required"),
   logo: yup.string().url("Invalid URL").required("Logo URL is required"),
   commitments: yup.string().required("Commitments are required"),
-  technicalIndicators: yup.string().required("Technical indicators are required"),
+  technicalIndicators: yup
+    .string()
+    .required("Technical indicators are required"),
   measurementMethod: yup.string().required("Measurement method is required"),
-  legalDocsUrl: yup.string().url("Invalid URL").required("Legal docs URL is required"),
+  legalDocsUrl: yup
+    .string()
+    .url("Invalid URL")
+    .required("Legal docs URL is required"),
 });
 
 const initialValues = {
