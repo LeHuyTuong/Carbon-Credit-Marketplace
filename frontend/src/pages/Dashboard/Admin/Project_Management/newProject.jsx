@@ -24,15 +24,19 @@ const NewProjectForm = () => {
 
   const handleFormSubmit = async (values, { resetForm }) => {
     const payload = {
-      title: values.title,
-      description: values.description,
-      logo: values.logo,
-      commitments: values.commitments, // nếu backend yêu cầu array, parse ở đây
-      technicalIndicators: values.technicalIndicators,
-      measurementMethod: values.measurementMethod,
-      legalDocsUrl: values.legalDocsUrl,
-    };
-
+  requestTrace: `trace_${Date.now()}`,  // ID theo dõi request
+  requestDateTime: new Date().toISOString(),  // thời gian gửi
+  data: {
+    title: values.title,
+    description: values.description,
+    logo: values.logo,
+    commitments: values.commitments,
+    technicalIndicators: values.technicalIndicators,
+    measurementMethod: values.measurementMethod,
+    legalDocsUrl: values.legalDocsUrl,
+  },
+};
+ 44 
     console.log(" Payload to API:", payload);
 
     try {
