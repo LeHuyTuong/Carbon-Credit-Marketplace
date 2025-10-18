@@ -15,6 +15,9 @@ import Credit_View from "./pages/Dashboard/CVA/Credit/view.jsx";
 import Company_View from "./pages/Dashboard/CVA/Company/view.jsx";
 import Log_View from "./pages/Dashboard/CVA/Log/view.jsx";
 import Project_View from "./pages/Dashboard/CVA/Project/view.jsx";
+import Registration_Project_Management from "./pages/Dashboard/CVA/Registration_Project/index.jsx";
+import Registration_Project_View from "./pages/Dashboard/CVA/Registration_Project/view.jsx";
+import Registraion_Project_Edit from "./pages/Dashboard/CVA/Registration_Project/edit.jsx";
 import Bar from "./pages/Dashboard/CVA/bar";
 import Form from "./pages/Dashboard/CVA/form";
 import Line from "./pages/Dashboard/CVA/line";
@@ -61,6 +64,9 @@ function App() {
               <Route path="/view_report/:id" element={<Report_View />} />
               <Route path="/view_log/:id" element={<Log_View />} />
               <Route path="/view_project/:id" element={<Project_View />} />
+              <Route path="/registration_project_management" element={<Registration_Project_Management />} />
+              <Route path="/view_registration_project/:id" element={<Registration_Project_View />} />
+              <Route path="/edit_registration_project/:id" element={<Registraion_Project_Edit />} />
               {/*fallback */}
               <Route path="*" element={<Dashboard />} />
             </Routes>

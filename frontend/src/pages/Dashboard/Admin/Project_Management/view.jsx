@@ -1,5 +1,4 @@
-// src/scenes/admin/view_project.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -11,13 +10,12 @@ import {
   Snackbar,
   Alert,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { tokens } from "@/theme";
-import { mockDataProjects } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
-
-// Date picker
+import { getProjectById,updateProjectById } from "@/apiAdmin/projectAdmin.js";
 import dayjs from "dayjs";
 import "dayjs/locale/en";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -30,27 +28,72 @@ const ViewProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const project = mockDataProjects.find((p) => p.id === parseInt(id));
-
-  const [formData, setFormData] = useState({
-    projectid: project?.projectid || "",
-    projectname: project?.projectname || "",
-    shortdescription: project?.shortdescription || "",
-    starteddate: project?.starteddate || "",
-    enddate: project?.enddate || "",
-    totalexpectedcredits: project?.totalexpectedcredits || "",
-    totalcompanies: project?.totalcompanies || "12",
-    status: project?.status || "Coming_Soon",
-  });
-
+  const [formData, setFormData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  //  Gọi API lấy chi tiết project theo ID
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const res = await getProjectById(id);
+        console.log("API project detail:", res);
+
+        // API trả về object => không cần [0]
+        const project = res?.response;
+        if (project) {
+          setFormData({
+            projectid: project.id,
+            projectname: project.title,
+            shortdescription: project.description,
+            starteddate: project.createdDate || "",
+            enddate: project.endedDate || "",
+            totalexpectedcredits: project.commitments || "",
+            totalcompanies: project.technicalIndicators || "",
+            status: project.status || "SUBMITTED",
+          });
+        } else {
+          console.warn("Project not found in API response:", res);
+        }
+      } catch (error) {
+        console.error(" Error fetching project:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [id]);
 
   const handleEdit = () => setIsEditing(true);
-  const handleUpdate = () => {
-    setIsEditing(false);
-    setOpenSnackbar(true);
-  };
+  
+  const handleUpdate = async () => {
+  try {
+    const updatedData = {
+      title: formData.projectname,
+      description: formData.shortdescription,
+      logo: formData.logo || "",
+      commitments: formData.totalexpectedcredits,
+      technicalIndicators: formData.totalcompanies,
+      measurementMethod: formData.measurementmethod || "",
+      legalDocsUrl: formData.legaldocurl || "",
+    };
+    console.log(" PUT data:", updatedData);
+    const res = await updateProjectById(formData.projectid, updatedData);
+    console.log("API Update Response:", res);
+
+    if (res?.responseStatus?.responseCode === "200") {
+      setIsEditing(false);
+      setOpenSnackbar(true);
+    } else {
+      console.error("Update failed:", res);
+    }
+  } catch (error) {
+    console.error("Error updating project:", error);
+  }
+};
+
   const handleCloseSnackbar = () => setOpenSnackbar(false);
 
   const handleChange = (e) => {
@@ -58,7 +101,17 @@ const ViewProject = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (!project) {
+  //  Loading state
+  if (loading) {
+    return (
+      <Box m="20px" display="flex" justifyContent="center" alignItems="center" height="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  //  Nếu không có dữ liệu
+  if (!formData) {
     return (
       <Box m="20px">
         <Typography variant="h5" color="error">
@@ -67,7 +120,7 @@ const ViewProject = () => {
         <Button
           variant="contained"
           sx={{ mt: 2 }}
-          onClick={() => navigate("/admin/project")}
+          onClick={() => navigate("/admin/project_management")}
         >
           Back
         </Button>
@@ -75,6 +128,7 @@ const ViewProject = () => {
     );
   }
 
+  //  Render giao diện chính
   return (
     <Box m="20px">
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
@@ -115,7 +169,7 @@ const ViewProject = () => {
                   sx={{ mb: 2 }}
                 />
               ) : (
-                <Typography mb={2}>{formData.shortdescription}</Typography>
+                <Typography mb={2}>{formData.shortdescription || "—"}</Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -123,21 +177,17 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={
-                    formData.starteddate
-                      ? dayjs(formData.starteddate, "DD/MM/YYYY")
-                      : null
-                  }
+                  value={formData.starteddate ? dayjs(formData.starteddate) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      starteddate: date ? date.format("DD/MM/YYYY") : "",
+                      starteddate: date ? date.format("YYYY-MM-DD") : "",
                     }))
                   }
                   sx={{ mb: 2, width: "100%" }}
                 />
               ) : (
-                <Typography mb={2}>{formData.starteddate}</Typography>
+                <Typography mb={2}>{formData.starteddate || "—"}</Typography>
               )}
             </Grid>
 
@@ -148,34 +198,28 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={
-                    formData.enddate
-                      ? dayjs(formData.enddate, "DD/MM/YYYY")
-                      : null
-                  }
+                  value={formData.enddate ? dayjs(formData.enddate) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      enddate: date ? date.format("DD/MM/YYYY") : "",
+                      enddate: date ? date.format("YYYY-MM-DD") : "",
                     }))
                   }
                   sx={{ mb: 2, width: "100%" }}
                 />
               ) : (
-                <Typography mb={2}>
-                  {formData.enddate ? formData.enddate : "—"}
-                </Typography>
+                <Typography mb={2}>{formData.enddate || "—"}</Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Total Expected Credits:
               </Typography>
-              <Typography mb={2}>{formData.totalexpectedcredits}</Typography>
+              <Typography mb={2}>{formData.totalexpectedcredits || "—"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
-                Total Participating Companies:
+                Technical Indicators:
               </Typography>
-              <Typography mb={2}>{formData.totalcompanies}</Typography>
+              <Typography mb={2}>{formData.totalcompanies || "—"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Status:
@@ -189,9 +233,9 @@ const ViewProject = () => {
                   onChange={handleChange}
                   sx={{ mb: 2 }}
                 >
-                  <MenuItem value="Is_Open">Is_Open</MenuItem>
-                  <MenuItem value="Coming_Soon">Coming_Soon</MenuItem>
-                  <MenuItem value="End">End</MenuItem>
+                  <MenuItem value="SUBMITTED">SUBMITTED</MenuItem>
+                  <MenuItem value="APPROVED">APPROVED</MenuItem>
+                  <MenuItem value="REJECTED">REJECTED</MenuItem>
                 </TextField>
               ) : (
                 <Typography mb={2}>{formData.status}</Typography>
@@ -232,6 +276,7 @@ const ViewProject = () => {
         </Box>
       </Paper>
 
+      {/* SNACKBAR */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={2500}
