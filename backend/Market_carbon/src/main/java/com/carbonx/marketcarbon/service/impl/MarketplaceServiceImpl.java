@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MarketplaceServiceImpl implements MarketplaceService {
 
-    private final CreditListingRepository  creditListingRepository;
     private final CarbonCreditRepository  carbonCreditRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;

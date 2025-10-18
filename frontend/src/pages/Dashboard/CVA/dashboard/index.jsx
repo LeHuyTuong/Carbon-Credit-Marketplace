@@ -14,6 +14,43 @@ const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const [applications, setApplications] = useState([]);
+  const [stats, setStats] = useState({
+    reports: 0,
+    transactions: 0,
+    users: 0,
+    vehicles: 0,
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Nếu API yêu cầu token
+        const token = localStorage.getItem("token");
+
+        const response = await apiFetch.get("/api/v1/project-applications", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = response.data.data || [];
+
+        setApplications(data);
+        setStats({
+          reports: data.length,
+          transactions: 5732,
+          users: 32441,
+          vehicles: 1325134,
+        });
+      } catch (error) {
+        console.error("❌ Failed to fetch dashboard data:", error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+
   return (
     <Box m="20px">
       {/* HEADER */}
@@ -40,7 +77,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,254"
+            title={stats.reports.toLocaleString()}
             subtitle="Reports"
             progress="0.75"
             increase="+14%"

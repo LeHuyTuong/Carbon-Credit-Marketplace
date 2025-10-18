@@ -7,66 +7,21 @@ import org.springframework.http.HttpStatusCode;
 @Getter
 public enum ErrorCode {
 
-    // AUTHENTICATION & AUTHORIZATION
+    // ==== AUTHENTICATION & AUTHORIZATION ====
     UNAUTHENTICATED(401, "You need to log in to perform this action.", HttpStatus.UNAUTHORIZED),
-    UNAUTHORIZED(403, "You do not have permission", HttpStatus.FORBIDDEN),
-    PASSWORD_EXISTED(409, "Password existed", HttpStatus.CONFLICT),
-    ROLE_NOT_EXISTED(404, "Role not existed", HttpStatus.NOT_FOUND),
-    INVALID_OTP(400, "OTP is invalid or expired", HttpStatus.BAD_REQUEST),
-    ACCOUNT_NOT_VERIFIED(403, "Account not verified by OTP", HttpStatus.FORBIDDEN),
-    EMAIL_INVALID(400, "Email not existed", HttpStatus.BAD_REQUEST),
-    EMAIL_EXISTED(409, "Email already exists", HttpStatus.CONFLICT),
-    CURRENT_PASSWORD_INVALID(400, "Current password is incorrect", HttpStatus.BAD_REQUEST),
-    CONFIRM_PASSWORD_INVALID(400, "Confirmed password is incorrect", HttpStatus.BAD_REQUEST),
-    PAYMENT_NOT_FOUND(404, "Payment not found", HttpStatus.NOT_FOUND),
-    EMAIL_CONTACT_INVALID(400, "Email Contact cannot be null", HttpStatus.BAD_REQUEST),
-    INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
-    EXPIRED_TOKEN(401, "EXPIRED_TOKEN", HttpStatus.UNAUTHORIZED),
-    USER_NOT_EXISTED(404, "User not existed", HttpStatus.NOT_FOUND),
-    USER_EXISTED(400, "User existed", HttpStatus.BAD_REQUEST),
-    EMAIL_SEND_FAILED(500, "Failed to send email", HttpStatus.INTERNAL_SERVER_ERROR),
-    ROLE_NOT_FOUND(400,"Role not found", HttpStatus.NOT_FOUND),
-    SELLER_NOT_FOUND(404, "Seller not found", HttpStatus.NOT_FOUND),
-    VEHICLE_NOT_FOUND(404, "Vehicle not found", HttpStatus.NOT_FOUND),
-    REPORT_INVALID_STATE(404,"Report closed",HttpStatus.NOT_FOUND),
-    REPORT_NOT_FOUND(404, "Report not found", HttpStatus.NOT_FOUND),
-    FILE_UPLOAD_FAILED(404, "Cannot read upload stream", HttpStatus.NOT_FOUND),
-    COMPANY_NOT_FOUND(404, "Company not found", HttpStatus.NOT_FOUND),
-    COMPANY_IS_EXIST(404, "Company is exist", HttpStatus.NOT_FOUND),
-    PROJECT_NOT_FOUND(404, "Project not found", HttpStatus.NOT_FOUND),
-    INVALID_STATE_TRANSITION(400, "Invalid state transition",HttpStatus.BAD_REQUEST),
-    DUPLICATE_RESOURCE(400, "Duplicate tittle ",HttpStatus.BAD_REQUEST),
-    VEHICLE_PLATE_EXISTS(400, "Vehicle plate already exists", HttpStatus.CONFLICT),
-    INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED", HttpStatus.BAD_REQUEST),
-    WALLET_NOT_ENOUGH_MONEY(400, "Wallet not enough money to withdrawal", HttpStatus.BAD_REQUEST),
-    WITHDRAWAL_MONEY_INVALID_AMOUNT(400, "Amount must be a integer number >= 0 ",  HttpStatus.BAD_REQUEST),
-    LISTING_IS_NOT_AVAILABLE(400, "Listing is not available", HttpStatus.BAD_REQUEST),
-    AMOUNT_IS_NOT_VALID(400, "AMOUNT must be position",  HttpStatus.BAD_REQUEST),
-    AMOUNT_IS_NOT_ENOUGH(400, "AMOUNT request must be lower than available ",  HttpStatus.BAD_REQUEST),
-    ORDER_IS_NOT_PENDING(400, "Order is not pending", HttpStatus.BAD_REQUEST),
-    WALLET_IS_NOT_ENOUGH_MONEY(400, "Wallet is not enough money ", HttpStatus.BAD_REQUEST),
-    COMPANY_NOT_OWN(400, "Company not own this carbon credit block ", HttpStatus.BAD_REQUEST),
-    ADMIN_NOT_FOUND(400, "Admin not found", HttpStatus.NOT_FOUND),
-    CVA_NOT_APPROVED(400, "CVA did not approved", HttpStatus.BAD_REQUEST),
-    CVA_NOT_FOUND(400, "CVA not found", HttpStatus.NOT_FOUND),
-    CARBON_CREDIT_NOT_PENDING(400, "Carbon Credit Not pending", HttpStatus.BAD_REQUEST),;
-    ;
-
-    private int code;
-    private String message;
-    private HttpStatusCode statusCode;
     UNAUTHORIZED(403, "You do not have permission.", HttpStatus.FORBIDDEN),
     ACCESS_DENIED(403, "Access denied: you do not have permission to perform this action.", HttpStatus.FORBIDDEN),
     EXPIRED_TOKEN(401, "Token expired.", HttpStatus.UNAUTHORIZED),
     ACCOUNT_NOT_VERIFIED(403, "Account not verified by OTP.", HttpStatus.FORBIDDEN),
+    INVALID_KEY(1001, "Uncategorized error.", HttpStatus.BAD_REQUEST),
 
-    // USER & ROLE
+    // ==== USER & ROLE ====
     USER_NOT_EXISTED(404, "User not existed.", HttpStatus.NOT_FOUND),
     USER_EXISTED(409, "User already existed.", HttpStatus.CONFLICT),
     ROLE_NOT_EXISTED(404, "Role not existed.", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND(404, "Role not found.", HttpStatus.NOT_FOUND),
 
-    // PASSWORD & EMAIL
+    // ==== PASSWORD & EMAIL ====
     PASSWORD_EXISTED(409, "Password existed.", HttpStatus.CONFLICT),
     CURRENT_PASSWORD_INVALID(400, "Current password is incorrect.", HttpStatus.BAD_REQUEST),
     CONFIRM_PASSWORD_INVALID(400, "Confirmed password is incorrect.", HttpStatus.BAD_REQUEST),
@@ -76,7 +31,7 @@ public enum ErrorCode {
     EMAIL_CONTACT_INVALID(400, "Email contact cannot be null.", HttpStatus.BAD_REQUEST),
     INVALID_OTP(400, "OTP is invalid or expired.", HttpStatus.BAD_REQUEST),
 
-    // ENTITY NOT FOUND
+    // ==== ENTITY NOT FOUND ====
     SELLER_NOT_FOUND(404, "Seller not found.", HttpStatus.NOT_FOUND),
     VEHICLE_NOT_FOUND(404, "Vehicle not found.", HttpStatus.NOT_FOUND),
     COMPANY_NOT_FOUND(404, "Company not found.", HttpStatus.NOT_FOUND),
@@ -84,17 +39,22 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(404, "Payment not found.", HttpStatus.NOT_FOUND),
     CVA_NOT_FOUND(404, "CVA not found.", HttpStatus.NOT_FOUND),
     ADMIN_NOT_FOUND(404, "Admin not found.", HttpStatus.NOT_FOUND),
+    KYC_EXISTED(409, "KYC already exists.", HttpStatus.CONFLICT),
+    TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
+    APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
+    APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
 
-    // VALIDATION & STATE
+    // ==== VALIDATION & STATE ====
+    INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),
+    INVALID_STATUS_TRANSITION(400, "Invalid status transition.", HttpStatus.BAD_REQUEST),
     VEHICLE_PLATE_EXISTS(409, "Vehicle plate already exists.", HttpStatus.CONFLICT),
     REPORT_NOT_FOUND(404, "Report not found.", HttpStatus.NOT_FOUND),
     REPORT_INVALID_STATE(409, "Report is already closed.", HttpStatus.CONFLICT),
-    INVALID_STATE_TRANSITION(409, "Invalid state transition. The application has been forwarded to CVA.", HttpStatus.CONFLICT),
     INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED.", HttpStatus.BAD_REQUEST),
-    DUPLICATE_RESOURCE(409, "Duplicate title.", HttpStatus.CONFLICT),
-    ONE_APPLICATION_PER_PROJECT(409, "Duplicate parentProjectId in CSV: each base project can only have one submission.", HttpStatus.CONFLICT),
+    DUPLICATE_RESOURCE(409, "Duplicate resource.", HttpStatus.CONFLICT),
+    ONE_APPLICATION_PER_PROJECT(409, "Each base project can only have one submission.", HttpStatus.CONFLICT),
 
-    // CSV IMPORT VALIDATION
+    // ==== CSV IMPORT VALIDATION ====
     CSV_BASE_PROJECT_ID_INVALID(400, "baseProjectId must be a positive number (e.g. 1, 2, 3).", HttpStatus.BAD_REQUEST),
     CSV_TITLE_MISSING(400, "title must not be empty.", HttpStatus.BAD_REQUEST),
     CSV_DESCRIPTION_MISSING(400, "description is required for project context.", HttpStatus.BAD_REQUEST),
@@ -110,9 +70,19 @@ public enum ErrorCode {
     CSV_INVALID_FILE_FORMAT(400, "Invalid CSV file format or unreadable content.", HttpStatus.BAD_REQUEST),
     CSV_UNEXPECTED_ERROR(500, "Unexpected error while importing CSV.", HttpStatus.INTERNAL_SERVER_ERROR),
 
-    // GENERIC
+    // ==== GENERIC & FILE ====
     FILE_UPLOAD_FAILED(500, "Cannot read upload stream.", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_KEY(1001, "Uncategorized error.", HttpStatus.BAD_REQUEST);
+    COMPANY_IS_EXIST(409, "Company already exists.", HttpStatus.CONFLICT),
+    WALLET_NOT_ENOUGH_MONEY(400, "Wallet not enough money to withdraw.", HttpStatus.BAD_REQUEST),
+    WITHDRAWAL_MONEY_INVALID_AMOUNT(400, "Amount must be a positive integer.", HttpStatus.BAD_REQUEST),
+    LISTING_IS_NOT_AVAILABLE(400, "Listing is not available.", HttpStatus.BAD_REQUEST),
+    AMOUNT_IS_NOT_VALID(400, "Amount must be positive.", HttpStatus.BAD_REQUEST),
+    AMOUNT_IS_NOT_ENOUGH(400, "Amount requested exceeds available balance.", HttpStatus.BAD_REQUEST),
+    ORDER_IS_NOT_PENDING(400, "Order is not pending.", HttpStatus.BAD_REQUEST),
+    WALLET_IS_NOT_ENOUGH_MONEY(400, "Wallet does not have enough money.", HttpStatus.BAD_REQUEST),
+    COMPANY_NOT_OWN(400, "Company does not own this carbon credit block.", HttpStatus.BAD_REQUEST),
+    CVA_NOT_APPROVED(400, "CVA not approved.", HttpStatus.BAD_REQUEST),
+    CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

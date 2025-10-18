@@ -9,6 +9,7 @@ import com.carbonx.marketcarbon.service.PaymentService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.paypal.base.rest.PayPalRESTException;
 import com.stripe.exception.StripeException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class PaymentController {
             @Valid @RequestBody TuongCommonRequest<@Valid PaymentOrderRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
-    throws StripeException {
+            throws StripeException, PayPalRESTException {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
@@ -40,6 +41,8 @@ public class PaymentController {
         PaymentOrderResponse response = new PaymentOrderResponse();
         if(req.getData().getPaymentMethod().equals(PaymentMethod.STRIPE)){
             response = paymentService.createStripePaymentLink(req.getData(), order.getId());
+        }else if(req.getData().getPaymentMethod().equals(PaymentMethod.PAYPAL)){
+            response = paymentService.createPayPalPaymentLink(req.getData(), order.getId());
         }
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -61,4 +64,6 @@ public class PaymentController {
         TuongCommonResponse<List<PaymentOrder>> resp = new TuongCommonResponse<>(trace, now , rs, order);
         return ResponseEntity.ok(resp);
     }
+
+
 }

@@ -6,7 +6,6 @@ import lombok.Data;
 
 @Data
 public class VehicleCreateRequest {
-    private Long ownerId;
 
     @NotNull(message = "plateNumber is not null")
     @PlateNumber
