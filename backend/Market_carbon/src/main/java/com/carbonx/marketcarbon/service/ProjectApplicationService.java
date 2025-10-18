@@ -20,8 +20,11 @@ public interface ProjectApplicationService {
 
     public List<ProjectApplicationResponse> listMyApplications(String status);
 
+
+
     // Tiện ích quản trị
     List<ProjectApplicationResponse> listAll();
     ProjectApplicationResponse getById(Long id);
     Page<ProjectApplicationResponse> listCvaApprovedApplications(Pageable pageable);
+    List<ProjectApplicationResponse> listPendingForCva();
 }

@@ -30,7 +30,7 @@ public enum ErrorCode {
     EMAIL_SEND_FAILED(500, "Failed to send email.", HttpStatus.INTERNAL_SERVER_ERROR),
     EMAIL_CONTACT_INVALID(400, "Email contact cannot be null.", HttpStatus.BAD_REQUEST),
     INVALID_OTP(400, "OTP is invalid or expired.", HttpStatus.BAD_REQUEST),
-
+    OTP_EXPIRED(400, "OTP expired. Please register again.", HttpStatus.BAD_REQUEST),
     // ==== ENTITY NOT FOUND ====
     SELLER_NOT_FOUND(404, "Seller not found.", HttpStatus.NOT_FOUND),
     VEHICLE_NOT_FOUND(404, "Vehicle not found.", HttpStatus.NOT_FOUND),
@@ -55,21 +55,31 @@ public enum ErrorCode {
     ONE_APPLICATION_PER_PROJECT(409, "Each base project can only have one submission.", HttpStatus.CONFLICT),
 
     // ==== CSV IMPORT VALIDATION ====
-    CSV_BASE_PROJECT_ID_INVALID(400, "baseProjectId must be a positive number (e.g. 1, 2, 3).", HttpStatus.BAD_REQUEST),
-    CSV_TITLE_MISSING(400, "title must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_DESCRIPTION_MISSING(400, "description is required for project context.", HttpStatus.BAD_REQUEST),
-    CSV_LOGO_MISSING(400, "logo URL must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_COMMITMENTS_MISSING(400, "commitments must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_TECHNICAL_INDICATORS_MISSING(400, "technicalIndicators must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_MEASUREMENT_METHOD_MISSING(400, "measurementMethod must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_LEGAL_DOCS_URL_MISSING(400, "legalDocsUrl must not be empty.", HttpStatus.BAD_REQUEST),
-    CSV_INVALID_URL_FORMAT(400, "Invalid URL format. Must start with http:// or https://", HttpStatus.BAD_REQUEST),
-    CSV_INVALID_NUMBER_FORMAT(400, "Invalid numeric value in CSV field.", HttpStatus.BAD_REQUEST),
-    CSV_MISSING_COLUMN(400, "Missing required column in CSV.", HttpStatus.BAD_REQUEST),
-    CSV_MISSING_FIELD(400, "Missing required field in CSV row.", HttpStatus.BAD_REQUEST),
-    CSV_INVALID_FILE_FORMAT(400, "Invalid CSV file format or unreadable content.", HttpStatus.BAD_REQUEST),
-    CSV_UNEXPECTED_ERROR(500, "Unexpected error while importing CSV.", HttpStatus.INTERNAL_SERVER_ERROR),
+    // 4001xx: lỗi cấu trúc CSV (thiếu header)
+    CSV_MISSING_PROJECT_ID(400101, "CSV is missing 'project_id' column.", HttpStatus.BAD_REQUEST),
+    CSV_MISSING_PERIOD(400102, "CSV is missing 'period' column.", HttpStatus.BAD_REQUEST),
+    CSV_MISSING_TOTAL_ENERGY_OR_CHARGING(400103, "CSV needs 'total_energy' or fallback 'charging_energy'.", HttpStatus.BAD_REQUEST),
+    CSV_MISSING_VEHICLE_COUNT_COLUMN(400104, "CSV needs vehicle count column: total_ev_owner/total_vehicles/total_vehicle/tong_xe.", HttpStatus.BAD_REQUEST),
 
+    // 4002xx: lỗi dữ liệu CSV (không nhất quán/định dạng sai)
+    CSV_INCONSISTENT_PROJECT_ID(400201, "All rows must have the same project_id.", HttpStatus.BAD_REQUEST),
+    CSV_INCONSISTENT_PERIOD(400202, "All rows must have the same period.", HttpStatus.BAD_REQUEST),
+    CSV_INCONSISTENT_TOTAL_ENERGY(400203, "Total energy must be identical across rows.", HttpStatus.BAD_REQUEST),
+    CSV_VEHICLE_COUNT_MISSING(400204, "Vehicle count is missing.", HttpStatus.BAD_REQUEST),
+    CSV_VEHICLE_COUNT_INVALID(400205, "Vehicle count must be a valid integer.", HttpStatus.BAD_REQUEST),
+    CSV_TOTAL_ENERGY_NOT_FOUND(400206, "Total energy not found and no charging_energy to sum.", HttpStatus.BAD_REQUEST),
+
+
+    // 4091xx: xung đột
+    REPORT_DUPLICATE_PERIOD(409101, "Report already exists for this seller/project/period.", HttpStatus.CONFLICT),
+
+    CSV_MISSING_FIELD(400301, "CSV is missing a required field.", HttpStatus.BAD_REQUEST),
+    CSV_INVALID_FILE_FORMAT(400302, "Invalid CSV file format.", HttpStatus.BAD_REQUEST), // có thể dùng 415 nếu muốn
+    CSV_INVALID_NUMBER_FORMAT(400303, "Invalid number format in CSV.", HttpStatus.BAD_REQUEST),
+    CSV_UNEXPECTED_ERROR(500201, "Unexpected error while processing CSV.", HttpStatus.INTERNAL_SERVER_ERROR),
+    // 5xx: storage hoặc lỗi hệ thống
+    STORAGE_UPLOAD_FAILED(500101, "Failed to store the uploaded file.", HttpStatus.INTERNAL_SERVER_ERROR),
+    STORAGE_READ_FAILED(500102, "Failed to read the stored file.", HttpStatus.INTERNAL_SERVER_ERROR),
     // ==== GENERIC & FILE ====
     FILE_UPLOAD_FAILED(500, "Cannot read upload stream.", HttpStatus.INTERNAL_SERVER_ERROR),
     COMPANY_IS_EXIST(409, "Company already exists.", HttpStatus.CONFLICT),

@@ -34,7 +34,7 @@ public class ChargingDataController {
             @ApiResponse(responseCode = "403", description = "User not authorized", content = @Content(mediaType = "application/json")),
             @ApiResponse(responseCode = "500", description = "Server error while processing file", content = @Content(mediaType = "application/json"))
     })
-    @PreAuthorize("hasAnyRole('EV_OWNER','ENTERPRISE')")
+    @PreAuthorize("hasAnyRole('EV_OWNER','COMPANY')")
     @PostMapping(
             value = "/upload-csv-charging",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,

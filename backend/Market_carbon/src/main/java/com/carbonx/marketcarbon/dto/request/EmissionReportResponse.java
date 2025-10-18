@@ -1,7 +1,8 @@
-package com.carbonx.marketcarbon.dto.response;
+package com.carbonx.marketcarbon.dto.request;
 
 import com.carbonx.marketcarbon.model.EmissionReport;
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -13,16 +14,16 @@ public class EmissionReportResponse {
     Long sellerId;
     String sellerName;
     Long projectId;
-    String projectName;
+    String projectName;        // Project Title
     String period;
-    BigDecimal totalEnergy;
+    BigDecimal totalEnergy;    // Charging Energy tổng (kWh)
     BigDecimal totalCo2;
-    Integer vehicleCount;
+    Integer vehicleCount;      // Tổng xe (Total EV_Owner / total_vehicles)
     String status;
     String source;
     OffsetDateTime submittedAt;
 
-    // metadata file (nếu FE muốn hiển thị/đối soát)
+    // Metadata (nếu FE muốn xem)
     String uploadOriginalFilename;
     String uploadMimeType;
     Long uploadSizeBytes;

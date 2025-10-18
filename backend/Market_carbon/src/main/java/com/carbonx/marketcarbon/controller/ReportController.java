@@ -84,38 +84,38 @@ public class ReportController {
         resp.flushBuffer();
     }
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CommonResponse<String>> uploadFile(
-             @RequestParam("uploaderType") String uploaderType,
-            @RequestParam("uploaderId") Long uploaderId,
-            @RequestParam(value = "companyId", required = false) Long companyId,
-            @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-Request-Trace", required = false) String trace
-    ) {
-        String requestTrace = trace != null ? trace : UUID.randomUUID().toString();
-        String path;
-        //nếu là công ty thì sẽ upfile  có tên công ty
-        if ("COMPANY".equalsIgnoreCase(uploaderType)) {
-            Company company = companyRepository.findById(uploaderId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-            path = "upload/company/" + company.getId() + company.getCreateAt();
-        }
-        // nếu là CVA thì upload file có tên
-        else if ("CVA".equalsIgnoreCase(uploaderType)) {
-            User cva = userRepository.findById(uploaderId)
-                    .orElseThrow(() -> new ResourceNotFoundException("CVA not found"));
-            if (companyId == null)
-                throw new StorageException("CVA must specify companyId to upload report");
-            path = "upload/cva/" + cva.getId() + "/company/" + companyId;
-        } else {
-            throw new StorageException("Unknown uploader type");
-        }
-
-        fileService.storeTo(file, path); // dùng method mở rộng cho phép truyền path
-        return ResponseEntity.ok(ResponseUtil.success(requestTrace,
-                "File uploaded successfully to " + path));
-
-    }
+//    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<CommonResponse<String>> uploadFile(
+//             @RequestParam("uploaderType") String uploaderType,
+//            @RequestParam("uploaderId") Long uploaderId,
+//            @RequestParam(value = "companyId", required = false) Long companyId,
+//            @RequestParam("file") MultipartFile file,
+//            @RequestHeader(value = "X-Request-Trace", required = false) String trace
+//    ) {
+//        String requestTrace = trace != null ? trace : UUID.randomUUID().toString();
+//        String path;
+//        //nếu là công ty thì sẽ upfile  có tên công ty
+//        if ("COMPANY".equalsIgnoreCase(uploaderType)) {
+//            Company company = companyRepository.findById(uploaderId)
+//                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+//            path = "upload/company/" + company.getId() + company.getCreateAt();
+//        }
+//        // nếu là CVA thì upload file có tên
+//        else if ("CVA".equalsIgnoreCase(uploaderType)) {
+//            User cva = userRepository.findById(uploaderId)
+//                    .orElseThrow(() -> new ResourceNotFoundException("CVA not found"));
+//            if (companyId == null)
+//                throw new StorageException("CVA must specify companyId to upload report");
+//            path = "upload/cva/" + cva.getId() + "/company/" + companyId;
+//        } else {
+//            throw new StorageException("Unknown uploader type");
+//        }
+//
+//        fileService.storeTo(file, path); // dùng method mở rộng cho phép truyền path
+//        return ResponseEntity.ok(ResponseUtil.success(requestTrace,
+//                "File uploaded successfully to " + path));
+//
+//    }
 
     @GetMapping("/files/download")
     public ResponseEntity<Resource> download(@RequestParam("key") String fileKey) throws IOException {
