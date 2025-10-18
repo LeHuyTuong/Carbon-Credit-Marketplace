@@ -20,6 +20,7 @@ import com.carbonx.marketcarbon.service.AuthService;
 import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -101,16 +102,29 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse verifyOtp(VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null || user.getOtpCode() == null
-                || !user.getOtpCode().equals(req.getOtpCode())
-                || user.getOtpExpiryDate() == null
-                || user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
+        if (user == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+
+        // Nếu OTP hết hạn
+        if (user.getOtpExpiryDate() != null && user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
+            // Nếu user chưa xác thực thì xóa luôn
+            if (user.getStatus() == USER_STATUS.PENDING) {
+                userRepository.delete(user);
+                log.warn(" OTP expired -> Deleted pending user [{}]", req.getEmail());
+            }
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        // 🔹 Nếu OTP không khớp
+        if (user.getOtpCode() == null || !user.getOtpCode().equals(req.getOtpCode())) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
 
-        // Nếu OTP dùng cho quên mật khẩu → trả token tạm thay vì JWT login
+        // 🔹 Nếu OTP dùng cho quên mật khẩu
         if (user.getOtpPurpose() == OtpPurpose.FORGOT_PASSWORD) {
             user.setOtpCode(null);
             user.setOtpExpiryDate(null);
@@ -121,10 +135,11 @@ public class AuthServiceImpl implements AuthService {
             response.setJwt(resetToken);
             response.setMessage("OTP verified for password reset");
             response.setRoles(Collections.emptyList());
+            log.info(" OTP verified for password reset [{}]", req.getEmail());
             return response;
         }
 
-        // Nếu OTP dùng cho đăng ký / đăng nhập → cấp JWT login như cũ
+        // 🔹 Nếu OTP dùng cho đăng ký / đăng nhập
         user.setOtpCode(null);
         user.setOtpExpiryDate(null);
         user.setStatus(USER_STATUS.ACTIVE);
@@ -135,6 +150,8 @@ public class AuthServiceImpl implements AuthService {
         authResponse.setJwt(jwt);
         authResponse.setMessage("OTP verified successfully");
         authResponse.setRoles(user.getRoles().stream().map(Role::getName).toList());
+
+        log.info(" OTP verified successfully for [{}]", req.getEmail());
         return authResponse;
     }
 

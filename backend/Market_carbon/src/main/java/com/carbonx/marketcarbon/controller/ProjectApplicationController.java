@@ -140,4 +140,20 @@ public class ProjectApplicationController {
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
         return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
     }
+
+    @PreAuthorize("hasRole('CVA')")
+    @Operation(summary = "List applications awaiting CVA review")
+    @GetMapping("/pending-cva")
+    public ResponseEntity<TuongCommonResponse<List<ProjectApplicationResponse>>> listPendingForCva(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        List<ProjectApplicationResponse> data = projectApplicationService.listPendingForCva();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+    }
 }

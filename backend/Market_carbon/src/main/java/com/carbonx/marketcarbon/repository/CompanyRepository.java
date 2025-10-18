@@ -35,4 +35,6 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
             @Param("statuses") Collection<ProjectStatus> statuses,
             Pageable pageable
     );
+
+    Optional<Company> findByCompanyNameIgnoreCase(String name);
 }

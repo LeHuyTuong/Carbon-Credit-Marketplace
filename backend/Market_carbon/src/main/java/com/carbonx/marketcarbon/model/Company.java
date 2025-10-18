@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "companies")
+@Table(name = "company")
 @Builder
 public class Company extends BaseEntity{
 
@@ -30,7 +30,7 @@ public class Company extends BaseEntity{
     @Column(name = "tax_code", length = 100)
     private String taxCode;
 
-    @Column(name = "company_name", length = 15)
+    @Column(name = "company_name", length = 100)
     private String companyName;
 
     @Column(name = "address", columnDefinition = "TEXT")

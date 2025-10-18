@@ -23,4 +23,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     // Company
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
+
+    Optional<Vehicle> findByCompanyIdAndPlateNumberIgnoreCase(Long companyId, String plateNumber);
 }
