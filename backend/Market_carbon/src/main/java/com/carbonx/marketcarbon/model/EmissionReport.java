@@ -1,7 +1,5 @@
+// src/main/java/com/carbonx/marketcarbon/model/EmissionReport.java
 package com.carbonx.marketcarbon.model;
-
-
-// === model/EmissionReport.java (thay cho PeriodicReport)
 
 import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -11,46 +9,38 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
+@Table(
+        name = "emission_reports",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_report_seller_project_period", columnNames = {"seller_id","project_id","period"})
+        }
+)
 public class EmissionReport {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    // Công ty nộp báo cáo
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "seller_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
     Company seller;
 
-    // Dự án (ví dụ: VF)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
     Project project;
 
-    // Nếu bạn thực sự cần gắn report với 1 vehicle thì để optional; còn tổng hợp theo company thì nên bỏ hẳn field này
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "vehicle_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
-    Vehicle vehicle;
-
-    // Kỳ báo cáo "YYYY-MM" hoặc "YYYY-Qn"
     @Column(length = 16, nullable = false)
-    String period;
+    String period; // ví dụ "2025-09" hoặc "2025-Q3"
 
-    // Tổng điện năng sạc trong kỳ (kWh)
     @Column(name = "total_energy", precision = 14, scale = 4, nullable = false)
     @Builder.Default
     BigDecimal totalEnergy = BigDecimal.ZERO;
 
-    // Tổng CO2 quy đổi (kg)
     @Column(name = "total_co2", precision = 14, scale = 4, nullable = false)
     @Builder.Default
     BigDecimal totalCo2 = BigDecimal.ZERO;
@@ -60,14 +50,32 @@ public class EmissionReport {
     @Builder.Default
     EmissionStatus status = EmissionStatus.DRAFT;
 
-    // Người xác minh (verifier) – dùng User cho linh hoạt (CVA/Admin đều là User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "verified_by")
     @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
     User verifiedBy;
 
-    @Column(name = "comment", columnDefinition = "text")
+    @Column(columnDefinition = "text")
     String comment;
+
+    // Nguồn tạo report: dùng String, mặc định "CSV"
+    @Column(name = "source", length = 16, nullable = false)
+    String source;
+
+    // Tổng số xe (Company tự nhập từ CSV)
+    @Column(name = "vehicle_count", nullable = false)
+    @Builder.Default
+    Integer vehicleCount = 0;
+
+    // Metadata file CSV upload
+    String uploadOriginalFilename;
+    String uploadMimeType;
+    Long   uploadSizeBytes;
+    @Column(length = 128) String uploadSha256;
+    String uploadStorageKey;
+    @Column(length = 1024) String uploadStorageUrl; // URL dài -> tăng length
+    Integer uploadRows;
+    @Column(columnDefinition = "text") String parseError;
 
     // Mốc thời gian
     OffsetDateTime createdAt;
@@ -76,8 +84,14 @@ public class EmissionReport {
     OffsetDateTime approvedAt;
     OffsetDateTime updatedAt;
 
-    // Chứng từ kèm theo
-    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
-    java.util.List<EvidenceFile> evidences = new java.util.ArrayList<>();
+    @PrePersist
+    void prePersist() {
+        if (source == null || source.isBlank()) source = "CSV";
+        source = source.toUpperCase();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        if (source != null) source = source.toUpperCase();
+    }
 }

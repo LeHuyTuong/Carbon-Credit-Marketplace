@@ -19,7 +19,7 @@ public class FileUploadTestController {
 
     private final S3Service s3Service;
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload1e", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<String> uploadTest(@RequestParam("files") List<MultipartFile> files) {
         System.out.println("=== [TEST-UPLOAD] Nhận được " + files.size() + " file ===");
         List<String> urls = new ArrayList<>();
