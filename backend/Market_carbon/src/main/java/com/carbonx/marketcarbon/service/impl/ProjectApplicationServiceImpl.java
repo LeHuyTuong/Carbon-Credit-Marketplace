@@ -183,6 +183,29 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         return apps.map(this::toResponse);
     }
 
+    @Override
+    public List<ProjectApplicationResponse> listPendingForCva() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new AppException(ErrorCode.CVA_NOT_FOUND);
+
+        // kiểm tra CVA hợp lệ
+        Cva reviewer = cvaRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
+
+        // Lấy tất cả hồ sơ đang chờ CVA duyệt
+        List<ProjectApplication> pending = applicationRepository.findByStatusOrderBySubmittedAtDesc(ApplicationStatus.UNDER_REVIEW);
+
+        return pending.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ProjectApplicationResponse toResponse(ProjectApplication a) {
         return ProjectApplicationResponse.builder()
                 .id(a.getId())

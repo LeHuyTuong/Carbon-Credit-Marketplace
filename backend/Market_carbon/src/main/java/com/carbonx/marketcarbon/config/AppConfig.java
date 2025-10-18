@@ -40,7 +40,8 @@ public class AppConfig {
             "/api/v1/auth/send-otp-register",
             "/api/v1/auth/check-exists-user",
             "/api/v1/auth/outbound/authentication",
-            "/api/v1/send-otp-forgot"
+            "/api/v1/send-otp-forgot",
+            "/api/v1/check-exists-user"
     };
 
     @Bean
@@ -60,6 +61,7 @@ public class AppConfig {
 
         return http.build();
     }
+
 
     private CorsConfigurationSource corsConfigurationSource() {
         return request -> {
