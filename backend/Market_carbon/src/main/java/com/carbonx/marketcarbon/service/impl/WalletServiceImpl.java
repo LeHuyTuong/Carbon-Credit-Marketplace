@@ -1,5 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.User;
@@ -68,21 +70,28 @@ public class WalletServiceImpl implements WalletService {
         Long id = user.getId();
         Wallet wallet = walletRepository.findByUserId(id);
 
+        BigDecimal amountToAdd = BigDecimal.valueOf(money);
+        BigDecimal balanceBefore = wallet.getBalance();
+
+        // Cập nhật số dư ví
         wallet.setBalance(wallet.getBalance().add(BigDecimal.valueOf(money)));
+        Wallet updatedWallet = walletRepository.save(wallet);
+        BigDecimal balanceAfter = updatedWallet.getBalance();
 
         walletRepository.save(wallet);
 
-//        WalletTransactionRequest request = WalletTransactionRequest.builder()
-//                .wallet(wallet)
-//                .amount(BigDecimal.valueOf(money).longValueExact())
-//                .type(WalletTransactionType.ADD_MONEY)
-//                .purpose("Deposit money to wallet from Stripe")
-//                .build();
-//
-//        walletTransactionService.createTransaction(request);
+        // Tạo bản ghi giao dịch chi tiết
+        WalletTransactionRequest request = WalletTransactionRequest.builder()
+                .wallet(wallet)
+                .amount(amountToAdd)
+                .type(WalletTransactionType.ADD_MONEY)
+                .description("Deposit money to wallet from Stripe")
+                .build();
+
+        walletTransactionService.createTransaction(request);
 
         log.info("Wallet added to wallet" + wallet + " money :" + money);
-        return wallet;
+        return updatedWallet;
     }
 
     @Override

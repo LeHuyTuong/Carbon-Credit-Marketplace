@@ -210,7 +210,6 @@ public class OrderServiceImpl implements OrderService {
                     newCredit.setStatus(CreditStatus.ISSUE);
                     newCredit.setName(sourceCredit.getName());
                     newCredit.setCarbonCredit(BigDecimal.ZERO);
-                    newCredit.setAmount(0);
                     return newCredit;
                 });
 
@@ -235,8 +234,6 @@ public class OrderServiceImpl implements OrderService {
                         .order(order)
                         .type(WalletTransactionType.BUY_CARBON_CREDIT)
                         .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
-                        .balanceBefore(buyerWalletBalanceBefore)
-                        .balanceAfter(buyerWallet.getBalance())
                         .amount(totalPrice.negate()) // money subtract
                 .build());
 
@@ -246,8 +243,6 @@ public class OrderServiceImpl implements OrderService {
                         .order(order)
                         .type(WalletTransactionType.SELL_CARBON_CREDIT)
                         .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
-                        .balanceBefore(sellerWalletBalanceBefore)
-                        .balanceAfter(sellerWallet.getBalance())
                         .amount(totalPrice.negate())
                 .build());
     }
