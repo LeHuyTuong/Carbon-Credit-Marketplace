@@ -36,7 +36,7 @@ public class DataInitializer {
     @NonFinal
     static final String ADMIN_USER_NAME = "admin@gmail.com";
     @NonFinal
-    static final String ADMIN_PASSWORD = "Tuongngu2005@";
+    static final String ADMIN_PASSWORD = "123456";
 
     @Bean("databaseInitializer")
     @Transactional
