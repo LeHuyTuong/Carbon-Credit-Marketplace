@@ -36,10 +36,10 @@ public class WalletTransaction {
     @Column(length = 500)
     private String description;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(precision = 18, scale = 2)
     private BigDecimal balanceBefore;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column( precision = 18, scale = 2)
     private BigDecimal balanceAfter;
 
     @Column(nullable = false, precision = 18, scale = 2)

@@ -24,28 +24,37 @@ const NewProjectForm = () => {
 
   const handleFormSubmit = async (values, { resetForm }) => {
     const payload = {
-      title: values.title,
-      description: values.description,
-      logo: values.logo,
-      commitments: values.commitments,
-      technicalIndicators: values.technicalIndicators,
-      measurementMethod: values.measurementMethod,
-      legalDocsUrl: values.legalDocsUrl,
-    };
-
-    console.log("📦 Payload to API:", payload);
+  requestTrace: `trace_${Date.now()}`,  // ID theo dõi request
+  requestDateTime: new Date().toISOString(),  // thời gian gửi
+  data: {
+    title: values.title,
+    description: values.description,
+    logo: values.logo,
+    commitments: values.commitments,
+    technicalIndicators: values.technicalIndicators,
+    measurementMethod: values.measurementMethod,
+    legalDocsUrl: values.legalDocsUrl,
+  },
+};
+ 44 
+    console.log(" Payload to API:", payload);
 
     try {
       setLoading(true);
+      //  gửi payload object trực tiếp, apiFetch sẽ handle stringify + trace
       const response = await createProject(payload);
-      console.log("✅ API Response:", response);
+      console.log(" API Response:", response);
 
-      setSnackbarMessage("🎉 Project created successfully!");
-      setSnackbarSeverity("success");
-      setOpenSnackbar(true);
-      resetForm();
+      if (response?.responseStatus?.responseCode === "00000000") {
+        setSnackbarMessage("🎉 Project created successfully!");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+        resetForm();
+      } else {
+        throw new Error(response?.responseStatus?.responseMessage || "Failed to create project");
+      }
     } catch (error) {
-      console.error("❌ Error creating project:", error);
+      console.error("Error creating project:", error);
       setSnackbarMessage(error.message || "Failed to create project. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -63,11 +72,7 @@ const NewProjectForm = () => {
           to="/admin/project_management"
           variant="outlined"
           color="secondary"
-          sx={{
-            height: "fit-content",
-            textTransform: "none",
-            fontWeight: 600,
-          }}
+          sx={{ height: "fit-content", textTransform: "none", fontWeight: 600 }}
         >
           ← Back to Project List
         </Button>
@@ -75,27 +80,14 @@ const NewProjectForm = () => {
 
       <Paper
         elevation={3}
-        sx={{
-          p: 4,
-          maxWidth: "1000px",
-          mx: "auto",
-          borderRadius: 3,
-          backgroundColor: "background.paper",
-        }}
+        sx={{ p: 4, maxWidth: "1000px", mx: "auto", borderRadius: 3, backgroundColor: "background.paper" }}
       >
         <Formik
           onSubmit={handleFormSubmit}
           initialValues={initialValues}
           validationSchema={checkoutSchema}
         >
-          {({
-            values,
-            errors,
-            touched,
-            handleBlur,
-            handleChange,
-            handleSubmit,
-          }) => (
+          {({ values, errors, touched, handleBlur, handleChange, handleSubmit }) => (
             <form onSubmit={handleSubmit}>
               <Box
                 display="grid"

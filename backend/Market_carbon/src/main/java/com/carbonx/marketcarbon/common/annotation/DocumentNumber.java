@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME) // chạy khi run time
 public @interface DocumentNumber {
-    String message() default "Invalid Document Number";
+    String message() default "Document Number CCCD need 12 number and CMND need 9 number ";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }
