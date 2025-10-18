@@ -14,6 +14,7 @@ import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,6 +44,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         return user;
     }
 
+    @Transactional
     @Override
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
@@ -97,7 +99,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .wallet(wallet)
                     .type(WalletTransactionType.WITH_DRAWL)
                     .description("Bank account withdrawal approved. ID: " + withdrawalId)
-                    .amount(amountToWithdraw.negate()) // Use negative amount for withdrawals
+                    .amount(amountToWithdraw)
                     .build());
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);
