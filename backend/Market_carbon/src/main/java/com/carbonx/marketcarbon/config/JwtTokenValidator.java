@@ -1,16 +1,12 @@
 package com.carbonx.marketcarbon.config;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,13 +32,11 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             "/api/v1/auth/forgot-password",
             "/api/v1/auth/login",
             "/api/v1/send-otp-forgot"
-            );
+    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
@@ -56,16 +50,6 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         //  2️ Lấy token từ header
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
-        try {
-            if (jwt != null && jwt.startsWith("Bearer ")) {
-                jwt = jwt.substring(7);
-
-                SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
-                Claims claims = Jwts.parserBuilder()
-                        .setSigningKey(key)
-                        .build()
-                        .parseClaimsJws(jwt)
-                        .getBody();
         if (jwt == null || !jwt.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -81,46 +65,30 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                     .parseClaimsJws(jwt)
                     .getBody();
 
-                List<GrantedAuthority> authorities = new ArrayList<>();
-                if (rolesObj instanceof List<?>) {
-                    for (Object role : (List<?>) rolesObj) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-                    }
+            String email = String.valueOf(claims.get("email"));
+            Object rolesObj = claims.get("roles");
+
+            List<GrantedAuthority> auths = new ArrayList<>();
+            if (rolesObj instanceof List<?>) {
+                for (Object role : (List<?>) rolesObj) {
+                    auths.add(new SimpleGrantedAuthority("ROLE_" + role.toString()));
                 }
-
-                Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
-            // tiếp tục các filter khác nếu không có lỗi
-            filterChain.doFilter(request, response);
+            Authentication authentication =
+                    new UsernamePasswordAuthenticationToken(email, null, auths);
 
-        } catch (ExpiredJwtException e) {
-            handleException(response, HttpStatus.UNAUTHORIZED, "Token expired");
-        } catch (MalformedJwtException e) {
-            handleException(response, HttpStatus.UNAUTHORIZED, "Malformed token");
-        } catch (UnsupportedJwtException e) {
-            handleException(response, HttpStatus.UNAUTHORIZED, "Unsupported token");
-        } catch (IllegalArgumentException e) {
-            handleException(response, HttpStatus.UNAUTHORIZED, "Invalid token payload");
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            //  Debug log
+            System.out.println("[JWT  OK] User: " + email + " | Roles: " + auths);
+
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            System.err.println(" JWT expired at: " + e.getClaims().getExpiration());
         } catch (Exception e) {
-            handleException(response, HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+            System.err.println(" Invalid token: " + e.getMessage());
         }
-    }
 
-    private void handleException(HttpServletResponse response,
-                                 HttpStatus status,
-                                 String message) throws IOException {
-        // Ngắt luôn, không cho qua filter chain
-        response.setStatus(status.value());
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(String.format("""
-            {
-              "code": %d,
-              "status": "%s",
-              "message": "%s"
-            }
-            """, status.value(), status.name(), message));
+        filterChain.doFilter(request, response);
     }
 }

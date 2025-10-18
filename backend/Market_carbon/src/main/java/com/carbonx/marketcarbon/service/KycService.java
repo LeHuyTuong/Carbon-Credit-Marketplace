@@ -1,16 +1,13 @@
 package com.carbonx.marketcarbon.service;
 
 
-import com.carbonx.marketcarbon.dto.request.KycAdminRequest;
-import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
-import com.carbonx.marketcarbon.dto.request.KycCvaRequest;
+import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.KycAdminResponse;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycCvaResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EVOwner;
-import com.carbonx.marketcarbon.dto.request.KycRequest;
 
 import java.util.List;
 
@@ -44,4 +41,6 @@ public interface KycService {
     Long createAdmin(KycAdminRequest req);
     Long updateAdmin(KycAdminRequest req);
     KycAdminResponse getAdminProfile();
+
+    Long createKycEVOwner(KycEvOwnerRequest req);
 }

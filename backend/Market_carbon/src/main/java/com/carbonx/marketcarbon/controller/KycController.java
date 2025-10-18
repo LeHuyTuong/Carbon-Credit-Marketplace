@@ -1,8 +1,10 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
-import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
+import com.carbonx.marketcarbon.dto.request.*;
+import com.carbonx.marketcarbon.dto.response.KycAdminResponse;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
+import com.carbonx.marketcarbon.dto.response.KycCvaResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
 import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.service.KycService;
@@ -51,7 +53,7 @@ public class KycController {
     @Operation(summary = "Update KYC for User", description = "Update KYC profile for the current user")
     @PutMapping("/user")
     public ResponseEntity<TuongCommonResponse<Long>> updateUser(
-            @Validated(KycRequest.Update.class) @RequestBody TuongCommonRequest<KycRequest> req,
+            @Valid @Validated(KycRequest.Update.class) @RequestBody TuongCommonRequest<KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -101,7 +103,7 @@ public class KycController {
     @Operation(summary = "Create KYC for Company", description = "Create KYC profile for the company of current user")
     @PostMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> createCompany(
-            @Validated(KycCompanyRequest.Create.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+            @Valid @Validated(KycCompanyRequest.Create.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -118,7 +120,7 @@ public class KycController {
     @Operation(summary = "Update KYC for Company", description = "Update KYC profile for the company of current user")
     @PutMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> updateCompany(
-            @Validated(KycCompanyRequest.Update.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+            @Valid @Validated(KycCompanyRequest.Update.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -278,6 +280,21 @@ public class KycController {
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<KycAdminResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
+    }
+    @Operation(summary = "Create KYC for EV Owner", description = "EV Owner submits identification information for verification")
+    @PostMapping("/kycEv")
+    public ResponseEntity<TuongCommonResponse<Long>> createKyc(
+            @Valid @RequestBody KycEvOwnerRequest req,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        Long id = kycService.createKycEVOwner(req); // gọi logic cũ trong service
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "KYC created successfully");
+
+        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, id));
     }
 
 }

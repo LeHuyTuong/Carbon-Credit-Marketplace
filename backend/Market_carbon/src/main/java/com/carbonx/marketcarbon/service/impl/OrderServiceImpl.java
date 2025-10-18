@@ -81,6 +81,7 @@ public class OrderServiceImpl implements OrderService {
                 .marketplaceListing(listing)
                 .carbonCredit(listing.getCarbonCredit())
                 .orderType(OrderType.BUY)
+                .orderStatus(OrderStatus.PENDING)
                 .quantity(request.getQuantity())
                 .unitPrice(unitPrice)
                 .totalPrice(totalPrice)

@@ -1,8 +1,9 @@
 package com.carbonx.marketcarbon.service.impl;
 
 
-import com.carbonx.marketcarbon.dto.request.KycCompanyRequest;
-import com.carbonx.marketcarbon.dto.request.KycCvaRequest;
+import com.carbonx.marketcarbon.common.USER_STATUS;
+import com.carbonx.marketcarbon.config.Translator;
+import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.KycAdminResponse;
 import com.carbonx.marketcarbon.dto.response.KycCompanyResponse;
 import com.carbonx.marketcarbon.dto.response.KycCvaResponse;
@@ -12,14 +13,12 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
-import com.carbonx.marketcarbon.dto.request.KycRequest;
 import com.carbonx.marketcarbon.service.KycService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -34,6 +33,7 @@ public class KycServiceImpl implements KycService {
     private final CompanyRepository companyRepository;
     private final CvaRepository cvaRepository;
     private final AdminRepository adminRepository;
+    private final EVOwnerRepository evOwnerRepository;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -45,7 +45,6 @@ public class KycServiceImpl implements KycService {
         return user;
     }
 
-    @Transactional
     @Override
     public Long createUser(@Validated(KycRequest.Create.class) KycRequest req) {
         // check email thông tin kyc đã tồn tại chưa
@@ -78,14 +77,13 @@ public class KycServiceImpl implements KycService {
         return user.getId();
     }
 
-    @Transactional
     @Override
     public Long updateUser( @Validated(KycRequest.Update.class) KycRequest req) {
         // check user id da co kyc chua
         User user = currentUser();
 
         EVOwner EVOwner = EVOwnerRepository.findById(user.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("kyc.not.found")));
 
         // B1 Set data vào kyc profile
         EVOwner.setName(req.getName());
@@ -109,7 +107,7 @@ public class KycServiceImpl implements KycService {
 
         //B2 Trả Về response
         return  EVOwnerRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale(Translator.toLocale("kyc.not.found"))));
     }
 
     @Override
@@ -131,7 +129,6 @@ public class KycServiceImpl implements KycService {
                 )).toList();
     }
 
-    @Transactional
     @Override
     public Long createCompany(KycCompanyRequest req) {
         //B1 check tk user
@@ -141,7 +138,8 @@ public class KycServiceImpl implements KycService {
         Company companyExist = companyRepository.findByUserEmail(email);
 
         if(companyExist != null){
-            throw new AppException(ErrorCode.COMPANY_IS_EXIST);
+            throw new ResourceNotFoundException(Translator.
+                    toLocale(Translator.toLocale("company.exist")));
         }
         // khi tạo mới Company cần ko cần EV owner hay vehicle
         Company company = Company.builder()
@@ -157,7 +155,6 @@ public class KycServiceImpl implements KycService {
         return company.getId();
     }
 
-    @Transactional
     @Override
     public Long updateCompany(KycCompanyRequest req) {
         User user = currentUser();
@@ -180,19 +177,22 @@ public class KycServiceImpl implements KycService {
     @Override
     public KycCompanyResponse getByCompanyId() {
         User user = currentUser();
-        String userEmail =  user.getEmail();
-        Company companyExist = companyRepository.findByUserEmail(userEmail);
-        if(companyExist == null)
-            throw new ResourceNotFoundException("Company not found");
-        return  KycCompanyResponse.builder()
-                 .id(companyExist.getId())
-                 .companyName(companyExist.getCompanyName())
-                 .taxCode(companyExist.getTaxCode())
-                 .businessLicense(companyExist.getBusinessLicense())
-                 .address(companyExist.getAddress())
-                 .createAt(companyExist.getCreateAt())
-                 .updatedAt(companyExist.getUpdatedAt())
-                 .build();
+        String userEmail = user.getEmail();
+
+        Company company = companyRepository.findByUserEmail(userEmail);
+        if (company == null) {
+            throw new ResourceNotFoundException(Translator.toLocale("company.not.found"));
+        }
+
+        return KycCompanyResponse.builder()
+                .id(company.getId())
+                .businessLicense(company.getBusinessLicense())
+                .taxCode(company.getTaxCode())
+                .companyName(company.getCompanyName())
+                .address(company.getAddress())
+                .createAt(company.getCreateAt())
+                .updatedAt(company.getUpdatedAt())
+                .build();
     }
 
     @Override
@@ -304,12 +304,8 @@ public class KycServiceImpl implements KycService {
 
         Admin admin = Admin.builder()
                 .user(user)
-                .code(req.getCode())
                 .name(req.getName())
                 .phone(req.getPhone())
-                .positionTitle(req.getPositionTitle())
-                .isSuperAdmin(Boolean.TRUE.equals(req.getIsSuperAdmin()))
-                .status(USER_STATUS.ACTIVE)
                 .build();
 
         adminRepository.save(admin);
@@ -326,8 +322,6 @@ public class KycServiceImpl implements KycService {
 
         admin.setName(req.getName());
         admin.setPhone(req.getPhone());
-        admin.setPositionTitle(req.getPositionTitle());
-        admin.setIsSuperAdmin(req.getIsSuperAdmin());
 
         adminRepository.save(admin);
         log.info("🛠️ Admin KYC updated for {}", user.getEmail());
@@ -343,16 +337,39 @@ public class KycServiceImpl implements KycService {
 
         return KycAdminResponse.builder()
                 .id(admin.getId())
-                .code(admin.getCode())
                 .name(admin.getName())
                 .email(admin.getUser().getEmail()) // 🔹 lấy từ User
                 .phone(admin.getPhone())
-                .isSuperAdmin(admin.getIsSuperAdmin())
-                .positionTitle(admin.getPositionTitle())
-                .status(admin.getStatus())
-                .createdAt(admin.getCreatedAt())
                 .updatedAt(admin.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public Long createKycEVOwner(KycEvOwnerRequest req) {
+        User user = currentUser();
+
+        // Kiểm tra xem KYC đã tồn tại chưa
+        if (evOwnerRepository.existsByUserId(user.getId())) {
+            throw new AppException(ErrorCode.KYC_EXISTED);
+        }
+
+        // Tạo bản ghi mới
+        EVOwner evOwner = EVOwner.builder()
+                .user(user)
+                .email(user.getEmail())
+                .name(req.getName())
+                .phone(req.getPhone())
+                .country(req.getCountry())
+                .address(req.getAddress())
+                .birthDate(req.getBirthDate())
+                .documentType(req.getDocumentType())
+                .documentNumber(req.getDocumentNumber())
+                .gender(req.getGender())
+                .build();
+
+        evOwnerRepository.save(evOwner);
+        log.info(" KYC created for EV Owner: {}", user.getEmail());
+        return evOwner.getId();
     }
 
 }
