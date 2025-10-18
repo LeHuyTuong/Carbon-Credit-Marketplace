@@ -71,7 +71,7 @@ const Dashboard = () => {
         {/* ROW 1 - STAT BOXES */}
         <Box
           gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -81,12 +81,12 @@ const Dashboard = () => {
             subtitle="Reports"
             progress="0.75"
             increase="+14%"
-            icon={<AssessmentIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
+            icon={<AssessmentIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
         <Box
           gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -96,12 +96,12 @@ const Dashboard = () => {
             subtitle="Credits"
             progress="0.50"
             increase="+21%"
-            icon={<CreditCardIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
+            icon={<CreditCardIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
         <Box
           gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -111,12 +111,12 @@ const Dashboard = () => {
             subtitle="Companies"
             progress="0.30"
             increase="+5%"
-            icon={<CorporateFareIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
+            icon={<CorporateFareIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
         <Box
           gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -126,7 +126,7 @@ const Dashboard = () => {
             subtitle="Projects"
             progress="0.80"
             increase="+43%"
-            icon={<WorkIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
+            icon={<WorkIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
 
@@ -134,7 +134,7 @@ const Dashboard = () => {
         <Box
           gridColumn="span 6"
           gridRow="span 2"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
         >
           <Box
             mt="25px"
@@ -147,14 +147,14 @@ const Dashboard = () => {
               <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
                 Report Status
               </Typography>
-              <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
+              <Typography variant="h3" fontWeight="bold" color={colors.redAccent[500]}>
                 9,345
               </Typography>
             </Box>
             <Box>
               <IconButton>
                 <DownloadOutlinedIcon
-                  sx={{ fontSize: "26px", color: colors.greenAccent[500] }}
+                  sx={{ fontSize: "26px", color: colors.blueAccent[500] }}
                 />
               </IconButton>
             </Box>
@@ -168,7 +168,7 @@ const Dashboard = () => {
         <Box
           gridColumn="span 6"
           gridRow="span 2"
-          backgroundColor={colors.primary[400]}
+          backgroundColor={colors.greenAccent[800]}
           p="30px"
         >
           <Typography variant="h5" fontWeight="600" sx={{ marginBottom: "15px" }}>
