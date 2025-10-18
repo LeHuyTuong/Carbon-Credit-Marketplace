@@ -18,6 +18,9 @@ import Report_View from "./pages/Dashboard/Admin/Report_Management/view.jsx";
 import EV_View from "./pages/Dashboard/Admin/EV_Management/view.jsx";
 import Project_View from "./pages/Dashboard/Admin/Project_Management/view.jsx";
 import New_Project from "./pages/Dashboard/Admin/Project_Management/newProject.jsx";
+import Company_Management from "./pages/Dashboard/Admin/Company_Management/index.jsx";
+import Company_View from "./pages/Dashboard/Admin/Company_Management/view.jsx";
+import Company_Edit from "./pages/Dashboard/Admin/Company_Management/edit.jsx";
 import Bar from "./pages/Dashboard/Admin/bar";
 import Form from "./pages/Dashboard/Admin/form";
 import Line from "./pages/Dashboard/Admin/line";
@@ -67,6 +70,9 @@ function App() {
               <Route path="/view_EV/:id" element={<EV_View />} />
               <Route path="/view_project/:id" element={<Project_View />} />
               <Route path="/new_project" element={<New_Project />} />
+              <Route path="/company_management" element={<Company_Management />} />
+              <Route path="/view_company/:id" element={<Company_View />} />
+              <Route path="/edit_company/:id" element={<Company_Edit />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
           </main>

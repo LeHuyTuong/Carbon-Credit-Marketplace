@@ -97,14 +97,13 @@ public class WalletController {
     @Operation(summary = "Get history of transactions", description = "API Get history of transaction")
     @GetMapping("/transactions")
     public ResponseEntity<TuongCommonResponse<List<WalletTransaction>>> getTransactions (
-            @Valid @RequestBody TuongCommonRequest<WalletTransactionRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        List<WalletTransaction> transactions = walletTransactionService.getTransaction(req.getData().getWallet(), null);
+        List<WalletTransaction> transactions = walletTransactionService.getTransaction();
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

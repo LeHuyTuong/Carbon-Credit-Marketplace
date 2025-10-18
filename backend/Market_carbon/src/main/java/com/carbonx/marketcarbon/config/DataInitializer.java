@@ -80,7 +80,7 @@ public class DataInitializer {
                         .otpExpiryDate(LocalDateTime.now().plusMinutes(5))
                         .build();
                 userRepository.save(adminUser);
-                log.warn("Admin user created with default password: 123456");
+                log.warn("Admin user created with default password: " + ADMIN_PASSWORD);
             }
 
             // Initialize a Company for the Admin user
@@ -108,7 +108,7 @@ public class DataInitializer {
                 Wallet newWallet = Wallet.builder()
                         .user(adminUser)
                         .balance(BigDecimal.valueOf(1000000))
-                        .carbonCreditBalance(BigDecimal.ZERO)
+                        .carbonCreditBalance(new BigDecimal(50000))
                         .company(adminCompany)
                         .build();
                 walletRepository.save(newWallet);
@@ -142,7 +142,6 @@ public class DataInitializer {
                 CarbonCredit credit = CarbonCredit.builder()
                         .creditCode(issuedCreditCode)
                         .carbonCredit(new BigDecimal("5000.00"))
-                        .amount(5000)
                         .company(adminCompany)
                         .project(testProject)
                         .status(CreditStatus.ISSUE)
@@ -176,7 +175,6 @@ public class DataInitializer {
                 CarbonCredit pendingCredit = CarbonCredit.builder()
                         .creditCode(testCreditCode)
                         .carbonCredit(new BigDecimal("1000.00"))
-                        .amount(1000)
                         .company(adminCompany)
                         .project(testProject)
                         .status(CreditStatus.PENDING)
