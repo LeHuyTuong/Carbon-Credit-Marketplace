@@ -44,7 +44,10 @@ export default function VerifyOtp() {
       const jwt = data?.responseData?.jwt;
 
       //kiểm tra responseCode
-      if (resStatus !== "200" && resStatus?.toUpperCase() !== "SUCCESS") {
+      const isSuccess =
+        resStatus === "200" || message?.toUpperCase() === "SUCCESS";
+
+      if (!isSuccess) {
         throw new Error(message || "Invalid or expired OTP");
       }
 
@@ -78,7 +81,7 @@ export default function VerifyOtp() {
     if (sec > 0 || loading) return;
     setLoading(true);
     try {
-      await apiFetch("/api/v1/send-otp", {
+      await apiFetch("/api/v1/send-otp-forgot", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
