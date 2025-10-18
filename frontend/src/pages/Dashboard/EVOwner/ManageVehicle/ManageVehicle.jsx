@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./manage.css";
 import { Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import useReveal from "../../../../hooks/useReveal";
 import {
   getVehicles,
   createVehicle,
@@ -27,6 +28,8 @@ export default function Manage() {
     message: "",
     variant: "success",
   });
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   //lấy danh sách xe
   const fetchVehicles = async () => {
@@ -56,7 +59,7 @@ export default function Manage() {
 
   //xóa xe
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa xe này?")) return;
+    if (!window.confirm("Are you sure to delete this vehicle?")) return;
     try {
       await deleteVehicle(id);
       await fetchVehicles();
@@ -79,7 +82,7 @@ export default function Manage() {
       if (editData) {
         await updateVehicle(editData.id, payload);
       } else {
-        await createVehicle({ ownerId: 1, ...payload.data }); //giả sử ownerId là 1
+        await createVehicle({ ownerId: 1, ...payload }); //giả sử ownerId là 1
       }
 
       await fetchVehicles();
@@ -98,11 +101,10 @@ export default function Manage() {
 
   const showToast = (message, variant = "success") => {
     setToast({ show: true, message, variant });
-    setTimeout(() => setToast({ show: false, message: "", variant }), 3000);
   };
 
   return (
-    <>
+    <div ref={sectionRef} className="reveal">
       <div className="vehicle-search-section">
         <h1 className="title">Your Vehicles</h1>
         <Button className="mb-3" onClick={handleAdd}>
@@ -157,9 +159,10 @@ export default function Manage() {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="no-data">
-                  <h5>No vehicles yet</h5>
-                  <p>Add your vehicle to get started.</p>
+                <td colSpan="6" className="no-data text-center py-5">
+                  <i className="bi bi-car-front text-accent fs-3 d-block mb-2"></i>
+                  <h5 className="text-dark">No vehicles yet</h5>
+                  <p className="text-muted">Add your vehicle to get started.</p>
                 </td>
               </tr>
             )}
@@ -177,7 +180,7 @@ export default function Manage() {
           <Toast.Body className="text-white">{toast.message}</Toast.Body>
         </Toast>
       </ToastContainer>
-    </>
+    </div>
   );
 }
 

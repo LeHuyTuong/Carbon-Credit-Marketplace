@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { toast } from "react-toastify";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import { apiFetch } from "../../utils/apiFetch";
 
 // validation schema
 const schema = Yup.object().shape({
@@ -30,39 +31,42 @@ export default function Login() {
 
   // gửi request login
   const handleLogin = async (values) => {
+    //khóa nút login tránh spam
     setLoading(true);
     try {
-      const API = import.meta.env.VITE_API_BASE;
-      const res = await fetch(`${API}/api/v1/auth/login`, {
+      //gọi api qua apiFetch
+      const res = await apiFetch("/api/v1/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: values,
       });
 
-      // parse json response
-      const data = await res.json().catch(() => ({}));
+      //lấy dữ liệu từ response
+      const token = res?.responseData?.jwt; //JWT dùng để xác thực trong các request tiếp theo
+      const roles = res?.responseData?.roles; //danh sách vai trò của user
+      const message = res?.responseStatus?.responseMessage || ""; //thông điệp trả về từ be
 
-      // lỗi từ server
-      if (!res.ok) {
-        const message =
-          data?.responseStatus?.responseMessage ||
-          data?.message ||
-          (res.status === 400 ? "Invalid email or password" : "Login failed");
-        throw new Error(message);
-      }
-
-      const token = data?.responseData?.jwt;
-      const roles = data?.responseData?.roles;
+      //check token từ be
       if (!token) throw new Error("Missing token from server");
 
+      //lưu user
       const user = { email: values.email, role: roles?.[0] || "USER" };
       login(user, token, remember);
 
       nav("/home", { replace: true });
       toast.success("Login successful!");
     } catch (err) {
-      console.error("Login error:", err.message);
-      toast.error(err.message);
+      const msg = err?.response?.responseStatus?.responseMessage || err.message;
+
+      // xử lý riêng trường hợp chưa xác minh OTP
+      if (msg?.toLowerCase()?.includes("not verified")) {
+        toast.warn("Please verify your account via OTP before logging in.");
+        //có thể điều hướng tới trang OTP ở đây
+        // nav("/otp", { state: { email: values.email, from: "login" } });
+        return;
+      }
+
+      console.error("Login error:", msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
