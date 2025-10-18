@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.User;
@@ -57,11 +58,21 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setOrder(request.getOrder());
 
         BigDecimal balanceBefore = wallet.getBalance();
-        BigDecimal balanceAfter = balanceBefore.subtract(amount) ;
+
+        BigDecimal balanceAfter;
+        if (request.getType() == WalletTransactionType.WITH_DRAWL) {
+            balanceAfter = balanceBefore.subtract(amount);
+        } else {
+            balanceAfter = balanceBefore.add(amount);
+        }
 
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
 
+        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalStateException("Insufficient balance for transaction");
+        }
+        
         return walletTransactionRepository.save(transaction);
     }
 
