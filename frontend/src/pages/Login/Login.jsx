@@ -59,9 +59,9 @@ export default function Login() {
 
       // xử lý riêng trường hợp chưa xác minh OTP
       if (msg?.toLowerCase()?.includes("not verified")) {
-        toast.warn("Please verify your account via OTP before logging in.");
-        //có thể điều hướng tới trang OTP ở đây
-        // nav("/otp", { state: { email: values.email, from: "login" } });
+        toast.error(
+          "Your account has not been verified. Please wait 5 minutes and register again."
+        );
         return;
       }
 

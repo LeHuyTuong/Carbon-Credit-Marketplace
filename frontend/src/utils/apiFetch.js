@@ -173,11 +173,16 @@ export async function apiFetch(path, options = {}) {
   const code = data?.responseStatus?.responseCode?.trim?.()?.toUpperCase?.();
 const message = data?.responseStatus?.responseMessage?.trim?.()?.toUpperCase?.();
 
-// chấp nhận nhiều chuẩn success khác nhau
-const successCodes = ["200", "00000000", "SUCCESS"];
-const isSuccess =
-  successCodes.includes(code) || message === "SUCCESS";
+// // chấp nhận nhiều chuẩn success khác nhau
+// const successCodes = ["200", "00000000", "SUCCESS"];
+// const isSuccess =
+//   successCodes.includes(code) || message === "SUCCESS";
 
+const isSuccess =
+  !data?.responseStatus ||               // không có responseStatus => bỏ qua check
+  ["200", "00000000", "SUCCESS", "OK"].includes(code) ||
+  ["SUCCESS", "OK"].includes(message);
+  
 if (!isSuccess) {
   const errMsg =
     data?.responseStatus?.responseMessage ||
