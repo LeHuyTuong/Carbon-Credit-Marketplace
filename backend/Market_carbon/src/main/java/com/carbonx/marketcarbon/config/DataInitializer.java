@@ -165,6 +165,46 @@ public class DataInitializer {
                         .build();
                 marketplaceListingRepository.save(listing);
                 log.info("Sample MarketPlaceListing created with ID: {}. You can use this ID to create an order.", listing.getId());
+
+                MarketPlaceListing listing1 = MarketPlaceListing.builder()
+                        .company(adminCompany)
+                        .carbonCredit(listableCredit)
+                        .quantity(new BigDecimal("700.00"))
+                        .pricePerCredit(new BigDecimal("23.50"))
+                        .status(ListingStatus.AVAILABLE)
+                        .expiresAt(LocalDateTime.now().plusDays(60))
+                        .build();
+                marketplaceListingRepository.save(listing1);
+
+                MarketPlaceListing listing2 = MarketPlaceListing.builder()
+                        .company(adminCompany)
+                        .carbonCredit(listableCredit)
+                        .quantity(new BigDecimal("100.00"))
+                        .pricePerCredit(new BigDecimal("28.50"))
+                        .status(ListingStatus.AVAILABLE)
+                        .expiresAt(LocalDateTime.now().plusDays(90))
+                        .build();
+                marketplaceListingRepository.save(listing2);
+
+                MarketPlaceListing listing3 = MarketPlaceListing.builder()
+                        .company(adminCompany)
+                        .carbonCredit(listableCredit)
+                        .quantity(new BigDecimal("1000.00"))
+                        .pricePerCredit(new BigDecimal("21.50"))
+                        .status(ListingStatus.AVAILABLE)
+                        .expiresAt(LocalDateTime.now().plusDays(25))
+                        .build();
+                marketplaceListingRepository.save(listing3);
+
+                MarketPlaceListing listing4 = MarketPlaceListing.builder()
+                        .company(adminCompany)
+                        .carbonCredit(listableCredit)
+                        .quantity(new BigDecimal("152.00"))
+                        .pricePerCredit(new BigDecimal("27.50"))
+                        .status(ListingStatus.AVAILABLE)
+                        .expiresAt(LocalDateTime.now().plusDays(90))
+                        .build();
+                marketplaceListingRepository.save(listing4);
             }
 
 
