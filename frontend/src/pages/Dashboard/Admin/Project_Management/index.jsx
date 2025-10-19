@@ -18,7 +18,7 @@ const ListProjects = () => {
     const fetchProjects = async () => {
       try {
         const res = await apiFetch("/api/v1/projects/all", { method: "GET" });
-        console.log(" API Project List:", res);
+        console.log("API Project List:", res);
 
         const projects = (res?.response || []).map((item, idx) => ({
           id: item.id || idx,
@@ -94,6 +94,7 @@ const ListProjects = () => {
       field: "totalexpectedcredits",
       headerName: "Technical Indicators",
       flex: 1,
+
       renderCell: (params) => <Typography>{params.value}</Typography>,
     },
     {

@@ -25,7 +25,7 @@ public class CarbonCredit{
     @Column(unique = true, nullable = false)
     private String creditCode;
 
-    private BigDecimal carbonCredit;
+    private BigDecimal carbonCredit; // số lượng tín chỉ
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
@@ -40,7 +40,6 @@ public class CarbonCredit{
     @Enumerated(EnumType.STRING)
     private CreditStatus status = CreditStatus.PENDING;
 
-    private int amount; // số lượng tín chỉ có
 
     private int listedAmount = 0; // số lượng tín chỉ đang niêm yết
 

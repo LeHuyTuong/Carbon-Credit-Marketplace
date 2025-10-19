@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.service.VNPayService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -10,23 +11,22 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/api/v1/VNpayment")
+@Tag(name = "VNPay Payment", description = "Endpoints for VNPay integration")
 @RequiredArgsConstructor
 public class VNPaymentController {
     private final VNPayService vnPayService;
 
-    @GetMapping("")
+    @GetMapping("/create")
     public String home(){
         return "index";
     }
 
-
-    @Operation(summary = "order VNPay chua xong ", description = "chua xong ")
+    @Operation(summary = "Create a new VNPay payment order and redirect")
     @PostMapping("/submitOrder")
-    public String submidOrder(@RequestParam("amount") int orderTotal,
+    public String submitOrder(@RequestParam("amount") Long orderTotal,
                               @RequestParam("orderInfo") String orderInfo,
                               HttpServletRequest request){
-        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-        String vnpayUrl = vnPayService.createOrder(orderTotal, orderInfo, baseUrl);
+        String vnpayUrl = vnPayService.createOrder(request, orderTotal, orderInfo);
         return "redirect:" + vnpayUrl;
     }
 
