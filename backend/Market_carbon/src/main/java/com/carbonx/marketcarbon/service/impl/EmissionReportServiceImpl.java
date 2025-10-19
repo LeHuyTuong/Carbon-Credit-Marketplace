@@ -21,6 +21,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -287,6 +289,35 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
         return reportRepository.findByStatus(parsed, pageable)
                 .map(EmissionReportResponse::from);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('COMPANY')")
+    public List<EmissionReportResponse> listReportsForCompany(String status) {
+        // Lấy thông tin user hiện tại từ SecurityContext
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new AppException(ErrorCode.UNAUTHORIZED);
+
+        Company company = companyRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        List<EmissionReport> reports;
+        if (status == null || status.isBlank()) {
+            // Lấy toàn bộ report của công ty
+            reports = reportRepository.findBySeller_Id(company.getId());
+        } else {
+            // Lọc theo trạng thái nếu có
+            EmissionStatus st = EmissionStatus.valueOf(status.toUpperCase());
+            reports = reportRepository.findBySeller_IdAndStatus(company.getId(), st);
+        }
+
+        // Chuyển sang DTO
+        return reports.stream()
+                .map(EmissionReportResponse::from)
+                .toList();
     }
 
 

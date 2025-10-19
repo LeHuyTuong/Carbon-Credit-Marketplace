@@ -38,7 +38,8 @@ public class AppConfig {
             "/api/v1/auth/check-exists-user",
             "/api/v1/auth/outbound/authentication",
             "/api/v1/send-otp-forgot",
-            "/api/v1/check-exists-user"
+            "/api/v1/check-exists-user",
+            "/api/v1/projects/all"
     };
 
     @Bean

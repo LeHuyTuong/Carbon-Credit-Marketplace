@@ -21,4 +21,5 @@ public interface EmissionReportService {
     EmissionReportResponse verifyReport(Long reportId, boolean approved, String comment);  // CVA
     EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note);
     Page<EmissionReportResponse> listReportsForAdmin(String status, Pageable pageable);
+    List<EmissionReportResponse> listReportsForCompany(String status);
 }
