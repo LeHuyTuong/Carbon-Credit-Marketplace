@@ -40,6 +40,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     public WalletTransaction createTransaction(WalletTransactionRequest request) {
 
+        // check wallet
         Wallet wallet;
         if (request.getWallet() != null) {
             wallet = walletRepository.findById(request.getWallet().getId())
@@ -68,6 +69,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal balanceAfter = balanceBefore.add(amount);
 
+        // so tien sau khi nap ko dc am
         if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalStateException("Insufficient balance for transaction");
         }
