@@ -20,8 +20,9 @@ public class WalletTransaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "wallet_id", nullable = false)
+    @JsonBackReference
     private Wallet wallet;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,7 +31,6 @@ public class WalletTransaction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @JsonBackReference
     private WalletTransactionType transactionType;
 
     @Column(length = 500)
