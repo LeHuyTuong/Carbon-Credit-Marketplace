@@ -53,37 +53,16 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/reports" className={linkCls}>
+              <NavLink to="/upload-report" className={linkCls}>
                 REPORT
               </NavLink>
             </li>
 
             {/*ev */}
-            <li className="nav-item dropdown">
-              <a
-                href="#"
-                className={`nav-link dropdown-toggle px-3 ${
-                  isEV ? "is-active-parent" : ""
-                }`}
-                id="evDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
+            <li className="nav-item">
+              <NavLink to="/managevehicle" className={linkCls}>
                 ELECTRIC VEHICLE
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="evDropdown">
-                <li>
-                  <NavLink to="/managevehicle" className={ddItemCls}>
-                    Manage vehicle
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/ev/transactions" className={ddItemCls}>
-                    Personal transaction
-                  </NavLink>
-                </li>
-              </ul>
+              </NavLink>
             </li>
 
             <li className="nav-item">

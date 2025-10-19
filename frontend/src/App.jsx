@@ -35,6 +35,7 @@ import ListProjects from "./pages/Dashboard/Company/Projects/ListProjects.jsx";
 import DetailProject from "./pages/Dashboard/Company/Projects/DetailProject.jsx";
 import ViewRegisteredProject from "./pages/Dashboard/Company/Projects/ViewRegisteredProject.jsx";
 import ManageCredits from "./pages/Dashboard/Company/ManageCredits/ManageCredits.jsx";
+import UploadReport from "./pages/Dashboard/Company/UploadReport/UploadReport.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -74,6 +75,7 @@ export default function App() {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
           <Route path="/change-form" element={<ChangePasswordForm />} />
+          <Route path="/upload-report" element={<UploadReport />} />
 
           <Route
             path="/kyc"
