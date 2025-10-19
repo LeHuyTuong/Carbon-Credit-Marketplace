@@ -7,14 +7,16 @@ import {
   Button,
   Snackbar,
   Alert,
+  Divider,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjectApplicationById } from "@/apiAdmin/companyAdmin.js";
+import { getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
 
 const ApplicationView = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // ← id lấy từ route: /cva/view_registration_project/:id
   const navigate = useNavigate();
+
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
@@ -26,89 +28,49 @@ const ApplicationView = () => {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        // ✅ Mock dữ liệu mẫu (y hệt cấu trúc API)
-        const mockApplications = [
-          {
-            id: 1,
-            projectId: 101,
-            projectTitle: "AI-Powered Chatbot",
-            companyId: 201,
-            companyName: "TechNova Co., Ltd.",
-            status: "SUBMITTED",
-            reviewNote: "Awaiting first review.",
-            finalReviewNote: "",
-            applicationDocsUrl: "https://example.com/docs/ai-chatbot.pdf",
-            submittedAt: "2025-10-17T18:50:29.847Z",
-          },
-          {
-            id: 2,
-            projectId: 102,
-            projectTitle: "Smart Farming Drone",
-            companyId: 202,
-            companyName: "AgriTech Vietnam",
-            status: "REVIEWING",
-            reviewNote: "Under review by committee.",
-            finalReviewNote: "",
-            applicationDocsUrl: "",
-            submittedAt: "2025-10-16T14:32:12.000Z",
-          },
-          {
-            id: 3,
-            projectId: 103,
-            projectTitle: "Blockchain Logistics System",
-            companyId: 203,
-            companyName: "LogiChain Solutions",
-            status: "APPROVED",
-            reviewNote: "Approved with minor revisions.",
-            finalReviewNote: "Project approved officially.",
-            applicationDocsUrl: "https://example.com/docs/logichain.pdf",
-            submittedAt: "2025-10-15T09:00:00.000Z",
-          },
-          {
-            id: 4,
-            projectId: 104,
-            projectTitle: "Renewable Energy Management",
-            companyId: 204,
-            companyName: "GreenFuture Energy",
-            status: "REJECTED",
-            reviewNote: "Insufficient technical details.",
-            finalReviewNote: "Rejected due to incomplete documentation.",
-            applicationDocsUrl: "",
-            submittedAt: "2025-10-14T12:15:45.000Z",
-          },
-        ];
+        console.log("📡 Fetching application with ID:", id);
+        const res = await getProjectApplicationByIdForCVA(id);
+        console.log("🔍 Raw API response:", res);
 
-        let data;
-        try {
-          data = await getProjectApplicationById(id);
-        } catch {
-          // ✅ Nếu API chưa có, dùng dữ liệu mô phỏng
-          data = mockApplications.find((item) => item.id === parseInt(id));
-        }
-
-        if (data) {
-          setApplication(data);
+        // 🔸 API chuẩn trả về responseData chứa dữ liệu
+        const code = res?.responseStatus?.responseCode;
+        if (code === "200" || code === "00000000") {
+          const data =
+            res?.responseData ||
+            res?.response ||
+            res; // fallback nếu backend trả khác format
+          if (data) {
+            setApplication(data);
+          } else {
+            setSnackbar({
+              open: true,
+              message: "Không tìm thấy dữ liệu trong phản hồi.",
+              severity: "warning",
+            });
+          }
         } else {
           setSnackbar({
             open: true,
-            message: "Application not found.",
+            message: `API trả về lỗi code ${code}`,
             severity: "error",
           });
         }
       } catch (error) {
-        console.error("Error fetching detail:", error);
+        console.error("❌ Error fetching detail:", error);
         setSnackbar({
           open: true,
-          message: "Failed to fetch application.",
+          message: "Không thể tải chi tiết đăng ký.",
           severity: "error",
         });
       } finally {
         setLoading(false);
       }
     };
+
     fetchDetail();
   }, [id]);
 
+  // 🔹 Loading
   if (loading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
@@ -116,6 +78,7 @@ const ApplicationView = () => {
       </Box>
     );
 
+  // 🔹 Không có dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -128,20 +91,34 @@ const ApplicationView = () => {
       </Box>
     );
 
+  // 🔹 UI chính
   return (
     <Box m="20px">
-      <Header title="APPLICATION DETAIL" subtitle={`ID: ${application.id}`} />
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Typography variant="h6">Project Title: {application.projectTitle}</Typography>
-        <Typography>Project ID: {application.projectId}</Typography>
-        <Typography>Company ID: {application.companyId}</Typography>
-        <Typography>Company: {application.companyName}</Typography>
-        <Typography>Status: {application.status}</Typography>
-        <Typography>Review Note: {application.reviewNote || "N/A"}</Typography>
-        <Typography>Final Review Note: {application.finalReviewNote || "N/A"}</Typography>
+      <Header
+        title="APPLICATION DETAIL"
+        subtitle={`Application ID: ${application.applicationId || id}`}
+      />
+
+      <Paper sx={{ p: 3, mt: 2, borderRadius: 3, boxShadow: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          {application.projectTitle || "Untitled Project"}
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+
+        <Typography>📁 <b>Project ID:</b> {application.projectId || "—"}</Typography>
+        <Typography>🏢 <b>Company ID:</b> {application.companyId || "—"}</Typography>
+        <Typography>🏷️ <b>Company Name:</b> {application.companyName || "—"}</Typography>
+        <Typography>📊 <b>Status:</b> {application.status || "—"}</Typography>
 
         <Typography mt={2}>
-          Submitted At:{" "}
+          📝 <b>Review Note:</b> {application.reviewNote || "N/A"}
+        </Typography>
+        <Typography>
+          📋 <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
+        </Typography>
+
+        <Typography mt={2}>
+          ⏰ <b>Submitted At:</b>{" "}
           {application.submittedAt
             ? new Date(application.submittedAt).toLocaleString()
             : "N/A"}
@@ -153,20 +130,25 @@ const ApplicationView = () => {
               href={application.applicationDocsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#42A5F5", textDecoration: "underline" }}
+              style={{
+                color: "#1976d2",
+                textDecoration: "underline",
+                fontWeight: 500,
+              }}
             >
-              View Attached Docs
+              📎 View Attached Documents
             </a>
           </Box>
         ) : (
           <Typography mt={2} color="text.secondary">
-            No document attached
+            No documents attached
           </Typography>
         )}
 
-        <Box mt={3} display="flex" gap={2}>
+        <Box mt={4} display="flex" gap={2}>
           <Button
             variant="contained"
+            color="primary"
             onClick={() => navigate(`/cva/edit_registration_project/${id}`)}
           >
             Edit

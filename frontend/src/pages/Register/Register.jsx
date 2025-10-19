@@ -4,6 +4,7 @@ import useRipple from "../../hooks/useRipple";
 import { toast } from "react-toastify";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import { apiFetch } from "../../utils/apiFetch";
 
 //validate
 const schema = Yup.object().shape({
@@ -34,8 +35,6 @@ const mapRoleToBackend = (r) => {
       return "EV_OWNER";
     case "bis":
       return "COMPANY";
-    case "cv":
-      return "CVA";
     default:
       return "";
   }
@@ -57,37 +56,35 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const API = import.meta.env.VITE_API_BASE;
-      const res = await fetch(`${API}/api/v1/auth/register`, {
+      const res = await apiFetch("/api/v1/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           email: values.email.trim(),
           password: values.password,
           confirmPassword: values.confirm,
           roleName: roleBackend,
-        }),
+        },
       });
 
-      //chỉ parse json khi response có body
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        const message =
-          data?.responseStatus?.responseMessage ||
-          data?.message ||
-          (res.status === 409 ? "Email already registered" : "Register failed");
-        throw new Error(message);
-      }
-
+      // nếu thành công
       toast.success("Registration successful! Please verify your email.");
       nav("/otp", {
         replace: true,
         state: { email: values.email, from: "register" },
       });
     } catch (err) {
-      console.error("Register error:", err.message);
-      toast.error(err.message || "Registration failed");
+      // bắt lỗi BE
+      const code = err?.response?.responseStatus?.responseCode;
+      const message =
+        err?.response?.responseStatus?.responseMessage || err.message;
+
+      // Email đã tồn tại
+      if (code === "409" || message?.includes("Email already exists")) {
+        toast.warn("Email already registered");
+        return;
+      }
+
+      toast.error(message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -213,9 +210,6 @@ export default function Register() {
                         Electric Vehicle Owner (EV Owner)
                       </option>
                       <option value="bis">Company</option>
-                      <option value="cv">
-                        Carbon Verification & Audit (CVA)
-                      </option>
                     </select>
                     {touched.role && errors.role && (
                       <div className="invalid-feedback">{errors.role}</div>
