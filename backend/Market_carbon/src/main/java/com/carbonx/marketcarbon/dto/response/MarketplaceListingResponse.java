@@ -24,4 +24,6 @@ public class MarketplaceListingResponse {
 
     private LocalDateTime expiresAt;
 
+    private String logo;
+
 }

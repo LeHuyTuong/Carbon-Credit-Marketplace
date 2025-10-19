@@ -77,7 +77,7 @@ const Invoices = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="ELECTRIC VEHICLES" subtitle="List of electric vehicles" />
+      <Header title="LOG" subtitle="List of logs" />
       <Box
         m="40px 0 0 0"
         height="75vh"

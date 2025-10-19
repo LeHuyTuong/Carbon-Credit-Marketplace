@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.model.Wallet;
+import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
@@ -33,7 +34,7 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawl money ")
     @PostMapping("/{amount}")
-    public ResponseEntity<TuongCommonResponse<Withdrawal>> withdrawalRequest(
+    public ResponseEntity<TuongCommonResponse<WalletTransaction>> withdrawalRequest(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
@@ -53,11 +54,11 @@ public class WithdrawalController {
                 .amount(withdrawal.getAmount())
                 .build();
 
-        walletTransactionService.createTransaction(walletTransactionRequest);
+        WalletTransaction log = walletTransactionService.createTransaction(walletTransactionRequest);
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Withdrawal> response = new TuongCommonResponse<>(trace, now , rs, withdrawal);
+        TuongCommonResponse<WalletTransaction> response = new TuongCommonResponse<>(trace, now , rs, log);
         return ResponseEntity.ok(response);
     }
 

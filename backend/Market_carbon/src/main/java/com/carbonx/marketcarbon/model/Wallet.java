@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "wallets")
@@ -32,6 +34,13 @@ public class Wallet {
     @JoinColumn(name = "company_id")
     @JsonIgnore
     private Company company;
+
+    @OneToMany(mappedBy = "wallet",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    @JsonIgnore
+    private List<WalletTransaction> walletTransactions = new ArrayList<>();
+
 
     private BigDecimal balance =  BigDecimal.ZERO; // for currency
 
