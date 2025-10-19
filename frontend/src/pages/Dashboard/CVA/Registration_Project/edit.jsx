@@ -11,8 +11,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjectApplicationById } from "@/apiAdmin/companyAdmin.js";
-import { updateApplicationDecision } from "@/apiCVA/registrationCVA.js";
+import { updateApplicationDecision,getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
 
 const ApplicationEdit = () => {
@@ -37,7 +36,7 @@ const ApplicationEdit = () => {
   useEffect(() => {
     const fetchApplication = async () => {
       try {
-        const data = await getProjectApplicationById(id);
+        const data = await getProjectApplicationByIdForCVA(id);
         const appData = data?.response || data;
 
         if (appData && appData.id) {
@@ -89,7 +88,7 @@ const ApplicationEdit = () => {
       const responseMsg =
         result?.responseStatus?.responseMessage || "Unknown response from server.";
 
-      if (responseCode === "200") {
+      if (responseCode === "00000000") {
         setSnackbar({
           open: true,
           message: "✅ Updated successfully!",
