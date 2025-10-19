@@ -1,43 +1,37 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./marketplace.css";
 import project1 from "../../../../assets/project1.jpg";
 import project2 from "../../../../assets/project2.jpg";
 import project3 from "../../../../assets/project3.jpg";
 import useRipple from "../../../../hooks/useRipple";
 import { useNavigate } from "react-router-dom";
+import useReveal from "../../../../hooks/useReveal";
 
 export default function Marketplace() {
   const sectionRef = useRef(null);
   const ripple = useRipple();
   const nav = useNavigate();
+  const [projectData, setProjectData] = useState([]);
 
+  const projectImages = [project1, project2, project3];
+  useReveal(sectionRef);
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) =>
-        entry.isIntersecting && entry.target.classList.add("is-visible"),
-      { threshold: 0.15 }
+    //lấy danh sách credit từ localStorage (mock)
+    const localCredits = JSON.parse(
+      localStorage.getItem("mockCredits") || "[]"
     );
-    sectionRef.current && observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+    const formatted = localCredits.map((c, i) => ({
+      id: c.id,
+      title: c.title || "EV Carbon Credit",
+      seller: "Mock Seller Co.",
+      price: c.price,
+      quantity: c.quantity,
+      expiresAt: c.createdAt,
+      img: projectImages[i % projectImages.length],
+    }));
 
-  const projectData = [
-    {
-      img: project1,
-      title: "$39.00",
-      text: `Purchase verified credits generated from public EV charging networks. Each credit reflects the emission reduction achieved by replacing fossil fuel usage with renewable-powered EV charging.`,
-    },
-    {
-      img: project2,
-      title: "$100.00",
-      text: `Invest in transparent, data-backed carbon credits measured from real-time EV charging sessions. Perfect for businesses seeking reliable emission offsets.`,
-    },
-    {
-      img: project3,
-      title: "$60.00",
-      text: `Measures and verifies electricity consumption of EVs based on distance traveled, generating transparent carbon credits.`,
-    },
-  ];
+    setProjectData(formatted);
+  }, []);
 
   return (
     <section
@@ -49,43 +43,52 @@ export default function Marketplace() {
         <div className="text-center mb-5 mt-2">
           <h2 className="section-title">Carbon Credits Marketplace</h2>
           <h6 className="section-subtitle">
-            EV Charging Carbon Credit Project
+            EV Charging Carbon Credit Exchange
           </h6>
         </div>
 
-        <div className="main-section mb-4">
-          <h2 className="section-title text-accent mb-0">Buy Credits</h2>
-          <h6 className="section-subtitle2">
-            Access verified carbon credits generated from EV charging data
-            across certified companies. Each credit represents measurable CO₂
-            reductions achieved by electric fleets using clean energy.
-          </h6>
-        </div>
-
-        <div className="row row-cols-1 row-cols-md-3 g-4">
-          {projectData.map((p, i) => (
-            <div className="col d-flex" key={i}>
-              <div className="card project-card w-100">
+        {projectData.length === 0 ? (
+          <p className="text-center text-light fs-4 fw-semibold mt-4">
+            No active credits available.
+          </p>
+        ) : (
+          <div className="project-grid">
+            {projectData.map((p) => (
+              <div className="project-card" key={p.id}>
                 <div className="card-img-container">
                   <img src={p.img} className="card-img-top" alt={p.title} />
                 </div>
+
                 <div className="card-body">
-                  <h5 className="card-title">{p.title}</h5>
-                  <p className="card-text">{p.text}</p>
+                  <h5 className="card-title mb-2 text-dark fw-bold">
+                    {p.title}
+                  </h5>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="price-tag fw-bold">${p.price}</span>
+                    <span className="text-muted small">
+                      <strong>Available:</strong> {p.quantity}
+                    </span>
+                  </div>
+                  <p className="text-muted small mb-1">
+                    <strong>Seller:</strong> {p.seller}
+                  </p>
+                  <p className="text-muted small mb-2">
+                    Expires on: {p.expiresAt}
+                  </p>
                   <button
-                    className="btn-primary btn-buy mt-3"
+                    className="btn-primary btn-buy mt-3 w-100"
                     onClick={(e) => {
                       ripple(e, e.currentTarget);
-                      nav("/order");
+                      nav("/order", { state: { credit: p } });
                     }}
                   >
-                    Buy
+                    Buy Now
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

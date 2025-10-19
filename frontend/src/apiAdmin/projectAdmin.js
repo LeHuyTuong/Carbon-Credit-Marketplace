@@ -20,6 +20,7 @@ export async function getProjectById(id) {
     method: "GET",
   });
 }
+// Cập nhật project theo id
 export const updateProjectById = async (id, data) => {
   const body = {
     requestTrace: "trace-update-project",

@@ -53,37 +53,16 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/reports" className={linkCls}>
+              <NavLink to="/upload-report" className={linkCls}>
                 REPORT
               </NavLink>
             </li>
 
             {/*ev */}
-            <li className="nav-item dropdown">
-              <a
-                href="#"
-                className={`nav-link dropdown-toggle px-3 ${
-                  isEV ? "is-active-parent" : ""
-                }`}
-                id="evDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
+            <li className="nav-item">
+              <NavLink to="/managevehicle" className={linkCls}>
                 ELECTRIC VEHICLE
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="evDropdown">
-                <li>
-                  <NavLink to="/managevehicle" className={ddItemCls}>
-                    Manage vehicle
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/ev/transactions" className={ddItemCls}>
-                    Personal transaction
-                  </NavLink>
-                </li>
-              </ul>
+              </NavLink>
             </li>
 
             <li className="nav-item">
@@ -163,7 +142,6 @@ export default function Navbar() {
                   </ul>
                 </li>
 
-                {/*btn person */}
                 <li className="nav-item dropdown">
                   <a
                     href="#"
@@ -177,41 +155,92 @@ export default function Navbar() {
                       <i className="bi bi-person"></i>
                     </span>
                   </a>
+
                   <ul
                     className="dropdown-menu dropdown-menu-end"
                     aria-labelledby="userDropdown"
                     data-bs-auto-close="true"
                   >
-                    <li>
-                      <NavLink
-                        className="dropdown-item"
-                        to={
-                          user?.role === "COMPANY"
-                            ? "/profile-company"
-                            : "/profile"
-                        }
-                      >
-                        Profile
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink to="/wallet" className="dropdown-item">
-                        Wallet
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink to="/managevehicle" className="dropdown-item">
-                        My vehicles
-                      </NavLink>
-                    </li>
-                    <li>
-                      <hr className="dropdown-divider" />
-                    </li>
-                    <li>
-                      <button className="dropdown-item" onClick={logout}>
-                        Logout
-                      </button>
-                    </li>
+                    {/* Company role */}
+                    {user?.role === "COMPANY" ? (
+                      <>
+                        <li>
+                          <NavLink
+                            to="/profile-company"
+                            className="dropdown-item"
+                          >
+                            Profile
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/manage-credits"
+                            className="dropdown-item"
+                          >
+                            Manage Credits
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/list-projects"
+                            className="dropdown-item"
+                          >
+                            Manage Projects
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/company/orders"
+                            className="dropdown-item"
+                          >
+                            Orders
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink to="/wallet" className="dropdown-item">
+                            Wallet
+                          </NavLink>
+                        </li>
+                        <li>
+                          <hr className="dropdown-divider" />
+                        </li>
+                        <li>
+                          <button className="dropdown-item" onClick={logout}>
+                            Logout
+                          </button>
+                        </li>
+                      </>
+                    ) : (
+                      /* Default user */
+                      <>
+                        <li>
+                          <NavLink to="/profile" className="dropdown-item">
+                            Profile
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink to="/wallet" className="dropdown-item">
+                            Wallet
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
+                            to="/managevehicle"
+                            className="dropdown-item"
+                          >
+                            My Vehicles
+                          </NavLink>
+                        </li>
+                        <li>
+                          <hr className="dropdown-divider" />
+                        </li>
+                        <li>
+                          <button className="dropdown-item" onClick={logout}>
+                            Logout
+                          </button>
+                        </li>
+                      </>
+                    )}
                   </ul>
                 </li>
               </>
