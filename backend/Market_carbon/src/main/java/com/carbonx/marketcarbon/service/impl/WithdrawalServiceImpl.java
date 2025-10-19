@@ -90,16 +90,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
 
-            BigDecimal balanceBefore = wallet.getBalance();
-            wallet.setBalance(balanceBefore.subtract(amountToWithdraw));
-            walletRepository.save(wallet);
-            BigDecimal balanceAfter = wallet.getBalance();
-
             walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                     .wallet(wallet)
                     .type(WalletTransactionType.WITH_DRAWL)
                     .description("Bank account withdrawal approved. ID: " + withdrawalId)
-                    .amount(amountToWithdraw)
+                    .amount(amountToWithdraw.negate())
                     .build());
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);

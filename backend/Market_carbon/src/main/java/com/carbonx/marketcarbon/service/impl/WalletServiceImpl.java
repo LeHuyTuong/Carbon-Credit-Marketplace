@@ -66,32 +66,29 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Wallet addBalanceToWallet( Long money) throws WalletException {
         // 1lấy số tiền hiện tại đang có trong ví
+        if (money == null || money <= 0) {
+            throw new WalletException("Amount to add must be greater than zero");
+        }
         User user = currentUser();
         Long id = user.getId();
         Wallet wallet = walletRepository.findByUserId(id);
 
+        if(wallet == null){
+            wallet = generateWallet(user);
+        }
+
         BigDecimal amountToAdd = BigDecimal.valueOf(money);
-        BigDecimal balanceBefore = wallet.getBalance();
 
-        // Cập nhật số dư ví
-        wallet.setBalance(wallet.getBalance().add(BigDecimal.valueOf(money)));
-        Wallet updatedWallet = walletRepository.save(wallet);
-        BigDecimal balanceAfter = updatedWallet.getBalance();
-
-        walletRepository.save(wallet);
-
-        // Tạo bản ghi giao dịch chi tiết
-        WalletTransactionRequest request = WalletTransactionRequest.builder()
-                .wallet(wallet)
-                .amount(amountToAdd)
-                .type(WalletTransactionType.ADD_MONEY)
-                .description("Deposit money to wallet from Stripe")
-                .build();
-
-        walletTransactionService.createTransaction(request);
+        walletTransactionService.createTransaction(WalletTransactionRequest.builder()
+                        .wallet(wallet)
+                        .amount(amountToAdd)
+                        .type(WalletTransactionType.ADD_MONEY)
+                        .description("Add money to wallet")
+                .build());
 
         log.info("Wallet added to wallet" + wallet + " money :" + money);
-        return updatedWallet;
+        return walletRepository.findById(wallet.getId())
+                .orElseThrow(() -> new WalletException("Wallet not found"));
     }
 
     @Override
