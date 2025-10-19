@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -34,7 +35,7 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawl money ")
     @PostMapping("/{amount}")
-    public ResponseEntity<TuongCommonResponse<WalletTransaction>> withdrawalRequest(
+    public ResponseEntity<TuongCommonResponse<WalletTransactionRequest>> withdrawalRequest(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
@@ -45,20 +46,19 @@ public class WithdrawalController {
         Wallet userWallet = walletService.getUserWallet();
 
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
-        walletService.addBalanceToWallet(withdrawal.getAmount().longValue());
+        walletService.addBalanceToWallet( -amount);
+
 
         WalletTransactionRequest walletTransactionRequest =  WalletTransactionRequest.builder()
                 .wallet(userWallet)
                 .type(WalletTransactionType.WITH_DRAWL)
                 .description("Bank account withdrawl")
-                .amount(withdrawal.getAmount())
+                .amount(withdrawal.getAmount().negate())
                 .build();
-
-        WalletTransaction log = walletTransactionService.createTransaction(walletTransactionRequest);
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<WalletTransaction> response = new TuongCommonResponse<>(trace, now , rs, log);
+        TuongCommonResponse<WalletTransactionRequest> response = new TuongCommonResponse<>(trace, now , rs, walletTransactionRequest);
         return ResponseEntity.ok(response);
     }
 
