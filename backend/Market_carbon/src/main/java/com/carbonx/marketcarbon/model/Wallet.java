@@ -35,8 +35,7 @@ public class Wallet {
     private Company company;
 
     @OneToMany(mappedBy = "wallet",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true)
+            cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<WalletTransaction> walletTransactions = new ArrayList<>();
 

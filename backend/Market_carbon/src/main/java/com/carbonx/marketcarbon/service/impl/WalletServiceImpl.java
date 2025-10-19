@@ -86,9 +86,10 @@ public class WalletServiceImpl implements WalletService {
                         .description("Add money to wallet")
                 .build());
 
+        Wallet updatedWallet = walletRepository.findByUserId(id);
+
         log.info("Wallet added to wallet" + wallet + " money :" + money);
-        return walletRepository.findById(wallet.getId())
-                .orElseThrow(() -> new WalletException("Wallet not found"));
+        return updatedWallet;
     }
 
     @Override
