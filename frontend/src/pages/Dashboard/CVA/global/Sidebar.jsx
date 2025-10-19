@@ -173,7 +173,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
             <Item
-              title="Manage Aplplications_Projects"
+              title="Manage Applications_Projects"
               to="/cva/registration_project_management"
               icon={<ReceiptOutlinedIcon />}
               selected={selected}

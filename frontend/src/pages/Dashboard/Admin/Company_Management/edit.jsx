@@ -170,7 +170,7 @@ const ApplicationEdit = () => {
                     sx={{ mt: 2 }}
                 >
                     <MenuItem value="SUBMITTED">Submitted</MenuItem>
-                    <MenuItem value="REVIEWING">Reviewing</MenuItem>
+                    <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
                     <MenuItem value="APPROVED">Approved</MenuItem>
                     <MenuItem value="REJECTED">Rejected</MenuItem>
                 </TextField>
