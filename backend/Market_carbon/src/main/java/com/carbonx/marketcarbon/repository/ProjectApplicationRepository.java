@@ -20,5 +20,6 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
     List<ProjectApplication> findByCompany_User_EmailAndStatusOrderBySubmittedAtDesc(String email, ApplicationStatus status);
     List<ProjectApplication> findByStatusOrderBySubmittedAtDesc(ApplicationStatus status);
     Page<ProjectApplication> findByStatus(ApplicationStatus status, Pageable pageable);
+    boolean existsByCompanyIdAndProjectId(Long companyId, Long projectId);
 
 }
