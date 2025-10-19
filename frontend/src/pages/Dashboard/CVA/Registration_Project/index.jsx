@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
-import { getProjectApplications } from "@/apiAdmin/companyAdmin.js";
+import { getProjectApplications } from "@/apiCVA/registrationCVA.js";
 
 const ApplicationList = () => {
   const theme = useTheme();
@@ -18,70 +18,28 @@ const ApplicationList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ Giả lập dữ liệu mẫu (mock data)
-        const mockApplications = [
-          {
-            id: 1,
-            projectId: 101,
-            projectTitle: "AI-Powered Chatbot",
-            companyId: 201,
-            companyName: "TechNova Co., Ltd.",
-            status: "SUBMITTED",
-            reviewNote: "Awaiting first review.",
-            finalReviewNote: "",
-            applicationDocsUrl: "https://example.com/docs/ai-chatbot.pdf",
-            submittedAt: "2025-10-17T18:50:29.847Z",
-          },
-          {
-            id: 2,
-            projectId: 102,
-            projectTitle: "Smart Farming Drone",
-            companyId: 202,
-            companyName: "AgriTech Vietnam",
-            status: "REVIEWING",
-            reviewNote: "Under review by committee.",
-            finalReviewNote: "",
-            applicationDocsUrl: "",
-            submittedAt: "2025-10-16T14:32:12.000Z",
-          },
-          {
-            id: 3,
-            projectId: 103,
-            projectTitle: "Blockchain Logistics System",
-            companyId: 203,
-            companyName: "LogiChain Solutions",
-            status: "APPROVED",
-            reviewNote: "Approved with minor revisions.",
-            finalReviewNote: "Project approved officially.",
-            applicationDocsUrl: "https://example.com/docs/logichain.pdf",
-            submittedAt: "2025-10-15T09:00:00.000Z",
-          },
-          {
-            id: 4,
-            projectId: 104,
-            projectTitle: "Renewable Energy Management",
-            companyId: 204,
-            companyName: "GreenFuture Energy",
-            status: "REJECTED",
-            reviewNote: "Insufficient technical details.",
-            finalReviewNote: "Rejected due to incomplete documentation.",
-            applicationDocsUrl: "",
-            submittedAt: "2025-10-14T12:15:45.000Z",
-          },
-        ];
+        console.log("📡 Fetching pending CVA applications...");
+        const response = await getProjectApplications();
 
-        // ✅ Nếu API chưa có, dùng mock data thay thế
-        let applications;
-        try {
-          applications = await getProjectApplications();
-        } catch {
-          applications = mockApplications;
+        console.log("✅ Raw API response:", response);
+
+        let applications = [];
+
+        // ✅ Chuẩn format data theo swagger
+        if (Array.isArray(response?.response)) {
+          applications = response.response;
+        } else if (Array.isArray(response?.responseData?.response)) {
+          applications = response.responseData.response;
+        } else if (Array.isArray(response)) {
+          applications = response;
         }
 
-        setData(applications || mockApplications);
+        console.log("📊 Parsed applications:", applications);
+
+        setData(applications || []);
       } catch (error) {
-        console.error("Error fetching applications:", error);
-        setData([]); // tránh crash
+        console.error("❌ Error fetching applications:", error);
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -131,35 +89,6 @@ const ApplicationList = () => {
         );
       },
     },
-    { field: "reviewNote", headerName: "Review Note", flex: 1 },
-    { field: "finalReviewNote", headerName: "Final Review Note", flex: 1 },
-    {
-      field: "applicationDocsUrl",
-      headerName: "Docs Link",
-      flex: 1,
-      renderCell: (params) =>
-        params.value ? (
-          <a
-            href={params.value}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#64B5F6", textDecoration: "underline" }}
-          >
-            View Docs
-          </a>
-        ) : (
-          <span style={{ color: "#aaa" }}>No file</span>
-        ),
-    },
-    {
-      field: "submittedAt",
-      headerName: "Submitted At",
-      flex: 0.8,
-      renderCell: (params) => {
-        const date = params?.value ? new Date(params.value) : null;
-        return date ? date.toLocaleString() : "N/A";
-      },
-    },
     {
       field: "action",
       headerName: "Action",
@@ -181,7 +110,7 @@ const ApplicationList = () => {
     <Box m="20px" className="actionadmin">
       <Header
         title="APPLICATIONS"
-        subtitle="List of Submitted Project Applications"
+        subtitle="List of Pending CVA Project Applications"
       />
       <Box
         m="40px 0 0 0"
@@ -201,21 +130,23 @@ const ApplicationList = () => {
             borderTop: "none",
             backgroundColor: colors.blueAccent[700],
           },
-          "& .MuiCheckbox-root": {
-            color: `${colors.greenAccent[200]} !important`,
-          },
-          "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
-            color: `${colors.grey[100]} !important`,
-          },
         }}
       >
-        <DataGrid
-          rows={data}
-          columns={columns}
-          slots={{ toolbar: GridToolbar }}
-          getRowId={(row) => row.id}
-          loading={loading}
-        />
+        {data.length > 0 ? (
+          <DataGrid
+            rows={data}
+            columns={columns}
+            slots={{ toolbar: GridToolbar }}
+            getRowId={(row) => row.id}
+            loading={loading}
+          />
+        ) : (
+          !loading && (
+            <Typography color={colors.grey[300]} align="center" mt={5}>
+              No data available.
+            </Typography>
+          )
+        )}
       </Box>
     </Box>
   );

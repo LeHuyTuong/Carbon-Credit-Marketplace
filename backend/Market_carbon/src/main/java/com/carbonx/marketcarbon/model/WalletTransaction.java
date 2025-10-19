@@ -1,11 +1,9 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -15,7 +13,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class WalletTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +30,7 @@ public class WalletTransaction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @JsonBackReference
     private WalletTransactionType transactionType;
 
     @Column(length = 500)

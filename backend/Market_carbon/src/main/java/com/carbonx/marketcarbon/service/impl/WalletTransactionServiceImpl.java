@@ -40,15 +40,41 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     public WalletTransaction createTransaction(WalletTransactionRequest request) {
 
-        User currentUser = currentUser();
-        Wallet wallet = walletRepository.findByUserId(currentUser.getId());
-        if (wallet == null) {
-            throw new IllegalArgumentException("Wallet cannot be null in WalletTransactionRequest");
+        Wallet wallet;
+        if (request.getWallet() != null) {
+            wallet = walletRepository.findById(request.getWallet().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found for transaction"));
+        } else {
+            User currentUser = currentUser();
+            wallet = walletRepository.findByUserId(currentUser.getId());
+            if (wallet == null) {
+                throw new IllegalArgumentException("Wallet cannot be null in WalletTransactionRequest");
+            }
         }
+
+        if (request.getType() == null) {
+            throw new IllegalArgumentException("Transaction type cannot be null in WalletTransactionRequest");
+        }
+
         BigDecimal amount = request.getAmount();
         if (amount == null) {
             throw new IllegalArgumentException("Amount cannot be null in WalletTransactionRequest");
         }
+
+        if (amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Amount must be different from zero");
+        }
+
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.add(amount);
+
+        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalStateException("Insufficient balance for transaction");
+        }
+
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+
         WalletTransaction transaction = new WalletTransaction();
         transaction.setWallet(request.getWallet());
         transaction.setAmount(request.getAmount());
@@ -56,23 +82,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setDescription(request.getDescription());
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setOrder(request.getOrder());
-
-        BigDecimal balanceBefore = wallet.getBalance();
-
-        BigDecimal balanceAfter;
-        if (request.getType() == WalletTransactionType.WITH_DRAWL) {
-            balanceAfter = balanceBefore.subtract(amount);
-        } else {
-            balanceAfter = balanceBefore.add(amount);
-        }
-
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
 
-        if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalStateException("Insufficient balance for transaction");
-        }
-        
         return walletTransactionRepository.save(transaction);
     }
 

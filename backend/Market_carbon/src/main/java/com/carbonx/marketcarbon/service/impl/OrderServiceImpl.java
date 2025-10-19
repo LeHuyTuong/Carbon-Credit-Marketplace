@@ -169,7 +169,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal totalPrice= order.getTotalPrice();
 
         //B3 check before process
-        if(listing.getQuantity().compareTo(quantityToBuy) <= 0){
+        if(listing.getQuantity().compareTo(quantityToBuy) < 0){
             order.setOrderStatus(OrderStatus.PENDING);
             orderRepository.save(order);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
@@ -178,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
         // find wallet of company by user id
         Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
 
-        if(buyerWallet.getBalance().compareTo(totalPrice) <= 0){
+        if(buyerWallet.getBalance().compareTo(totalPrice) < 0){
             order.setOrderStatus(OrderStatus.ERROR);
             orderRepository.save(order);
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
@@ -187,16 +187,30 @@ public class OrderServiceImpl implements OrderService {
         // B4 start to process trading
         // 4.1 send money
         Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
-        BigDecimal buyerWalletBalanceBefore = buyerWallet.getBalance();
-        BigDecimal sellerWalletBalanceBefore = sellerWallet.getBalance();
-
-        buyerWallet.setBalance(buyerWallet.getBalance().subtract(totalPrice));
-        sellerWallet.setBalance(sellerWallet.getBalance().add(totalPrice));
-
-        walletRepository.saveAll(List.of(buyerWallet, sellerWallet));
 
         //4.2  transfer credit
         CarbonCredit sourceCredit = listing.getCarbonCredit();
+        // balance credit in wallet
+        int currentListedAmount = sourceCredit.getListedAmount();
+        // balance credit after order
+        int updatedListedAmount = currentListedAmount - quantityToBuy.intValueExact();
+        // balance credit
+        int safeListedAmount = Math.max(0, updatedListedAmount );
+        sourceCredit.setListedAmount(safeListedAmount);
+
+        BigDecimal totalSellerCredits = sourceCredit.getCarbonCredit().add(BigDecimal.valueOf(currentListedAmount));
+        BigDecimal remainingTotalCredits = totalSellerCredits.subtract(totalSellerCredits);
+
+        if(remainingTotalCredits.compareTo(BigDecimal.ZERO) < 0){
+            remainingTotalCredits = BigDecimal.ZERO;
+        }
+
+        BigDecimal updatedSellerBalance = remainingTotalCredits.subtract(BigDecimal.valueOf(safeListedAmount));
+        if(updatedSellerBalance.compareTo(BigDecimal.ZERO) < 0){
+            updatedSellerBalance = BigDecimal.ZERO;
+        }
+        sourceCredit.setCarbonCredit(updatedSellerBalance);
+        carbonCreditRepository.save(sourceCredit);
 
         // Tìm hoặc tạo một khối tín chỉ mới cho người mua
         CarbonCredit buyerCredit = buyerCompany.getCarbonCredits().stream()
@@ -234,7 +248,7 @@ public class OrderServiceImpl implements OrderService {
                         .order(order)
                         .type(WalletTransactionType.BUY_CARBON_CREDIT)
                         .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
-                        .amount(totalPrice.negate()) // money subtract
+                        .amount(totalPrice.negate())
                 .build());
 
         // log seller wallet
@@ -243,7 +257,7 @@ public class OrderServiceImpl implements OrderService {
                         .order(order)
                         .type(WalletTransactionType.SELL_CARBON_CREDIT)
                         .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
-                        .amount(totalPrice.negate())
+                        .amount(totalPrice)
                 .build());
     }
 

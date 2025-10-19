@@ -2,9 +2,11 @@ import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/theme";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import EmailIcon from "@mui/icons-material/Email";
+import ElectricCarIcon from "@mui/icons-material/ElectricCar";
 import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import TrafficIcon from "@mui/icons-material/Traffic";
+import PointOfSaleOutlinedIcon from "@mui/icons-material/PointOfSaleOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import Header from "@/components/Chart/Header.jsx";
 import LineChart from "@/components/Chart/LineChart.jsx";
 import GeographyChart from "@/components/Chart/GeographyChart.jsx";
@@ -59,7 +61,7 @@ const Dashboard = () => {
             progress="0.75"
             increase="+14%"
             icon={
-              <EmailIcon
+              <AssessmentOutlinedIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
@@ -78,7 +80,7 @@ const Dashboard = () => {
             progress="0.50"
             increase="+21%"
             icon={
-              <PointOfSaleIcon
+              <PointOfSaleOutlinedIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }
@@ -116,7 +118,7 @@ const Dashboard = () => {
             progress="0.80"
             increase="+43%"
             icon={
-              <TrafficIcon
+              <ElectricCarIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             }

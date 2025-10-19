@@ -29,7 +29,7 @@ export default function ForgotPassword() {
       });
 
       //gửi mã otp
-      await apiFetch("/api/v1/send-otp", {
+      await apiFetch("/api/v1/send-otp-forgot", {
         method: "POST",
         body: JSON.stringify({ email: values.email.trim() }),
       });
