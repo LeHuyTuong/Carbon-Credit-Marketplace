@@ -58,13 +58,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.COMPANY_NOT_OWN);
         }
 
-        BigDecimal availableQuantity = creditToSell.getCarbonCredit().subtract(BigDecimal.valueOf(creditToSell.getListedAmount()));
-        if(availableQuantity.compareTo(request.getQuantity()) <= 0){
+        BigDecimal availableQuantity = creditToSell.getCarbonCredit();
+        if(availableQuantity.compareTo(request.getQuantity()) < 0){
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
         // 3 update amount in carbon credit block
-        creditToSell.setListedAmount(creditToSell.getListedAmount() + request.getCarbonCreditId().intValue());
+        creditToSell.setCarbonCredit(creditToSell.getCarbonCredit().subtract(request.getQuantity()));
+        creditToSell.setListedAmount(creditToSell.getListedAmount() + request.getQuantity().intValueExact());
         carbonCreditRepository.save(creditToSell);
 
         //4 create a new listing to marketplace

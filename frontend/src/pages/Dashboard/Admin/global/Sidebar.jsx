@@ -7,8 +7,12 @@ import { tokens } from "@/theme";
 import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
-import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
-import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import CorporateFareOutlinedIcon from "@mui/icons-material/CorporateFareOutlined";
+import ElectricCarOutlinedIcon from "@mui/icons-material/ElectricCarOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
@@ -147,42 +151,42 @@ const Sidebar = () => {
             <Item
               title="Manage Credits"
               to="/admin/credit_management"
-              icon={<ContactsOutlinedIcon />}
+              icon={<CreditCardIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Manage Transactions"
               to="/admin/transaction_management"
-              icon={<ReceiptOutlinedIcon />}
+              icon={<AccountBalanceWalletOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Manage Reports"
               to="/admin/report_management"
-              icon={<ReceiptOutlinedIcon />}
+              icon={<DescriptionOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Manage E-Vehicles"
               to="/admin/ev_management"
-              icon={<ReceiptOutlinedIcon />}
+              icon={<ElectricCarOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Manage Projects"
               to="/admin/project_management"
-              icon={<ReceiptOutlinedIcon />}
+              icon={< WorkOutlineIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
               title="Manage Companies"
               to="/admin/company_management"
-              icon={<ReceiptOutlinedIcon />}
+              icon={<CorporateFareOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
