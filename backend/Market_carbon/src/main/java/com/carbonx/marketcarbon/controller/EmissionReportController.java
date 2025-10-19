@@ -132,4 +132,53 @@ public class EmissionReportController {
         TuongCommonResponse<EmissionReportResponse> body = new TuongCommonResponse<>(now, trace, rs, data);
         return ResponseEntity.ok(body);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/list")
+    public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listReportsForAdmin(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = traceOrNew(requestTrace);
+        String now   = dateOrNow(requestDateTime);
+
+        Page<EmissionReportResponse> p = service.listReportsForAdmin(status, PageRequest.of(page, size));
+        List<EmissionReportResponse> data = p.getContent();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "List reports successfully");
+        TuongCommonResponse<List<EmissionReportResponse>> body = new TuongCommonResponse<>(now, trace, rs, data);
+        return ResponseEntity.ok(body);
+    }
+
+    @PreAuthorize("hasRole('COMPANY')")
+    @GetMapping("/my-reports")
+    public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listMyReports(
+            @RequestParam(value = "status", required = false) String status,
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String date
+    ) {
+        String t = traceOrNew(trace);
+        String now = dateOrNow(date);
+
+        // Gọi service lấy danh sách report của công ty
+        List<EmissionReportResponse> data = service.listReportsForCompany(status);
+
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage()
+        );
+
+        TuongCommonResponse<List<EmissionReportResponse>> body =
+                new TuongCommonResponse<>(now, t, rs, data);
+
+        return ResponseEntity.ok(body);
+    }
 }
+
+
+
+
+

@@ -41,7 +41,7 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        String email = auth.getName(); // chính là email trong JWT token
+        String email = auth.getName();
 
         //  Tìm user tương ứng với email
         User user = userRepository.findByEmail(email);
@@ -50,6 +50,10 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         // Lấy company tương ứng với user (mỗi user company có 1 record)
         Company company = companyRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        if (req.getApplicationDocsUrl() == null || req.getApplicationDocsUrl().isBlank()) {
+            throw new AppException(ErrorCode.APPLICATION_DOCS_REQUIRED); // hoặc set nullable=true cho cột
+        }
 
         // Kiểm tra project tồn tại
         Project project = projectRepository.findById(req.getProjectId())

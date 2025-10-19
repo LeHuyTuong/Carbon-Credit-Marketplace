@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface EmissionReportRepository extends JpaRepository<EmissionReport, Long>,
@@ -18,5 +19,9 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     Page<EmissionReport> findBySourceIgnoreCaseAndStatus(String source, EmissionStatus status, Pageable pageable);
 
     Page<EmissionReport> findByStatus(EmissionStatus status, Pageable pageable);
+
+    List<EmissionReport> findBySeller_Id(Long sellerId);
+
+    List<EmissionReport> findBySeller_IdAndStatus(Long sellerId, EmissionStatus status);
 
 }

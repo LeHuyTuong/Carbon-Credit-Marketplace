@@ -32,7 +32,8 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             "/api/v1/auth/forgot-password",
             "/api/v1/auth/login",
             "/api/v1/send-otp-forgot",
-            "/api/v1/check-exists-user"
+            "/api/v1/check-exists-user",
+            "/api/v1/projects/all"
     );
 
     @Override

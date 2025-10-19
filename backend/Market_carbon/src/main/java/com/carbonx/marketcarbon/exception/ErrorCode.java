@@ -43,6 +43,7 @@ public enum ErrorCode {
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
+    APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),
 
     // ==== VALIDATION & STATE ====
     INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),
