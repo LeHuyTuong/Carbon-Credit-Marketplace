@@ -94,7 +94,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .wallet(wallet)
                     .type(WalletTransactionType.WITH_DRAWL)
                     .description("Bank account withdrawal approved. ID: " + withdrawalId)
-                    .amount(amountToWithdraw.negate())
+                    .amount(amountToWithdraw)
                     .build());
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);

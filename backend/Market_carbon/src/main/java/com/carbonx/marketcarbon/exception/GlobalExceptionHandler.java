@@ -127,7 +127,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<CommonResponse<Object>> HandlerMethodValidationException(Exception ex) {
         log.error("Unhandled error", ex);
         String errorMsg = ex.getMessage();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorResponse("400", errorMsg));
     }
 

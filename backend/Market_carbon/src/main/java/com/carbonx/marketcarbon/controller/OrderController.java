@@ -31,7 +31,7 @@ public class OrderController {
     @Operation(summary = "Buyer company create a new Order" , description = "Buyer company creates a Pending order based on marketplace listing")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<OrderResponse>> createOrder(
-            @Valid  @RequestBody TuongCommonRequest<@Valid OrderRequest> request,
+            @Valid  @RequestBody TuongCommonRequest<OrderRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
             ) {
