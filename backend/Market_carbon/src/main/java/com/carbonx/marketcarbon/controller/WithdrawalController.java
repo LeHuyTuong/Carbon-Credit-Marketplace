@@ -48,11 +48,10 @@ public class WithdrawalController {
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
         walletService.addBalanceToWallet( -amount);
 
-
         WalletTransactionRequest walletTransactionRequest =  WalletTransactionRequest.builder()
                 .wallet(userWallet)
                 .type(WalletTransactionType.WITH_DRAWL)
-                .description("Bank account withdrawl")
+                .description("Bank account withdrawal")
                 .amount(withdrawal.getAmount().negate())
                 .build();
 
