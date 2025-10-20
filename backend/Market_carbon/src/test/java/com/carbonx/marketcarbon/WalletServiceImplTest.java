@@ -9,6 +9,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.impl.WalletServiceImpl;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,8 +85,8 @@ class WalletServiceImplTest {
 
         verify(walletTransactionService).createTransaction(requestCaptor.capture());
         WalletTransactionRequest capturedRequest = requestCaptor.getValue();
-        assertThat(capturedRequest.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
-        assertThat(capturedRequest.getType()).isEqualTo(WalletTransactionType.ADD_MONEY);
+        BigDecimal expectedAmount = CurrencyConverter.usdToVnd(BigDecimal.valueOf(1000L));
+        assertThat(capturedRequest.getAmount()).isEqualByComparingTo(expectedAmount);        assertThat(capturedRequest.getType()).isEqualTo(WalletTransactionType.ADD_MONEY);
         assertThat(capturedRequest.getWallet()).isSameAs(wallet);
     }
 
@@ -113,7 +114,8 @@ class WalletServiceImplTest {
                 .hasMessageContaining("greater than zero");
 
         assertThatThrownBy(() -> walletService.addBalanceToWallet(0L))
-                .isInstanceOf(WalletException.class);
+                .isInstanceOf(WalletException.class)
+                .hasMessageContaining("greater than zero");
 
         verifyNoInteractions(walletTransactionService);
     }

@@ -38,12 +38,15 @@ public class PaymentController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         PaymentOrderResponse order = paymentService.createOrder(req.getData());
-        PaymentOrderResponse response = new PaymentOrderResponse();
+        PaymentOrderResponse response = order;
         if(req.getData().getPaymentMethod().equals(PaymentMethod.STRIPE)){
             response = paymentService.createStripePaymentLink(req.getData(), order.getId());
         }else if(req.getData().getPaymentMethod().equals(PaymentMethod.PAYPAL)){
             response = paymentService.createPayPalPaymentLink(req.getData(), order.getId());
         }
+        response.setAmount(order.getAmount());
+        response.setAmountInVnd(order.getAmountInVnd());
+        response.setId(order.getId());
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<PaymentOrderResponse> resp = new TuongCommonResponse<>(trace, now , rs, response);

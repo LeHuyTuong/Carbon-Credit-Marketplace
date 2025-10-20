@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { Button } from "react-bootstrap";
+import { Button, Nav } from "react-bootstrap";
+import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
 
 export default function WalletHistory() {
   const nav = useNavigate();
+  const [tab, setTab] = useState("transactions");
   const [transactions, setTransactions] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  //khi component mount -> gọi API để load lịch sử giao dịch
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (tab === "transactions") fetchTransactions();
+    if (tab === "withdrawals") fetchWithdrawals();
+  }, [tab]);
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -22,8 +22,6 @@ export default function WalletHistory() {
       const res = await apiFetch("/api/v1/wallet/transactions", {
         method: "GET",
       });
-
-      //sắp xếp giao dịch mới nhất lên đầu (theo createdAt)
       const sorted = [...(res.response || [])].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -35,16 +33,27 @@ export default function WalletHistory() {
     }
   };
 
+  const fetchWithdrawals = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/api/v1/withdrawal", { method: "GET" });
+      setWithdrawals(res.response || []);
+    } catch (err) {
+      console.error("Failed to fetch withdrawals:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5">
-      {/*nút back */}
       <Button
         variant="outline-info"
         size="sm"
         className="position-fixed top-0 start-0 m-3 px-3 py-2 d-flex align-items-center gap-2 fw-semibold shadow-sm"
         style={{
           borderRadius: "10px",
-          background: "rgba(255, 255, 255, 0.85)",
+          background: "rgba(255,255,255,0.85)",
           backdropFilter: "blur(6px)",
           zIndex: 20,
         }}
@@ -52,6 +61,7 @@ export default function WalletHistory() {
       >
         <FaArrowLeft /> Back to Wallet
       </Button>
+
       <div className="text-center mb-4">
         <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
           <i className="bi bi-clock-history fs-3 text-accent"></i>
@@ -59,49 +69,93 @@ export default function WalletHistory() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Nav
+        variant="tabs"
+        className="mb-4 bg-dark px-3 py-2 rounded"
+        activeKey={tab}
+        onSelect={(selected) => setTab(selected)}
+      >
+        <Nav.Item>
+          <Nav.Link eventKey="transactions" className="text-light">
+            Transactions
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link eventKey="withdrawals" className="text-light">
+            Withdrawal Requests
+          </Nav.Link>
+        </Nav.Item>
+      </Nav>
+
       <div className="glass-card p-4 w-75">
         {loading ? (
           <div className="text-light text-center">Loading...</div>
-        ) : transactions.length === 0 ? (
-          <div className="text-light text-center">No transactions yet</div>
+        ) : tab === "transactions" ? (
+          transactions.length === 0 ? (
+            <div className="text-light text-center">No transactions yet</div>
+          ) : (
+            transactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="d-flex justify-content-between align-items-center border-bottom py-2"
+              >
+                <div>
+                  <span
+                    className={`fw-semibold ${
+                      tx.transactionType === "ADD_MONEY"
+                        ? "text-success"
+                        : "text-warning"
+                    }`}
+                  >
+                    {tx.transactionType}
+                  </span>
+                  <div className="small text-light">
+                    {new Date(tx.createdAt).toLocaleString()}
+                  </div>
+                </div>
+                <span
+                  className={`fw-bold ${
+                    tx.transactionType === "ADD_MONEY"
+                      ? "text-success"
+                      : "text-danger"
+                  }`}
+                >
+                  {tx.transactionType === "ADD_MONEY"
+                    ? `+${tx.amount} USD`
+                    : `-${tx.amount} USD`}
+                </span>
+              </div>
+            ))
+          )
+        ) : withdrawals.length === 0 ? (
+          <div className="text-light text-center">
+            No withdrawal requests yet
+          </div>
         ) : (
-          //có giao dịch -> render danh sách
-          transactions.map((tx) => (
+          withdrawals.map((w) => (
             <div
-              key={tx.id}
+              key={w.id}
               className="d-flex justify-content-between align-items-center border-bottom py-2"
             >
               <div>
-                <span
-                  className={`fw-semibold ${
-                    tx.transactionType === "ADD_MONEY"
-                      ? "text-info"
-                      : tx.transactionType === "WITH_DRAWL"
-                      ? "text-warning"
-                      : "text-info"
-                  }`}
-                >
-                  {tx.transactionType === "WITH_DRAWL"
-                    ? "Withdraw"
-                    : tx.transactionType === "DEPOSIT"
-                    ? "Deposit"
-                    : tx.transactionType}
-                </span>
+                <span className="fw-semibold text-info">Request #{w.id}</span>
                 <div className="small text-light">
-                  {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : ""}
+                  {new Date(w.createdAt || w.requestedAt).toLocaleString()}
                 </div>
               </div>
               <span
-                className={`fw-bold ${
-                  tx.transactionType === "ADD_MONEY"
-                    ? "text-success"
-                    : "text-danger"
+                className={`badge ${
+                  w.status === "APPROVED"
+                    ? "bg-success"
+                    : w.status === "REJECTED"
+                    ? "bg-danger"
+                    : "bg-warning text-dark"
                 }`}
               >
-                {tx.transactionType === "ADD_MONEY"
-                  ? `+${tx.amount} USD`
-                  : `-${tx.amount} USD`}
+                {w.status}
               </span>
+              <span className="fw-bold text-light">{w.amount} USD</span>
             </div>
           ))
         )}

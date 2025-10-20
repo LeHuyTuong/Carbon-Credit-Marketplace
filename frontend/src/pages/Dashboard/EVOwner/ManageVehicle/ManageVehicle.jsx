@@ -4,6 +4,8 @@ import { Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import useReveal from "../../../../hooks/useReveal";
+import { getApprovedCompanies } from "../ManageVehicle/manageApi";
+
 import {
   getVehicles,
   createVehicle,
@@ -82,7 +84,7 @@ export default function Manage() {
       if (editData) {
         await updateVehicle(editData.id, payload);
       } else {
-        await createVehicle({ ownerId: 1, ...payload }); //giả sử ownerId là 1
+        await createVehicle(payload);
       }
 
       await fetchVehicles();
@@ -186,12 +188,26 @@ export default function Manage() {
 
 //modal thêm/sửa xe
 function VehicleModal({ show, onHide, data, onSubmit }) {
+  const [companies, setCompanies] = useState([]);
+
   const initialValues = {
     plate: data?.plateNumber ?? "",
     brand: data?.brand ?? "",
     model: data?.model ?? "",
     company: data?.companyId ?? "",
   };
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const list = await getApprovedCompanies();
+        setCompanies(list);
+      } catch (err) {
+        console.error("Error when loading list company:", err.message);
+      }
+    };
+    fetchCompanies();
+  }, []);
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -271,10 +287,18 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                   onBlur={handleBlur}
                   isInvalid={touched.company && !!errors.company}
                 >
-                  <option value="">Choose one manufacturer</option>
-                  <option value="1">Vinfast</option>
-                  <option value="2">Tesla</option>
-                  <option value="3">Toyota</option>
+                  {companies.length > 0 ? (
+                    <>
+                      <option value="">Choose one company</option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option value="">No company available</option>
+                  )}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.company}

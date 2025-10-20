@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.service.*;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -61,8 +63,11 @@ public class WalletController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         walletService.addBalanceToWallet(amount);
+        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(amount));
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url("deposit success");
+        res.setAmount(amount);
+        res.setAmountInVnd(amountInVnd);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<PaymentOrderResponse> response = new TuongCommonResponse<>(trace,now,rs , res);
