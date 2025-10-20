@@ -67,7 +67,13 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
 
         BigDecimal balanceBefore = wallet.getBalance();
-        BigDecimal balanceAfter = balanceBefore.add(amount);
+        BigDecimal balanceAfter;
+
+        if (request.getType() == WalletTransactionType.WITH_DRAWL) {
+            balanceAfter = balanceBefore.subtract(amount);
+        } else {
+            balanceAfter = balanceBefore.add(amount);
+        }
 
         // so tien sau khi nap ko dc am
         if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
