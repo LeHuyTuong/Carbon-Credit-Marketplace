@@ -7,7 +7,7 @@ export const getProjectApplications = async () => {
 
     const code = res?.responseStatus?.responseCode;
 
-    // ✅ chấp nhận cả "200" và "00000000" là thành công
+    //  chấp nhận cả "200" và "00000000" là thành công
     if (code === "200" || code === "00000000") {
       return res.response || [];
     } else {
@@ -19,7 +19,7 @@ export const getProjectApplications = async () => {
     return [];
   }
 };
-// 🟢 Lấy chi tiết theo ID
+//  Lấy chi tiết theo ID
 export const getProjectApplicationById = async (id) => {
   try {
     const res = await apiFetch(`/api/v1/project-applications/${id}`);
@@ -38,19 +38,20 @@ export const getProjectApplicationById = async (id) => {
   }
 };
 export async function updateApplicationDecision(applicationId, payload) {
-  const query = new URLSearchParams({
-    approved: payload.approved,
-    note: payload.note || "",
-  });
+  const { approved, note = "" } = payload;
 
-  return apiFetch(`/api/v1/project-applications/${applicationId}/admin-decision?${query.toString()}`, {
+  const query = new URLSearchParams({
+    approved, // bắt buộc
+    note,     // optional
+  }).toString();
+
+  return apiFetch(`/api/v1/project-applications/${applicationId}/admin-decision?${query}`, {
     method: "PUT",
-    headers: {
-      "X-Request-Trace": crypto.randomUUID(),
-      "X-Request-DateTime": new Date().toISOString(),
-    },
   });
 }
+
+
+
 
 
 

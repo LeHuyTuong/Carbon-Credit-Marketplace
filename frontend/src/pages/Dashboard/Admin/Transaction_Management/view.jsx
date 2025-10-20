@@ -1,56 +1,82 @@
-import { Box, Typography, useTheme, Divider, Chip, Button } from "@mui/material";
-import { tokens } from "@/theme";
+// src/pages/Dashboard/Admin/Transaction_Management/ViewTransaction.jsx
 import { useParams, useNavigate } from "react-router-dom";
-import { mockDataInvoices } from "@/data/mockData";
+import { useEffect, useState } from "react";
+import { Box, Typography, Divider, Chip, Button, useTheme } from "@mui/material";
+import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { useState } from "react";
+import { processWithdrawal, getWithdrawalsAdmin } from "@/apiAdmin/transactionAdmin.js";
 
 const ViewTransaction = () => {
+  const { id } = useParams(); // lấy id từ URL
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { id } = useParams();
   const navigate = useNavigate();
 
-  // tìm giao dịch
-  const transaction = mockDataInvoices.find((item) => item.id === Number(id));
-
-  const [editMode, setEditMode] = useState(false);
-  const [newStatus, setNewStatus] = useState(transaction?.status || "");
+  const [trx, setTrx] = useState(null);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  if (!transaction) {
+  useEffect(() => {
+    const fetchTransaction = async () => {
+      try {
+        const list = await getWithdrawalsAdmin(); // lấy toàn bộ withdrawals
+        const transaction = list.find((t) => t.id.toString() === id); // tìm theo id
+        setTrx(transaction || null);
+      } catch (error) {
+        console.error(error);
+        setTrx(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransaction();
+  }, [id]);
+
+  const handleProcess = async (accept) => {
+    try {
+      setMessage("Processing...");
+      const res = await processWithdrawal(trx.id, accept);
+      if (res) setTrx(res);
+      setMessage(accept ? "✅ Approved successfully!" : "❌ Rejected successfully!");
+    } catch {
+      setMessage("❌ Failed to process transaction.");
+    } finally {
+      setTimeout(() => setMessage(""), 2500);
+    }
+  };
+
+  if (loading) return <Typography m={2}>Loading...</Typography>;
+
+  if (!trx) {
     return (
       <Box m="20px">
         <Header title="TRANSACTION DETAIL" subtitle="Transaction not found" />
         <Typography variant="h6" color={colors.redAccent[400]}>
-          Transaction not found with ID: {id}
+          No transaction data available
         </Typography>
         <Button
           variant="contained"
           sx={{ mt: 2, backgroundColor: colors.blueAccent[700] }}
           onClick={() => navigate(-1)}
         >
-          Quay lại
+          Back
         </Button>
       </Box>
     );
   }
 
-  const statusColorMap = {
-    paid: colors.greenAccent[400],
-    pending: colors.grey[300],
-    failed: colors.redAccent[400],
+  const statusColor = {
+    PENDING: colors.grey[300],
+    APPROVED: colors.greenAccent[400],
+    REJECTED: colors.redAccent[400],
   };
 
-  const typeMap = {
-    buy: "Buy carbon credits",
-    sell: "Sell carbon credits",
-    withdraw: "Withdraw funds",
-  };
+  const payment = trx.paymentDetails || {};
+  const user = trx.user || {};
 
   return (
     <Box m="20px">
-      <Header title="TRANSACTION DETAIL" subtitle="Transaction details" />
+      <Header title="TRANSACTION DETAIL" subtitle="Withdrawal request details" />
 
       <Box
         sx={{
@@ -59,151 +85,109 @@ const ViewTransaction = () => {
           borderRadius: "12px",
           backgroundColor: colors.primary[400],
           boxShadow: 3,
-          maxWidth: "600px",
+          maxWidth: "700px",
           mx: "auto",
         }}
       >
         <Typography variant="h6" gutterBottom color={colors.greenAccent[300]}>
-          Transaction ID: {transaction.transactionid}
+          Withdrawal ID: {trx.id}
         </Typography>
         <Divider sx={{ mb: 2, borderColor: colors.grey[700] }} />
 
         <Box display="flex" flexDirection="column" gap={1.5}>
           <Typography>
-            <b>Transaction Type:</b>{" "}
-            <Typography component="span" color={colors.blueAccent[300]}>
-              {typeMap[transaction.transactionType] || "Unknown"}
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Trader:</b>{" "}
-            <Typography component="span" color={colors.grey[100]}>
-              {transaction.trader}
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Email:</b>{" "}
-            <Typography component="span" color={colors.grey[100]}>
-              {transaction.email}
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Transaction Date:</b>{" "}
-            <Typography component="span" color={colors.grey[100]}>
-              {transaction.date}
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Carbon Credits (tCO₂):</b>{" "}
-            <Typography component="span" color={colors.grey[100]}>
-              100
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Unit Price (USD / tCO₂):</b>{" "}
-            <Typography component="span" color={colors.grey[100]}>
-              ${(transaction.cost / 100).toFixed(2)}
-            </Typography>
-          </Typography>
-
-          <Typography>
-            <b>Total Value (USD):</b>{" "}
-            <Typography component="span" color={colors.greenAccent[400]}>
-              ${transaction.cost}
-            </Typography>
-          </Typography>
-
-          <Typography>
             <b>Status:</b>{" "}
-            {editMode ? (
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                style={{
-                  backgroundColor: colors.primary[500],
-                  color: "#fff",
-                  borderRadius: "6px",
-                  padding: "4px 8px",
-                  border: "1px solid " + colors.grey[600],
-                }}
-              >
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="failed">Failed</option>
-              </select>
-            ) : (
-              <Chip
-                label={transaction.status}
-                sx={{
-                  backgroundColor:
-                    statusColorMap[transaction.status] || colors.grey[500],
-                  color: "#fff",
-                  textTransform: "capitalize",
-                  fontWeight: "bold",
-                }}
-              />
-            )}
+            <Chip
+              label={trx.status}
+              sx={{
+                backgroundColor: statusColor[trx.status] || colors.grey[500],
+                color: "#fff",
+                fontWeight: "bold",
+                textTransform: "capitalize",
+              }}
+            />
+          </Typography>
+
+          <Typography>
+            <b>Amount:</b>{" "}
+            <Typography component="span" color={colors.greenAccent[400]}>
+              ${trx.amount}
+            </Typography>
+          </Typography>
+
+          <Typography>
+            <b>Requested At:</b>{" "}
+            {new Date(trx.requestedAt).toLocaleString()}
+          </Typography>
+
+          {trx.processedAt && (
+            <Typography>
+              <b>Processed At:</b>{" "}
+              {new Date(trx.processedAt).toLocaleString()}
+            </Typography>
+          )}
+
+          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
+
+          <Typography variant="subtitle1" color={colors.blueAccent[300]}>
+            Payment Details
+          </Typography>
+          <Typography>
+            <b>Account Number:</b> {payment.accountNumber || "N/A"}
+          </Typography>
+          <Typography>
+            <b>Account Holder:</b> {payment.accountHolderName || "N/A"}
+          </Typography>
+          <Typography>
+            <b>Bank Code:</b> {payment.bankCode || "N/A"}
+          </Typography>
+
+          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
+
+          <Typography variant="subtitle1" color={colors.blueAccent[300]}>
+            User Info
+          </Typography>
+          <Typography>
+            <b>Email:</b> {user.email || "N/A"}
+          </Typography>
+          <Typography>
+            <b>Status:</b> {user.status || "N/A"}
           </Typography>
         </Box>
 
-        {/* Nút Edit / Update */}
-        <Box display="flex" justifyContent="center" gap={2} mt={3}>
-          {!editMode ? (
-            <>
-              <Button
-                variant="contained"
-                sx={{
-                  backgroundColor: colors.blueAccent[700],
-                  borderRadius: "8px",
-                  px: 4,
-                  fontWeight: 600,
-                }}
-                onClick={() => setEditMode(true)}
-              >
-                Edit Status
-              </Button>
-              <Button
-                variant="outlined"
-                sx={{
-                  color: colors.grey[100],
-                  borderColor: colors.grey[500],
-                }}
-                onClick={() => navigate(-1)}
-              >
-                Back
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={() => {
-                  transaction.status = newStatus;
-                  setEditMode(false);
-                  setMessage(" Status update successful!");
-                  setTimeout(() => setMessage(""), 3000);
-                }}
-              >
-                Update
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  setEditMode(false);
-                  setNewStatus(transaction.status);
-                }}
-              >
-                Cancel
-              </Button>
-            </>
-          )}
+        {trx.status === "PENDING" && (
+          <Box display="flex" justifyContent="center" gap={2} mt={4}>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => handleProcess(true)}
+              sx={{ px: 4 }}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => handleProcess(false)}
+              sx={{ px: 4 }}
+            >
+              Reject
+            </Button>
+          </Box>
+        )}
+
+        <Box display="flex" justifyContent="center" mt={3}>
+          <Button
+            variant="outlined"
+            sx={{
+              color: colors.grey[100],
+              borderColor: colors.grey[500],
+              px: 4,
+            }}
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
         </Box>
 
         {message && (

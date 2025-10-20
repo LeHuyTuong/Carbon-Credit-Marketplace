@@ -13,47 +13,63 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataTeam } from "@/data/mockData";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUserById, updateUser } from "@/apiAdmin/userAdmin.js"; // API functions
 
 const ViewUser = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-
   const { id } = useParams();
-  const [data, setData] = useState(mockDataTeam);
-  const [user, setUser] = useState(() => data.find((u) => u.id === Number(id)));
 
+  const [user, setUser] = useState(null);
+  const [editedUser, setEditedUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [editedUser, setEditedUser] = useState({ ...user });
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await getUserById(id);
+        setUser(res);
+        setEditedUser(res);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, [id]);
 
   const handleChange = (field, value) => {
     setEditedUser((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleUpdate = () => {
-    const updatedData = data.map((item) =>
-      item.id === user.id ? editedUser : item
-    );
-    setData(updatedData);
-    setUser(editedUser);
-    localStorage.setItem("userData", JSON.stringify(updatedData));
-    setEditMode(false);
-    setOpenSnackbar(true);
+  const handleUpdate = async () => {
+    try {
+      await updateUser(user.id, editedUser);
+      setUser(editedUser);
+      setEditMode(false);
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Update failed! Please try again.");
+    }
   };
+
+  if (loading) return <Typography>Loading...</Typography>;
+  if (!user) return <Typography>User not found</Typography>;
 
   return (
     <Box m="20px">
       <Header title="USER DETAILS" subtitle="View or edit user information" />
-
       <Paper
         elevation={2}
         sx={{
@@ -126,138 +142,71 @@ const ViewUser = () => {
 
         <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
 
-        {/* PERSONAL DETAILS */}
+        {/* Personal Details */}
         <Typography variant="h6" fontWeight="bold" mb={2}>
           Personal Details
         </Typography>
 
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Full Name"
-              fullWidth
-              value={editedUser.name}
-              InputProps={{ readOnly: true }}
-            />
+            <TextField label="Full Name" fullWidth value={editedUser.name} InputProps={{ readOnly: !editMode }} onChange={(e) => handleChange("name", e.target.value)} />
           </Grid>
-
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Email Address"
-              fullWidth
-              value={editedUser.email}
-              InputProps={{ readOnly: true }}
-            />
+            <TextField label="Email Address" fullWidth value={editedUser.email} InputProps={{ readOnly: !editMode }} onChange={(e) => handleChange("email", e.target.value)} />
           </Grid>
-
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Phone"
-              fullWidth
-              value={editedUser.phone}
-              InputProps={{ readOnly: true }}
-            />
+            <TextField label="Phone" fullWidth value={editedUser.phone} InputProps={{ readOnly: !editMode }} onChange={(e) => handleChange("phone", e.target.value)} />
           </Grid>
-          
-          {/* Hiện field Company nếu access === "company" */}
           {editedUser.access === "company" && (
             <Grid item xs={12} md={6}>
               <TextField
                 label="Company"
                 fullWidth
-                value={editedUser.company || "CarbonTech Solutions"} // giá trị mẫu
+                value={editedUser.company || ""}
                 InputProps={{ readOnly: !editMode }}
                 onChange={(e) => handleChange("company", e.target.value)}
               />
             </Grid>
           )}
-          
           <Grid item xs={12} md={6}>
             {editMode ? (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Role
-                </Typography>
-                <Select
-                  fullWidth
-                  value={editedUser.access}
-                  onChange={(e) => handleChange("access", e.target.value)}
-                >
-                  <MenuItem value="ev_owner">Ev-Owner</MenuItem>
-                  <MenuItem value="company">Company</MenuItem>
-                  <MenuItem value="cva">CVA</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                </Select>
-              </Box>
+              <Select fullWidth value={editedUser.access} onChange={(e) => handleChange("access", e.target.value)}>
+                <MenuItem value="ev_owner">Ev-Owner</MenuItem>
+                <MenuItem value="company">Company</MenuItem>
+                <MenuItem value="cva">CVA</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </Select>
             ) : (
-              <TextField
-                label="Role"
-                fullWidth
-                value={editedUser.access}
-                InputProps={{ readOnly: true }}
-              />
-            )}
-          </Grid>
-
-          
-
-          <Grid item xs={12} md={6}>
-            {editMode ? (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Status
-                </Typography>
-                <Select
-                  fullWidth
-                  value={editedUser.status}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </Select>
-              </Box>
-            ) : (
-              <TextField
-                label="Status"
-                fullWidth
-                value={editedUser.status}
-                InputProps={{ readOnly: true }}
-              />
+              <TextField label="Role" fullWidth value={editedUser.access} InputProps={{ readOnly: true }} />
             )}
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Created Day"
-              fullWidth
-              value={editedUser.date}
-              InputProps={{ readOnly: true }}
-            />
+            {editMode ? (
+              <Select fullWidth value={editedUser.status} onChange={(e) => handleChange("status", e.target.value)}>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            ) : (
+              <TextField label="Status" fullWidth value={editedUser.status} InputProps={{ readOnly: true }} />
+            )}
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField label="Created Day" fullWidth value={editedUser.date} InputProps={{ readOnly: true }} />
           </Grid>
         </Grid>
 
-        {/* ADDRESS */}
+        {/* Address */}
         <Typography variant="h6" fontWeight="bold" mb={2}>
           Address
         </Typography>
-
         <Grid container spacing={3} mb={2}>
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Country"
-              fullWidth
-              value={editedUser.country || "Viet Nam"}
-              InputProps={{ readOnly: true }}
-            />
+            <TextField label="Country" fullWidth value={editedUser.country || ""} InputProps={{ readOnly: !editMode }} onChange={(e) => handleChange("country", e.target.value)} />
           </Grid>
-
           <Grid item xs={12} md={6}>
-            <TextField
-              label="City/State"
-              fullWidth
-              value={editedUser.city || "TP HCM"}
-              InputProps={{ readOnly: true }}
-            />
+            <TextField label="City/State" fullWidth value={editedUser.city || ""} InputProps={{ readOnly: !editMode }} onChange={(e) => handleChange("city", e.target.value)} />
           </Grid>
         </Grid>
 
@@ -267,11 +216,7 @@ const ViewUser = () => {
             variant="outlined"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/admin/user_management")}
-            sx={{
-              borderColor: colors.blueAccent[400],
-              color: colors.blueAccent[400],
-              textTransform: "none",
-            }}
+            sx={{ borderColor: colors.blueAccent[400], color: colors.blueAccent[400], textTransform: "none" }}
           >
             Back
           </Button>
@@ -279,18 +224,8 @@ const ViewUser = () => {
       </Paper>
 
       {/* Snackbar */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity="success"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
+      <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
+        <Alert onClose={() => setOpenSnackbar(false)} severity="success" variant="filled" sx={{ width: "100%" }}>
           User information updated successfully!
         </Alert>
       </Snackbar>
