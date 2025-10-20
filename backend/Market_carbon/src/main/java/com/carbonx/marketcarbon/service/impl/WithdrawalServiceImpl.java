@@ -49,7 +49,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
         Wallet wallet =  walletRepository.findByUserId(user.getId());
-        if(amount < 10){
+        if(amount < 10 ){
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
         //B1 tạo request withdrawal
