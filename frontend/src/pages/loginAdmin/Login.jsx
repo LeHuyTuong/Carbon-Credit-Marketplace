@@ -9,7 +9,7 @@ const AdminLogin = () => {
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
@@ -19,11 +19,11 @@ const AdminLogin = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // demo logic đăng nhập — sau có thể thay bằng gọi API
-    if (form.username === "admin" && form.password === "123456") {
-      navigate("/admin/dashboard");
+    // demo logic đăng nhập — sau này bạn sẽ thay bằng API login thực tế
+    if (form.email === "phanthuthuongta.aec@gmail.com" && form.password === "Maythichnhinko567@") {
+      navigate("/admin/kyc");
     } else {
-      setError("Invalid password or username!");
+      setError("Invalid email or password!");
     }
   };
 
@@ -60,16 +60,17 @@ const AdminLogin = () => {
             Admin Login
           </Typography>
           <Typography variant="body2" color={colors.grey[300]}>
-            Please sign in to continue
+            Please sign in with your admin email
           </Typography>
         </Box>
 
         {/* Form login */}
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Username"
-            name="username"
-            value={form.username}
+            label="Email"
+            name="email"
+            type="email"
+            value={form.email}
             onChange={handleChange}
             fullWidth
             variant="filled"

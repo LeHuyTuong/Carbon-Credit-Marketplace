@@ -10,7 +10,8 @@ export const getProjectApplications = async () => {
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
-      const data = res.responseData || [];
+      // ✅ Chọn đúng mảng data từ responseData hoặc response
+      const data = res.responseData || res.response || [];
       console.log("✅ Project Applications API:", data);
       return data;
     } else {
@@ -22,6 +23,7 @@ export const getProjectApplications = async () => {
     return [];
   }
 };
+
 //lấy thông tin chi tiết của một project application
 export async function getProjectApplicationByIdForCVA(id) {
   return apiFetch(`/api/v1/project-applications/${id}`, {

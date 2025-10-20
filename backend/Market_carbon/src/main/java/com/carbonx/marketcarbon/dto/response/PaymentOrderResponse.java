@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 public class PaymentOrderResponse {
     private Long id;
     private Long amount;
+    private BigDecimal amountInVnd;
     private Status status;
     private PaymentMethod method;
     private Long userId;

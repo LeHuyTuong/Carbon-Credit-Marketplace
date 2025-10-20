@@ -61,8 +61,8 @@
 
 .wallet-history-btn {
   position: absolute;
-  top: 100px; /* hạ nhẹ xuống dưới thanh navbar */
-  right: 90px; /* canh vừa dưới 2 icon bell & user */
+  top: 100px;
+  right: 90px;
   z-index: 100;
 }
 
@@ -113,4 +113,32 @@
   font-size: 0.8rem;
   text-transform: capitalize;
   border-radius: 6px;
+}
+
+.nav-tabs .nav-link {
+  color: #b8b8b8 !important;
+  background-color: transparent;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #ffffff !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: #00ffff !important; /* xanh neon hoặc accent */
+  background-color: #1e1e1e !important;
+  border: none;
+  border-bottom: 2px solid #00ffff !important;
+  font-weight: 600;
+}
+
+
+@media (max-width: 992px) {
+  .wallet-history-btn {
+    position: static;
+    margin-top: 10px;
+    justify-content: center;
+  }
 }

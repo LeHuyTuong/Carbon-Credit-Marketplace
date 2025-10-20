@@ -11,8 +11,20 @@ import {
   Alert,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { updateApplicationDecision,getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
+import { updateApplicationDecision, getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
+
+// 🔹 Normalize status từ API về giá trị hợp lệ MUI
+const normalizeStatus = (status) => {
+  const map = {
+    UNDER_REVIEW: "REVIEWING",
+    SUBMITTED: "SUBMITTED",
+    APPROVED: "APPROVED",
+    REJECTED: "REJECTED",
+    REVIEWING: "REVIEWING",
+  };
+  return map[status] || "SUBMITTED";
+};
 
 const ApplicationEdit = () => {
   const { id } = useParams();
@@ -44,7 +56,7 @@ const ApplicationEdit = () => {
           setFormData({
             projectTitle: appData.projectTitle || "",
             companyName: appData.companyName || "",
-            status: appData.status || "",
+            status: normalizeStatus(appData.status),
             reviewNote: appData.reviewNote || "",
             finalReviewNote: appData.finalReviewNote || "",
             applicationDocsUrl: appData.applicationDocsUrl || "",
@@ -67,12 +79,10 @@ const ApplicationEdit = () => {
     fetchApplication();
   }, [id]);
 
-  // 🟢 Cập nhật form
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // 🟢 Gửi update
   const handleUpdate = async () => {
     try {
       const payload = {
@@ -83,10 +93,8 @@ const ApplicationEdit = () => {
       console.log("📤 Sending update payload:", payload);
       const result = await updateApplicationDecision(id, payload);
 
-      // 🟡 Xử lý theo chuẩn OpenAPI spec
       const responseCode = result?.responseStatus?.responseCode || "500";
-      const responseMsg =
-        result?.responseStatus?.responseMessage || "Unknown response from server.";
+      const responseMsg = result?.responseStatus?.responseMessage || "Unknown response from server.";
 
       if (responseCode === "00000000") {
         setSnackbar({
@@ -161,7 +169,7 @@ const ApplicationEdit = () => {
           sx={{ mt: 2 }}
         >
           <MenuItem value="SUBMITTED">Submitted</MenuItem>
-          <MenuItem value="REVIEWING">Reviewing</MenuItem>
+          <MenuItem value="REVIEWING">Under Review</MenuItem>
           <MenuItem value="APPROVED">Approved</MenuItem>
           <MenuItem value="REJECTED">Rejected</MenuItem>
         </TextField>
@@ -194,7 +202,6 @@ const ApplicationEdit = () => {
           sx={{ mt: 2 }}
         />
 
-        {/* 🟢 Hai nút Save & Cancel */}
         <Box mt={3} display="flex" gap={2}>
           <Button variant="contained" color="primary" onClick={handleUpdate}>
             Save
@@ -209,7 +216,6 @@ const ApplicationEdit = () => {
         </Box>
       </Paper>
 
-      {/* 🟢 Snackbar thông báo */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
