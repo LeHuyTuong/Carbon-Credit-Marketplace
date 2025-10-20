@@ -18,20 +18,6 @@ export default function Wallet() {
   const { wallet, loading, setLoading, fetchWallet, fetchTransactions } =
     useWalletData();
 
-  // // Convert API data (response.carbonCredit) into table-ready format
-  // const credits = wallet?.carbonCredit
-  //   ? [
-  //       {
-  //         id: wallet.carbonCredit.id,
-  //         title: wallet.carbonCredit.name || "Carbon Credit",
-  //         price: wallet.carbonCredit.current_price,
-  //         quantity: wallet.carbonCredit.listedAmount,
-  //         status: wallet.carbonCredit.status?.toLowerCase(),
-  //         expiresAt: new Date(wallet.carbonCredit.issueAt).toLocaleString(),
-  //       },
-  //     ]
-  //   : [];
-
   const [toast, setToast] = React.useState({
     show: false,
     msg: "",
@@ -149,24 +135,62 @@ export default function Wallet() {
   };
 
   // =============== HANDLE WITHDRAW ==================
+  // const handleWithdrawSubmit = async (values) => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await apiFetch(`/api/v1/withdrawal/${values.amount}`, {
+  //       method: "POST",
+  //     });
+
+  //     if (res?.responseStatus?.responseCode === "00" || res?.response) {
+  //       setToast({
+  //         show: true,
+  //         msg: "Withdrawal request has been submitted successfully!",
+  //         type: "success",
+  //       });
+  //       await fetchWallet();
+  //       await fetchTransactions();
+  //     } else {
+  //       throw new Error(
+  //         res?.responseStatus?.responseMessage || "Withdrawal failed"
+  //       );
+  //     }
+  //   } catch (err) {
+  //     console.error("Withdraw error:", err);
+  //     setToast({
+  //       show: true,
+  //       msg: err.message || "Unable to process withdrawal request.",
+  //       type: "danger",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //     setShowWithdrawModal(false);
+  //   }
+  // };
   const handleWithdrawSubmit = async (values) => {
     setLoading(true);
     try {
-      const res = await apiFetch(`/api/v1/withdrawal/${values.amount}`, {
+      const res = await apiFetch("/api/v1/withdrawal", {
         method: "POST",
+        body: {
+          data: {
+            amount: parseFloat(values.amount),
+          },
+        },
       });
 
-      if (res?.responseStatus?.responseCode === "00" || res?.response) {
+      if (res?.response) {
         setToast({
           show: true,
-          msg: "Withdrawal request has been submitted successfully!",
-          type: "success",
+          msg: "Withdrawal request submitted. Awaiting admin approval.",
+          type: "info",
         });
         await fetchWallet();
         await fetchTransactions();
+        // Nếu muốn tự reload danh sách yêu cầu rút tiền thì gọi hàm fetchWithdrawals() ở đây
       } else {
         throw new Error(
-          res?.responseStatus?.responseMessage || "Withdrawal failed"
+          res?.responseStatus?.responseMessage || "Withdrawal failed."
         );
       }
     } catch (err) {
@@ -210,18 +234,29 @@ export default function Wallet() {
       {/*balance card */}
       <WalletCard
         balance={wallet?.balance}
+        currency={wallet?.currency || "USD"}
         onDeposit={() => setShowDepositModal(true)}
         onWithdraw={() => setShowWithdrawModal(true)}
         loading={loading}
       />
 
-      <div className="wallet-history-btn">
+      <div className="wallet-history-btn m-3 d-flex flex-wrap justify-content-end gap-2">
         <button
-          className="btn btn-outline-light btn-sm"
-          onClick={() => nav("/history")}
+          className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+          onClick={() => nav("/transaction-history")}
         >
-          <i className="bi bi-clock-history me-2"></i>
-          View History
+          <i className="bi bi-clock-history"></i>
+          Transaction History
+        </button>
+
+        <button
+          className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
+          onClick={() =>
+            nav("/purchase-history", { state: { from: "wallet" } })
+          }
+        >
+          <i className="bi bi-bag-check"></i>
+          Purchases History
         </button>
       </div>
 
@@ -232,17 +267,21 @@ export default function Wallet() {
         credits={[
           {
             id: "1760684896281",
+            creditCode: "EV-2025-001",
             title: "EV Charging Credit",
             price: 50000,
             quantity: 1000,
+            sold: 200,
             status: "active",
             expiresAt: "10/17/2025, 2:08:16 PM",
           },
           {
             id: "1760684905467",
+            creditCode: "EV-2025-002",
             title: "EV Charging Credit",
             price: 50000,
             quantity: 800,
+            sold: 100,
             status: "active",
             expiresAt: "10/17/2025, 2:08:29 PM",
           },

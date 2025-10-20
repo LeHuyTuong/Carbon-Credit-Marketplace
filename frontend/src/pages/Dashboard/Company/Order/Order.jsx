@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Form,
@@ -13,18 +13,25 @@ import {
 import { FaLock, FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { Modal, Toast, ToastContainer } from "react-bootstrap";
 import { toast } from "react-toastify";
+import useReveal from "../../../../hooks/useReveal";
+import { apiFetch } from "../../../../utils/apiFetch";
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function Order() {
   const nav = useNavigate();
   const { state } = useLocation();
+  const { user } = useAuth();
   const credit = state?.credit;
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
   // Nếu user vào thẳng /order không qua marketplace thì redirect
   if (!credit) {
     return (
-      <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 text-center">
+      <div
+        ref={sectionRef}
+        className="reveal d-flex flex-column align-items-center justify-content-center min-vh-100 text-center"
+      >
         <p className="text-muted mb-3">No credit selected.</p>
         <Button variant="primary" onClick={() => nav("/marketplace")}>
           Back to Marketplace
@@ -60,30 +67,85 @@ export default function Order() {
     setShowConfirm(true);
   };
 
-  const handleConfirmPurchase = () => {
+  // //cũ
+  // const handleConfirmPurchase = () => {
+  //   setShowConfirm(false);
+
+  //   // Tạo object đơn hàng mới
+  //   const newPurchase = {
+  //     title: credit.title,
+  //     quantity: Number(formData.quantity),
+  //     pricePerTonne,
+  //     total: Number(totalPrice),
+  //     beneficiaryName: formData.beneficiaryName,
+  //     purchasedAt: new Date().toISOString(),
+  //   };
+
+  //   // lưu vào localStorage (danh sách nhiều giao dịch)
+  //   const history = JSON.parse(localStorage.getItem("purchases") || "[]");
+  //   history.push(newPurchase);
+  //   localStorage.setItem("purchases", JSON.stringify(history));
+
+  //   toast.success("Purchase successfully!");
+  //   setTimeout(
+  //     () => nav("/purchase-history", { state: { from: "order" } }),
+  //     3000
+  //   );
+  // };
+  console.log("User context:", user);
+
+  const handleConfirmPurchase = async () => {
     setShowConfirm(false);
 
-    // Tạo object đơn hàng mới
-    const newPurchase = {
-      title: credit.title,
-      quantity: Number(formData.quantity),
-      pricePerTonne,
-      total: Number(totalPrice),
-      beneficiaryName: formData.beneficiaryName,
-      purchasedAt: new Date().toISOString(),
-    };
+    try {
+      //lấy KYC của công ty hiện tại để có companyId
+      const kycRes = await apiFetch("/api/v1/kyc/company", { method: "GET" });
+      const buyerCompanyId = kycRes?.response?.id;
 
-    // lưu vào localStorage (danh sách nhiều giao dịch)
-    const history = JSON.parse(localStorage.getItem("purchases") || "[]");
-    history.push(newPurchase);
-    localStorage.setItem("purchases", JSON.stringify(history));
+      if (!buyerCompanyId) {
+        toast.error(
+          "Cannot determine your company ID. Please complete company KYC."
+        );
+        return;
+      }
 
-    toast.success("Purchase successfully!");
-    setTimeout(() => nav("/purchase-history"), 3000);
+      //tạo new order
+      const payload = {
+        data: {
+          buyerCompanyId,
+          listingId: credit.id || credit.listingId,
+          quantity: Number(formData.quantity),
+        },
+      };
+
+      console.log("Payload send:", payload);
+
+      const res = await apiFetch("/api/v1/orders", {
+        method: "POST",
+        body: payload,
+      });
+
+      const orderId = res?.response?.id;
+
+      if (!orderId) {
+        toast.error("Order created but missing ID.");
+        return;
+      }
+      // Gọi API hoàn tất order
+      await apiFetch(`/api/v1/orders/${orderId}/complete`, { method: "POST" });
+      toast.success("Order placed successfully!");
+      setTimeout(
+        () => nav("/purchase-history", { state: { from: "order" } }),
+        2000
+      );
+    } catch (err) {
+      console.error("Order create error:", err);
+      toast.error(err.message || "Unable to create order.");
+    }
   };
 
   return (
-    <div className="auth-hero min-vh-100 py-5 bg-light">
+    <div ref={sectionRef} className="auth-hero min-vh-100 py-5 bg-light reveal">
       <Container>
         <div className="mb-4">
           {/*nút Back to marketplace cố định góc trên trái */}

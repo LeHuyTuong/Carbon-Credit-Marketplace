@@ -30,13 +30,16 @@
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
+  justify-content: center;
 }
 
 .project-card {
-  background: rgb(255, 255, 255);
+  max-width: 280px;
+  margin: 0 auto;
+  background: #fff;
   border-radius: 8px;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -47,8 +50,9 @@
   box-shadow: 0 0 12px rgba(0, 255, 120, 0.3);
 }
 
+
 .card-img-container {
-  height: 180px;
+  height: 135px;
   overflow: hidden;
 }
 
@@ -90,15 +94,27 @@
   padding: 0.5rem 0;
 }
 
+.btn-detail {
+  border: none;
+  background: #4df5b3;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: 0.3s;
+  margin-top: 0.8rem;
+  padding: 0.5rem 0;
+}
+
 .btn-buy:hover {
   filter: brightness(1.1);
 }
 
 
-/* Responsive */
-@media (max-width: 991.98px) {
+/* Desktop layout: ép thành 4 cột đều nhau */
+@media (min-width: 992px) {
   .project-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    max-width: 1200px; /* giữ layout gọn giữa màn hình */
+    margin: 0 auto;
   }
 }
