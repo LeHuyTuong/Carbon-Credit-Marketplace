@@ -66,9 +66,6 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Wallet addBalanceToWallet( Long money) throws WalletException {
         // 1lấy số tiền hiện tại đang có trong ví
-        if (money == null || money <= 0) {
-            throw new WalletException("Amount to add must be greater than zero");
-        }
         User user = currentUser();
         Long id = user.getId();
         Wallet wallet = walletRepository.findByUserId(id);
