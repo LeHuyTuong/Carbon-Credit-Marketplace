@@ -10,6 +10,7 @@ import Navbar from "./components/Navbar/Navbar.jsx";
 import Home from "./pages/Home/Home.jsx";
 import Login from "./pages/Login/Login.jsx";
 import LoginAdmin from "./pages/loginAdmin/Login.jsx";
+import KYCAdmin from "./pages/KYCAdmin/KYC.jsx";
 import Register from "./pages/Register/Register.jsx";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword.jsx";
 import ChangePassword from "./pages/ChangePassword/ChangePassword.jsx";
@@ -150,6 +151,7 @@ export default function App() {
         {/*Route riêng cho admin, không Navbar */}
 
         <Route path="/admin/login" element={<LoginAdmin/>} />
+        <Route path="/admin/kyc" element={<KYCAdmin/>}/>
         {/*Route riêng cho admin và cva, không Navbar */}
 
         <Route path="/admin/*" element={<AdminApp />} />

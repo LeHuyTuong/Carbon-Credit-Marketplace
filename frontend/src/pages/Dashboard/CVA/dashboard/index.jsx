@@ -10,7 +10,7 @@ import Header from "@/components/Chart/Header.jsx";
 import LineChart from "@/components/Chart/LineChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
-
+import { apiFetch } from "@/utils/apiFetch";
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

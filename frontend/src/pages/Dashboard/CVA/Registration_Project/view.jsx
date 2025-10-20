@@ -105,20 +105,20 @@ const ApplicationView = () => {
         </Typography>
         <Divider sx={{ mb: 2 }} />
 
-        <Typography>📁 <b>Project ID:</b> {application.projectId || "—"}</Typography>
-        <Typography>🏢 <b>Company ID:</b> {application.companyId || "—"}</Typography>
-        <Typography>🏷️ <b>Company Name:</b> {application.companyName || "—"}</Typography>
-        <Typography>📊 <b>Status:</b> {application.status || "—"}</Typography>
+        <Typography> <b>Project ID:</b> {application.projectId || "—"}</Typography>
+        <Typography> <b>Company ID:</b> {application.companyId || "—"}</Typography>
+        <Typography> <b>Company Name:</b> {application.companyName || "—"}</Typography>
+        <Typography> <b>Status:</b> {application.status || "—"}</Typography>
 
         <Typography mt={2}>
-          📝 <b>Review Note:</b> {application.reviewNote || "N/A"}
+           <b>Review Note:</b> {application.reviewNote || "N/A"}
         </Typography>
         <Typography>
-          📋 <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
+           <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
         </Typography>
 
         <Typography mt={2}>
-          ⏰ <b>Submitted At:</b>{" "}
+           <b>Submitted At:</b>{" "}
           {application.submittedAt
             ? new Date(application.submittedAt).toLocaleString()
             : "N/A"}
