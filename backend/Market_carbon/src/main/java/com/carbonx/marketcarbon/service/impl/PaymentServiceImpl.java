@@ -10,6 +10,7 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.PaymentOrderRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
@@ -69,10 +70,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         PaymentOrder savedPaymentOrder = paymentOrderRepository.save(paymentOrder);
+        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(savedPaymentOrder.getAmount()));
+
         return PaymentOrderResponse.builder()
                 .userId(user.getId())
                 .method(savedPaymentOrder.getPaymentMethod())
                 .amount(savedPaymentOrder.getAmount())
+                .amountInVnd(amountInVnd)
                 .status(savedPaymentOrder.getStatus())
                 .id(savedPaymentOrder.getId())
                 .createdDate(savedPaymentOrder.getCreateAt())
@@ -128,6 +132,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url(session.getUrl());
+        res.setId(orderId);
+        res.setAmount(request.getAmount());
+        res.setAmountInVnd(CurrencyConverter.usdToVnd(BigDecimal.valueOf(request.getAmount())));
         return res;
     }
 
@@ -151,6 +158,7 @@ public class PaymentServiceImpl implements PaymentService {
         // Create payer details
         Payer payer = new Payer();
         payer.setPaymentMethod("paypal");
+
 
         // Create redirect URLs
         RedirectUrls redirectUrls = new RedirectUrls();
@@ -179,7 +187,9 @@ public class PaymentServiceImpl implements PaymentService {
         // Create and return payment response
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url(approvalUrl);
-
+        res.setId(orderId);
+        res.setAmount(paymentOrder.getAmount());
+        res.setAmountInVnd(CurrencyConverter.usdToVnd(BigDecimal.valueOf(paymentOrder.getAmount())));
         return res;
     }
 

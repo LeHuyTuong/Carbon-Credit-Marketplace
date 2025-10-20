@@ -10,6 +10,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -74,7 +75,10 @@ public class WalletServiceImpl implements WalletService {
             wallet = generateWallet(user);
         }
 
-        BigDecimal amountToAdd = BigDecimal.valueOf(money);
+        BigDecimal amountUsd = BigDecimal.valueOf(money);
+        BigDecimal amountToAdd = CurrencyConverter.usdToVnd(amountUsd);
+        String description = String.format("Add money to wallet (USD %s -> VND %s)",
+                amountUsd.toPlainString(), amountToAdd.toPlainString());
 
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                         .wallet(wallet)
@@ -85,7 +89,8 @@ public class WalletServiceImpl implements WalletService {
 
         Wallet updatedWallet = walletRepository.findByUserId(id);
 
-        log.info("Wallet added to wallet" + wallet + " money :" + money);
+        log.info("Wallet added to wallet" + wallet + " money USD:" + amountUsd + " VND:" + amountToAdd);
+
         return updatedWallet;
     }
 
