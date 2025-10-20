@@ -6,31 +6,51 @@ import project3 from "../../../../assets/project3.jpg";
 import useRipple from "../../../../hooks/useRipple";
 import { useNavigate } from "react-router-dom";
 import useReveal from "../../../../hooks/useReveal";
+import { apiFetch } from "../../../../utils/apiFetch";
+import { Spinner } from "react-bootstrap";
 
 export default function Marketplace() {
   const sectionRef = useRef(null);
   const ripple = useRipple();
   const nav = useNavigate();
-  const [projectData, setProjectData] = useState([]);
+  const [credits, setCredits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const projectImages = [project1, project2, project3];
   useReveal(sectionRef);
-  useEffect(() => {
-    //lấy danh sách credit từ localStorage (mock)
-    const localCredits = JSON.parse(
-      localStorage.getItem("mockCredits") || "[]"
-    );
-    const formatted = localCredits.map((c, i) => ({
-      id: c.id,
-      title: c.title || "EV Carbon Credit",
-      seller: "Mock Seller Co.",
-      price: c.price,
-      quantity: c.quantity,
-      expiresAt: c.createdAt,
-      img: projectImages[i % projectImages.length],
-    }));
 
-    setProjectData(formatted);
+  useEffect(() => {
+    const fetchMarketplace = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // gọi api
+        const res = await apiFetch("/api/v1/marketplace", { method: "GET" });
+        const list = res?.response || [];
+
+        // map dữ liệu sang dạng FE dễ render
+        const formatted = list.map((item, index) => ({
+          id: item.listingId,
+          title: item.projectTitle || "Unnamed Project",
+          seller: item.sellerCompanyName || "Unknown Seller",
+          price: item.pricePerCredit,
+          quantity: item.quantity,
+          expiresAt: new Date(item.expiresAt).toLocaleDateString("en-GB"),
+          img: projectImages[index % projectImages.length],
+        }));
+
+        setCredits(formatted);
+      } catch (err) {
+        console.error("Failed to fetch marketplace:", err);
+        setError(err.message || "Failed to load marketplace data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMarketplace();
   }, []);
 
   return (
@@ -47,39 +67,41 @@ export default function Marketplace() {
           </h6>
         </div>
 
-        {projectData.length === 0 ? (
+        {credits.length === 0 ? (
           <p className="text-center text-light fs-4 fw-semibold mt-4">
             No active credits available.
           </p>
         ) : (
           <div className="project-grid">
-            {projectData.map((p) => (
-              <div className="project-card" key={p.id}>
+            {credits.map((c) => (
+              <div className="project-card" key={c.id}>
                 <div className="card-img-container">
-                  <img src={p.img} className="card-img-top" alt={p.title} />
+                  <img src={c.img} className="card-img-top" alt={c.title} />
                 </div>
 
                 <div className="card-body">
                   <h5 className="card-title mb-2 text-dark fw-bold">
-                    {p.title}
+                    {c.title}
                   </h5>
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="price-tag fw-bold">${p.price}</span>
+                    <span className="price-tag fw-bold">${c.price}</span>
                     <span className="text-muted small">
-                      <strong>Available:</strong> {p.quantity}
+                      <strong>Available:</strong> {c.quantity}
                     </span>
                   </div>
                   <p className="text-muted small mb-1">
-                    <strong>Seller:</strong> {p.seller}
+                    <strong>Seller:</strong> {c.seller}
                   </p>
                   <p className="text-muted small mb-2">
-                    Expires on: {p.expiresAt}
+                    Expires on: {c.expiresAt}
                   </p>
                   <button
                     className="btn-primary btn-buy mt-3 w-100"
                     onClick={(e) => {
                       ripple(e, e.currentTarget);
-                      nav("/order", { state: { credit: p } });
+                      nav("/order", {
+                        state: { credit: c, from: "marketplace" },
+                      });
                     }}
                   >
                     Buy Now

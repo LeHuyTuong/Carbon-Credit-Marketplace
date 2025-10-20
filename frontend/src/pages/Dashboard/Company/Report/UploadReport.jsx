@@ -3,6 +3,7 @@ import "../../EVOwner/ManageVehicle/manage.css";
 import { Button, Modal, Toast, ToastContainer, Form } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
 import useReveal from "../../../../hooks/useReveal";
+import { useNavigate } from "react-router-dom";
 
 export default function UploadReport() {
   const [reports, setReports] = useState([]);
@@ -15,15 +16,34 @@ export default function UploadReport() {
   });
   const sectionRef = useRef(null);
   useReveal(sectionRef);
+  const nav = useNavigate();
 
   const fetchReports = async () => {
     try {
-      const res = await apiFetch(
-        "/api/v1/reports/list-cva-check?status=PENDING"
-      );
-      setReports(res?.response || []);
+      setUploading(true);
+      const res = await apiFetch("/api/v1/reports/my-reports", {
+        method: "GET",
+      });
+
+      //dữ liệu BE trả về trong res.response
+      const data = res?.response || [];
+
+      // map sang định dạng UI
+      const mapped = data.map((r) => ({
+        id: r.id,
+        projectName: r.projectName,
+        uploadOriginalFilename: r.uploadOriginalFilename,
+        uploadStorageUrl: r.uploadStorageUrl,
+        status: r.status,
+        submittedAt: r.submittedAt,
+      }));
+
+      setReports(mapped);
     } catch (err) {
       console.error("Failed to load reports:", err);
+      showToast("Failed to fetch your reports.", "danger");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -60,11 +80,22 @@ export default function UploadReport() {
 
   return (
     <div ref={sectionRef} className="reveal">
-      <div className="vehicle-search-section">
-        <h1 className="title">Your Reports</h1>
-        <Button className="mb-3" onClick={() => setShow(true)}>
-          Upload Report
-        </Button>
+      <div className="vehicle-search-section2">
+        <h1 className="title fw-bold">Your Reports</h1>
+        <div className="d-flex justify-content-center gap-3 mt-2">
+          <Button className="mb-3" onClick={() => setShow(true)}>
+            Upload Report
+          </Button>
+
+          {/* Nút xem mẫu CSV */}
+          <Button
+            variant="outline-warning"
+            className="mb-3"
+            onClick={() => window.open("/sample-report.csv", "_blank")}
+          >
+            View CSV Template
+          </Button>
+        </div>
       </div>
 
       {/* Modal Upload */}
@@ -78,7 +109,11 @@ export default function UploadReport() {
               <Form.Label>Select CSV File</Form.Label>
               <Form.Control type="file" name="file" accept=".csv" />
               <Form.Text className="text-muted">
-                Upload monthly emission report in CSV format.
+                Upload monthly emission report in CSV format. You can{" "}
+                <a href="/sample-report.csv" target="_blank">
+                  download the template here
+                </a>
+                .
               </Form.Text>
             </Form.Group>
           </Modal.Body>
@@ -93,16 +128,13 @@ export default function UploadReport() {
         </Form>
       </Modal>
 
-      {/* Table */}
       <div className="table-wrapper">
         <table className="vehicle-table">
           <thead>
             <tr>
               <th>ID</th>
               <th>Project</th>
-              <th>Period</th>
-              <th>Total Energy</th>
-              <th>Total CO₂</th>
+              <th>File Name</th>
               <th>Status</th>
               <th>Submitted At</th>
               <th>Actions</th>
@@ -114,17 +146,32 @@ export default function UploadReport() {
                 <tr key={r.id}>
                   <td>{r.id}</td>
                   <td>{r.projectName}</td>
-                  <td>{r.period}</td>
-                  <td>{r.totalEnergy?.toLocaleString()}</td>
-                  <td>{r.totalCo2?.toLocaleString()}</td>
+                  <td>
+                    <a
+                      href={r.uploadStorageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {r.uploadOriginalFilename || "—"}
+                    </a>
+                  </td>
                   <td>
                     <span className={`status-badge ${r.status?.toLowerCase()}`}>
                       {r.status}
                     </span>
                   </td>
-                  <td>{new Date(r.submittedAt).toLocaleDateString()}</td>
+                  <td>
+                    {new Date(r.submittedAt).toLocaleString("vi-VN", {
+                      timeZone: "Asia/Ho_Chi_Minh",
+                      hour12: false,
+                    })}
+                  </td>{" "}
                   <td className="action-buttons">
-                    <button className="action-btn view">
+                    <button
+                      className="action-btn view"
+                      title="View Details"
+                      onClick={() => nav(`/detail-report/${r.id}`)}
+                    >
                       <i className="bi bi-eye"></i>
                     </button>
                   </td>
@@ -132,7 +179,7 @@ export default function UploadReport() {
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="no-data text-center py-5">
+                <td colSpan="6" className="no-data text-center py-5">
                   <i className="bi bi-file-earmark-text text-accent fs-3 d-block mb-2"></i>
                   <h5 className="text-dark">No reports yet</h5>
                   <p className="text-muted">

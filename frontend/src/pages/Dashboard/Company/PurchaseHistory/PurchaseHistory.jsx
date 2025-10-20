@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button, Table, Spinner, Card } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { FaArrowLeft } from "react-icons/fa";
@@ -14,17 +14,60 @@ export default function PurchaseHistory() {
   const [loading, setLoading] = useState(true);
   const [requestDateTime, setRequestDateTime] = useState(null); //lưu thời gian response
   const sectionRef = useRef(null);
+  const { state } = useLocation();
+  const from = state?.from || "marketplace";
+  const [orders, setOrders] = useState([]);
+  const [error, setError] = useState(null);
+
   useReveal(sectionRef);
 
+  //cũ
+  // useEffect(() => {
+  //   setLoading(true);
+  //   const stored = JSON.parse(localStorage.getItem("purchases") || "[]");
+  //   setApplications(stored);
+  //   setLoading(false);
+  // }, []);
+
   useEffect(() => {
-    setLoading(true);
-    const stored = JSON.parse(localStorage.getItem("purchases") || "[]");
-    setApplications(stored);
-    setLoading(false);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // gọi api
+        const res = await apiFetch("/api/v1/orders", {
+          method: "GET",
+        });
+
+        // dữ liệu chuẩn từ BE
+        const list = res?.response || [];
+
+        // map dữ liệu sang UI-friendly
+        const mapped = list.map((o) => ({
+          id: o.id,
+          companyId: o.companyId,
+          status: o.status,
+          totalAmount: o.totalAmount,
+          createdAt: o.createAt,
+        }));
+
+        setOrders(mapped);
+      } catch (err) {
+        console.error("Failed to fetch order history:", err);
+        setError(err.message || "Unable to load orders.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
   }, []);
 
-  const handleView = (applicationId) => {
-    nav(`/view-registered-project/${applicationId}`);
+  const handleBack = () => {
+    if (from === "wallet") nav("/wallet");
+    else if (from === "order") nav("/marketplace");
+    else nav(-1);
   };
 
   return (
@@ -32,7 +75,7 @@ export default function PurchaseHistory() {
       ref={sectionRef}
       className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
     >
-      {/*nút Back to Home cố định góc trên trái */}
+      {/* nút back */}
       <Button
         variant="outline-info"
         size="sm"
@@ -43,9 +86,9 @@ export default function PurchaseHistory() {
           backdropFilter: "blur(6px)",
           zIndex: 20,
         }}
-        onClick={() => nav("/marketplace")}
+        onClick={handleBack}
       >
-        <FaArrowLeft /> Back to Marketplace
+        <FaArrowLeft /> Back
       </Button>
 
       <div
@@ -57,7 +100,7 @@ export default function PurchaseHistory() {
       >
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h2 className="fw-bold text-white mb-0 text-shadow">
-            Your Credits Purchased
+            Your Purchases History
           </h2>
         </div>
 
@@ -73,9 +116,13 @@ export default function PurchaseHistory() {
             <div className="d-flex justify-content-center align-items-center py-5">
               <Spinner animation="border" />
             </div>
-          ) : applications.length === 0 ? (
+          ) : error ? (
+            <div className="text-center py-5 text-danger">
+              <h5>{error}</h5>
+            </div>
+          ) : orders.length === 0 ? (
             <div className="text-center py-5">
-              <h5>No credits purchased yet</h5>
+              <h5>No purchases history found</h5>
               <p className="text-muted mb-0">Buy credits in Marketplace.</p>
             </div>
           ) : (
@@ -83,29 +130,38 @@ export default function PurchaseHistory() {
               <thead className="table-light">
                 <tr>
                   <th>#</th>
-                  <th>Credits Name</th>
-                  <th>Quantity (tCO₂)</th>
-                  <th>Total ($)</th>
-                  <th>Beneficiary</th>
-                  <th>Purchased At</th>
+                  <th>Order ID</th>
+                  <th>Status</th>
+                  <th>Total Amount ($)</th>
+                  <th>Created At</th>
                 </tr>
               </thead>
               <tbody>
-                {applications.map((a, index) => (
-                  <tr key={index}>
+                {orders.map((o, index) => (
+                  <tr key={o.id || index}>
                     <td>{index + 1}</td>
-                    <td>{a.title}</td>
-                    <td>{a.quantity}</td>
-                    <td>${a.total.toFixed(2)}</td>
-                    <td>{a.beneficiaryName}</td>
+                    <td>{o.id}</td>
                     <td>
-                      {new Date(a.purchasedAt).toLocaleString("en-GB", {
+                      <span
+                        className={`badge bg-${
+                          o.status === "COMPLETED"
+                            ? "success"
+                            : o.status === "PENDING"
+                            ? "warning"
+                            : "secondary"
+                        }`}
+                      >
+                        {o.status}
+                      </span>
+                    </td>
+                    <td>${o.totalAmount?.toLocaleString() || 0}</td>
+                    <td>
+                      {new Date(o.createdAt).toLocaleString("en-GB", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
-                        second: "2-digit",
                       })}
                     </td>
                   </tr>
