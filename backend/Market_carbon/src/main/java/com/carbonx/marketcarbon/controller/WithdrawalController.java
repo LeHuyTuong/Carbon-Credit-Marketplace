@@ -1,10 +1,8 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
-import com.carbonx.marketcarbon.common.WalletTransactionType;
+
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
-import com.carbonx.marketcarbon.model.Wallet;
-import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
@@ -12,6 +10,7 @@ import com.carbonx.marketcarbon.service.WithdrawalService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,10 +32,10 @@ public class WithdrawalController {
 
     private final WalletTransactionService walletTransactionService;
 
-    @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawl money ")
-    @PostMapping("/{amount}")
-    public ResponseEntity<TuongCommonResponse<WalletTransactionRequest>> withdrawalRequest(
-            @PathVariable("amount") Long amount,
+    @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawal money ")
+    @PostMapping("")
+    public ResponseEntity<TuongCommonResponse<Withdrawal>> withdrawalRequest(
+            @RequestBody @Valid WalletTransactionRequest request,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws Exception{
@@ -57,7 +56,7 @@ public class WithdrawalController {
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<WalletTransactionRequest> response = new TuongCommonResponse<>(trace, now , rs, walletTransactionRequest);
+        TuongCommonResponse<Withdrawal> response = new TuongCommonResponse<>(trace, now , rs, withdrawal);
         return ResponseEntity.ok(response);
     }
 

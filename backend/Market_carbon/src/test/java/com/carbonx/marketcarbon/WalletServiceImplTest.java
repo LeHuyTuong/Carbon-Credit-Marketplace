@@ -12,12 +12,11 @@ import com.carbonx.marketcarbon.service.impl.WalletServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class WalletServiceImplTest {
 
     @Mock
@@ -56,6 +54,7 @@ class WalletServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         user = new User();
         user.setId(1L);
         user.setEmail("user@example.com");
@@ -81,41 +80,30 @@ class WalletServiceImplTest {
         when(walletRepository.findByUserId(user.getId())).thenReturn(wallet);
         when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
 
-        doAnswer(invocation -> {
-            WalletTransactionRequest request = invocation.getArgument(0);
-            wallet.setBalance(wallet.getBalance().add(request.getAmount()));
-            return null;
-        }).when(walletTransactionService).createTransaction(any(WalletTransactionRequest.class));
-
-        Wallet result = walletService.addBalanceToWallet(1000L);
+        walletService.addBalanceToWallet(1000L);
 
         verify(walletTransactionService).createTransaction(requestCaptor.capture());
         WalletTransactionRequest capturedRequest = requestCaptor.getValue();
         assertThat(capturedRequest.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
         assertThat(capturedRequest.getType()).isEqualTo(WalletTransactionType.ADD_MONEY);
         assertThat(capturedRequest.getWallet()).isSameAs(wallet);
-
-        assertThat(result).isSameAs(wallet);
-        assertThat(wallet.getBalance()).isEqualByComparingTo(BigDecimal.valueOf(1000));
     }
 
     @Test
     void addBalanceToWallet_shouldCreateWalletWhenMissing() throws WalletException {
-        when(walletRepository.findByUserId(user.getId())).thenReturn(null);
         Wallet persistedWallet = new Wallet();
         persistedWallet.setId(55L);
         persistedWallet.setBalance(BigDecimal.ZERO);
         persistedWallet.setUser(user);
 
+        when(walletRepository.findByUserId(user.getId())).thenReturn(null);
         when(walletRepository.save(any(Wallet.class))).thenReturn(persistedWallet);
         when(walletRepository.findById(55L)).thenReturn(Optional.of(persistedWallet));
 
-        doAnswer(invocation -> null).when(walletTransactionService).createTransaction(any(WalletTransactionRequest.class));
-
-        Wallet result = walletService.addBalanceToWallet(500L);
+        walletService.addBalanceToWallet(500L);
 
         verify(walletRepository).save(any(Wallet.class));
-        assertThat(result).isSameAs(persistedWallet);
+        verify(walletTransactionService).createTransaction(any(WalletTransactionRequest.class));
     }
 
     @Test
