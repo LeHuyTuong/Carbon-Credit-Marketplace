@@ -5,4 +5,5 @@ public enum WalletTransactionType {
     ADD_MONEY,
     BUY_CARBON_CREDIT,
     SELL_CARBON_CREDIT,
+    SELL_CARBON_CREDIT_SHARE,
 }
