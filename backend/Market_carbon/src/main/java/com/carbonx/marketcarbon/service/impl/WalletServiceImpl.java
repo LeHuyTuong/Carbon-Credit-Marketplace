@@ -76,22 +76,25 @@ public class WalletServiceImpl implements WalletService {
         }
 
         BigDecimal amountUsd = BigDecimal.valueOf(money);
-        BigDecimal amountToAdd = CurrencyConverter.usdToVnd(amountUsd);
-        String description = String.format("Add money to wallet (USD %s -> VND %s)",
-                amountUsd.toPlainString(), amountToAdd.toPlainString());
+        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(amountUsd);
+
+        String description = String.format(
+                "Add money to wallet (USD %s ≈ VND %s)",
+                amountUsd.toPlainString(),
+                amountInVnd.toPlainString()
+        );
 
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                         .wallet(wallet)
-                        .amount(amountToAdd)
+                        .amount(amountUsd)
                         .type(WalletTransactionType.ADD_MONEY)
-                        .description("Add money to wallet")
+                        .description(description)
                 .build());
 
-        Wallet updatedWallet = walletRepository.findByUserId(id);
-
-        log.info("Wallet added to wallet" + wallet + " money USD:" + amountUsd + " VND:" + amountToAdd);
-
-        return updatedWallet;
+        wallet.setBalance(wallet.getBalance().add(amountUsd));
+        walletRepository.save(wallet);
+        log.info("Wallet updated for user {}: +{} USD (≈ {} VND)", id, amountUsd, amountInVnd);
+        return wallet;
     }
 
     @Override

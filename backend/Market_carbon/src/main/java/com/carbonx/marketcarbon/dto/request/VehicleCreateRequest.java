@@ -8,7 +8,7 @@ import lombok.Data;
 public class VehicleCreateRequest {
 
     @NotNull(message = "plateNumber is not null")
-    @PlateNumber
+    @PlateNumber(message = "plateNumber is not fit format : 50H-2228")
     private String plateNumber;
 
     @NotNull(message = "model is not null")

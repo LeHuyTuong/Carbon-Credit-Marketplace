@@ -7,13 +7,16 @@ import lombok.Data;
 @Data
 public class VehicleUpdateRequest {
 
-    @NotNull(message = "plateNumber can not null ")
-    @PlateNumber
+    @NotNull(message = "plateNumber is not null")
+    @PlateNumber(message = "plateNumber is not fit format : 50H-2228")
     private String plateNumber;
+
     @NotNull(message = "model can not null ")
     private String model;
+
     @NotNull(message = "brand can not null ")
     private String brand;
+
     @NotNull(message = "companyId can not null ")
     private Long companyId;
 }
