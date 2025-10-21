@@ -1,10 +1,8 @@
 # Carbon Credit Marketplace for EV Owners
 
-<img width="954" height="846" alt="image-20250921-154343 (1)" src="https://github.com/user-attachments/assets/3a24b37e-2896-4c90-8592-b267a3441daa" />
+<img width="454" height="346" alt="image-20250921-154343 (1)" src="https://github.com/user-attachments/assets/3a24b37e-2896-4c90-8592-b267a3441daa" />
 
 ![Views](https://views.whatilearened.today/views/github/LeHuyTuong/Carbon-Credit-Marketplace.svg)
-
-<img width="954" height="846" alt="Architecture Snapshot" src="https://github.com/user-attachments/assets/5fb63c3d-f918-460b-b7b1-0133024fa67a" />
 
 A production‑adjacent, end‑to‑end platform that enables EV owners and green enterprises to issue, list, buy, and settle carbon credits. The stack is Java Spring Boot (API), React 18 (web), MySQL/Redis (data/caching), with optional AWS S3 for evidence storage and Stripe/PayPal/VNPAY for payments. Everything can be orchestrated locally via Docker Compose.
 
