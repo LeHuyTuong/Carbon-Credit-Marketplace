@@ -37,7 +37,7 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawal money ")
     @PostMapping("/{amount}")
-    public ResponseEntity<TuongCommonResponse<Withdrawal>> withdrawalRequest(
+    public ResponseEntity<TuongCommonResponse<WalletTransactionRequest>> withdrawalRequest(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
@@ -48,7 +48,6 @@ public class WithdrawalController {
         Wallet userWallet = walletService.getUserWallet();
 
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
-        walletService.addBalanceToWallet( -amount);
 
         WalletTransactionRequest walletTransactionRequest =  WalletTransactionRequest.builder()
                 .wallet(userWallet)
@@ -59,7 +58,7 @@ public class WithdrawalController {
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Withdrawal> response = new TuongCommonResponse<>(trace, now , rs, withdrawal);
+        TuongCommonResponse<WalletTransactionRequest> response = new TuongCommonResponse<>(trace, now , rs, walletTransactionRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -75,9 +74,6 @@ public class WithdrawalController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         Withdrawal withdrawal = withdrawalService.processWithdrawal(id, accept);
-        if(!accept){
-            walletService.addBalanceToWallet(withdrawal.getAmount().longValue());
-        }
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -85,7 +81,7 @@ public class WithdrawalController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get withdrawl history" , description = "API to get all history of User withdrawl request")
+    @Operation(summary = "Get withdrawal history" , description = "API to get all history of User withdrawal request")
     @GetMapping
     public ResponseEntity<TuongCommonResponse<List<Withdrawal>>> getWithdrawalHistory(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -100,7 +96,7 @@ public class WithdrawalController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get withdrawl history by admin" , description = "API admin to get all history of User withdrawl request")
+    @Operation(summary = "Get withdrawl history by admin" , description = "API admin to get all history of User withdrawal request")
     @GetMapping("/admin")
     public ResponseEntity<TuongCommonResponse<List<Withdrawal>>> getALlWithdrawalRequest(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

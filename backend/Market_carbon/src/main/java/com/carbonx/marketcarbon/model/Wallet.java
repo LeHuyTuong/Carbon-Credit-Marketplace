@@ -27,6 +27,7 @@ public class Wallet {
     private User user;
 
     @OneToOne
+    @JoinColumn(name = "carbon_credit_id", referencedColumnName = "id")
     private CarbonCredit carbonCredit;
 
     @OneToOne

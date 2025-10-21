@@ -36,7 +36,14 @@ public class DataInitializer {
     @NonFinal
     static final String ADMIN_USER_NAME = "admin@gmail.com";
     @NonFinal
-    static final String ADMIN_PASSWORD = "123456";
+    static final String ADMIN_PASSWORD = "Password@1"; // Changed default password
+
+    // --- New Company Constants ---
+    @NonFinal
+    static final String COMPANY_USER_EMAIL = "company@example.com";
+    @NonFinal
+    static final String COMPANY_PASSWORD = "Password@1"; // Use a strong password
+    // --- End New Company Constants ---
 
     @Bean("databaseInitializer")
     @Transactional
@@ -51,22 +58,18 @@ public class DataInitializer {
 
         return args -> {
             // Initialize Roles
-            if (roleRepository.findByName(PredefinedRole.USER_ROLE).isEmpty()) {
-                roleRepository.save(Role.builder().name(PredefinedRole.USER_ROLE).description("EV_Owner role").build());
-            }
+            Role evOwnerRole = roleRepository.findByName(PredefinedRole.USER_ROLE)
+                    .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.USER_ROLE).description("EV_Owner role").build()));
 
-            Optional<Role> adminRoleOpt = roleRepository.findByName(PredefinedRole.ADMIN_ROLE);
-            Role adminRole = adminRoleOpt.orElseGet(() ->
-                    roleRepository.save(Role.builder().name(PredefinedRole.ADMIN_ROLE).description("role Admin").build()));
+            Role adminRole = roleRepository.findByName(PredefinedRole.ADMIN_ROLE)
+                    .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.ADMIN_ROLE).description("role Admin").build()));
 
+            Role companyRole = roleRepository.findByName(PredefinedRole.COMPANY_ROLE)
+                    .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.COMPANY_ROLE).description("COMPANY role").build()));
 
-            if (roleRepository.findByName(PredefinedRole.COMPANY_ROLE).isEmpty()) {
-                roleRepository.save(Role.builder().name(PredefinedRole.COMPANY_ROLE).description("COMPANY role").build());
-            }
+            Role cvaRole = roleRepository.findByName(PredefinedRole.CVA_ROLE)
+                    .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.CVA_ROLE).description("CVA role").build()));
 
-            if (roleRepository.findByName(PredefinedRole.CVA_ROLE).isEmpty()) {
-                roleRepository.save(Role.builder().name(PredefinedRole.CVA_ROLE).description("CVA role").build());
-            }
 
             // Initialize Admin User
             User adminUser = userRepository.findByEmail(ADMIN_USER_NAME);
@@ -76,172 +79,212 @@ public class DataInitializer {
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
                         .roles(new HashSet<>(Set.of(adminRole)))
                         .status(USER_STATUS.ACTIVE)
-                        .otpCode(null)
-                        .otpExpiryDate(LocalDateTime.now().plusMinutes(5))
                         .build();
                 userRepository.save(adminUser);
-                log.warn("Admin user created with default password: " + ADMIN_PASSWORD);
+                log.warn("Admin user created with default password.");
             }
 
-            // Initialize a Company for the Admin user
-            Optional<Company> companyOpt = companyRepository.findByUserId(adminUser.getId());
-            Company adminCompany;
-            if (companyOpt.isPresent()) {
-                adminCompany = companyOpt.get();
-            } else {
-                log.info("Creating a test company for admin user...");
-                Company newCompany = Company.builder()
-                        .user(adminUser)
-                        .companyName("Admin Test Corp")
-                        .businessLicense("123456789")
-                        .taxCode("987654321")
-                        .address("123 Admin Street")
-                        .build();
-                adminCompany = companyRepository.save(newCompany);
-            }
+            final User finalAdminUser = adminUser;
+            Company adminCompany = companyRepository.findByUserId(finalAdminUser.getId())
+                    .orElseGet(() -> {
+                        log.info("Creating a test company for admin user...");
+                        Company newCompany = Company.builder()
+                                .user(finalAdminUser)
+                                .companyName("Admin Test Corp")
+                                .businessLicense("ADMIN_LIC")
+                                .taxCode("ADMIN_TAX")
+                                .address("123 Admin Street")
+                                .build();
+                        return companyRepository.save(newCompany);
+                    });
 
 
             // Initialize a Wallet for the Admin user
-            Wallet adminWallet = walletRepository.findByUserId(adminUser.getId());
-            if (adminWallet == null) {
+            if (walletRepository.findByUserId(adminUser.getId()) == null) {
                 log.info("Creating a wallet for admin user...");
                 Wallet newWallet = Wallet.builder()
                         .user(adminUser)
                         .balance(BigDecimal.valueOf(1000000))
-                        .carbonCreditBalance(new BigDecimal(50000))
+                        .carbonCreditBalance(BigDecimal.ZERO)
                         .company(adminCompany)
                         .build();
                 walletRepository.save(newWallet);
             }
 
             // Initialize a test Project
-            Optional<Project> projectOpt = projectRepository.findByTitle("Test Project for Credits");
-            Project testProject;
-            if(projectOpt.isPresent()){
-                testProject = projectOpt.get();
-            } else {
-                log.info("Creating a test project...");
-                Project newProject = Project.builder()
-                        .title("Test Project for Credits")
-                        .description("A sample project for generating carbon credits.")
-                        .logo("https://example.com/default_logo.png")
-                        .status(ProjectStatus.OPEN)
+            Project testProject = projectRepository.findByTitle("Test Project for Credits")
+                    .orElseGet(() -> {
+                        log.info("Creating a test project...");
+                        Project newProject = Project.builder()
+                                .title("Test Project for Credits")
+                                .description("A sample project for generating carbon credits.")
+                                .logo("https://example.com/default_logo.png")
+                                .status(ProjectStatus.OPEN)
+                                .build();
+                        return projectRepository.save(newProject);
+                    });
+
+
+            // --- Initialize New Company User ---
+            User companyUser = userRepository.findByEmail(COMPANY_USER_EMAIL);
+            if (companyUser == null) {
+                companyUser = User.builder()
+                        .email(COMPANY_USER_EMAIL)
+                        .passwordHash(passwordEncoder.encode(COMPANY_PASSWORD))
+                        .roles(new HashSet<>(Set.of(companyRole)))
+                        .status(USER_STATUS.ACTIVE)
                         .build();
-                testProject = projectRepository.save(newProject);
+                userRepository.save(companyUser);
+                log.info("Created new Company user: {}", COMPANY_USER_EMAIL);
+            }
+
+            // --- Initialize Company Entity and Wallet for the new user ---
+            final User finalCompanyUser = companyUser;
+            Company newRegisteredCompany = companyRepository.findByUserId(finalCompanyUser.getId())
+                    .orElseGet(() -> {
+                        log.info("Creating Company entity for user: {}", finalCompanyUser.getEmail());
+                        Company newCompany = Company.builder()
+                                .user(finalCompanyUser)
+                                .companyName("Example Corp")
+                                .businessLicense("COMP_LIC_111")
+                                .taxCode("COMP_TAX_222")
+                                .address("456 Company Ave")
+                                .build();
+                        // Use saveAndFlush to ensure the company is persisted and has an ID immediately
+                        return companyRepository.saveAndFlush(newCompany);
+                    });
+
+            // --- Create Wallet Separately ---
+            if (walletRepository.findByUserId(finalCompanyUser.getId()) == null) {
+                log.info("Creating Wallet for company user: {}", finalCompanyUser.getEmail());
+                Wallet companyWallet = Wallet.builder()
+                        .user(finalCompanyUser)
+                        .balance(new BigDecimal("500000.00"))
+                        .carbonCreditBalance(BigDecimal.ZERO)
+                        .company(newRegisteredCompany) // Set the managed company entity which now has a guaranteed ID
+                        .build();
+                walletRepository.save(companyWallet); // This should now work
             }
 
 
-            // Initialize an ISSUED Carbon Credit to be listed
-            String issuedCreditCode = "ISSUED-CREDIT-001";
-            List<CarbonCredit> listableCredits = carbonCreditRepository.findByCreditCode(issuedCreditCode);
-            CarbonCredit listableCredit;
-            if (!listableCredits.isEmpty()) {
-                listableCredit = listableCredits.get(0);
-            } else {
-                log.info("Creating a sample ISSUED carbon credit for listing...");
-                CarbonCredit credit = CarbonCredit.builder()
-                        .creditCode(issuedCreditCode)
-                        .carbonCredit(new BigDecimal("5000.00"))
-                        .company(adminCompany)
+            // --- Initialize an ISSUED Carbon Credit block for the new Company ---
+            String companyCreditCode = "COMP-ISSUED-001";
+            boolean creditExistsForCompany = !carbonCreditRepository.findByCreditCode(companyCreditCode).isEmpty() &&
+                    carbonCreditRepository.findByCreditCode(companyCreditCode).get(0).getCompany().getId().equals(newRegisteredCompany.getId());
+
+            if (!creditExistsForCompany) {
+                log.info("Creating an ISSUED carbon credit block for company: {}", newRegisteredCompany.getCompanyName());
+                CarbonCredit companyCredit = CarbonCredit.builder()
+                        .creditCode(companyCreditCode)
+                        .carbonCredit(new BigDecimal("2500.00"))
+                        .company(newRegisteredCompany)
                         .project(testProject)
                         .status(CreditStatus.ISSUE)
-                        .issueAt(LocalDateTime.now())
-                        .name("Sample Listable Credits - 2025")
+                        .listedAmount(0)
+                        .issueAt(LocalDateTime.now().minusDays(10))
+                        .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
                         .build();
-                listableCredit = carbonCreditRepository.save(credit);
-            }
-
-            String issuedCreditCode2 = "ISSUED-CREDIT-002";
-            List<CarbonCredit> listableCredits2 = carbonCreditRepository.findByCreditCode(issuedCreditCode2);
-            CarbonCredit listableCredit2;
-            if (!listableCredits2.isEmpty()) {
-                listableCredit2 = listableCredits2.get(0);
-            } else {
-                log.info("Creating a sample ISSUED carbon credit for listing...");
-                CarbonCredit credit = CarbonCredit.builder()
-                        .creditCode(issuedCreditCode2)
-                        .carbonCredit(new BigDecimal("5000.00"))
-                        .company(adminCompany)
-                        .project(testProject)
-                        .status(CreditStatus.ISSUE)
-                        .issueAt(LocalDateTime.now())
-                        .name("Sample Listable Credits - 2025")
-                        .build();
-                listableCredit2 = carbonCreditRepository.save(credit);
+                carbonCreditRepository.save(companyCredit);
+                log.info("Created ISSUED CarbonCredit with code {} for company {}", companyCreditCode, newRegisteredCompany.getCompanyName());
             }
 
 
-            // Initialize a Marketplace Listing
+            // --- Initialize Credits and Listings for Admin Company (Existing Logic) ---
+            String adminIssuedCreditCode1 = "ADMIN-ISSUED-001";
+            CarbonCredit adminListableCredit1 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode1)
+                    .stream().findFirst()
+                    .orElseGet(() -> {
+                        log.info("Creating ADMIN sample ISSUED carbon credit 1 for listing...");
+                        return carbonCreditRepository.save(CarbonCredit.builder()
+                                .creditCode(adminIssuedCreditCode1)
+                                .carbonCredit(new BigDecimal("5000.00"))
+                                .company(adminCompany)
+                                .project(testProject)
+                                .status(CreditStatus.ISSUE)
+                                .listedAmount(0)
+                                .issueAt(LocalDateTime.now())
+                                .name("Admin Sample Listable Credits 1 - 2025")
+                                .build());
+                    });
+
+            String adminIssuedCreditCode2 = "ADMIN-ISSUED-002";
+            CarbonCredit adminListableCredit2 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode2)
+                    .stream().findFirst()
+                    .orElseGet(() -> {
+                        log.info("Creating ADMIN sample ISSUED carbon credit 2 for listing...");
+                        return carbonCreditRepository.save(CarbonCredit.builder()
+                                .creditCode(adminIssuedCreditCode2)
+                                .carbonCredit(new BigDecimal("3000.00"))
+                                .company(adminCompany)
+                                .project(testProject)
+                                .status(CreditStatus.ISSUE)
+                                .listedAmount(0)
+                                .issueAt(LocalDateTime.now())
+                                .name("Admin Sample Listable Credits 2 - 2025")
+                                .build());
+                    });
+
+
+            // Initialize Marketplace Listings for Admin's Company (if none exist)
             if (marketplaceListingRepository.count() == 0) {
-                log.info("Creating a sample marketplace listing...");
-                MarketPlaceListing listing = MarketPlaceListing.builder()
+                log.info("Creating sample marketplace listings for Admin's company...");
+
+                MarketPlaceListing listing1 = MarketPlaceListing.builder()
                         .company(adminCompany)
-                        .carbonCredit(listableCredit)
+                        .carbonCredit(adminListableCredit1)
                         .quantity(new BigDecimal("1500.00"))
                         .pricePerCredit(new BigDecimal("25.50"))
                         .status(ListingStatus.AVAILABLE)
                         .expiresAt(LocalDateTime.now().plusDays(30))
                         .build();
-                marketplaceListingRepository.save(listing);
-                log.info("Sample MarketPlaceListing created with ID: {}. You can use this ID to create an order.", listing.getId());
+                marketplaceListingRepository.save(listing1);
+                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing1.getQuantity()));
+                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount() + listing1.getQuantity().intValueExact());
+                carbonCreditRepository.save(adminListableCredit1);
 
-                MarketPlaceListing listing1 = MarketPlaceListing.builder()
+                MarketPlaceListing listing2 = MarketPlaceListing.builder()
                         .company(adminCompany)
-                        .carbonCredit(listableCredit)
+                        .carbonCredit(adminListableCredit1)
                         .quantity(new BigDecimal("700.00"))
                         .pricePerCredit(new BigDecimal("23.50"))
                         .status(ListingStatus.AVAILABLE)
                         .expiresAt(LocalDateTime.now().plusDays(60))
                         .build();
-                marketplaceListingRepository.save(listing1);
-
-                MarketPlaceListing listing2 = MarketPlaceListing.builder()
-                        .company(adminCompany)
-                        .carbonCredit(listableCredit)
-                        .quantity(new BigDecimal("100.00"))
-                        .pricePerCredit(new BigDecimal("28.50"))
-                        .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDateTime.now().plusDays(90))
-                        .build();
                 marketplaceListingRepository.save(listing2);
+                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing2.getQuantity()));
+                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount() + listing2.getQuantity().intValueExact());
+                carbonCreditRepository.save(adminListableCredit1);
 
                 MarketPlaceListing listing3 = MarketPlaceListing.builder()
                         .company(adminCompany)
-                        .carbonCredit(listableCredit)
+                        .carbonCredit(adminListableCredit2)
                         .quantity(new BigDecimal("1000.00"))
                         .pricePerCredit(new BigDecimal("21.50"))
                         .status(ListingStatus.AVAILABLE)
                         .expiresAt(LocalDateTime.now().plusDays(25))
                         .build();
                 marketplaceListingRepository.save(listing3);
+                adminListableCredit2.setCarbonCredit(adminListableCredit2.getCarbonCredit().subtract(listing3.getQuantity()));
+                adminListableCredit2.setListedAmount(adminListableCredit2.getListedAmount() + listing3.getQuantity().intValueExact());
+                carbonCreditRepository.save(adminListableCredit2);
 
-                MarketPlaceListing listing4 = MarketPlaceListing.builder()
-                        .company(adminCompany)
-                        .carbonCredit(listableCredit)
-                        .quantity(new BigDecimal("152.00"))
-                        .pricePerCredit(new BigDecimal("27.50"))
-                        .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDateTime.now().plusDays(90))
-                        .build();
-                marketplaceListingRepository.save(listing4);
+                log.info("Sample MarketPlaceListings created.");
             }
 
-
-            // Initialize a PENDING Carbon Credit for the admin's company
-            String testCreditCode = "TEST-CREDIT-001";
-            if (carbonCreditRepository.findByCreditCode(testCreditCode).isEmpty()) {
+            String adminPendingCreditCode = "ADMIN-PENDING-001";
+            if (carbonCreditRepository.findByCreditCode(adminPendingCreditCode).isEmpty()) {
                 log.info("Creating a sample PENDING carbon credit for the admin's company...");
                 CarbonCredit pendingCredit = CarbonCredit.builder()
-                        .creditCode(testCreditCode)
+                        .creditCode(adminPendingCreditCode)
                         .carbonCredit(new BigDecimal("1000.00"))
                         .company(adminCompany)
                         .project(testProject)
                         .status(CreditStatus.PENDING)
-                        .name("Sample Credits from Test Project - 2025")
+                        .name("Admin Sample Pending Credits - 2025")
                         .build();
                 carbonCreditRepository.save(pendingCredit);
-                log.info("Sample PENDING CarbonCredit created with ID: {}. Admin can approve it via POST /api/v1/carbonCredit/{}/approve to add credits to the wallet.",
-                        pendingCredit.getId(), pendingCredit.getId());
+                log.info("Sample PENDING CarbonCredit created with ID: {}. Admin can approve it.",
+                        pendingCredit.getId());
             }
 
             log.info("Application initialization completed.");
