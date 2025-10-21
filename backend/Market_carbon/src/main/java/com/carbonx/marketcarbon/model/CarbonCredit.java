@@ -22,7 +22,6 @@ import java.util.List;
 public class CarbonCredit{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "carbon_credit_id")
     private Long id;
 
     // A unique identifier for this batch of credits, as requested.

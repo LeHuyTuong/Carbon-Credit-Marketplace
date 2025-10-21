@@ -81,7 +81,7 @@ public class WalletServiceImpl implements WalletService {
 
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                 .wallet(wallet)
-                .amount(amountToAdd)
+                .amount(amountUsd)
                 .type(WalletTransactionType.ADD_MONEY)
                 .description(description)
                 .build());

@@ -9,5 +9,4 @@ import org.springframework.stereotype.Repository;
 public interface WalletRepository extends JpaRepository<Wallet, Long> {
     Wallet findByUserId(Long userId);
 
-    boolean existsByOrderAndTransactionType(Order order, WalletTransactionType transactionType);
 }
