@@ -55,35 +55,6 @@ A production‑adjacent, end‑to‑end platform that enables EV owners and gree
 
 ---
 
-## Architecture
-
-```mermaid
-flowchart LR
-  subgraph Web[Frontend]
-    FE[React 18 / Vite App]
-    FE -->|HTTPS REST (Axios)| API
-  end
-
-  subgraph Core[Backend]
-    API[Spring Boot 3.x]
-    API -->|JPA| DB[(MySQL 8)]
-    API -->|Cache| RD[(Redis)]
-    API -->|Object Storage| S3[(AWS S3)]
-    API -->|Payments| PAY[Payment Integrations]
-  end
-
-  subgraph Providers
-    PAY --> Stripe[Stripe]
-    PAY --> PayPal[PayPal]
-    PAY --> VNPAY[VNPAY]
-  end
-
-  API --> DOCS[Swagger / OpenAPI]
-  RD --> DB
-```
-
----
-
 ## Tech Stack
 
 **Backend**:
