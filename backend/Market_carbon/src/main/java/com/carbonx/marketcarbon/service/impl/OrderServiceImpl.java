@@ -160,17 +160,19 @@ public class OrderServiceImpl implements OrderService {
         }
 
         //B2 get company buy , sell , listing
-        Company buyerCompany = order.getCompany();
         MarketPlaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
+
+        Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
+        CarbonCredit sellerCredit = listing.getCarbonCredit();
 
         BigDecimal quantityToBuy = order.getQuantity();
         BigDecimal totalPrice= order.getTotalPrice();
 
         //B3 check before process
         if(listing.getQuantity().compareTo(quantityToBuy) < 0){
-            order.setOrderStatus(OrderStatus.PENDING);
+            order.setOrderStatus(OrderStatus.PENDING); // notify user
             orderRepository.save(order);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
@@ -209,7 +211,10 @@ public class OrderServiceImpl implements OrderService {
         if(updatedSellerBalance.compareTo(BigDecimal.ZERO) < 0){
             updatedSellerBalance = BigDecimal.ZERO;
         }
+
         sourceCredit.setCarbonCredit(updatedSellerBalance);
+        sourceCredit.setCreditCode(order.getCarbonCredit().getCreditCode());
+
         carbonCreditRepository.save(sourceCredit);
 
         // Tìm hoặc tạo một khối tín chỉ mới cho người mua
@@ -224,6 +229,7 @@ public class OrderServiceImpl implements OrderService {
                     newCredit.setStatus(CreditStatus.ISSUE);
                     newCredit.setName(sourceCredit.getName());
                     newCredit.setCarbonCredit(BigDecimal.ZERO);
+                    newCredit.setCreditCode(order.getCarbonCredit().getCreditCode());
                     return newCredit;
                 });
 

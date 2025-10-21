@@ -151,6 +151,25 @@ public class DataInitializer {
                 listableCredit = carbonCreditRepository.save(credit);
             }
 
+            String issuedCreditCode2 = "ISSUED-CREDIT-002";
+            List<CarbonCredit> listableCredits2 = carbonCreditRepository.findByCreditCode(issuedCreditCode2);
+            CarbonCredit listableCredit2;
+            if (!listableCredits2.isEmpty()) {
+                listableCredit2 = listableCredits2.get(0);
+            } else {
+                log.info("Creating a sample ISSUED carbon credit for listing...");
+                CarbonCredit credit = CarbonCredit.builder()
+                        .creditCode(issuedCreditCode2)
+                        .carbonCredit(new BigDecimal("5000.00"))
+                        .company(adminCompany)
+                        .project(testProject)
+                        .status(CreditStatus.ISSUE)
+                        .issueAt(LocalDateTime.now())
+                        .name("Sample Listable Credits - 2025")
+                        .build();
+                listableCredit2 = carbonCreditRepository.save(credit);
+            }
+
 
             // Initialize a Marketplace Listing
             if (marketplaceListingRepository.count() == 0) {
