@@ -90,7 +90,10 @@ public enum ErrorCode {
     AMOUNT_IS_NOT_VALID(400, "Amount must be positive.", HttpStatus.BAD_REQUEST),
     AMOUNT_IS_NOT_ENOUGH(400, "Amount requested exceeds available balance.", HttpStatus.BAD_REQUEST),
     ORDER_IS_NOT_PENDING(400, "Order is not pending.", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_COMPLETED(400, "Order must be completed before payout.", HttpStatus.BAD_REQUEST),
     WALLET_IS_NOT_ENOUGH_MONEY(400, "Wallet does not have enough money.", HttpStatus.BAD_REQUEST),
+    PAYOUT_ALREADY_PROCESSED(409, "Payout already processed for this order.", HttpStatus.CONFLICT),
+
     COMPANY_NOT_OWN(400, "Company does not own this carbon credit block.", HttpStatus.BAD_REQUEST),
     CVA_NOT_APPROVED(400, "CVA not approved.", HttpStatus.BAD_REQUEST),
     CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST);

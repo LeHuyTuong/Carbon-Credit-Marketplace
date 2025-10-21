@@ -11,6 +11,7 @@ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import com.paypal.base.rest.PayPalRESTException;
 import com.stripe.exception.StripeException;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class PaymentController {
     private final PaymentService paymentService;
 
+    @Operation(summary = "API to request deposit")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> paymentHandler(
             @Valid @RequestBody TuongCommonRequest<@Valid PaymentOrderRequest> req,

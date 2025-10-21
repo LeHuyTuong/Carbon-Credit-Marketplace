@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     boolean existsByPlateNumber(String plateNumber);
@@ -25,4 +24,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
 
     Optional<Vehicle> findByCompanyIdAndPlateNumberIgnoreCase(Long companyId, String plateNumber);
+
+    List<Vehicle> findByCompanyId(Long companyId);
+
 }

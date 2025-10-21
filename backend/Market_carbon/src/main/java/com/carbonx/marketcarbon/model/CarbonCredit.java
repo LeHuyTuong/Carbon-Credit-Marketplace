@@ -7,7 +7,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "carbon_credits")
@@ -51,10 +54,35 @@ public class CarbonCredit{
     @JsonProperty("current_price")
     private double currentPrice;
 
+
+    @OneToMany(mappedBy = "carbonCredit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<CarbonCreditContribution> contributions = new ArrayList<>();
+
+
     // Getter to extract the year from issueAt, fulfilling the "năm phát sinh" requirement
     @Transient
     @JsonProperty("vintageYear")
     public Integer getVintageYear() {
         return issueAt != null ? issueAt.getYear() : null;
+    }
+
+
+
+    public void setCarbonCredit(BigDecimal totalCredits) {
+        BigDecimal safeTotal = totalCredits == null ? BigDecimal.ZERO : totalCredits;
+        if (safeTotal.compareTo(BigDecimal.ZERO) < 0) {
+            safeTotal = BigDecimal.ZERO;
+        }
+
+        BigDecimal listedPortion = BigDecimal.valueOf(this.listedAmount);
+        BigDecimal unlistedPortion = safeTotal.subtract(listedPortion);
+        if (unlistedPortion.compareTo(BigDecimal.ZERO) < 0) {
+            this.carbonCredit = BigDecimal.ZERO;
+            this.listedAmount = safeTotal.setScale(0, RoundingMode.DOWN).intValue();
+        } else {
+            this.carbonCredit = unlistedPortion;
+        }
     }
 }
