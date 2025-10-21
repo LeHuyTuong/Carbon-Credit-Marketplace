@@ -1,7 +1,10 @@
 package com.carbonx.marketcarbon;
 
-import com.carbonx.marketcarbon.common.Gender;
-import com.carbonx.marketcarbon.common.IDType;
+import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
+import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
+import com.carbonx.marketcarbon.dto.response.VehicleResponse;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.model.User;
@@ -10,152 +13,157 @@ import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.EVOwnerRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.VehicleRepository;
+import com.carbonx.marketcarbon.service.impl.VehicleServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class VehicleTest {
+@ExtendWith(MockitoExtension.class)
+class VehicleTest {
 
-    @Autowired
+    @Mock
     private VehicleRepository vehicleRepository;
-
-    @Autowired
-    private CompanyRepository companyRepository;
-
-    @Autowired
+    @Mock
     private UserRepository userRepository;
-
-    @Autowired
+    @Mock
+    private CompanyRepository companyRepository;
+    @Mock
     private EVOwnerRepository evOwnerRepository;
 
-    private User user;
-    private Company company;
-    private EVOwner evOwner;
+    @InjectMocks
+    private VehicleServiceImpl vehicleService;
+
+    private Authentication authentication;
+    private SecurityContext securityContext;
 
     @BeforeEach
-    void setUp() {
-        user = new User();
-        user.setEmail("test@test.com");
-        user.setPasswordHash("password");
-        user = userRepository.saveAndFlush(user);
-
-        company = new Company();
-        company.setCompanyName("Test Company");
-        company.setBusinessLicense("12345");
-        company.setUser(user);
-        company = companyRepository.saveAndFlush(company);
-
-        evOwner = new EVOwner();
-        evOwner.setUser(user);
-        evOwner.setAddress("Test Address");
-        evOwner.setBirthDate(LocalDate.now());
-        evOwner.setCountry("Test Country");
-        evOwner.setDocumentType(IDType.CCCD);
-        evOwner.setEmail("test@test.com");
-        evOwner.setGender(Gender.MALE);
-        evOwner.setName("Test Name");
-        evOwner.setPhone("1234567890");
-        // evOwner.setCompany(company);
-        evOwner = evOwnerRepository.saveAndFlush(evOwner);
+    void setupSecurity() {
+        authentication = mock(Authentication.class);
+        securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(authentication.getName()).thenReturn("owner@example.com");
     }
 
     @Test
-    public void createVehicleTest(){
-        Vehicle vehicle = new Vehicle();
-        vehicle.setPlateNumber("123");
-        vehicle.setBrand("Vinfast");
-        vehicle.setModel("VF3");
-        // vehicle.setCompany(company);
-        vehicle.setEvOwner(evOwner);
+    void create_ShouldPersistVehicle_WhenValidAndUniquePlate() {
+        // arrange
+        EVOwner owner = new EVOwner();
+        owner.setId(1L);
+        Company company = new Company();
+        company.setId(10L);
 
-        vehicle = vehicleRepository.save(vehicle);
-        Long vehicleId = vehicle.getId();
-    }
+        VehicleCreateRequest req = new VehicleCreateRequest();
+        req.setPlateNumber("ABC-123");
+        req.setBrand("Vinfast");
+        req.setModel("VF3");
+        req.setCompanyId(10L);
 
-/*
-    @Test
-    public void testReadVehicle() {
-        Vehicle vehicle = new Vehicle();
-        vehicle.setPlateNumber("vietnam-70001");
-        vehicle.setBrand("Toyota");
-        vehicle.setModel("Corolla");
-        vehicle.setCompany(company);
-        vehicle.setEvOwner(evOwner);
+        when(evOwnerRepository.findByEmail("owner@example.com")).thenReturn(Optional.of(owner));
+        when(vehicleRepository.existsByPlateNumber("ABC-123")).thenReturn(false);
+        when(companyRepository.findById(10L)).thenReturn(Optional.of(company));
+        when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(invocation -> {
+            Vehicle v = invocation.getArgument(0);
+            v.setId(100L);
+            return v;
+        });
 
-        Vehicle saved = vehicleRepository.save(vehicle);
-        Vehicle found = vehicleRepository.findById(saved.getId()).orElse(null);
-        assertNotNull(found);
-        assertEquals("Toyota", found.getBrand());
-    }
+        // act
+        VehicleResponse res = vehicleService.create(req);
 
-    @Test
-    public void testGetAllVehicles() {
-        Vehicle vehicle1 = new Vehicle();
-        vehicle1.setPlateNumber("vietnam-80001");
-        vehicle1.setBrand("Hyundai");
-        vehicle1.setModel("Accent");
-        vehicle1.setCompany(company);
-        vehicle1.setEvOwner(evOwner);
-
-        Vehicle vehicle2 = new Vehicle();
-        vehicle2.setPlateNumber("vietnam-80002");
-        vehicle2.setBrand("Kia");
-        vehicle2.setModel("Morning");
-        vehicle2.setCompany(company);
-        vehicle2.setEvOwner(evOwner);
-
-        vehicleRepository.save(vehicle1);
-        vehicleRepository.save(vehicle2);
-
-        List<Vehicle> vehicles = vehicleRepository.findAll();
-        assertTrue(vehicles.size() >= 2);
-        for (Vehicle v : vehicles) {
-            System.out.println("Vehicle ID: " + v.getId()
-                + ", Owner ID: " + v.getEvOwner().getId()
-                + ", Plate Number: " + v.getPlateNumber()
-                + ", Brand: " + v.getBrand()
-                + ", Model: " + v.getModel());
-        }
-    }
-
-
-    @Test
-    public void testUpdateVehicle() {
-        Vehicle vehicle = new Vehicle();
-        vehicle.setPlateNumber("vietnam-70002");
-        vehicle.setBrand("Honda");
-        vehicle.setModel("Civic");
-        vehicle.setCompany(company);
-        vehicle.setEvOwner(evOwner);
-
-        Vehicle saved = vehicleRepository.save(vehicle);
-        saved.setBrand("Mazda");
-        Vehicle updated = vehicleRepository.save(saved);
-        assertEquals("Mazda", updated.getBrand());
+        // assert
+        assertThat(res.getId()).isEqualTo(100L);
+        assertThat(res.getPlateNumber()).isEqualTo("ABC-123");
+        assertThat(res.getCompanyId()).isEqualTo(10L);
+        verify(vehicleRepository).save(any(Vehicle.class));
     }
 
     @Test
-    public void testDeleteVehicle() {
-        Vehicle vehicle = new Vehicle();
-        vehicle.setPlateNumber("vietnam-70003");
-        vehicle.setBrand("Ford");
-        vehicle.setModel("Focus");
-        vehicle.setCompany(company);
-        vehicle.setEvOwner(evOwner);
+    void create_ShouldThrow_WhenPlateExists() {
+        EVOwner owner = new EVOwner();
+        when(evOwnerRepository.findByEmail("owner@example.com")).thenReturn(Optional.of(owner));
+        when(vehicleRepository.existsByPlateNumber("DUP-1")).thenReturn(true);
 
-        Vehicle saved = vehicleRepository.save(vehicle);
-        Long id = saved.getId();
-        vehicleRepository.deleteById(id);
-        assertFalse(vehicleRepository.findById(id).isPresent());
+        VehicleCreateRequest req = new VehicleCreateRequest();
+        req.setPlateNumber("DUP-1");
+        req.setCompanyId(1L);
+
+        assertThatThrownBy(() -> vehicleService.create(req))
+                .isInstanceOf(AppException.class);
+        verify(vehicleRepository, never()).save(any());
     }
-*/
+
+    @Test
+    void getOwnerVehicles_ShouldMapEntitiesToResponses() {
+        User user = new User();
+        user.setId(99L);
+        when(userRepository.findByEmail("owner@example.com")).thenReturn(user);
+
+        Vehicle v1 = new Vehicle(); v1.setId(1L); v1.setPlateNumber("P1");
+        Vehicle v2 = new Vehicle(); v2.setId(2L); v2.setPlateNumber("P2");
+        when(vehicleRepository.findByEvOwner_Id(99L)).thenReturn(List.of(v1, v2));
+
+        List<VehicleResponse> list = vehicleService.getOwnerVehicles();
+        assertThat(list).hasSize(2);
+        assertThat(list.get(0).getId()).isEqualTo(1L);
+        assertThat(list.get(1).getPlateNumber()).isEqualTo("P2");
+    }
+
+    @Test
+    void update_ShouldApplyChanges_WhenValid() {
+        EVOwner owner = new EVOwner(); owner.setId(7L);
+        when(evOwnerRepository.findByEmail("owner@example.com")).thenReturn(Optional.of(owner));
+
+        Company company = new Company(); company.setId(55L);
+        when(companyRepository.findById(55L)).thenReturn(Optional.of(company));
+
+        Vehicle existing = new Vehicle(); existing.setId(100L); existing.setPlateNumber("OLD");
+        when(vehicleRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(vehicleRepository.existsByPlateNumber("NEW"))
+                .thenReturn(false);
+        when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(i -> i.getArgument(0));
+
+        VehicleUpdateRequest req = new VehicleUpdateRequest();
+        req.setPlateNumber("NEW");
+        req.setBrand("B");
+        req.setModel("M");
+        req.setCompanyId(55L);
+
+        VehicleResponse res = vehicleService.update(100L, req);
+
+        assertThat(res.getPlateNumber()).isEqualTo("NEW");
+        assertThat(res.getCompanyId()).isEqualTo(55L);
+        verify(vehicleRepository).save(existing);
+    }
+
+    @Test
+    void delete_ShouldRemove_WhenExists() {
+        Vehicle existing = new Vehicle(); existing.setId(9L);
+        when(vehicleRepository.findById(9L)).thenReturn(Optional.of(existing));
+
+        vehicleService.delete(9L);
+
+        verify(vehicleRepository).delete(existing);
+    }
+
+    @Test
+    void getOwnerVehicles_ShouldThrow_WhenUserMissing() {
+        when(userRepository.findByEmail("owner@example.com")).thenReturn(null);
+        assertThatThrownBy(() -> vehicleService.getOwnerVehicles())
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

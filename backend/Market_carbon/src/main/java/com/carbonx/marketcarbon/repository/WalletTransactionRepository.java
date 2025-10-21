@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, Long> {
     // list theo danh sách order gần nhất
     List<WalletTransaction> findByWalletOrderByCreatedAtDesc(Wallet wallet);
