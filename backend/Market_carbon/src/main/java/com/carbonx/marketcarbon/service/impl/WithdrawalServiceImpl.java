@@ -70,6 +70,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     }
 
     @Override
+    @Transactional
     public Withdrawal processWithdrawal(Long withdrawalId, boolean accept) throws Exception {
         Optional<Withdrawal> withdrawal = withdrawalRepository.findById(withdrawalId);
 
