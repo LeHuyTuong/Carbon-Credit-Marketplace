@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
 public interface ProjectApplicationRepository extends JpaRepository<ProjectApplication, Long> {
 
     boolean existsByCompanyAndProject(Company company, Project project);

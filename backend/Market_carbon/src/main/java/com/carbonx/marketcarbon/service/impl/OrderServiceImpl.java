@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -151,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void completeOrder(Long orderId) {
-        // B1 find infor of order and lock to process safe
+        // B1: Lấy thông tin đơn hàng và kiểm tra trạng thái trước khi xử lý
         Order order = orderRepository.findById(orderId).orElseThrow(
                 () -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
@@ -159,10 +160,11 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.ORDER_IS_NOT_PENDING);
         }
 
-        //B2 get company buy , sell , listing
+        // B2: Khóa bản ghi listing để đảm bảo nhất quán khi nhiều giao dịch cùng lúc
         MarketPlaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
 
+        // B3: Lấy thông tin bên mua, bên bán và khối tín chỉ đang được rao bán
         Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
         CarbonCredit sellerCredit = listing.getCarbonCredit();
@@ -170,14 +172,14 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal quantityToBuy = order.getQuantity();
         BigDecimal totalPrice= order.getTotalPrice();
 
-        //B3 check before process
+        // B4: Kiểm tra số lượng còn lại trên sàn có đủ để đáp ứng đơn hay không
         if(listing.getQuantity().compareTo(quantityToBuy) < 0){
             order.setOrderStatus(OrderStatus.PENDING); // notify user
             orderRepository.save(order);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
-        // find wallet of company by user id
+        // B5: Lấy ví của bên mua và đảm bảo số dư đủ để thanh toán
         Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
 
         if(buyerWallet.getBalance().compareTo(totalPrice) < 0){
@@ -186,38 +188,31 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
         }
 
-        // B4 start to process trading
-        // 4.1 send money
+        // B6: Bắt đầu xử lý giao dịch
+        // 6.1: Xác định ví của bên bán để ghi nhận tiền về
         Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
 
-        //4.2  transfer credit
+        // 6.2: Trừ số tín chỉ được mua khỏi tổng tín chỉ của người bán (bao gồm cả đang rao bán)
         CarbonCredit sourceCredit = listing.getCarbonCredit();
-        // balance credit in wallet
         int currentListedAmount = sourceCredit.getListedAmount();
-        // balance credit after order
+        BigDecimal totalSellerCredits = sourceCredit.getCarbonCredit()
+                .add(BigDecimal.valueOf(currentListedAmount));
+
         int updatedListedAmount = currentListedAmount - quantityToBuy.intValueExact();
-        // balance credit
-        int safeListedAmount = Math.max(0, updatedListedAmount );
-        sourceCredit.setListedAmount(safeListedAmount);
+        int safeListedAmount = Math.max(0, updatedListedAmount);
 
-        BigDecimal totalSellerCredits = sourceCredit.getCarbonCredit().add(BigDecimal.valueOf(currentListedAmount));
-        BigDecimal remainingTotalCredits = totalSellerCredits.subtract(totalSellerCredits);
-
-        if(remainingTotalCredits.compareTo(BigDecimal.ZERO) < 0){
+        BigDecimal remainingTotalCredits = totalSellerCredits.subtract(quantityToBuy);
+        if (remainingTotalCredits.compareTo(BigDecimal.ZERO) < 0) {
             remainingTotalCredits = BigDecimal.ZERO;
         }
 
-        BigDecimal updatedSellerBalance = remainingTotalCredits.subtract(BigDecimal.valueOf(safeListedAmount));
-        if(updatedSellerBalance.compareTo(BigDecimal.ZERO) < 0){
-            updatedSellerBalance = BigDecimal.ZERO;
-        }
-
-        sourceCredit.setCarbonCredit(updatedSellerBalance);
+        sourceCredit.setListedAmount(safeListedAmount);
+        sourceCredit.setCarbonCredit(remainingTotalCredits);
         sourceCredit.setCreditCode(order.getCarbonCredit().getCreditCode());
 
         carbonCreditRepository.save(sourceCredit);
 
-        // Tìm hoặc tạo một khối tín chỉ mới cho người mua
+        // 6.3: Cộng tín chỉ cho bên mua, tái sử dụng lô cũ nếu có, tạo lô mới nếu chưa có
         CarbonCredit buyerCredit = buyerCompany.getCarbonCredits().stream()
                 .filter(c -> c.getStatus() == CreditStatus.ISSUE)
                 .findFirst() // tim thay tin chi dau tien neu co
@@ -233,39 +228,54 @@ public class OrderServiceImpl implements OrderService {
                     return newCredit;
                 });
 
-        buyerCredit.setCarbonCredit(buyerCredit.getCarbonCredit().add(quantityToBuy));
+        BigDecimal buyerTotalCredits = buyerCredit.getCarbonCredit()
+                .add(BigDecimal.valueOf(buyerCredit.getListedAmount()));
+        BigDecimal updatedBuyerTotal = buyerTotalCredits.add(quantityToBuy);
+        buyerCredit.setCarbonCredit(updatedBuyerTotal);
         carbonCreditRepository.save(buyerCredit);
 
-        //4.3 update listing
+        // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
         if(listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0){
             listing.setStatus(ListingStatus.SOLD);
         }
         marketplaceListingRepository.save(listing);
 
-        //4.4 update status order
+        // 6.5: Đánh dấu đơn hàng hoàn tất thành công
         order.setOrderStatus(OrderStatus.SUCCESS);
         orderRepository.save(order);
 
-        //5 log wallet transaction
-        // log buyer wallet
+        // B7: Ghi nhận lịch sử giao dịch ví cho cả hai bên
+        // 7.1: Ghi nhận trừ tiền bên mua
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
-                        .wallet(buyerWallet)
-                        .order(order)
-                        .type(WalletTransactionType.BUY_CARBON_CREDIT)
-                        .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
-                        .amount(totalPrice.negate())
+                .wallet(buyerWallet)
+                .order(order)
+                .type(WalletTransactionType.BUY_CARBON_CREDIT)
+                .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
+                .amount(totalPrice.negate())
                 .build());
 
-        // log seller wallet
+        // 7.2: Ghi nhận cộng tiền cho bên bán
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
-                        .wallet(sellerWallet)
-                        .order(order)
-                        .type(WalletTransactionType.SELL_CARBON_CREDIT)
-                        .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
-                        .amount(totalPrice)
+                .wallet(sellerWallet)
+                .order(order)
+                .type(WalletTransactionType.SELL_CARBON_CREDIT)
+                .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
+                .amount(totalPrice)
                 .build());
     }
 
+
+
+    private String generateUniqueCreditCode(CarbonCredit referenceCredit){
+        String prefix = (referenceCredit != null && referenceCredit.getCreditCode() != null)
+                ? referenceCredit.getCreditCode()
+                : "CC";
+        String candidate;
+        do {
+            candidate = prefix + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        } while (!carbonCreditRepository.findByCreditCode(candidate).isEmpty());
+        return candidate;
+    }
 
 }
