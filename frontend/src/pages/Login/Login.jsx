@@ -65,6 +65,11 @@ export default function Login() {
         return;
       }
 
+      if (msg?.toLowerCase()?.includes("email not existed")) {
+        toast.error("Email not existed. Please register.");
+        return;
+      }
+
       console.error("Login error:", msg);
       toast.error(msg);
     } finally {

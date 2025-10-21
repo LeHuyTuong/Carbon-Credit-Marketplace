@@ -37,7 +37,9 @@ import ListProjects from "./pages/Dashboard/Company/Projects/ListProjects.jsx";
 import DetailProject from "./pages/Dashboard/Company/Projects/DetailProject.jsx";
 import ViewRegisteredProject from "./pages/Dashboard/Company/Projects/ViewRegisteredProject.jsx";
 import ManageCredits from "./pages/Dashboard/Company/ManageCredits/ManageCredits.jsx";
-import UploadReport from "./pages/Dashboard/Company/UploadReport/UploadReport.jsx";
+import UploadReport from "./pages/Dashboard/Company/Report/UploadReport.jsx";
+import DetailReport from "./pages/Dashboard/Company/Report/DetailReport.jsx";
+import CreditDetail from "./pages/Dashboard/Company/ManageCredits/CreditDetail.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -139,11 +141,13 @@ export default function App() {
         <Route path="/payment-detail" element={<PaymentDetail />} />
         <Route path="/deposit" element={<Deposit />} />
         <Route path="/withdraw" element={<Withdraw />} />
-        <Route path="/history" element={<WalletHistory />} />
+        <Route path="/transaction-history" element={<WalletHistory />} />
         <Route path="/register-project" element={<RegisterProject />} />
         <Route path="/list-projects" element={<ListProjects />} />
         <Route path="/detail-project/:id" element={<DetailProject />} />
         <Route path="/manage-credits" element={<ManageCredits />} />
+        <Route path="/detail-report/:id" element={<DetailReport />} />
+        <Route path="/detail-credit/:id" element={<CreditDetail />} />
         <Route
           path="/view-registered-project/:id"
           element={<ViewRegisteredProject />}
