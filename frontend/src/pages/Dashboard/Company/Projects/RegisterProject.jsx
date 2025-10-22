@@ -34,24 +34,22 @@ export default function RegisterProject() {
     documents: "",
   };
 
+  //nộp đki project
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      //chuẩn bị payload(chỉ có projectId + applicationDocsUrl)
-      const payload = {
-        requestTrace: `trace_${Date.now()}`,
-        requestDateTime: new Date().toISOString(),
-        data: {
-          projectId: Number(projectId) || 0,
-          applicationDocsUrl:
-            values.documents?.[0]?.name || "uploaded_document.pdf",
-        },
-      };
+      const formData = new FormData();
+      if (values.documents && values.documents.length > 0) {
+        formData.append("file", values.documents[0]);
+      }
 
-      const res = await apiFetch("/api/v1/project-applications", {
-        method: "POST",
-        body: payload,
-      });
+      const res = await apiFetch(
+        `/api/v1/project-applications?projectId=${projectId}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const code =
         res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";

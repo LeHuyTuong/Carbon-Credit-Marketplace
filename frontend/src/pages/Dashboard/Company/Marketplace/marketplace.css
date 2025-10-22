@@ -1,6 +1,7 @@
 .features-section {
-  padding: 80px 0;
-  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .section-title {
@@ -30,10 +31,22 @@
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-  margin-top: 2rem;
-  justify-content: center;
+  justify-items: center;
+  width: 100%;
+  max-width: 1000px; /* giữ gọn trong màn hình */
+  margin: 2rem auto;
+}
+
+.paginated-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  justify-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
 }
 
 .project-card {
