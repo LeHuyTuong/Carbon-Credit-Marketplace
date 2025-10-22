@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -181,7 +183,7 @@ public class DataInitializer {
                         .project(testProject)
                         .status(CreditStatus.ISSUE)
                         .listedAmount(0)
-                        .issueAt(LocalDateTime.now().minusDays(10))
+                        .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                         .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
                         .build();
                 carbonCreditRepository.save(companyCredit);
@@ -202,7 +204,7 @@ public class DataInitializer {
                                 .project(testProject)
                                 .status(CreditStatus.ISSUE)
                                 .listedAmount(0)
-                                .issueAt(LocalDateTime.now())
+                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 1 - 2025")
                                 .build());
                     });
@@ -219,7 +221,7 @@ public class DataInitializer {
                                 .project(testProject)
                                 .status(CreditStatus.ISSUE)
                                 .listedAmount(0)
-                                .issueAt(LocalDateTime.now())
+                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 2 - 2025")
                                 .build());
                     });
