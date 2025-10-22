@@ -173,10 +173,7 @@ export default function Navbar() {
                           </NavLink>
                         </li>
                         <li>
-                          <NavLink
-                            to="/manage-credits"
-                            className="dropdown-item"
-                          >
+                          <NavLink to="/list-credits" className="dropdown-item">
                             Manage Credits
                           </NavLink>
                         </li>
@@ -190,7 +187,7 @@ export default function Navbar() {
                         </li>
                         <li>
                           <NavLink
-                            to="/company/orders"
+                            to="/purchase-history"
                             className="dropdown-item"
                           >
                             Orders

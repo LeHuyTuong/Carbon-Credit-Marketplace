@@ -3,6 +3,7 @@ import { Button, Nav } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
+import PaginatedList from "../../../components/Pagination/PaginatedList";
 
 export default function WalletHistory() {
   const nav = useNavigate();
@@ -16,12 +17,14 @@ export default function WalletHistory() {
     if (tab === "withdrawals") fetchWithdrawals();
   }, [tab]);
 
+  //lịch sử giao dịch
   const fetchTransactions = async () => {
     setLoading(true);
     try {
       const res = await apiFetch("/api/v1/wallet/transactions", {
         method: "GET",
       });
+      //sort hiện cái mới nhất
       const sorted = [...(res.response || [])].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -33,6 +36,7 @@ export default function WalletHistory() {
     }
   };
 
+  //ls yêu cầu rút tiền
   const fetchWithdrawals = async () => {
     setLoading(true);
     try {
@@ -69,7 +73,6 @@ export default function WalletHistory() {
         </div>
       </div>
 
-      {/* Tabs */}
       <Nav
         variant="tabs"
         className="mb-4 bg-dark px-3 py-2 rounded"
@@ -95,69 +98,86 @@ export default function WalletHistory() {
           transactions.length === 0 ? (
             <div className="text-light text-center">No transactions yet</div>
           ) : (
-            transactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="d-flex justify-content-between align-items-center border-bottom py-2"
-              >
-                <div>
+            <PaginatedList
+              items={transactions}
+              itemsPerPage={5}
+              renderItem={(tx) => (
+                <div
+                  key={tx.id}
+                  className="d-flex justify-content-between align-items-center border-bottom py-2"
+                >
+                  <div>
+                    <span
+                      className={`fw-semibold ${
+                        tx.transactionType === "ADD_MONEY"
+                          ? "text-success"
+                          : "text-warning"
+                      }`}
+                    >
+                      {tx.transactionType}
+                    </span>
+                    <div className="small text-light">
+                      {new Date(tx.createdAt).toLocaleString("vi-VN", {
+                        timeZone: "Asia/Ho_Chi_Minh",
+                        hour12: false,
+                      })}
+                    </div>
+                  </div>
                   <span
-                    className={`fw-semibold ${
+                    className={`fw-bold ${
                       tx.transactionType === "ADD_MONEY"
                         ? "text-success"
-                        : "text-warning"
+                        : "text-danger"
                     }`}
                   >
-                    {tx.transactionType}
+                    {tx.transactionType === "ADD_MONEY"
+                      ? `+${tx.amount} USD`
+                      : `-${tx.amount} USD`}
                   </span>
-                  <div className="small text-light">
-                    {new Date(tx.createdAt).toLocaleString()}
-                  </div>
                 </div>
-                <span
-                  className={`fw-bold ${
-                    tx.transactionType === "ADD_MONEY"
-                      ? "text-success"
-                      : "text-danger"
-                  }`}
-                >
-                  {tx.transactionType === "ADD_MONEY"
-                    ? `+${tx.amount} USD`
-                    : `-${tx.amount} USD`}
-                </span>
-              </div>
-            ))
+              )}
+            />
           )
         ) : withdrawals.length === 0 ? (
           <div className="text-light text-center">
             No withdrawal requests yet
           </div>
         ) : (
-          withdrawals.map((w) => (
-            <div
-              key={w.id}
-              className="d-flex justify-content-between align-items-center border-bottom py-2"
-            >
-              <div>
-                <span className="fw-semibold text-info">Request #{w.id}</span>
-                <div className="small text-light">
-                  {new Date(w.createdAt || w.requestedAt).toLocaleString()}
-                </div>
-              </div>
-              <span
-                className={`badge ${
-                  w.status === "APPROVED"
-                    ? "bg-success"
-                    : w.status === "REJECTED"
-                    ? "bg-danger"
-                    : "bg-warning text-dark"
-                }`}
+          <PaginatedList
+            items={withdrawals}
+            itemsPerPage={5}
+            renderItem={(w) => (
+              <div
+                key={w.id}
+                className="d-flex justify-content-between align-items-center border-bottom py-2"
               >
-                {w.status}
-              </span>
-              <span className="fw-bold text-light">{w.amount} USD</span>
-            </div>
-          ))
+                <div>
+                  <span className="fw-semibold text-info">Request #{w.id}</span>
+                  <div className="small text-light">
+                    {new Date(w.createdAt || w.requestedAt).toLocaleString(
+                      "vi-VN",
+                      {
+                        timeZone: "Asia/Ho_Chi_Minh",
+                        hour12: false,
+                      }
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={`badge ${
+                    w.status === "SUCCEEDED"
+                      ? "bg-success"
+                      : w.status === "REJECTED"
+                      ? "bg-danger"
+                      : "bg-warning text-dark"
+                  }`}
+                >
+                  {w.status}
+                </span>
+                <span className="fw-bold text-light">{w.amount} USD</span>
+              </div>
+            )}
+          />
         )}
       </div>
     </div>

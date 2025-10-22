@@ -36,8 +36,9 @@ import RegisterProject from "./pages/Dashboard/Company/Projects/RegisterProject.
 import ListProjects from "./pages/Dashboard/Company/Projects/ListProjects.jsx";
 import DetailProject from "./pages/Dashboard/Company/Projects/DetailProject.jsx";
 import ViewRegisteredProject from "./pages/Dashboard/Company/Projects/ViewRegisteredProject.jsx";
-import ManageCredits from "./pages/Dashboard/Company/ManageCredits/ManageCredits.jsx";
+import ListCredits from "./pages/Dashboard/Company/ManageCredits/ListCredits.jsx";
 import UploadReport from "./pages/Dashboard/Company/Report/UploadReport.jsx";
+import ChooseProjectToUpload from "./pages/Dashboard/Company/Report/ChooseProjectToUpload.jsx";
 import DetailReport from "./pages/Dashboard/Company/Report/DetailReport.jsx";
 import CreditDetail from "./pages/Dashboard/Company/ManageCredits/CreditDetail.jsx";
 import { ToastContainer } from "react-toastify";
@@ -79,7 +80,8 @@ export default function App() {
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route path="/change" element={<ChangePassword />} />
           <Route path="/change-form" element={<ChangePasswordForm />} />
-          <Route path="/upload-report" element={<UploadReport />} />
+          <Route path="/upload-report" element={<ChooseProjectToUpload />} />
+          <Route path="/upload-report/:projectId" element={<UploadReport />} />
 
           <Route
             path="/kyc"
@@ -145,7 +147,7 @@ export default function App() {
         <Route path="/register-project" element={<RegisterProject />} />
         <Route path="/list-projects" element={<ListProjects />} />
         <Route path="/detail-project/:id" element={<DetailProject />} />
-        <Route path="/manage-credits" element={<ManageCredits />} />
+        <Route path="/list-credits" element={<ListCredits />} />
         <Route path="/detail-report/:id" element={<DetailReport />} />
         <Route path="/detail-credit/:id" element={<CreditDetail />} />
         <Route
@@ -154,8 +156,8 @@ export default function App() {
         />
         {/*Route riêng cho admin, không Navbar */}
 
-        <Route path="/admin/login" element={<LoginAdmin/>} />
-        <Route path="/admin/kyc" element={<KYCAdmin/>}/>
+        <Route path="/admin/login" element={<LoginAdmin />} />
+        <Route path="/admin/kyc" element={<KYCAdmin />} />
         {/*Route riêng cho admin và cva, không Navbar */}
 
         <Route path="/admin/*" element={<AdminApp />} />

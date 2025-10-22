@@ -81,25 +81,6 @@ export async function apiFetch(path, options = {}) {
     throw error;
   }
 
-//   // BE-level error (logic layer) cũ
-//   const code = data?.responseStatus?.responseCode?.trim?.()?.toUpperCase?.();
-// const message = data?.responseStatus?.responseMessage?.trim?.()?.toUpperCase?.();
-
-// const isSuccess =
-//   !data?.responseStatus ||               // không có responseStatus => bỏ qua check
-//   ["200", "00000000", "SUCCESS", "OK"].includes(code) ||
-//   ["SUCCESS", "OK"].includes(message);
-  
-// if (!isSuccess) {
-//   const errMsg =
-//     data?.responseStatus?.responseMessage ||
-//     "Server returned a logical error.";
-//   const error = new Error(errMsg);
-//   error.status = res.status;
-//   error.response = data;
-//   throw error;
-// }
-
   //be-level logic check
 const rawCode = data?.responseStatus?.responseCode ?? "";
 const rawMessage = data?.responseStatus?.responseMessage ?? "";
@@ -121,15 +102,14 @@ if (!isSuccess) {
 console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
 
 if (!isSuccess) {
-  const errMsg =
-    data?.responseStatus?.responseMessage ||
-    "Server returned a logical error.";
+  //ném lỗi có đủ thông tin BE trả về
+  const errMsg = data?.responseStatus?.responseMessage || "Server logical error.";
   const error = new Error(errMsg);
-  error.status = res.status;
-  error.response = data;
+  error.status = res.status; // HTTP status (200)
+  error.response = data; // toàn bộ payload BE
+  error.code = code; // thêm code để FE nhận diện
   throw error;
 }
-
 
 return data;
 }
