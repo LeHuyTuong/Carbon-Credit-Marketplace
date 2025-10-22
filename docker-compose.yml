@@ -1,36 +1,48 @@
-services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: api-image-sample:latest
-    environment:
-      DB_USERNAME: root
-      DB_PASSWORD: 12345
-      SERVER_PORT: 8082
-    ports:
-      - "8082:8082"   # host:container
-    networks:
-      - backend
-    restart: unless-stopped
-    depends_on:
-      - db
 
+
+services:
   db:
     image: mysql:8.0
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: 12345
       MYSQL_DATABASE: core_ccm
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 12345
+    volumes:
+      - db_data:/var/lib/mysql 
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p12345"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
     ports:
       - "3307:3306"
-    networks:
-      - backend
     restart: unless-stopped
-    volumes:
-      - db_data:/var/lib/mysql
+
+  api:
+    build:
+      context: ./backend/Market_carbon
+      dockerfile: Dockerfile
+    image: api-image-sample:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/core_ccm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 12345
+
+      SERVER_PORT: 8082
+      SPRING_MAIL_USERNAME: hoang106408@donga.edu.vn
+      SPRING_MAIL_PASSWORD: vzzvzqynxjyvouvr
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+
+    ports:
+      - "8082:8082"  
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+    restart: unless-stopped
 
 networks:
   backend:

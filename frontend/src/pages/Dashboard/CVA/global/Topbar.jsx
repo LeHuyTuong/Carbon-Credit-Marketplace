@@ -224,7 +224,7 @@ const Topbar = () => {
                                   const admin = storedAdmin || {
                                     firstName: "Tin",
                                     lastName: "Bao",
-                                    role: "Administrator",
+                                    role: "CVA",
                                     avatar: avatar1
                                   };
 

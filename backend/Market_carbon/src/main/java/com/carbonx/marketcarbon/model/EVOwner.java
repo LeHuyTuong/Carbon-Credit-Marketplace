@@ -3,11 +3,14 @@ package com.carbonx.marketcarbon.model;
 import com.carbonx.marketcarbon.common.Gender;
 import com.carbonx.marketcarbon.common.IDType;
 import com.carbonx.marketcarbon.common.annotation.DocumentNumber;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Table(name="ev_owner", indexes = {
         @Index(name="idx_ev_owner", columnList = "user_id", unique = true)
@@ -63,4 +66,10 @@ public class EVOwner extends BaseEntity{
     @JoinColumn(name = "company_id") // nullable: EV Owner có thể chưa thuộc công ty
     private Company company;
 
+    @OneToMany(mappedBy = "evOwner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<CarbonCreditContribution> carbonCreditContributions = new ArrayList<>();
+
 }
+

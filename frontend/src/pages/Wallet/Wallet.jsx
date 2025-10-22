@@ -1,98 +1,64 @@
-import React, { useEffect, useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import "./wallet.css";
-import { useNavigate } from "react-router-dom";
-import { Button, Toast, ToastContainer } from "react-bootstrap";
+import React, { useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
+import useWalletData from "./components/useWalletData";
+import WalletCard from "./components/WalletCard";
+import WalletToast from "./components/WalletToast";
 import Deposit from "./Deposit/Deposit";
+import Withdraw from "./Withdraw/Withdraw";
+import useReveal from "../../hooks/useReveal";
+import CreditsList from "./components/CreditsList";
 
 export default function Wallet() {
   const nav = useNavigate();
-  const [wallet, setWallet] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  //toast state
-  const [toast, setToast] = useState({
+  const location = useLocation();
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
+
+  const { wallet, loading, setLoading, fetchWallet, fetchTransactions } =
+    useWalletData();
+
+  const [toast, setToast] = React.useState({
     show: false,
     msg: "",
     type: "success",
   });
-  const [showPaymentToast, setShowPaymentToast] = useState(false);
+  const [showDepositModal, setShowDepositModal] = React.useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
+  const [showPaymentToast, setShowPaymentToast] = React.useState(false);
 
-  //load wallet and history
+  //khi load trang: check nếu có order_id & payment_id
   useEffect(() => {
-    //nếu url có order_id & payment_id thì gọi api xác nhận nạp tiền
     const params = new URLSearchParams(location.search);
     const orderId = params.get("order_id");
     const paymentId = params.get("payment_id");
 
-    console.log("orderId:", orderId, "paymentId:", paymentId);
+    console.log("Redirect params:", orderId, paymentId);
 
-    //có data thì gọi
-    if (orderId) {
-      confirmDeposit(orderId, paymentId || "");
-    } else {
-      //nếu không có order_id thì load ví bình thường
-      fetchWallet();
-      fetchTransactions();
+    const authData =
+      JSON.parse(sessionStorage.getItem("auth")) ||
+      JSON.parse(localStorage.getItem("auth"));
+    const token = authData?.token;
+
+    if (!token) {
+      console.warn("Token is not ready, delay confirm...");
+      const timer = setTimeout(() => {
+        if (orderId) confirmDeposit(orderId, paymentId || "");
+        else fetchWallet();
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [location.search]); //chạy lại effect khi query đổi
 
-  const fetchWallet = async () => {
-    try {
-      const res = await apiFetch("/api/v1/wallet", { method: "POST" });
-      setWallet(res.response);
-    } catch (err) {
-      console.error("Failed to fetch wallet:", err);
-    }
-  };
+    if (orderId) confirmDeposit(orderId, paymentId || "");
+    else fetchWallet();
+  }, [location.search]);
 
-  //lịch sử giao dịch
-  // const fetchTransactions = async () => {
-  //   try {
-  //     if (!wallet?.id) return; //chờ wallet load xong
+  //khi ví đã có ID -> gọi transaction list
+  useEffect(() => {
+    if (wallet?.id) fetchTransactions();
+  }, [wallet]);
 
-  //     const res = await apiFetch("/api/v1/wallet/transactions", {
-  //       method: "GET",
-  //     });
-
-  //     setTransactions(res.response || []);
-  //   } catch (err) {
-  //     console.error("Failed to fetch transactions:", err);
-  //   }
-  // };
-  const fetchTransactions = async () => {
-    try {
-      if (!wallet?.id) return;
-
-      const reqObject = {
-        requestTrace: crypto.randomUUID(),
-        requestDateTime: new Date().toISOString(),
-        data: {
-          wallet: { id: wallet.id },
-        },
-      };
-
-      // ⚠️ Không encodeURIComponent nữa, để BE nhận đúng JSON string
-      const query = JSON.stringify(reqObject);
-
-      const res = await apiFetch(`/api/v1/wallet/transactions?req=${query}`, {
-        method: "GET",
-      });
-
-      setTransactions(res.response || []);
-    } catch (err) {
-      console.error("Failed to fetch transactions:", err);
-    }
-  };
-
-  //show modal chon phg thuc thanh toan
-  const handleAddMoney = () => {
-    setShowDepositModal(true);
-  };
-
+  // =============== HANDLE ADD MONEY ==================
   const handleDepositSubmit = async (values) => {
     setLoading(true);
     try {
@@ -134,28 +100,27 @@ export default function Wallet() {
     }
   };
 
-  //xác nhận trạng thái thanh toán
+  // =============== CONFIRM PAYMENT ==================
   const confirmDeposit = async (orderId, paymentId) => {
     setLoading(true);
     try {
-      const res = await apiFetch(
+      await apiFetch(
         `/api/v1/wallet/deposit?order_id=${orderId}&payment_id=${paymentId}`,
-        {
-          method: "POST",
-        }
+        { method: "POST" }
       );
 
+      // reload ví + giao dịch
+      await fetchWallet();
+      await fetchTransactions();
+
+      // show thông báo thành công
       setToast({
         show: true,
         msg: "Deposit successful! Balance updated.",
         type: "success",
       });
 
-      //reload ví sau khi cộng tiền thành công
-      await fetchWallet();
-      await fetchTransactions();
-
-      //xóa params khỏi url (ko gọi lại api khi reload)
+      // xóa param khỏi URL
       nav("/wallet", { replace: true });
     } catch (err) {
       console.error("Deposit confirmation failed:", err);
@@ -169,26 +134,93 @@ export default function Wallet() {
     }
   };
 
-  //xử lý rút tiền
-  const handleWithdraw = async () => {
+  // =============== HANDLE WITHDRAW ==================
+  // const handleWithdrawSubmit = async (values) => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await apiFetch(`/api/v1/withdrawal/${values.amount}`, {
+  //       method: "POST",
+  //     });
+
+  //     if (res?.responseStatus?.responseCode === "00" || res?.response) {
+  //       setToast({
+  //         show: true,
+  //         msg: "Withdrawal request has been submitted successfully!",
+  //         type: "success",
+  //       });
+  //       await fetchWallet();
+  //       await fetchTransactions();
+  //     } else {
+  //       throw new Error(
+  //         res?.responseStatus?.responseMessage || "Withdrawal failed"
+  //       );
+  //     }
+  //   } catch (err) {
+  //     console.error("Withdraw error:", err);
+  //     setToast({
+  //       show: true,
+  //       msg: err.message || "Unable to process withdrawal request.",
+  //       type: "danger",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //     setShowWithdrawModal(false);
+  //   }
+  // };
+  const handleWithdrawSubmit = async (values) => {
     setLoading(true);
     try {
-      const res = await apiFetch("/api/v1/paymentDetails");
-      if (!res || !res.response) {
-        setShowPaymentToast(true); //hiện toast yêu cầu thêm payment detail
+      const res = await apiFetch("/api/v1/withdrawal", {
+        method: "POST",
+        body: {
+          data: {
+            amount: parseFloat(values.amount),
+          },
+        },
+      });
+
+      if (res?.response) {
+        setToast({
+          show: true,
+          msg: "Withdrawal request submitted. Awaiting admin approval.",
+          type: "info",
+        });
+        await fetchWallet();
+        await fetchTransactions();
+        // Nếu muốn tự reload danh sách yêu cầu rút tiền thì gọi hàm fetchWithdrawals() ở đây
       } else {
-        nav("/payment-detail?confirm=true"); // chuyển đến trang Payment Detail để xác nhận rút tiền
+        throw new Error(
+          res?.responseStatus?.responseMessage || "Withdrawal failed."
+        );
       }
     } catch (err) {
-      console.error("Error fetching payment detail:", err);
+      console.error("Withdraw error:", err);
+      setToast({
+        show: true,
+        msg: err.message || "Unable to process withdrawal request.",
+        type: "danger",
+      });
     } finally {
       setLoading(false);
+      setShowWithdrawModal(false);
     }
   };
 
+  // =============== CREDITS LIST ==================
+  // const [credits, setCredits] = useState([]);
+
+  // useEffect(() => {
+  //   apiFetch("/api/v1/credits", { method: "GET" })
+  //     .then((res) => setCredits(res.response || []))
+  //     .catch((err) => console.error("Failed to fetch credits:", err));
+  // }, []);
+
   return (
-    <div className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5">
-      {/* header */}
+    <div
+      ref={sectionRef}
+      className="auth-hero2 wallet-page reveal d-flex flex-column align-items-center py-5"
+    >
+      {/*header */}
       <div className="text-center mb-4">
         <div
           className="d-flex justify-content-center align-items-center gap-2 mb-2"
@@ -198,138 +230,88 @@ export default function Wallet() {
           <h3 className="fw-bold text-light mb-0">My Wallet</h3>
         </div>
       </div>
-      {/* balance card */}
-      <div className="wallet-card glass-card text-center p-4 mb-5">
-        <h6 className="mb-2">Balance:</h6>
-        <h2 className="display-6 fw-bold text-accent mb-4">
-          <i className="bi bi-currency-dollar"></i>
-          {wallet ? wallet.balance.toLocaleString() : "0.00"}
-        </h2>
 
-        <div className="d-flex justify-content-center gap-3 flex-wrap">
-          <button
-            className="wallet-action border-success text-success"
-            onClick={handleAddMoney}
-            disabled={loading}
-          >
-            <i className="bi bi-upload fs-5"></i>
-            <span>{loading ? "Processing..." : "Add Money"}</span>
-          </button>
-          <button
-            className="wallet-action border-warning text-warning"
-            onClick={handleWithdraw}
-            disabled={loading}
-          >
-            <i className="bi bi-download fs-5"></i>
-            <span>{loading ? "Checking..." : "Withdraw"}</span>
-          </button>
-          <button className="wallet-action border-info text-info">
-            <i className="bi bi-shuffle fs-5"></i>
-            <span>Transfer</span>
-          </button>
-        </div>
+      {/*balance card */}
+      <WalletCard
+        balance={wallet?.balance}
+        currency={wallet?.currency || "USD"}
+        onDeposit={() => setShowDepositModal(true)}
+        onWithdraw={() => setShowWithdrawModal(true)}
+        loading={loading}
+      />
+
+      <div className="wallet-history-btn m-3 d-flex flex-wrap justify-content-end gap-2">
+        <button
+          className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+          onClick={() => nav("/transaction-history")}
+        >
+          <i className="bi bi-clock-history"></i>
+          Transaction History
+        </button>
+
+        <button
+          className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
+          onClick={() =>
+            nav("/purchase-history", { state: { from: "wallet" } })
+          }
+        >
+          <i className="bi bi-bag-check"></i>
+          Purchases History
+        </button>
       </div>
 
-      {/* history */}
-      <div className="wallet-history">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="text-light mb-0">
-            History <i className="bi bi-arrow-clockwise small ms-2"></i>
-          </h5>
-        </div>
+      {/* Credits Section */}
+      {/* <CreditsList credits={credits} /> */}
 
-        <div className="history-list p-3">
-          {transactions.map((tx) => (
-            <div
-              key={tx.id}
-              className="d-flex justify-content-between align-items-center history-item"
-            >
-              <div>
-                <span className="fw-semibold text-light">{tx.type}</span>
-                <div className="small text-muted">
-                  {tx.createAt ? new Date(tx.createAt).toLocaleString() : ""}
-                </div>
-              </div>
-              <span
-                className={`fw-bold ${
-                  tx.amount > 0 ? "text-success" : "text-danger"
-                }`}
-              >
-                {tx.amount > 0 ? `+${tx.amount} USD` : `${tx.amount} USD`}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <CreditsList
+        credits={[
+          {
+            id: "1760684896281",
+            creditCode: "EV-2025-001",
+            title: "EV Charging Credit",
+            price: 50000,
+            quantity: 1000,
+            sold: 200,
+            status: "active",
+            expiresAt: "10/17/2025, 2:08:16 PM",
+          },
+          {
+            id: "1760684905467",
+            creditCode: "EV-2025-002",
+            title: "EV Charging Credit",
+            price: 50000,
+            quantity: 800,
+            sold: 100,
+            status: "active",
+            expiresAt: "10/17/2025, 2:08:29 PM",
+          },
+        ]}
+      />
 
-      {/*modal nap tiền */}
+      {/*deposit modal */}
       <Deposit
         show={showDepositModal}
         onHide={() => setShowDepositModal(false)}
         onSubmit={handleDepositSubmit}
       />
 
-      {/*toast */}
-      <ToastContainer position="top-center" className="p-3">
-        {/*toast add money & error message */}
-        <Toast
-          bg={toast.type}
-          show={toast.show}
-          onClose={() => setToast({ ...toast, show: false })}
-          delay={4000}
-          autohide
-        >
-          <Toast.Header>
-            <strong className="me-auto text-capitalize">
-              {toast.type === "success"
-                ? "Success"
-                : toast.type === "danger"
-                ? "Error"
-                : "Notice"}
-            </strong>
-          </Toast.Header>
-          <Toast.Body className="text-light">{toast.msg}</Toast.Body>
-        </Toast>
+      {/*withdraw modal */}
+      <Withdraw
+        show={showWithdrawModal}
+        onHide={() => setShowWithdrawModal(false)}
+        onSubmit={handleWithdrawSubmit}
+        wallet={wallet}
+        paymentDetail={{ accountName: "hehe", maskedNumber: "**4180" }}
+      />
 
-        {/*toast payment detail */}
-        <Toast
-          show={showPaymentToast}
-          onClose={() => setShowPaymentToast(false)}
-          autohide={false} // không tự biến mất
-          bg="success"
-        >
-          <Toast.Header closeButton={true}>
-            <strong className="me-auto text-success">
-              Payment Detail Required
-            </strong>
-          </Toast.Header>
-          <Toast.Body className="text-light">
-            <p className="mb-3">
-              You need to add your payment details before proceeding with a
-              withdrawal.
-            </p>
-            <div className="d-flex justify-content-end gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowPaymentToast(false)}
-              >
-                Close
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setShowPaymentToast(false);
-                  nav("/payment-detail?create=true");
-                }}
-              >
-                Add Now
-              </Button>
-            </div>
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
+      {/*toast */}
+      <WalletToast
+        toast={toast}
+        setToast={setToast}
+        showPaymentToast={showPaymentToast}
+        setShowPaymentToast={setShowPaymentToast}
+        nav={nav}
+      />
     </div>
   );
 }

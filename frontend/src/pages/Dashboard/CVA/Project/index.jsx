@@ -98,7 +98,7 @@ const Invoices = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="PROJECTS" subtitle="List of projects" />
+      <Header title="PROJECT" subtitle="List of projects" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -110,7 +110,7 @@ const Invoices = () => {
             borderBottom: "none",
           },
           "& .name-column--cell": {
-            color: colors.greenAccent[300],
+            color: colors.greenAccent[400],
           },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],

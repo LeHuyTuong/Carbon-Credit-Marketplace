@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service;
 
 import com.carbonx.marketcarbon.exception.WalletException;
+import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 
@@ -10,7 +11,7 @@ public interface WalletService {
     Wallet getUserWallet() throws WalletException;
 
     // nạp tiền vào ví
-    Wallet addBalanceToWallet(Long money) throws WalletException;
+    Wallet addBalanceToWallet(Long amount) throws WalletException;
 
     // tìm ví
     Wallet findWalletById(Long id) throws WalletException;

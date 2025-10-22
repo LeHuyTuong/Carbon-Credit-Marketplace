@@ -1,6 +1,8 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
@@ -10,7 +12,9 @@ import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
+import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +32,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final UserRepository userRepository;
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
+    private final WalletTransactionService walletTransactionService;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -39,11 +44,12 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         return user;
     }
 
+    @Transactional
     @Override
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
         Wallet wallet =  walletRepository.findByUserId(user.getId());
-        if(amount <= 0){
+        if(amount < 10 ){
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
         //B1 tạo request withdrawal
@@ -64,6 +70,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     }
 
     @Override
+    @Transactional
     public Withdrawal processWithdrawal(Long withdrawalId, boolean accept) throws Exception {
         Optional<Withdrawal> withdrawal = withdrawalRepository.findById(withdrawalId);
 
@@ -73,9 +80,26 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
         Withdrawal withdrawalRequest = withdrawal.get();
         withdrawalRequest.setProcessedAt(LocalDateTime.now());
-        if(accept){
+        if (accept) {
+            User user = withdrawalRequest.getUser();
+            Wallet wallet = walletRepository.findByUserId(user.getId());
+            BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
+
+            if (wallet.getBalance().compareTo(amountToWithdraw) < 0) {
+                withdrawalRequest.setStatus(Status.FAILED);
+                withdrawalRepository.save(withdrawalRequest);
+                throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+            }
+
+            walletTransactionService.createTransaction(WalletTransactionRequest.builder()
+                    .wallet(wallet)
+                    .type(WalletTransactionType.WITH_DRAWL)
+                    .description("Bank account withdrawal approved. ID: " + withdrawalId)
+                    .amount(amountToWithdraw)
+                    .build());
+
             withdrawalRequest.setStatus(Status.SUCCEEDED);
-        }else{
+        } else {
             withdrawalRequest.setStatus(Status.REJECTED);
         }
 

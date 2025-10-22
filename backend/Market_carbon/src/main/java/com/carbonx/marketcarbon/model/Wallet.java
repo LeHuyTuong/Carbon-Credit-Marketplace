@@ -1,20 +1,21 @@
 package com.carbonx.marketcarbon.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "wallets")
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Setter
+@Getter
 public class Wallet {
 
     @Id
@@ -26,12 +27,19 @@ public class Wallet {
     private User user;
 
     @OneToOne
+    @JoinColumn(name = "carbon_credit_id", referencedColumnName = "id")
     private CarbonCredit carbonCredit;
 
     @OneToOne
     @JoinColumn(name = "company_id")
     @JsonIgnore
     private Company company;
+
+    @OneToMany(mappedBy = "wallet",
+            cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<WalletTransaction> walletTransactions = new ArrayList<>();
+
 
     private BigDecimal balance =  BigDecimal.ZERO; // for currency
 
