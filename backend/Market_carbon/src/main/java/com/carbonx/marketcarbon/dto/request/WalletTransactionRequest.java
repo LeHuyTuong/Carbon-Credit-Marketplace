@@ -16,7 +16,5 @@ public class WalletTransactionRequest {
     private Order order;
     private WalletTransactionType type;
     private String description;
-    private BigDecimal balanceBefore;
-    private BigDecimal balanceAfter;
     private BigDecimal amount;
 }

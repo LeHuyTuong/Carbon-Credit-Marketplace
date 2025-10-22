@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
@@ -18,6 +19,7 @@ import java.time.OffsetDateTime;
 public class PaymentOrderResponse {
     private Long id;
     private Long amount;
+    private BigDecimal amountInVnd;
     private Status status;
     private PaymentMethod method;
     private Long userId;

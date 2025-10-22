@@ -7,13 +7,21 @@ import { Form, Button } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { apiFetch } from "../../utils/apiFetch.js";
 
+const today = new Date();
+const minAdultDate = new Date(
+  today.getFullYear() - 18,
+  today.getMonth(),
+  today.getDate()
+);
 //validation schema
 const KYC_SCHEMA = Yup.object().shape({
   name: Yup.string().required("Full name is required"),
   phone: Yup.string().required("Phone number is required"),
   country: Yup.string().required("Country is required"),
   address: Yup.string().required("Address is required"),
-  birthDate: Yup.date().required("Birth date is required"),
+  birthDate: Yup.date()
+    .required("Birth date is required")
+    .max(minAdultDate, "You must be at least 18 years old"),
   documentType: Yup.string().required("Please select a document type"),
   documentNumber: Yup.string()
     .matches(
@@ -76,8 +84,17 @@ export default function KYC() {
         }
       } catch (err) {
         console.error("Error fetching KYC:", err);
-        // 400 hoặc 404 nghĩa là chưa có KYC, không hiển thị lỗi
-        if (err.status === 400 || err.status === 404) {
+        //không báo lỗi nếu KYC chưa có hoặc backend không tìm thấy bản ghi
+        const msg =
+          err?.response?.responseStatus?.responseMessage?.toLowerCase() || "";
+
+        if (
+          err.status === 400 ||
+          err.status === 404 ||
+          msg.includes("kyc not found") ||
+          msg.includes("no kyc") ||
+          err.status === 500
+        ) {
           setHasExisting(false);
         } else {
           toast.error(

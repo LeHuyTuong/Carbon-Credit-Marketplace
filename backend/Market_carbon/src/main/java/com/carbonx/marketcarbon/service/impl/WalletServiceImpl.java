@@ -1,5 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.User;
@@ -8,6 +10,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -68,21 +71,26 @@ public class WalletServiceImpl implements WalletService {
         Long id = user.getId();
         Wallet wallet = walletRepository.findByUserId(id);
 
-        wallet.setBalance(wallet.getBalance().add(BigDecimal.valueOf(money)));
+        if(wallet == null){
+            wallet = generateWallet(user);
+        }
+        BigDecimal amountUsd = BigDecimal.valueOf(money);
+        BigDecimal amountToAdd = CurrencyConverter.usdToVnd(amountUsd);
+        String description = String.format("Add money to wallet (USD %s -> VND %s)",
+                amountUsd.toPlainString(), amountToAdd.toPlainString());
 
-        walletRepository.save(wallet);
+        walletTransactionService.createTransaction(WalletTransactionRequest.builder()
+                .wallet(wallet)
+                .amount(amountUsd)
+                .type(WalletTransactionType.ADD_MONEY)
+                .description(description)
+                .build());
 
-//        WalletTransactionRequest request = WalletTransactionRequest.builder()
-//                .wallet(wallet)
-//                .amount(BigDecimal.valueOf(money).longValueExact())
-//                .type(WalletTransactionType.ADD_MONEY)
-//                .purpose("Deposit money to wallet from Stripe")
-//                .build();
-//
-//        walletTransactionService.createTransaction(request);
+        Wallet updatedWallet = walletRepository.findByUserId(id);
 
-        log.info("Wallet added to wallet" + wallet + " money :" + money);
-        return wallet;
+        log.info("Wallet added to wallet" + wallet + " money USD:" + amountUsd + " VND:" + amountToAdd);
+
+        return updatedWallet;
     }
 
     @Override

@@ -28,10 +28,10 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @Operation(summary = "Create a new Order" , description = "Creates a Pending order based on marketplace listing")
+    @Operation(summary = "Buyer company create a new Order" , description = "Buyer company creates a Pending order based on marketplace listing")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<OrderResponse>> createOrder(
-            @Valid  @RequestBody TuongCommonRequest<@Valid OrderRequest> request,
+            @Valid  @RequestBody TuongCommonRequest<OrderRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
             ) {
@@ -46,7 +46,7 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Complete a PENDING Order", description = "Executes the financial transaction for a PENDING order. This moves funds and transfers carbon credits.")
+    @Operation(summary = "System complete a PENDING Order", description = "System executes the financial transaction for a PENDING order. This moves funds and transfers carbon credits.")
     @PostMapping("/{id}/complete")
     public ResponseEntity<TuongCommonResponse<MessageResponse>> completeOrder(
             @PathVariable("id") Long orderId,

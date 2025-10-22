@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.service.*;
+import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -50,7 +52,7 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "deposit money add money to Wallet  " , description = "API deposit money ")
+    @Operation(summary = "API add money to Wallet   " , description = "API deposit money ")
     @PutMapping("/deposit/amount/{amount}")
     public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
             @PathVariable("amount") Long amount,
@@ -60,9 +62,11 @@ public class WalletController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        walletService.addBalanceToWallet(amount);
+        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(amount));
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url("deposit success");
+        res.setAmount(amount);
+        res.setAmountInVnd(amountInVnd);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<PaymentOrderResponse> response = new TuongCommonResponse<>(trace,now,rs , res);
@@ -80,6 +84,7 @@ public class WalletController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         PaymentOrder order = paymentService.getPaymentOrderById(orderId);
+
         Boolean status = paymentService.processPaymentOrder(order, paymentId);
 
         PaymentOrderResponse res = new PaymentOrderResponse();
@@ -97,14 +102,13 @@ public class WalletController {
     @Operation(summary = "Get history of transactions", description = "API Get history of transaction")
     @GetMapping("/transactions")
     public ResponseEntity<TuongCommonResponse<List<WalletTransaction>>> getTransactions (
-            @Valid @RequestBody TuongCommonRequest<WalletTransactionRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        List<WalletTransaction> transactions = walletTransactionService.getTransaction(req.getData().getWallet(), null);
+        List<WalletTransaction> transactions = walletTransactionService.getTransaction();
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Tabs, Tab, Modal, Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { apiFetch } from "../../utils/apiFetch";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import ChangePasswordForm from "../ChangePasswordForm/ChangePasswordForm";
 
 export default function Profile() {
   const { user, token } = useAuth();
@@ -14,9 +16,9 @@ export default function Profile() {
   const [showModal, setShowModal] = useState(false);
   const nav = useNavigate();
 
-  //lấy dữ liệu KYC từ backend
+  //fetch KYC
   useEffect(() => {
-    if (!user) return;
+    if (!user) return; // nếu chưa đăng nhập thì không fetch
 
     const fetchKYC = async () => {
       setLoading(true);
@@ -24,15 +26,14 @@ export default function Profile() {
         const data = await apiFetch("/api/v1/kyc/user", { method: "GET" });
         const info = data.response;
 
-        //nếu chưa có KYC thì chuyển sang màn KYC
+        // nếu chưa có KYC -> set null để hiện prompt “Start KYC”
         if (!info) {
-          console.warn("User has no KYC yet");
           setKycData(null);
           return;
         }
 
-        //map dữ liệu từ backend sang form
-        const mappedData = {
+        // map lại dữ liệu BE trả về sang dạng FE dễ đọc
+        const mapped = {
           fullName: info.name,
           documentNumber: info.documentNumber,
           birthday: info.birthDate,
@@ -43,16 +44,10 @@ export default function Profile() {
           documentType: info.documentType,
           email: info.email,
         };
-
-        setKycData(mappedData);
-        // } catch (err) {
-        //   //nếu 404 thì chưa có KYC
-        //   if (err.message.includes("404") ) setKycData(null);
-        //   else setError("Error fetching KYC");
+        setKycData(mapped);
       } catch (err) {
         console.error("Error fetching KYC:", err);
-
-        // xử lý trường hợp chưa có KYC
+        // nếu BE trả 404 hoặc không có dữ liệu thì xem như user chưa KYC
         if (
           err.status === 404 ||
           err.status === 500 ||
@@ -70,8 +65,8 @@ export default function Profile() {
     fetchKYC();
   }, [token, user]);
 
-  //nếu chưa đăng nhập
-  if (!user) {
+  //loading and error states
+  if (!user)
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 text-center">
         <div>
@@ -80,7 +75,6 @@ export default function Profile() {
         </div>
       </div>
     );
-  }
 
   if (loading)
     return (
@@ -96,66 +90,104 @@ export default function Profile() {
       </div>
     );
 
-  if (!kycData) {
+  if (!kycData)
     return (
       <div className="d-flex flex-column justify-content-center align-items-center text-center vh-100">
         <h4>Please complete your KYC to view your profile</h4>
         <Button onClick={() => nav("/kyc")}>Start KYC</Button>
       </div>
     );
-  }
 
-  // profile info
+  //callback khi cập nhật KYC thành công
+  const handleSuccess = (updated) => {
+    setKycData(updated);
+    setShowModal(false);
+    toast.success("Profile updated successfully!");
+  };
+
   return (
     <div className="auth-hero d-flex justify-content-center align-items-center min-vh-100 bg-light">
       <div
         className="card shadow-lg border-0 rounded-4 p-4"
-        style={{ maxWidth: "800px", margin: "0 auto" }}
+        style={{ maxWidth: "700px", width: "100%" }}
       >
-        <h3 className="text-center mb-4 fw-bold">Profile Information</h3>
-
-        <div className="row g-3">
-          {Object.entries(kycData).map(([key, value]) => (
-            <div key={key} className="col-md-6">
-              <label className="fw-semibold text-muted text-capitalize">
-                {key}
-              </label>
-              <input className="form-control" value={value || ""} disabled />
+        <Tabs defaultActiveKey="info" id="ev-profile-tabs" className="mb-3">
+          {/*tab 1: profile info */}
+          <Tab
+            eventKey="info"
+            title={
+              <>
+                <i className="bi bi-person-circle me-2"></i> Profile Information
+              </>
+            }
+          >
+            <div className="row g-3 mt-2">
+              {Object.entries(kycData).map(([key, value]) => (
+                <div key={key} className="col-md-6">
+                  <label className="fw-semibold text-muted text-capitalize">
+                    {key}
+                  </label>
+                  <input
+                    className="form-control"
+                    value={value || ""}
+                    disabled
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="text-end mt-4">
-          <Button variant="primary" onClick={() => setShowModal(true)}>
-            Update Profile
-          </Button>
-        </div>
+            <div className="text-end mt-4">
+              <Button variant="primary" onClick={() => setShowModal(true)}>
+                Update Profile
+              </Button>
+            </div>
 
-        <UpdateModal
-          show={showModal}
-          onHide={() => setShowModal(false)}
-          data={kycData}
-          token={token}
-          onSuccess={(updated) => {
-            setKycData(updated);
-            setShowModal(false);
-          }}
-        />
+            <UpdateEvModal
+              show={showModal}
+              onHide={() => setShowModal(false)}
+              data={kycData}
+              onSuccess={handleSuccess}
+            />
+          </Tab>
+
+          {/*tab 2: vhange password */}
+          <Tab
+            eventKey="security"
+            title={
+              <>
+                <i className="bi bi-shield-lock me-2"></i> Change Password
+              </>
+            }
+          >
+            <div className="mt-3">
+              <ChangePasswordForm />
+            </div>
+          </Tab>
+        </Tabs>
       </div>
     </div>
   );
 }
 
-//update profile modal
-function UpdateModal({ show, onHide, data, token, onSuccess }) {
-  //validate form
+// modal update
+function UpdateEvModal({ show, onHide, data, onSuccess }) {
+  const today = new Date();
+  const minAdultDate = new Date(
+    today.getFullYear() - 18,
+    today.getMonth(),
+    today.getDate()
+  );
+
   const schema = Yup.object().shape({
     fullName: Yup.string().required("Full name is required"),
     phone: Yup.string().required("Phone is required"),
     address: Yup.string().required("Address is required"),
+    country: Yup.string().required("Country is required"),
+    birthday: Yup.date()
+      .required("Birth date is required")
+      .max(minAdultDate, "You must be at least 18 years old"),
   });
 
-  //gửi cập nhật lên backend
   const handleUpdate = async (values) => {
     try {
       await apiFetch("/api/v1/kyc/user", {
@@ -171,15 +203,14 @@ function UpdateModal({ show, onHide, data, token, onSuccess }) {
             address: values.address,
             documentType: values.documentType,
             documentNumber: values.documentNumber,
-            birthDate: values.birthday?.split("T")[0], //chỉ lấy phần date
+            birthDate: values.birthday?.split("T")[0],
           },
         }),
       });
-
-      onSuccess(values);
+      onSuccess(values); // callback sang parent khi update thành công
     } catch (err) {
       console.error("Error updating KYC:", err);
-      alert(err.message || "Failed to update profile");
+      toast.error(err.message || "Failed to update profile");
     }
   };
 
@@ -205,124 +236,59 @@ function UpdateModal({ show, onHide, data, token, onSuccess }) {
         }) => (
           <Form noValidate onSubmit={handleSubmit}>
             <Modal.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Full Name</Form.Label>
-                <Form.Control
-                  name="fullName"
-                  value={values.fullName}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.fullName && !!errors.fullName}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.fullName}
-                </Form.Control.Feedback>
-              </Form.Group>
+              {[
+                { name: "fullName", label: "Full Name" },
+                { name: "documentNumber", label: "Document Number" },
+                { name: "birthday", label: "Birthday", type: "date" },
+                { name: "gender", label: "Gender", isSelect: true },
+                { name: "country", label: "Country" },
+                { name: "address", label: "Address" },
+                { name: "phone", label: "Phone" },
+                {
+                  name: "documentType",
+                  label: "Document Type",
+                  isSelect: true,
+                },
+              ].map((field) => (
+                <Form.Group className="mb-3" key={field.name}>
+                  <Form.Label>{field.label}</Form.Label>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Document Number</Form.Label>
-                <Form.Control
-                  name="documentNumber"
-                  value={values.documentNumber}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.documentNumber && !!errors.documentNumber}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.documentNumber}
-                </Form.Control.Feedback>
-              </Form.Group>
+                  {field.isSelect ? (
+                    <Form.Select
+                      name={field.name}
+                      value={values[field.name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched[field.name] && !!errors[field.name]}
+                    >
+                      {field.name === "gender" ? (
+                        <>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="CCCD">Citizen ID Card</option>
+                          <option value="CMND">Identity Card</option>
+                        </>
+                      )}
+                    </Form.Select>
+                  ) : (
+                    <Form.Control
+                      type={field.type || "text"}
+                      name={field.name}
+                      value={values[field.name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      isInvalid={touched[field.name] && !!errors[field.name]}
+                    />
+                  )}
 
-              <Form.Group className="mb-3">
-                <Form.Label>Birthday</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="birthday"
-                  value={values.birthday}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.birthday && !!errors.birthday}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.birthday}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Gender</Form.Label>
-                <Form.Select
-                  name="gender"
-                  value={values.gender}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.gender && !!errors.gender}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </Form.Select>
-                <Form.Control.Feedback type="invalid">
-                  {errors.gender}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Country</Form.Label>
-                <Form.Control
-                  name="country"
-                  value={values.country}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.country && !!errors.country}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.country}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Address</Form.Label>
-                <Form.Control
-                  name="address"
-                  value={values.address}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.address && !!errors.address}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.address}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Phone</Form.Label>
-                <Form.Control
-                  name="phone"
-                  value={values.phone}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.phone && !!errors.phone}
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.phone}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Document Type</Form.Label>
-                <Form.Select
-                  name="documentType"
-                  value={values.documentType}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  isInvalid={touched.documentType && !!errors.documentType}
-                >
-                  <option value="CCCD">Citizen Identification Card</option>
-                  <option value="CMND">Identity Card</option>
-                </Form.Select>
-                <Form.Control.Feedback type="invalid">
-                  {errors.documentType}
-                </Form.Control.Feedback>
-              </Form.Group>
+                  <Form.Control.Feedback type="invalid">
+                    {errors[field.name]}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              ))}
             </Modal.Body>
 
             <Modal.Footer>
