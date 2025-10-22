@@ -14,13 +14,14 @@ import java.time.OffsetDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class KycAdminResponse {
     Long id;
-    String code;
-    String name;
     String email;
+    String name;
     String phone;
-    Boolean isSuperAdmin;
-    String positionTitle;
-    USER_STATUS status;
-    OffsetDateTime createdAt;
+    String firstName;
+    String lastName;
+    String country;
+    String city;
+    String birthday;
+    String avatarUrl;
     OffsetDateTime updatedAt;
 }

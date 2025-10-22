@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "carbon_credits")
@@ -16,16 +17,26 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Builder
-public class CarbonCredit{
+public class CarbonCredit extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // A unique identifier for this batch of credits, as requested.
-    @Column(unique = true, nullable = false)
+    @Column(name = "credit_code", unique = true, nullable = false, length = 64)
     private String creditCode;
 
-    private BigDecimal carbonCredit;
+    @Column(name = "carbon_credit", precision = 18, scale = 3, nullable = false)
+    @Builder.Default
+    private BigDecimal carbonCredit = BigDecimal.ONE;
+
+    @Column(name = "t_co2e", precision = 18, scale = 3, nullable = false)
+    @Builder.Default
+    private BigDecimal tCo2e = BigDecimal.ONE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_id")
+    private CreditBatch batch;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
@@ -38,24 +49,31 @@ public class CarbonCredit{
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
     private CreditStatus status = CreditStatus.PENDING;
 
     private int amount; // số lượng tín chỉ có
 
     private int listedAmount = 0; // số lượng tín chỉ đang niêm yết
 
-    private LocalDateTime issueAt;
+    @Column(name = "issued_at")
+    private OffsetDateTime issuedAt;
 
-    @JsonProperty("name")
-    private String name;
+    @Column(name = "issued_by", length = 100)
+    private String issuedBy;
+
+    @Column(name = "name", nullable = false, length = 128)
+    @Builder.Default
+    private String name = "Carbon Credit";
 
     @JsonProperty("current_price")
     private double currentPrice;
 
+
     // Getter to extract the year from issueAt, fulfilling the "năm phát sinh" requirement
     @Transient
-    @JsonProperty("vintageYear")
     public Integer getVintageYear() {
-        return issueAt != null ? issueAt.getYear() : null;
+        return issuedAt != null ? issuedAt.getYear() : null;
     }
 }

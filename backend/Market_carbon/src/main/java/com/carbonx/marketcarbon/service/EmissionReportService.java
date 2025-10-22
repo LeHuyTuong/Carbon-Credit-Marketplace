@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service;
 
 import com.carbonx.marketcarbon.dto.request.*;
+import com.carbonx.marketcarbon.dto.response.EmissionReportDetailResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.dto.response.EvidenceFileDto;
 import com.carbonx.marketcarbon.model.EmissionReport;
@@ -22,4 +23,7 @@ public interface EmissionReportService {
     EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note);
     Page<EmissionReportResponse> listReportsForAdmin(String status, Pageable pageable);
     List<EmissionReportResponse> listReportsForCompany(String status);
+    EmissionReportResponse getById(Long reportId);
+    List<EmissionReportDetailResponse> getReportDetails(Long reportId);
+
 }

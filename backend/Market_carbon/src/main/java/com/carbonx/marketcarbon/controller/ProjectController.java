@@ -11,6 +11,7 @@ import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,36 +30,37 @@ public class ProjectController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Project (Admin only)")
-    @PostMapping
-    public ResponseEntity<TuongCommonResponse<Void>> create(
-            @Valid @RequestBody TuongCommonRequest<@Valid ProjectRequest> req,
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<TuongCommonResponse<ProjectResponse>> create(
+            @ModelAttribute @Valid ProjectRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        projectService.createProject(req.getData());
+        ProjectResponse data = projectService.createProject(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace, now, rs, null);
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Create project successfully");
+        TuongCommonResponse<ProjectResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Update Project Information")
-    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update Project Information (Admin only)")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Void>> update(
             @PathVariable("id") Long id,
-            @Valid @RequestBody TuongCommonRequest<@Valid ProjectRequest> req,
+            @ModelAttribute @Valid ProjectRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        projectService.updateProject(id, req.getData());
+        projectService.updateProject(id, req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Update project successfully");
         TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace, now, rs, null);
         return ResponseEntity.ok(response);
     }

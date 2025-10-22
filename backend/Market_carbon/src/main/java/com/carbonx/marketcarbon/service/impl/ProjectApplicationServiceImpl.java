@@ -7,6 +7,7 @@ import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
+import com.carbonx.marketcarbon.service.FileStorageService;
 import com.carbonx.marketcarbon.service.ProjectApplicationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,56 +34,47 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
     private final CvaRepository cvaRepository;
     private final AdminRepository adminRepository;
     private  final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
-    public ProjectApplicationResponse submit(ProjectApplicationRequest req) {
-        // Lấy user hiện tại từ SecurityContext
+    public ProjectApplicationResponse submit(Long projectId, MultipartFile file) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         String email = auth.getName();
-
-        //  Tìm user tương ứng với email
         User user = userRepository.findByEmail(email);
         if (user == null) throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
 
-        // Lấy company tương ứng với user (mỗi user company có 1 record)
         Company company = companyRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
 
-        if (req.getApplicationDocsUrl() == null || req.getApplicationDocsUrl().isBlank()) {
-            throw new AppException(ErrorCode.APPLICATION_DOCS_REQUIRED); // hoặc set nullable=true cho cột
-        }
-
-        // Kiểm tra project tồn tại
-        Project project = projectRepository.findById(req.getProjectId())
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        //  Kiểm tra xem công ty này đã nộp hồ sơ cho project này chưa
         boolean exists = applicationRepository.existsByCompanyAndProject(company, project);
         if (exists) {
             throw new AppException(ErrorCode.APPLICATION_EXISTED);
         }
 
-        //
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "application.pdf";
+        String folder = String.format("applications/company-%d/project-%d", company.getId(), project.getId());
+        FileStorageService.PutResult put = fileStorageService.putObject(folder, originalName, file);
+
         ProjectApplication app = ProjectApplication.builder()
                 .project(project)
                 .company(company)
-                .applicationDocsUrl(req.getApplicationDocsUrl())
-                .status(ApplicationStatus.UNDER_REVIEW) // gửi cho CVA duyệt
+                .applicationDocsPath(put.key())
+                .applicationDocsUrl(put.url())
+                .status(ApplicationStatus.UNDER_REVIEW)
                 .submittedAt(OffsetDateTime.now())
                 .build();
 
-        //
         applicationRepository.save(app);
-
-        //
         return ProjectApplicationResponse.fromEntity(app);
     }
-
-
 
     @Override
     public ProjectApplicationResponse cvaDecision(Long applicationId, boolean approved, String note) {
@@ -131,10 +124,6 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         ProjectApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        if (app.getStatus() != ApplicationStatus.CVA_APPROVED) {
-            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
-        }
-
         app.setFinalReviewer(admin);
         app.setFinalReviewNote(note);
         app.setStatus(approved ? ApplicationStatus.ADMIN_APPROVED : ApplicationStatus.ADMIN_REJECTED);
@@ -148,9 +137,9 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         // Lấy user hiện tại từ SecurityContext
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(String.valueOf(auth.getPrincipal()))) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); // đổi ErrorCode cho khớp dự án bạn
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        String email = auth.getName(); // mặc định Spring Security đặt username = email
+        String email = auth.getName();
 
         // Query theo email (tránh phải truyền companyId)
         List<ProjectApplication> apps;
@@ -221,6 +210,7 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .reviewNote(a.getReviewNote())
                 .finalReviewNote(a.getFinalReviewNote())
                 .applicationDocsUrl(a.getApplicationDocsUrl())
+                .submittedAt(a.getSubmittedAt())
                 .build();
     }
 }
