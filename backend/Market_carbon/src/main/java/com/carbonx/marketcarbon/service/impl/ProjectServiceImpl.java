@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.Project;
 import com.carbonx.marketcarbon.repository.ProjectRepository;
 import com.carbonx.marketcarbon.service.ProjectService;
+import com.carbonx.marketcarbon.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,22 @@ import java.util.List;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final S3Service s3Service;
 
     @Override
     public ProjectResponse createProject(ProjectRequest req) {
         if (projectRepository.existsByTitle(req.getTitle())) {
             throw new AppException(ErrorCode.TITTLE_DUPLICATED);
+        }
+
+        String logoUrl = null;
+        if (req.getLogo() != null && !req.getLogo().isEmpty()) {
+            logoUrl = s3Service.uploadFile(req.getLogo());
+        }
+
+        String legalDocsUrl = null;
+        if (req.getLegalDocsFile() != null && !req.getLegalDocsFile().isEmpty()) {
+            legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile());
         }
 
         Project project = Project.builder()
@@ -35,7 +47,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .commitments(req.getCommitments())
                 .technicalIndicators(req.getTechnicalIndicators())
                 .measurementMethod(req.getMeasurementMethod())
-                .legalDocsUrl(req.getLegalDocsUrl())
+                .legalDocsFile(legalDocsUrl)
+                .logo(logoUrl)
                 .status(ProjectStatus.OPEN)
                 .build();
 
@@ -49,11 +62,11 @@ public class ProjectServiceImpl implements ProjectService {
                 .commitments(saved.getCommitments())
                 .technicalIndicators(saved.getTechnicalIndicators())
                 .measurementMethod(saved.getMeasurementMethod())
-                .legalDocsUrl(saved.getLegalDocsUrl())
+                .legalDocsFile(saved.getLegalDocsFile())
+                .logo(saved.getLogo())
                 .build();
     }
 
-    @Override
     public void updateProject(Long id, ProjectRequest req) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
@@ -63,7 +76,16 @@ public class ProjectServiceImpl implements ProjectService {
         project.setCommitments(req.getCommitments());
         project.setTechnicalIndicators(req.getTechnicalIndicators());
         project.setMeasurementMethod(req.getMeasurementMethod());
-        project.setLegalDocsUrl(req.getLegalDocsUrl());
+
+        if (req.getLegalDocsFile() != null && !req.getLegalDocsFile().isEmpty()) {
+            String legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile());
+            project.setLegalDocsFile(legalDocsUrl);
+        }
+
+        if (req.getLogo() != null && !req.getLogo().isEmpty()) {
+            String logoUrl = s3Service.uploadFile(req.getLogo());
+            project.setLogo(logoUrl);
+        }
 
         projectRepository.save(project);
     }
@@ -86,7 +108,7 @@ public class ProjectServiceImpl implements ProjectService {
                         .commitments(p.getCommitments())
                         .technicalIndicators(p.getTechnicalIndicators())
                         .measurementMethod(p.getMeasurementMethod())
-                        .legalDocsUrl(p.getLegalDocsUrl())
+                        .legalDocsFile(p.getLegalDocsFile())
                         .build())
                 .toList();
     }
@@ -104,7 +126,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .commitments(p.getCommitments())
                 .technicalIndicators(p.getTechnicalIndicators())
                 .measurementMethod(p.getMeasurementMethod())
-                .legalDocsUrl(p.getLegalDocsUrl())
+                .legalDocsFile(p.getLegalDocsFile())
                 .build();
     }
 }

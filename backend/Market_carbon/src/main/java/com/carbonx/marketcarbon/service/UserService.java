@@ -19,4 +19,10 @@ public interface UserService {
      UserResponse createUser(UserCreationRequest request, String otp);
      MessageResponse resetPassword(ResetPasswordRequest req, String bearerToken);
      void changePassword(String jwt, ChangePasswordRequest req);
+    User findUserById(Long id);
+
+    void resendOtpForgotPassword(EmailRequest request)
+            throws MessagingException, UnsupportedEncodingException;
+
+
 }

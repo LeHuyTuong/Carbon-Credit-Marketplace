@@ -7,10 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "carbon_credits")
@@ -19,16 +17,26 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
-public class CarbonCredit{
+public class CarbonCredit extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // A unique identifier for this batch of credits, as requested.
-    @Column(unique = true, nullable = false)
+    @Column(name = "credit_code", unique = true, nullable = false, length = 64)
     private String creditCode;
 
-    private BigDecimal carbonCredit; // số lượng tín chỉ
+    @Column(name = "carbon_credit", precision = 18, scale = 3, nullable = false)
+    @Builder.Default
+    private BigDecimal carbonCredit = BigDecimal.ONE;
+
+    @Column(name = "t_co2e", precision = 18, scale = 3, nullable = false)
+    @Builder.Default
+    private BigDecimal tCo2e = BigDecimal.ONE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_id")
+    private CreditBatch batch;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
@@ -41,48 +49,31 @@ public class CarbonCredit{
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
     private CreditStatus status = CreditStatus.PENDING;
 
+    private int amount; // số lượng tín chỉ có
 
     private int listedAmount = 0; // số lượng tín chỉ đang niêm yết
 
-    private LocalDateTime issueAt;
+    @Column(name = "issued_at")
+    private OffsetDateTime issuedAt;
 
-    @JsonProperty("name")
-    private String name;
+    @Column(name = "issued_by", length = 100)
+    private String issuedBy;
+
+    @Column(name = "name", nullable = false, length = 128)
+    @Builder.Default
+    private String name = "Carbon Credit";
 
     @JsonProperty("current_price")
     private double currentPrice;
 
 
-    @OneToMany(mappedBy = "carbonCredit", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    @Builder.Default
-    private List<CarbonCreditContribution> contributions = new ArrayList<>();
-
-
     // Getter to extract the year from issueAt, fulfilling the "năm phát sinh" requirement
     @Transient
-    @JsonProperty("vintageYear")
     public Integer getVintageYear() {
-        return issueAt != null ? issueAt.getYear() : null;
-    }
-
-
-
-    public void setCarbonCredit(BigDecimal totalCredits) {
-        BigDecimal safeTotal = totalCredits == null ? BigDecimal.ZERO : totalCredits;
-        if (safeTotal.compareTo(BigDecimal.ZERO) < 0) {
-            safeTotal = BigDecimal.ZERO;
-        }
-
-        BigDecimal listedPortion = BigDecimal.valueOf(this.listedAmount);
-        BigDecimal unlistedPortion = safeTotal.subtract(listedPortion);
-        if (unlistedPortion.compareTo(BigDecimal.ZERO) < 0) {
-            this.carbonCredit = BigDecimal.ZERO;
-            this.listedAmount = safeTotal.setScale(0, RoundingMode.DOWN).intValue();
-        } else {
-            this.carbonCredit = unlistedPortion;
-        }
+        return issuedAt != null ? issuedAt.getYear() : null;
     }
 }

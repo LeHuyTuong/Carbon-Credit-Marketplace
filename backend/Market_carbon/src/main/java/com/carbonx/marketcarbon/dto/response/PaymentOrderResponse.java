@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL) // ẩn toàn bộ những field null
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaymentOrderResponse {
     private Long id;
     private Long amount;
