@@ -19,6 +19,7 @@ public class ProjectResponse {
     private String commitments;
     private String technicalIndicators;
     private String measurementMethod;
-    private String legalDocsUrl;
+    private String legalDocsFile;
+    private String logo;
     private String createdByName;
 }

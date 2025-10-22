@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -233,38 +234,39 @@ public class KycController {
     }
 
     @Operation(summary = "Create KYC for Admin", description = "Create KYC profile for Admin (current user)")
-    @PostMapping("/admin")
+    @PostMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> createAdmin(
-            @Valid @RequestBody TuongCommonRequest<@Valid KycAdminRequest> req,
+            @ModelAttribute @Valid KycAdminRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        Long id = kycService.createAdmin(req.getData());
+        Long id = kycService.createAdmin(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC created successfully");
         TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update KYC for Admin", description = "Update KYC profile for Admin (current user)")
-    @PutMapping("/admin")
+    @PutMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> updateAdmin(
-            @Valid @RequestBody TuongCommonRequest<@Valid KycAdminRequest> req,
+            @ModelAttribute @Valid KycAdminRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        Long id = kycService.updateAdmin(req.getData());
+        Long id = kycService.updateAdmin(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC updated successfully");
         TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
+
 
     @Operation(summary = "Get Admin KYC (me)", description = "Get KYC profile of the current Admin user")
     @GetMapping("/admin")
@@ -281,6 +283,7 @@ public class KycController {
         TuongCommonResponse<KycAdminResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
+
     @Operation(summary = "Create KYC for EV Owner", description = "EV Owner submits identification information for verification")
     @PostMapping("/kycEv")
     public ResponseEntity<TuongCommonResponse<Long>> createKyc(

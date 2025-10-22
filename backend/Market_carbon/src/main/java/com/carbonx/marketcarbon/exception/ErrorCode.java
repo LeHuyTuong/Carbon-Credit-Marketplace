@@ -31,6 +31,7 @@ public enum ErrorCode {
     EMAIL_CONTACT_INVALID(400, "Email contact cannot be null.", HttpStatus.BAD_REQUEST),
     INVALID_OTP(400, "OTP is invalid or expired.", HttpStatus.BAD_REQUEST),
     OTP_EXPIRED(400, "OTP expired. Please register again.", HttpStatus.BAD_REQUEST),
+    OTP_STILL_VALID(429,"OTP is still valid; please use the current OTP or try again later", HttpStatus.TOO_MANY_REQUESTS),
     // ==== ENTITY NOT FOUND ====
     SELLER_NOT_FOUND(404, "Seller not found.", HttpStatus.NOT_FOUND),
     VEHICLE_NOT_FOUND(404, "Vehicle not found.", HttpStatus.NOT_FOUND),
@@ -44,6 +45,7 @@ public enum ErrorCode {
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),
+    REPORT_DETAILS_NOT_FOUND(404, "Report details not found", HttpStatus.NOT_FOUND),
 
     // ==== VALIDATION & STATE ====
     INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),
@@ -69,6 +71,7 @@ public enum ErrorCode {
     CSV_VEHICLE_COUNT_MISSING(400204, "Vehicle count is missing.", HttpStatus.BAD_REQUEST),
     CSV_VEHICLE_COUNT_INVALID(400205, "Vehicle count must be a valid integer.", HttpStatus.BAD_REQUEST),
     CSV_TOTAL_ENERGY_NOT_FOUND(400206, "Total energy not found and no charging_energy to sum.", HttpStatus.BAD_REQUEST),
+    CSV_PARSE_ERROR(400207, "Failed to parse CSV file: invalid format or missing required column.", HttpStatus.BAD_REQUEST),
 
 
     // 4091xx: xung đột
@@ -96,7 +99,12 @@ public enum ErrorCode {
 
     COMPANY_NOT_OWN(400, "Company does not own this carbon credit block.", HttpStatus.BAD_REQUEST),
     CVA_NOT_APPROVED(400, "CVA not approved.", HttpStatus.BAD_REQUEST),
-    CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST);
+    CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST),
+    CREDIT_BATCH_NOT_FOUND(404, "Creadit not found", HttpStatus.NOT_FOUND),
+
+    REPORT_NOT_APPROVED(400, "Emission report must be approved before issuing credits.", HttpStatus.BAD_REQUEST),
+    CREDIT_ALREADY_ISSUED(409, "Carbon credits already issued for this report.", HttpStatus.CONFLICT),
+    CREDIT_QUANTITY_INVALID(400, "Computed credit quantity is invalid or zero.", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

@@ -22,6 +22,7 @@ public class ProjectApplicationResponse {
     private ApplicationStatus status;
     private String reviewNote;
     private String finalReviewNote;
+    private String applicationDocsPath;
     private String applicationDocsUrl;
     private OffsetDateTime submittedAt;
 
@@ -36,6 +37,7 @@ public class ProjectApplicationResponse {
                 .reviewNote(app.getReviewNote())
                 .finalReviewNote(app.getFinalReviewNote())
                 .applicationDocsUrl(app.getApplicationDocsUrl())
+                .applicationDocsPath(app.getApplicationDocsPath())
                 .submittedAt(app.getSubmittedAt())
                 .build();
     }

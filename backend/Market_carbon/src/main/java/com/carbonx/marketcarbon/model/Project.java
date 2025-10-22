@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,10 @@ public class Project extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;                         // ID duy nhất của dự án
+    private Long id;
+
+    @Column(length = 16, unique = true)
+    private String code;
 
     @Column(nullable = false, length = 100)
     private String title;
@@ -28,7 +32,7 @@ public class Project extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ProjectStatus status;            // DRAFT, ACTIVE, CLOSED, ...
+    private ProjectStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String commitments;
@@ -40,13 +44,30 @@ public class Project extends BaseEntity {
     private String measurementMethod;
 
     @Column(length = 255)
-    private String legalDocsUrl;
+    private String legalDocsFile;
 
-    @URL(message = "Logo must be a valid URL")
-    @Column(length = 255, nullable = true)
+    @Column(length = 512)
     private String logo;
 
-    // Liên kết ngược: Một Project có thể có nhiều đơn đăng ký
+    @Column(length = 512)
+    private String getEmissionFactorKgPerKwh;
+
+
+    @Column(name = "emission_factor_kg_per_kwh", precision = 10, scale = 4)
+    BigDecimal emissionFactorKgPerKwh;
+
+
+    @Column(name = "buffer_reserve_pct", precision = 5, scale = 4)
+    BigDecimal bufferReservePct;
+
+
+    @Column(name = "uncertainty_pct", precision = 5, scale = 4)
+    BigDecimal uncertaintyPct;
+
+
+    @Column(name = "leakage_pct", precision = 5, scale = 4)
+    BigDecimal leakagePct;
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectApplication> applications = new ArrayList<>();
 }

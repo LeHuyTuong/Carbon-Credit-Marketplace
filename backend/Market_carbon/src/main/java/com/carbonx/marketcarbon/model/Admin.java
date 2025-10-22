@@ -11,14 +11,37 @@ import java.time.OffsetDateTime;
 @Entity @Table(name="admin")
 
 public class Admin extends BaseEntity{
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="admin_id")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "admin_id")
     Long id;
 
-    @OneToOne(optional = false) @JoinColumn(name="user_id", unique = true)
+    @OneToOne(optional = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     User user;
 
-    @Column(nullable = false) String name;
+    @Column(nullable = false, length = 100)
+    String name;
+
+    @Column(length = 15)
     String phone;
+
+    @Column(length = 50)
+    String firstName;
+
+    @Column(length = 50)
+    String lastName;
+
+    @Column(length = 100)
+    String country;
+
+    @Column(length = 100)
+    String city;
+
+    @Column(length = 15)
+    String birthday;
+
+    @Column(length = 512)
+    String avatarUrl;
 
 }

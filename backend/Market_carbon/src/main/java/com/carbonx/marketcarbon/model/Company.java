@@ -20,6 +20,9 @@ public class Company extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 16, unique = true)
+    private String code;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id", nullable=false)
     private User user;
@@ -44,6 +47,8 @@ public class Company extends BaseEntity{
 
     @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
     private Wallet wallet;
+
+
 
     @OneToMany(
             mappedBy = "company",
