@@ -52,26 +52,26 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "API add money to Wallet   " , description = "API deposit money ")
-    @PutMapping("/deposit/amount/{amount}")
-    public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
-            @PathVariable("amount") Long amount,
-            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
-    ) throws WalletException {
-        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(amount));
-        PaymentOrderResponse res = new PaymentOrderResponse();
-        res.setPayment_url("deposit success");
-        res.setAmount(amount);
-        res.setAmountInVnd(amountInVnd);
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
-                StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentOrderResponse> response = new TuongCommonResponse<>(trace,now,rs , res);
-        return ResponseEntity.ok(response);
-    }
+//    @Operation(summary = "API add money to Wallet   " , description = "API deposit money ")
+//    @PutMapping("/deposit/amount/{amount}")
+//    public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
+//            @PathVariable("amount") Long amount,
+//            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+//            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+//    ) throws WalletException {
+//        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+//        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+//
+//        BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(amount));
+//        PaymentOrderResponse res = new PaymentOrderResponse();
+//        res.setPayment_url("deposit success");
+//        res.setAmount(amount);
+//        res.setAmountInVnd(amountInVnd);
+//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//                StatusCode.SUCCESS.getMessage());
+//        TuongCommonResponse<PaymentOrderResponse> response = new TuongCommonResponse<>(trace,now,rs , res);
+//        return ResponseEntity.ok(response);
+//    }
 
     @Operation(summary = "Set status pending to success ", description = "API change status to confirm money in wallet ")
     @PostMapping("/deposit")
