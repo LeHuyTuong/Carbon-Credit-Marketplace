@@ -1,12 +1,14 @@
 package com.carbonx.marketcarbon.dto.request;
 
+import com.carbonx.marketcarbon.common.validator.FileSize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.URL;
+
+import org.springframework.web.multipart.MultipartFile;
 
 
-    @Data
+@Data
     public class ProjectRequest {
 
         @NotBlank(message = "Title must not be blank")
@@ -17,10 +19,8 @@ import org.hibernate.validator.constraints.URL;
         @Size(max = 255, message = "Description must be at most 255 characters")
         private String description;
 
-        @NotBlank(message = "Logo URL must not be blank")
-        @URL(message = "Logo must be a valid URL")
-        @Size(max = 255, message = "Logo URL must be at most 255 characters")
-        private String logo;
+        @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
+        private MultipartFile logo;
 
         @Size(max = 2000, message = "Commitments must be at most 2000 characters")
         private String commitments;
@@ -31,7 +31,6 @@ import org.hibernate.validator.constraints.URL;
         @Size(max = 2000, message = "Measurement method must be at most 2000 characters")
         private String measurementMethod;
 
-        @URL(message = "LegalDocsUrl must be a valid URL")
-        @Size(max = 255, message = "LegalDocsUrl must be at most 255 characters")
-        private String legalDocsUrl;
+        @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
+        private MultipartFile  legalDocsFile;
     }

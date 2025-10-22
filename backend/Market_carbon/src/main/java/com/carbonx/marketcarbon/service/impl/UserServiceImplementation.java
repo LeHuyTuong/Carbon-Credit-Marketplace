@@ -215,4 +215,36 @@
             userRepository.save(user);
         }
 
+        @Override
+        public User findUserById(Long id) {
+            return userRepository.findById(id)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        }
+
+        @Override
+        public void resendOtpForgotPassword(EmailRequest request)
+                throws MessagingException, UnsupportedEncodingException {
+            User user = userRepository.findByEmail(request.getEmail());
+            if (user == null) throw new AppException(ErrorCode.USER_NOT_EXISTED);
+
+            // hạn chế spam: chỉ cho resend khi sắp/đã hết hạn (ví dụ chặn nếu còn >60s)
+            if (user.getOtpExpiryDate() != null && user.getOtpExpiryDate().isAfter(LocalDateTime.now())) {
+                long secondsLeft = java.time.Duration
+                        .between(LocalDateTime.now(), user.getOtpExpiryDate()).getSeconds();
+                if (secondsLeft > 60) throw new AppException(ErrorCode.OTP_STILL_VALID);
+            }
+
+            String otp = generateOtp();
+            LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(30);
+
+            user.setOtpCode(otp);
+            user.setOtpExpiryDate(expiryDate);
+            user.setOtpPurpose(OtpPurpose.FORGOT_PASSWORD);
+            userRepository.save(user);
+
+            String subject = "Your new OTP code";
+            String content = "<p>New OTP: <b>%s</b></p>".formatted(otp);
+            emailService.sendEmail(subject, content, List.of(user.getEmail()));
+        }
+
     }

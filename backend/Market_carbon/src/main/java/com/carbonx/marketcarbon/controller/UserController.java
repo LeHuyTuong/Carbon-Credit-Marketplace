@@ -144,7 +144,7 @@ public class UserController {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        String jwt = bearerToken.substring(7); // cắt "Bearer "
+        String jwt = bearerToken.substring(7);
 
         userService.changePassword(jwt, req);
 
@@ -153,4 +153,38 @@ public class UserController {
                         new MessageResponse("Password changed successfully"))
         );
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users/{id}")
+    public CommonResponse<User> getUserById(@PathVariable Long id) {
+        User user = userService.findUserById(id);
+        if (user == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+
+        return CommonResponse.<User>builder()
+                .requestTrace(UUID.randomUUID().toString())
+                .responseDateTime(OffsetDateTime.now())
+                .responseStatus(new CommonResponse.ResponseStatus(
+                        String.valueOf(HttpStatus.OK.value()),
+                        "Get user by ID successfully"
+                ))
+                .responseData(user)
+                .build();
+    }
+
+    @PostMapping("/forgot-password/resend-otp")
+    public ResponseEntity<CommonResponse<MessageResponse>> resendOtp(@RequestBody EmailRequest req)
+            throws Exception {
+
+        userService.resendOtpForgotPassword(req);
+
+        return ResponseEntity.ok(
+                ResponseUtil.success(
+                        UUID.randomUUID().toString(),
+                        new MessageResponse("Resend OTP successfully")
+                )
+        );
+    }
+
+
 }

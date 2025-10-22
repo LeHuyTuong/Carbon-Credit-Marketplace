@@ -53,7 +53,10 @@ public class ProjectApplication extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String finalReviewNote;
 
-    @Column(length = 255)
+    @Column(name = "application_docs_path", length = 512)
+    private String applicationDocsPath;
+
+    @Column(name = "application_docs_url", length = 512)
     private String applicationDocsUrl;
 
     @Column(name = "submitted_at")

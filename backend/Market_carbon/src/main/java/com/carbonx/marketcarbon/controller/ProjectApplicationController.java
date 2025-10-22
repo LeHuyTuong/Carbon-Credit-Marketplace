@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -31,17 +32,28 @@ public class ProjectApplicationController {
     @Operation(summary = "Submit application to join a project (Company only)")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> submitApplication(
-            @Valid @RequestBody TuongCommonRequest<ProjectApplicationRequest> req,
+            @RequestParam("projectId") Long projectId,
+            @RequestParam("file") MultipartFile file,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = (requestTrace != null && !requestTrace.isBlank())
+                ? requestTrace
+                : UUID.randomUUID().toString();
+        String now = (requestDateTime != null && !requestDateTime.isBlank())
+                ? requestDateTime
+                : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
-        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        ProjectApplicationResponse data = projectApplicationService.submit(projectId, file);
 
-        ProjectApplicationResponse data = projectApplicationService.submit(req.getData());
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                "Application uploaded & submitted successfully"
+        );
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Application submitted successfully");
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        return ResponseEntity.ok(
+                new TuongCommonResponse<>(trace, now, rs, data)
+        );
     }
 
     @PreAuthorize("hasRole('COMPANY')")
