@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.request;
 
+import com.carbonx.marketcarbon.common.ProjectStatus;
 import com.carbonx.marketcarbon.common.validator.FileSize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -33,4 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 
         @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
         private MultipartFile  legalDocsFile;
+
+         private ProjectStatus status;
     }

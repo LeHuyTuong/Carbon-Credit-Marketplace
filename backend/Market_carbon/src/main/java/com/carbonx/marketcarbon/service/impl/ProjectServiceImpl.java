@@ -31,14 +31,15 @@ public class ProjectServiceImpl implements ProjectService {
             throw new AppException(ErrorCode.TITTLE_DUPLICATED);
         }
 
+        // Upload S3 nếu có
         String logoUrl = null;
         if (req.getLogo() != null && !req.getLogo().isEmpty()) {
-            logoUrl = s3Service.uploadFile(req.getLogo());
+            logoUrl = s3Service.uploadFile(req.getLogo()); // trả về public URL
         }
 
         String legalDocsUrl = null;
         if (req.getLegalDocsFile() != null && !req.getLegalDocsFile().isEmpty()) {
-            legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile());
+            legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile()); // trả về public URL
         }
 
         Project project = Project.builder()
@@ -47,44 +48,37 @@ public class ProjectServiceImpl implements ProjectService {
                 .commitments(req.getCommitments())
                 .technicalIndicators(req.getTechnicalIndicators())
                 .measurementMethod(req.getMeasurementMethod())
-                .legalDocsFile(legalDocsUrl)
-                .logo(logoUrl)
                 .status(ProjectStatus.OPEN)
+                .logo(logoUrl)
+                .legalDocsFile(legalDocsUrl)
                 .build();
 
         Project saved = projectRepository.save(project);
-
-        return ProjectResponse.builder()
-                .id(saved.getId())
-                .title(saved.getTitle())
-                .description(saved.getDescription())
-                .status(saved.getStatus())
-                .commitments(saved.getCommitments())
-                .technicalIndicators(saved.getTechnicalIndicators())
-                .measurementMethod(saved.getMeasurementMethod())
-                .legalDocsFile(saved.getLegalDocsFile())
-                .logo(saved.getLogo())
-                .build();
+        return toResponse(saved);
     }
 
+    @Override
     public void updateProject(Long id, ProjectRequest req) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
+        if (req.getStatus() != null) {
+            project.setStatus(req.getStatus());
+        }
         project.setTitle(req.getTitle());
         project.setDescription(req.getDescription());
         project.setCommitments(req.getCommitments());
         project.setTechnicalIndicators(req.getTechnicalIndicators());
         project.setMeasurementMethod(req.getMeasurementMethod());
 
-        if (req.getLegalDocsFile() != null && !req.getLegalDocsFile().isEmpty()) {
-            String legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile());
-            project.setLegalDocsFile(legalDocsUrl);
-        }
-
         if (req.getLogo() != null && !req.getLogo().isEmpty()) {
             String logoUrl = s3Service.uploadFile(req.getLogo());
             project.setLogo(logoUrl);
+        }
+
+        if (req.getLegalDocsFile() != null && !req.getLegalDocsFile().isEmpty()) {
+            String legalDocsUrl = s3Service.uploadFile(req.getLegalDocsFile());
+            project.setLegalDocsFile(legalDocsUrl);
         }
 
         projectRepository.save(project);
@@ -100,16 +94,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectResponse> listAll() {
         return projectRepository.findAll().stream()
-                .map(p -> ProjectResponse.builder()
-                        .id(p.getId())
-                        .title(p.getTitle())
-                        .description(p.getDescription())
-                        .status(p.getStatus())
-                        .commitments(p.getCommitments())
-                        .technicalIndicators(p.getTechnicalIndicators())
-                        .measurementMethod(p.getMeasurementMethod())
-                        .legalDocsFile(p.getLegalDocsFile())
-                        .build())
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -117,7 +102,11 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse getById(Long id) {
         Project p = projectRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+        return toResponse(p); // trả cả logo & legalDocsFile
+    }
 
+
+    private ProjectResponse toResponse(Project p) {
         return ProjectResponse.builder()
                 .id(p.getId())
                 .title(p.getTitle())
@@ -126,6 +115,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .commitments(p.getCommitments())
                 .technicalIndicators(p.getTechnicalIndicators())
                 .measurementMethod(p.getMeasurementMethod())
+                .logo(p.getLogo())
                 .legalDocsFile(p.getLegalDocsFile())
                 .build();
     }

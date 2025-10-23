@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.request.CvaVerificationRequest;
 import com.carbonx.marketcarbon.dto.response.EmissionReportDetailResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.service.EmissionReportService;
@@ -9,6 +10,7 @@ import com.carbonx.marketcarbon.utils.ResponseUtil;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,7 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+        import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -221,4 +223,14 @@ public class EmissionReportController {
         List<EmissionReportDetailResponse> data = service.getReportDetails(reportId);
         return ResponseEntity.ok(ResponseUtil.success(UUID.randomUUID().toString(), data));
     }
+
+    @PostMapping("/{id}/verify")
+    @PreAuthorize("hasRole('CVA')")
+    public EmissionReportResponse verify(
+            @PathVariable("id") Long reportId,
+            @Valid @RequestBody CvaVerificationRequest req) {
+        return service.verifyReportWithScore(reportId, req.verificationScore(), req.approved(), req.comment());
+    }
+
+
 }
