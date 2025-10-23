@@ -4,16 +4,11 @@ import com.carbonx.marketcarbon.common.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
 @Entity
-@Table(
-        name = "project_application",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_application_project_company",
-                        columnNames = {"project_id", "company_id"}
-                )
-        }
-)
+@Table(name = "project_application")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -60,6 +55,9 @@ public class ProjectApplication extends BaseEntity {
     private String applicationDocsUrl;
 
     @Column(name = "submitted_at")
-    private java.time.OffsetDateTime submittedAt;
+    private LocalDateTime submittedAt;
+
+    @Column(name = "reviewed_at")
+    LocalDateTime reviewedAt;
 
 }

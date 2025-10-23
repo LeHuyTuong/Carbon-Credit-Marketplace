@@ -39,4 +39,14 @@ public class Cva {
         createdAt = updatedAt = OffsetDateTime.now(); if (status==null) status=USER_STATUS.ACTIVE; }
     @PreUpdate  void preU(){
         updatedAt = OffsetDateTime.now(); }
+
+    public String getDisplayName() {
+        if (name != null && !name.isBlank()) {
+            return name;
+        }
+        if (organization != null && !organization.isBlank()) {
+            return organization;
+        }
+        return user != null ? user.getEmail() : "Unknown CVA";
+    }
 }
