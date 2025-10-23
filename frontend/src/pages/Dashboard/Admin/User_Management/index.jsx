@@ -1,5 +1,5 @@
 import { Box, Typography, useTheme } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
@@ -80,19 +80,13 @@ const Team = () => {
       ),
     },
     {
-      field: "accesslevel",
+      field: "access", // trùng với row.access để filter/sort được
       headerName: "Access Level",
       flex: 1.2,
       renderCell: ({ row: { access } }) => {
         const config = accessConfig[access?.toUpperCase()] || {};
         return (
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            width="100%"
-            height="100%"
-          >
+          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height="100%">
             <Box
               display="flex"
               alignItems="center"
@@ -127,7 +121,7 @@ const Team = () => {
       flex: 0.8,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/view_user/${params.row.userid}`} style={{ textDecoration: "none" }}>
+          <Link to={`/admin/view_user/${params.row.email}`} style={{ textDecoration: "none" }}>
             <div className="viewButton">View</div>
           </Link>
         </div>
@@ -159,7 +153,14 @@ const Team = () => {
           },
         }}
       >
-        <DataGrid checkboxSelection rows={data} columns={columns} />
+        <DataGrid
+          checkboxSelection
+          rows={data}
+          columns={columns}
+          components={{ Toolbar: GridToolbar }} // thêm toolbar filter, sort, column hide
+          filterMode="client"
+          sortingMode="client"
+        />
       </Box>
     </Box>
   );

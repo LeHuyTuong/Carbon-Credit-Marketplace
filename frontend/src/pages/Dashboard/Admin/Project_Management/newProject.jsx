@@ -23,36 +23,49 @@ const NewProjectForm = () => {
   const [loading, setLoading] = useState(false);
 
   const handleFormSubmit = async (values, { resetForm }) => {
-    const payload = {
-      title: values.title,
-      description: values.description,
-      logo: values.logo,
-      commitments: values.commitments,
-      technicalIndicators: values.technicalIndicators,
-      measurementMethod: values.measurementMethod,
-      legalDocsUrl: values.legalDocsUrl,
-    };
+  try {
+    setLoading(true);
 
-    console.log("📦 Payload to API:", payload);
+    //  Tạo FormData
+    const formDataToSend = new FormData();
+    formDataToSend.append("requestTrace", `trace_${Date.now()}`);
+    formDataToSend.append("requestDateTime", new Date().toISOString());
+    formDataToSend.append("title", values.title);
+    formDataToSend.append("description", values.description);
+    formDataToSend.append("commitments", values.commitments);
+    formDataToSend.append("technicalIndicators", values.technicalIndicators);
+    formDataToSend.append("measurementMethod", values.measurementMethod);
 
-    try {
-      setLoading(true);
-      const response = await createProject(payload);
-      console.log("✅ API Response:", response);
+    //  logo & legal docs (nếu có file)
+    if (values.logo) formDataToSend.append("logo", values.logo);
+    if (values.legalDocsUrl)
+      formDataToSend.append("legalDocsUrl", values.legalDocsUrl);
 
-      setSnackbarMessage("🎉 Project created successfully!");
+    //  Gửi form data
+    const response = await createProject(formDataToSend);
+    console.log("Create Project Response:", response);
+
+    if (response?.responseStatus?.responseCode === "00000000") {
+      setSnackbarMessage("Project created successfully!");
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       resetForm();
-    } catch (error) {
-      console.error("❌ Error creating project:", error);
-      setSnackbarMessage(error.message || "Failed to create project. Please try again.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(
+        response?.responseStatus?.responseMessage || "Failed to create project"
+      );
     }
-  };
+  } catch (error) {
+    console.error("Error creating project:", error);
+    setSnackbarMessage(
+      error.message || "Failed to create project. Please try again."
+    );
+    setSnackbarSeverity("error");
+    setOpenSnackbar(true);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box m="20px">
@@ -63,11 +76,7 @@ const NewProjectForm = () => {
           to="/admin/project_management"
           variant="outlined"
           color="secondary"
-          sx={{
-            height: "fit-content",
-            textTransform: "none",
-            fontWeight: 600,
-          }}
+          sx={{ height: "fit-content", textTransform: "none", fontWeight: 600 }}
         >
           ← Back to Project List
         </Button>
@@ -95,13 +104,17 @@ const NewProjectForm = () => {
             handleBlur,
             handleChange,
             handleSubmit,
+            setFieldValue,
           }) => (
             <form onSubmit={handleSubmit}>
               <Box
                 display="grid"
-                gridTemplateColumns={isNonMobile ? "repeat(2, 1fr)" : "repeat(1, 1fr)"}
+                gridTemplateColumns={
+                  isNonMobile ? "repeat(2, 1fr)" : "repeat(1, 1fr)"
+                }
                 gap="30px"
               >
+                {/* TITLE */}
                 <TextField
                   fullWidth
                   variant="filled"
@@ -113,17 +126,60 @@ const NewProjectForm = () => {
                   error={!!touched.title && !!errors.title}
                   helperText={touched.title && errors.title}
                 />
-                <TextField
-                  fullWidth
-                  variant="filled"
-                  label="Logo URL"
-                  name="logo"
-                  value={values.logo}
-                  onBlur={handleBlur}
-                  onChange={handleChange}
-                  error={!!touched.logo && !!errors.logo}
-                  helperText={touched.logo && errors.logo}
-                />
+
+                {/* UPLOAD LOGO */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    variant="filled"
+                    label="Logo File"
+                    name="logo"
+                    value={values.logo ? values.logo.name : ""}
+                    InputProps={{ readOnly: true }}
+                    sx={{
+                      "& .MuiFilledInput-root": {
+                        backgroundColor: (theme) =>
+                          theme.palette.mode === "dark"
+                            ? "rgba(255,255,255,0.08)"
+                            : "#f9f9f9",
+                        borderRadius: 2,
+                        "&:hover": {
+                          backgroundColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? "rgba(255,255,255,0.12)"
+                              : "#fff",
+                        },
+                      },
+                    }}
+                    onClick={() => document.getElementById("logo-upload").click()}
+                  />
+                  <input
+                    id="logo-upload"
+                    name="logo"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) setFieldValue("logo", file);
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => document.getElementById("logo-upload").click()}
+                    sx={{
+                      mt: 1,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Upload Logo
+                  </Button>
+                </Box>
+
+                {/* DESCRIPTION */}
                 <TextField
                   fullWidth
                   variant="filled"
@@ -138,6 +194,8 @@ const NewProjectForm = () => {
                   helperText={touched.description && errors.description}
                   sx={{ gridColumn: "span 2" }}
                 />
+
+                {/* COMMITMENTS */}
                 <TextField
                   fullWidth
                   variant="filled"
@@ -149,6 +207,8 @@ const NewProjectForm = () => {
                   error={!!touched.commitments && !!errors.commitments}
                   helperText={touched.commitments && errors.commitments}
                 />
+
+                {/* TECHNICAL INDICATORS */}
                 <TextField
                   fullWidth
                   variant="filled"
@@ -157,9 +217,16 @@ const NewProjectForm = () => {
                   value={values.technicalIndicators}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  error={!!touched.technicalIndicators && !!errors.technicalIndicators}
-                  helperText={touched.technicalIndicators && errors.technicalIndicators}
+                  error={
+                    !!touched.technicalIndicators &&
+                    !!errors.technicalIndicators
+                  }
+                  helperText={
+                    touched.technicalIndicators && errors.technicalIndicators
+                  }
                 />
+
+                {/* MEASUREMENT METHOD */}
                 <TextField
                   fullWidth
                   variant="filled"
@@ -168,20 +235,70 @@ const NewProjectForm = () => {
                   value={values.measurementMethod}
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  error={!!touched.measurementMethod && !!errors.measurementMethod}
-                  helperText={touched.measurementMethod && errors.measurementMethod}
+                  error={
+                    !!touched.measurementMethod && !!errors.measurementMethod
+                  }
+                  helperText={
+                    touched.measurementMethod && errors.measurementMethod
+                  }
                 />
-                <TextField
-                  fullWidth
-                  variant="filled"
-                  label="Legal Docs URL"
-                  name="legalDocsUrl"
-                  value={values.legalDocsUrl}
-                  onBlur={handleBlur}
-                  onChange={handleChange}
-                  error={!!touched.legalDocsUrl && !!errors.legalDocsUrl}
-                  helperText={touched.legalDocsUrl && errors.legalDocsUrl}
-                />
+
+                {/* UPLOAD LEGAL DOC */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    variant="filled"
+                    label="Legal Document"
+                    name="legalDocsUrl"
+                    value={values.legalDocsUrl ? values.legalDocsUrl.name : ""}
+                    InputProps={{ readOnly: true }}
+                    sx={{
+                      "& .MuiFilledInput-root": {
+                        backgroundColor: (theme) =>
+                          theme.palette.mode === "dark"
+                            ? "rgba(255,255,255,0.08)"
+                            : "#f9f9f9",
+                        borderRadius: 2,
+                        "&:hover": {
+                          backgroundColor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? "rgba(255,255,255,0.12)"
+                              : "#fff",
+                        },
+                      },
+                    }}
+                    onClick={() =>
+                      document.getElementById("legal-upload").click()
+                    }
+                  />
+                  <input
+                    id="legal-upload"
+                    name="legalDocsUrl"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) setFieldValue("legalDocsUrl", file);
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() =>
+                      document.getElementById("legal-upload").click()
+                    }
+                    sx={{
+                      mt: 1,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                    }}
+                    
+                  >
+                    Upload Legal Document
+                  </Button>
+                </Box>
               </Box>
 
               <Box display="flex" justifyContent="flex-end" mt="30px">
@@ -190,7 +307,9 @@ const NewProjectForm = () => {
                   color="secondary"
                   variant="contained"
                   disabled={loading}
-                  startIcon={loading && <CircularProgress size={20} color="inherit" />}
+                  startIcon={
+                    loading && <CircularProgress size={20} color="inherit" />
+                  }
                 >
                   {loading ? "Creating..." : "Create Project"}
                 </Button>
@@ -222,11 +341,11 @@ const NewProjectForm = () => {
 const checkoutSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
   description: yup.string().required("Description is required"),
-  logo: yup.string().url("Invalid URL").required("Logo URL is required"),
   commitments: yup.string().required("Commitments are required"),
-  technicalIndicators: yup.string().required("Technical indicators are required"),
+  technicalIndicators: yup
+    .string()
+    .required("Technical indicators are required"),
   measurementMethod: yup.string().required("Measurement method is required"),
-  legalDocsUrl: yup.string().url("Invalid URL").required("Legal docs URL is required"),
 });
 
 const initialValues = {

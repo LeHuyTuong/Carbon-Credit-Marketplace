@@ -46,6 +46,7 @@ public class CreditIssuanceController {
         return ResponseEntity.ok(new TuongCommonResponse<>(reqTrace, now, rs, data));
     }
 
+
     @Operation(summary = "List all issued credit batches (paginated)")
     @GetMapping("/batches")
     public ResponseEntity<TuongCommonResponse<Page<CreditBatchResponse>>> listAllBatches(

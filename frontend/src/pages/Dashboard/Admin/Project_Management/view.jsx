@@ -1,23 +1,20 @@
-// src/scenes/admin/view_project.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Button,
   Grid,
   TextField,
-  MenuItem,
   Paper,
   Snackbar,
   Alert,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { tokens } from "@/theme";
-import { mockDataProjects } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
-
-// Date picker
+import { getProjectById, updateProjectById } from "@/apiAdmin/projectAdmin.js";
 import dayjs from "dayjs";
 import "dayjs/locale/en";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -30,27 +27,85 @@ const ViewProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const project = mockDataProjects.find((p) => p.id === parseInt(id));
+  const statusOptions = ["OPEN", "COMING SOON", "CLOSE"];
 
-  const [formData, setFormData] = useState({
-    projectid: project?.projectid || "",
-    projectname: project?.projectname || "",
-    shortdescription: project?.shortdescription || "",
-    starteddate: project?.starteddate || "",
-    enddate: project?.enddate || "",
-    totalexpectedcredits: project?.totalexpectedcredits || "",
-    totalcompanies: project?.totalcompanies || "12",
-    status: project?.status || "Coming_Soon",
-  });
-
+  const [formData, setFormData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [updateLoading, setUpdateLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
+  // Fetch project details
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const res = await getProjectById(id);
+        const project = res?.response;
+        if (project) {
+          setFormData({
+            projectid: project.id,
+            projectname: project.title,
+            shortdescription: project.description || "",
+            starteddate: project.createdDate || "",
+            enddate: project.endedDate || "",
+            totalexpectedcredits: project.commitments || "",
+            totalcompanies: project.technicalIndicators || "",
+            measurementmethod: project.measurementMethod || "",
+            logo: project.logo || "",
+            legaldocurl: project.legalDocsUrl || "",
+            status: project.status || "OPEN",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching project:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProject();
+  }, [id]);
 
   const handleEdit = () => setIsEditing(true);
-  const handleUpdate = () => {
-    setIsEditing(false);
-    setOpenSnackbar(true);
+
+  const handleUpdate = async () => {
+    try {
+      setUpdateLoading(true);
+      const payload = {
+        requestTrace: `trace_${Date.now()}`,
+        requestDateTime: new Date().toISOString(),
+        title: formData.projectname,
+        description: formData.shortdescription,
+        commitments: formData.totalexpectedcredits,
+        technicalIndicators: formData.totalcompanies,
+        measurementMethod: formData.measurementmethod,
+        logo: formData.logo || "",
+        legalDocsUrl: formData.legaldocurl || "",
+      };
+
+      const res = await updateProjectById(formData.projectid, payload);
+
+      if (res?.responseStatus?.responseCode === "00000000") {
+        setIsEditing(false);
+        setSnackbarMessage("Update successfully!");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+      } else {
+        setSnackbarMessage(res?.responseStatus?.responseMessage || "Update failed!");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+      }
+    } catch (err) {
+      console.error("Error updating project:", err);
+      setSnackbarMessage("Error updating project!");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    } finally {
+      setUpdateLoading(false);
+    }
   };
+
   const handleCloseSnackbar = () => setOpenSnackbar(false);
 
   const handleChange = (e) => {
@@ -58,7 +113,20 @@ const ViewProject = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (!project) {
+  if (loading)
+    return (
+      <Box
+        m="20px"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
+
+  if (!formData)
     return (
       <Box m="20px">
         <Typography variant="h5" color="error">
@@ -67,13 +135,12 @@ const ViewProject = () => {
         <Button
           variant="contained"
           sx={{ mt: 2 }}
-          onClick={() => navigate("/admin/project")}
+          onClick={() => navigate("/admin/project_management")}
         >
           Back
         </Button>
       </Box>
     );
-  }
 
   return (
     <Box m="20px">
@@ -115,7 +182,7 @@ const ViewProject = () => {
                   sx={{ mb: 2 }}
                 />
               ) : (
-                <Typography mb={2}>{formData.shortdescription}</Typography>
+                <Typography mb={2}>{formData.shortdescription || "—"}</Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -123,21 +190,17 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={
-                    formData.starteddate
-                      ? dayjs(formData.starteddate, "DD/MM/YYYY")
-                      : null
-                  }
+                  value={formData.starteddate ? dayjs(formData.starteddate) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      starteddate: date ? date.format("DD/MM/YYYY") : "",
+                      starteddate: date ? date.format("YYYY-MM-DD") : "",
                     }))
                   }
                   sx={{ mb: 2, width: "100%" }}
                 />
               ) : (
-                <Typography mb={2}>{formData.starteddate}</Typography>
+                <Typography mb={2}>{formData.starteddate || "—"}</Typography>
               )}
             </Grid>
 
@@ -148,54 +211,68 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={
-                    formData.enddate
-                      ? dayjs(formData.enddate, "DD/MM/YYYY")
-                      : null
-                  }
+                  value={formData.enddate ? dayjs(formData.enddate) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      enddate: date ? date.format("DD/MM/YYYY") : "",
+                      enddate: date ? date.format("YYYY-MM-DD") : "",
                     }))
                   }
                   sx={{ mb: 2, width: "100%" }}
                 />
               ) : (
-                <Typography mb={2}>
-                  {formData.enddate ? formData.enddate : "—"}
-                </Typography>
+                <Typography mb={2}>{formData.enddate || "—"}</Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Total Expected Credits:
               </Typography>
-              <Typography mb={2}>{formData.totalexpectedcredits}</Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="totalexpectedcredits"
+                  value={formData.totalexpectedcredits}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.totalexpectedcredits || "—"}</Typography>
+              )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
-                Total Participating Companies:
+                Technical Indicators:
               </Typography>
-              <Typography mb={2}>{formData.totalcompanies}</Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="totalcompanies"
+                  value={formData.totalcompanies}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.totalcompanies || "—"}</Typography>
+              )}
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Measurement Method:
+              </Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="measurementmethod"
+                  value={formData.measurementmethod}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.measurementmethod || "—"}</Typography>
+              )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Status:
               </Typography>
-              {isEditing ? (
-                <TextField
-                  select
-                  fullWidth
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                >
-                  <MenuItem value="Is_Open">Is_Open</MenuItem>
-                  <MenuItem value="Coming_Soon">Coming_Soon</MenuItem>
-                  <MenuItem value="End">End</MenuItem>
-                </TextField>
-              ) : (
-                <Typography mb={2}>{formData.status}</Typography>
-              )}
+              <Typography mb={2}>{formData.status}</Typography>
             </Grid>
           </Grid>
         </LocalizationProvider>
@@ -217,8 +294,10 @@ const ViewProject = () => {
               color="success"
               onClick={handleUpdate}
               sx={{ fontWeight: 600 }}
+              disabled={updateLoading}
+              startIcon={updateLoading && <CircularProgress size={20} color="inherit" />}
             >
-              Update
+              {updateLoading ? "Updating..." : "Update"}
             </Button>
           )}
           <Button
@@ -232,14 +311,19 @@ const ViewProject = () => {
         </Box>
       </Paper>
 
+      {/* SNACKBAR */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={2500}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
-          Update successfully!
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>

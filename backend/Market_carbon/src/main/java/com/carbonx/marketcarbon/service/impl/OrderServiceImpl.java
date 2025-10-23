@@ -10,6 +10,7 @@ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.OrderService;
+import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +35,7 @@ public class OrderServiceImpl implements OrderService {
     private final CompanyRepository companyRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
+    private final WalletService  walletService;
 
     // helper find user login
     private User currentUser(){
@@ -81,6 +84,7 @@ public class OrderServiceImpl implements OrderService {
                 .marketplaceListing(listing)
                 .carbonCredit(listing.getCarbonCredit())
                 .orderType(OrderType.BUY)
+                .orderStatus(OrderStatus.PENDING)
                 .quantity(request.getQuantity())
                 .unitPrice(unitPrice)
                 .totalPrice(totalPrice)
@@ -99,7 +103,6 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    @Transactional
     @Override
     public OrderResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(
@@ -150,7 +153,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void completeOrder(Long orderId) {
-        // B1 find infor of order and lock to process safe
+        // B1: Lấy thông tin đơn hàng và kiểm tra trạng thái trước khi xử lý
         Order order = orderRepository.findById(orderId).orElseThrow(
                 () -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
@@ -158,46 +161,58 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.ORDER_IS_NOT_PENDING);
         }
 
-        //B2 get company buy , sell , listing
-        Company buyerCompany = order.getCompany();
+        // B2: Khóa bản ghi listing để đảm bảo nhất quán khi nhiều giao dịch cùng lúc
         MarketPlaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
+
+        // B3: Lấy thông tin bên mua, bên bán và khối tín chỉ đang được rao bán
+        Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
+        CarbonCredit sellerCredit = listing.getCarbonCredit();
 
         BigDecimal quantityToBuy = order.getQuantity();
         BigDecimal totalPrice= order.getTotalPrice();
 
-        //B3 check before process
-        if(listing.getQuantity().compareTo(quantityToBuy) <= 0){
-            order.setOrderStatus(OrderStatus.PENDING);
+        // B4: Kiểm tra số lượng còn lại trên sàn có đủ để đáp ứng đơn hay không
+        if(listing.getQuantity().compareTo(quantityToBuy) < 0){
+            order.setOrderStatus(OrderStatus.PENDING); // notify user
             orderRepository.save(order);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
-        // find wallet of company by user id
+        // B5: Lấy ví của bên mua và đảm bảo số dư đủ để thanh toán
         Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
 
-        if(buyerWallet.getBalance().compareTo(totalPrice) <= 0){
+        if(buyerWallet.getBalance().compareTo(totalPrice) < 0){
             order.setOrderStatus(OrderStatus.ERROR);
             orderRepository.save(order);
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
         }
 
-        // B4 start to process trading
-        // 4.1 send money
+        // B6: Bắt đầu xử lý giao dịch
+        // 6.1: Xác định ví của bên bán để ghi nhận tiền về
         Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
-        BigDecimal buyerWalletBalanceBefore = buyerWallet.getBalance();
-        BigDecimal sellerWalletBalanceBefore = sellerWallet.getBalance();
 
-        buyerWallet.setBalance(buyerWallet.getBalance().subtract(totalPrice));
-        sellerWallet.setBalance(sellerWallet.getBalance().add(totalPrice));
-
-        walletRepository.saveAll(List.of(buyerWallet, sellerWallet));
-
-        //4.2  transfer credit
+        // 6.2: Trừ số tín chỉ được mua khỏi tổng tín chỉ của người bán (bao gồm cả đang rao bán)
         CarbonCredit sourceCredit = listing.getCarbonCredit();
+        int currentListedAmount = sourceCredit.getListedAmount();
+        BigDecimal currentAvailableAmount = sourceCredit.getCarbonCredit(); // Số lượng không niêm yết
 
-        // Tìm hoặc tạo một khối tín chỉ mới cho người mua
+        // Số lượng niêm yết mới = số lượng niêm yết cũ - số lượng mua
+        int updatedListedAmount = currentListedAmount - quantityToBuy.intValueExact();
+        int safeListedAmount = Math.max(0, updatedListedAmount);
+
+
+        // Số lượng khả dụng mới (không niêm yết) = số lượng khả dụng cũ (không thay đổi trực tiếp ở đây vì đã trừ từ listing)
+        // Tổng số tín chỉ của người bán (cả niêm yết và không niêm yết) sẽ giảm sau giao dịch
+        // Tuy nhiên, việc cập nhật `carbonCredit` (số lượng không niêm yết) nên xảy ra khi niêm yết hoặc hủy niêm yết.
+        // Ở đây chỉ cần cập nhật `listedAmount`.
+        sourceCredit.setListedAmount(safeListedAmount);
+
+        carbonCreditRepository.save(sourceCredit);
+
+        // 6.3: Cộng tín chỉ cho bên mua, tái sử dụng lô cũ nếu có, tạo lô mới nếu chưa có
+        // Tạo creditCode mới và duy nhất cho người mua
         CarbonCredit buyerCredit = buyerCompany.getCarbonCredits().stream()
                 .filter(c -> c.getStatus() == CreditStatus.ISSUE)
                 .findFirst() // tim thay tin chi dau tien neu co
@@ -206,50 +221,65 @@ public class OrderServiceImpl implements OrderService {
                     CarbonCredit newCredit = new CarbonCredit();
                     // new credit copy attribute from sourceCredit
                     newCredit.setCompany(buyerCompany);
+                    newCredit.setProject(sourceCredit.getProject());
                     newCredit.setStatus(CreditStatus.ISSUE);
                     newCredit.setName(sourceCredit.getName());
                     newCredit.setCarbonCredit(BigDecimal.ZERO);
-                    newCredit.setAmount(0);
+                    newCredit.setListedAmount(0);// mua về chưa niêm yết
+                    newCredit.setIssuedAt(sourceCredit.getIssuedAt());
+                    newCredit.setCreditCode(generateUniqueCreditCode(sourceCredit));
                     return newCredit;
                 });
 
+        // Cộng số lượng mua vào lô tín chỉ của người mua (lô cũ hoặc lô mới)
+        // Chỉ cập nhật số lượng không niêm yết (carbonCredit)
         buyerCredit.setCarbonCredit(buyerCredit.getCarbonCredit().add(quantityToBuy));
-        carbonCreditRepository.save(buyerCredit);
+        carbonCreditRepository.save(buyerCredit); // Lưu lại thông tin lô tín chỉ của người mua
 
-        //4.3 update listing
+        // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
         if(listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0){
             listing.setStatus(ListingStatus.SOLD);
         }
         marketplaceListingRepository.save(listing);
 
-        //4.4 update status order
+        // 6.5: Đánh dấu đơn hàng hoàn tất thành công
         order.setOrderStatus(OrderStatus.SUCCESS);
         orderRepository.save(order);
 
-        //5 log wallet transaction
-        // log buyer wallet
+        // B7: Ghi nhận lịch sử giao dịch ví cho cả hai bên
+        // 7.1: Ghi nhận trừ tiền bên mua
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
-                        .wallet(buyerWallet)
-                        .order(order)
-                        .type(WalletTransactionType.BUY_CARBON_CREDIT)
-                        .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
-                        .balanceBefore(buyerWalletBalanceBefore)
-                        .balanceAfter(buyerWallet.getBalance())
-                        .amount(totalPrice.negate()) // money subtract
+                .wallet(buyerWallet)
+                .order(order)
+                .type(WalletTransactionType.BUY_CARBON_CREDIT)
+                .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
+                .amount(totalPrice.negate())
                 .build());
 
-        // log seller wallet
+        // 7.2: Ghi nhận cộng tiền cho bên bán
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
-                        .wallet(sellerWallet)
-                        .order(order)
-                        .type(WalletTransactionType.SELL_CARBON_CREDIT)
-                        .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
-                        .balanceBefore(sellerWalletBalanceBefore)
-                        .balanceAfter(sellerWallet.getBalance())
-                        .amount(totalPrice.negate())
+                .wallet(sellerWallet)
+                .order(order)
+                .type(WalletTransactionType.SELL_CARBON_CREDIT)
+                .description("Sell" + quantityToBuy + "credits from" + buyerCompany.getCompanyName())
+                .amount(totalPrice)
                 .build());
     }
 
+
+
+
+    // Helper method to generate a unique credit code (can be customized)
+    private String generateUniqueCreditCode(CarbonCredit referenceCredit){
+        // Example: Use a simple prefix + UUID
+        String prefix = "TRADED"; // Indicate it's a traded credit
+        String candidate;
+        do {
+            // Generate a random part and check for uniqueness
+            candidate = prefix + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        } while (!carbonCreditRepository.findByCreditCode(candidate).isEmpty()); // Ensure it's unique in the DB
+        return candidate;
+    }
 
 }

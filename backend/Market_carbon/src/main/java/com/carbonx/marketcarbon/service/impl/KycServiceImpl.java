@@ -54,7 +54,7 @@ public class KycServiceImpl implements KycService {
         String email = user.getEmail();
 
         if(EVOwnerRepository.existsByUserId(user.getId()))
-            throw new ResourceNotFoundException("KYC exists" + user.getId());
+            throw new ResourceNotFoundException("KYC exists with this profile : " + user.getEmail());
 
         // B1 Lấy data từ request vào object
         EVOwner evOwner = EVOwner.builder()

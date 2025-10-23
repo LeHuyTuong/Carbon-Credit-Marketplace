@@ -1,90 +1,114 @@
-import { Box, Typography, useTheme } from "@mui/material";
+// src/scenes/admin/EVList.jsx
+import { Box, Typography, useTheme, CircularProgress, Snackbar, Alert } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
+import { useState, useEffect } from "react";
+import "@/styles/actionadmin.scss";
+import { getVehicles } from "@/apiAdmin/EVAdmin.js";
 
-import { mockDataEV } from "@/data/mockData";
-
-const Invoices = () => {
+const EVList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  // lưu dữ liệu (để có thể xóa hàng)
-  const [data, setData] = useState(mockDataEV);
+  // states
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pageNo, setPageNo] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [error, setError] = useState("");
 
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await getVehicles(pageNo, pageSize);
+
+        //  đọc đúng key `data` từ API
+        const items = res?.data || [];
+
+        setData(
+          items.map((v, index) => ({
+            ...v,
+            id: v.id ?? `${pageNo}-${index}`, // fallback id
+          }))
+        );
+
+        // Tổng số rows = totalPages * pageSize nếu backend trả totalPages
+        const totalRows = res?.totalPages > 0 ? res.totalPages * res.pageSize : items.length;
+        setTotalCount(totalRows);
+
+      } catch (err) {
+        console.error(" Failed to fetch vehicles:", err);
+        setError("Failed to load vehicles");
+        setData([]);
+        setTotalCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [pageNo, pageSize]);
+
+  // table columns
   const columns = [
-    { field: "id", headerName: "" },
-    { field: "evid", headerName: "EV ID", flex: 1 },
-
-    {
-      field: "numberplate",
-      headerName: "Number Plate",
-      flex: 1,
-    },
-    {
-      field: "vehiclebrand",
-      headerName: "Vehicle Brand",
-      flex: 1,
-    },
-    {
-      field: "vehiclemodel",
-      headerName: "Vehicle Model",
-      flex: 1,
-    },
-    {
-      field: "yearofmanufacture",
-      headerName: " Year of manufacture",
-      flex: 1,
-    },
-    {
-      field: "aggregator",
-      headerName: "Company",
-      flex: 1,
-      cellClassName: "name-column--cell",
-    },
+    { field: "id", headerName: "ID", width: 90 },
+    { field: "plateNumber", headerName: "Number Plate", flex: 1 },
+    { field: "brand", headerName: "Brand", flex: 1 },
+    { field: "model", headerName: "Model", flex: 1 },
+    { field: "companyId", headerName: "Company ID", flex: 1 },
     {
       field: "status",
       headerName: "Status",
       flex: 1,
+      renderCell: (params) => (
+        <Typography
+          color={
+            params.value === "active"
+              ? colors.greenAccent[400]
+              : params.value === "inactive"
+              ? colors.redAccent[400]
+              : colors.grey[200]
+          }
+        >
+          {params.value || "—"}
+        </Typography>
+      ),
     },
     {
       field: "action",
       headerName: "Action",
       flex: 1,
-      renderCell: (params) => {
-        return (
-          <div className="cellAction">
-            <Link
-              to={`/admin/view_EV/${params.row.id}`}
-              style={{ textDecoration: "none" }}
-            >
-              <div className="viewButton">View</div>
-            </Link>
-          </div>
-        );
-      },
+      sortable: false,
+      renderCell: (params) => (
+        <div className="cellAction">
+          <Link
+            to={`/admin/view_EV/${params.row.id}`}
+            style={{ textDecoration: "none" }}
+          >
+            <div className="viewButton">View</div>
+          </Link>
+        </div>
+      ),
     },
   ];
 
   return (
     <Box m="20px" className="actionadmin">
       <Header title="ELECTRIC VEHICLES" subtitle="List of electric vehicles" />
+
       <Box
         m="40px 0 0 0"
         height="75vh"
         sx={{
-          "& .MuiDataGrid-root": {
-            border: "none",
-          },
-          "& .MuiDataGrid-cell": {
-            borderBottom: "none",
-          },
-          "& .name-column--cell": {
-            color: colors.greenAccent[300],
-          },
+          "& .MuiDataGrid-root": { border: "none" },
+          "& .MuiDataGrid-cell": { borderBottom: "none" },
+          "& .name-column--cell": { color: colors.greenAccent[300] },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -96,32 +120,47 @@ const Invoices = () => {
             borderTop: "none",
             backgroundColor: colors.blueAccent[700],
           },
-          "& .MuiCheckbox-root": {
-            color: `${colors.greenAccent[200]} !important`,
-          },
-          "& .MuiTablePagination-root": {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-          },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
-            {
-              marginTop: 0,
-              marginBottom: 0,
-              lineHeight: "normal",
-            },
-          "& .MuiTablePagination-select": {
-            marginTop: "0 !important",
-            marginBottom: "0 !important",
-            paddingTop: "0 !important",
-            paddingBottom: "0 !important",
-          },
         }}
       >
-        <DataGrid checkboxSelection rows={data} columns={columns} />
+        {loading ? (
+          <Box
+            height="100%"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={data}
+            columns={columns}
+            paginationMode="server" // server-side pagination
+            rowCount={totalCount}
+            pagination
+            pageSizeOptions={[10, 20, 50]}
+            paginationModel={{ page: pageNo, pageSize }}
+            onPaginationModelChange={(model) => {
+              setPageNo(model.page);
+              setPageSize(model.pageSize);
+            }}
+          />
+        )}
       </Box>
+
+      {/* Snackbar báo lỗi */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={() => setError("")}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setError("")}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
-export default Invoices;
+export default EVList;

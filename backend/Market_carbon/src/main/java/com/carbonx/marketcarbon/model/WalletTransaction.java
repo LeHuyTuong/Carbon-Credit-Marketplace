@@ -1,11 +1,9 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -15,14 +13,16 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class WalletTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "wallet_id", nullable = false)
+    @JsonBackReference
     private Wallet wallet;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,10 +36,10 @@ public class WalletTransaction {
     @Column(length = 500)
     private String description;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(precision = 18, scale = 2)
     private BigDecimal balanceBefore;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column( precision = 18, scale = 2)
     private BigDecimal balanceAfter;
 
     @Column(nullable = false, precision = 18, scale = 2)
