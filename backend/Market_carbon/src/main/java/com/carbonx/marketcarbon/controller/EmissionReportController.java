@@ -190,14 +190,14 @@ public class EmissionReportController {
     @GetMapping("/my-reports")
     public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listMyReports(
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "projectId", required = false) Long projectId,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String date
     ) {
         String t = traceOrNew(trace);
         String now = dateOrNow(date);
 
-        List<EmissionReportResponse> data = service.listReportsForCompany(status);
-
+        List<EmissionReportResponse> data = service.listReportsForCompany(status, projectId);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "My reports fetched successfully");
         return ResponseEntity.ok(new TuongCommonResponse<>(now, t, rs, data));
     }
@@ -230,6 +230,7 @@ public class EmissionReportController {
             @PathVariable("id") Long reportId,
             @Valid @RequestBody CvaVerificationRequest req) {
         return service.verifyReportWithScore(reportId, req.verificationScore(), req.approved(), req.comment());
+
     }
 
 
