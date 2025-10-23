@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CarbonX – CVA Decision</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f7fb;
+      color: #111827;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+    }
+    .wrapper { padding: 24px; }
+    .card {
+      max-width: 640px; margin: 0 auto; background: #ffffff;
+      border-radius: 14px; box-shadow: 0 6px 24px rgba(17, 24, 39, .06);
+      overflow: hidden;
+    }
+    .header {
+      padding: 20px 24px; border-bottom: 1px solid #eef2f7;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo { width: 28px; height: 28px; border-radius: 8px; background: #111827; }
+    .title { font-size: 16px; font-weight: 600; }
+    .content { padding: 24px; }
+    .badge {
+      display: inline-block; padding: 6px 10px; border-radius: 999px;
+      color: #fff; font-size: 12px; font-weight: 600; margin: 8px 0 16px;
+    }
+    .note {
+      background: #f9fafb; border: 1px solid #eef2f7;
+      border-radius: 10px; padding: 14px; margin: 16px 0; white-space: pre-wrap;
+    }
+    .cta {
+      display: inline-block; text-decoration: none;
+      background: #111827; color: #fff; padding: 12px 16px;
+      border-radius: 10px; font-weight: 600;
+    }
+    .footer {
+      padding: 18px 24px; color: #9ca3af; font-size: 12px;
+      border-top: 1px solid #eef2f7;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="card">
+    <div class="header">
+      <span class="logo"></span>
+      <div class="title">CarbonX · Application Update</div>
+    </div>
+    <div class="content">
+      <p><strong>Company:</strong> <span th:text="${companyName}">Company Name</span></p>
+      <span class="badge" th:text="${decision}" th:style="'background-color:' + ${badgeColor} + ';'">APPROVED</span>
+      <p><strong>Application ID:</strong> <span th:text="${applicationId}">123</span></p>
+      <p><strong>Project:</strong> <span th:text="${projectName}">EV Replacement Program</span></p>
+      <p><strong>Reviewer:</strong> <span th:text="${reviewerName}">CVA Officer</span></p>
+      <div class="note" th:text="${reviewNote}">Your application meets the verification standards.</div>
+      <p style="margin-top: 20px;">
+      </p>
+    </div>
+    <div class="footer">
+      Thank you for participating in the CarbonX Project Approval Program.
+      Please keep this email for your records.
+    </div>
+  </div>
+</div>
+</body>
+</html>

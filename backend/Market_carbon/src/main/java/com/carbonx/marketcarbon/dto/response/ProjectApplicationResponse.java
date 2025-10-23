@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Data
@@ -24,7 +25,7 @@ public class ProjectApplicationResponse {
     private String finalReviewNote;
     private String applicationDocsPath;
     private String applicationDocsUrl;
-    private OffsetDateTime submittedAt;
+    private LocalDateTime submittedAt;
 
     public static ProjectApplicationResponse fromEntity(ProjectApplication app) {
         return ProjectApplicationResponse.builder()
@@ -42,3 +43,4 @@ public class ProjectApplicationResponse {
                 .build();
     }
 }
+

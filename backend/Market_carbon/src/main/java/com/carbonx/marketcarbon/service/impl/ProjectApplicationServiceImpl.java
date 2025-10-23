@@ -5,8 +5,10 @@ import com.carbonx.marketcarbon.dto.request.ProjectApplicationRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectApplicationResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
+import com.carbonx.marketcarbon.helper.notification.ApplicationNotificationService;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
+import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.FileStorageService;
 import com.carbonx.marketcarbon.service.ProjectApplicationService;
 import jakarta.transaction.Transactional;
@@ -19,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -35,6 +38,8 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
     private final AdminRepository adminRepository;
     private  final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final EmailService emailService;
+    private final ApplicationNotificationService notificationService;
 
     @Override
     public ProjectApplicationResponse submit(Long projectId, MultipartFile file) {
@@ -54,9 +59,14 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        boolean exists = applicationRepository.existsByCompanyAndProject(company, project);
+        boolean exists = applicationRepository.existsByCompanyAndProjectAndStatusIn(company, project,
+                List.of( ApplicationStatus.SUBMITTED,
+                        ApplicationStatus.UNDER_REVIEW,
+                        ApplicationStatus.CVA_APPROVED,
+                        ApplicationStatus.NEEDS_REVISION)
+                );
         if (exists) {
-            throw new AppException(ErrorCode.APPLICATION_EXISTED);
+            throw new AppException(ErrorCode.APPLICATION_PROCESSING);
         }
 
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "application.pdf";
@@ -69,7 +79,7 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .applicationDocsPath(put.key())
                 .applicationDocsUrl(put.url())
                 .status(ApplicationStatus.UNDER_REVIEW)
-                .submittedAt(OffsetDateTime.now())
+                .submittedAt(LocalDateTime.now())
                 .build();
 
         applicationRepository.save(app);
@@ -77,7 +87,9 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
     }
 
     @Override
+    @Transactional
     public ProjectApplicationResponse cvaDecision(Long applicationId, boolean approved, String note) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -100,13 +112,29 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         app.setReviewer(reviewer);
         app.setReviewNote(note);
         app.setStatus(approved ? ApplicationStatus.CVA_APPROVED : ApplicationStatus.CVA_REJECTED);
+        app.setReviewedAt(LocalDateTime.now());
 
         ProjectApplication saved = applicationRepository.save(app);
+
+        Company company = app.getCompany();
+        Project project = app.getProject();
+        String reviewerName = reviewer.getName(); // hoặc getDisplayName()
+
+        notificationService.sendCvaDecision(
+                company.getUser().getEmail(),
+                company.getCompanyName(),
+                app.getId(),
+                project.getTitle(),
+                reviewerName,
+                approved,
+                note
+        );
+
         return ProjectApplicationResponse.fromEntity(saved);
     }
 
-
     @Override
+    @Transactional
     public ProjectApplicationResponse adminFinalDecision(Long applicationId, boolean approved, String note) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -129,6 +157,21 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         app.setStatus(approved ? ApplicationStatus.ADMIN_APPROVED : ApplicationStatus.ADMIN_REJECTED);
 
         ProjectApplication saved = applicationRepository.save(app);
+
+        Company company = app.getCompany();
+        Project project = app.getProject();
+        String reviewerName = admin.getName();
+
+        notificationService.sendAdminDecision(
+                company.getUser().getEmail(),
+                company.getCompanyName(),
+                app.getId(),
+                project.getTitle(),
+                reviewerName,
+                approved,
+                note
+        );
+
         return ProjectApplicationResponse.fromEntity(saved);
     }
 

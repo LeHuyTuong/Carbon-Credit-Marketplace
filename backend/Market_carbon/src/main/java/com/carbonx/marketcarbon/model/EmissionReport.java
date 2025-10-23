@@ -84,6 +84,21 @@ public class EmissionReport {
     OffsetDateTime approvedAt;
     OffsetDateTime updatedAt;
 
+    @Column(name = "ai_pre_score", precision = 4, scale = 2)
+    BigDecimal aiPreScore;
+
+    @Column(name = "ai_version", length = 16)
+    String aiVersion;
+
+    @Column(name = "ai_pre_notes", columnDefinition = "text")
+    String aiPreNotes;
+
+    @Column(name = "verification_score", precision = 4, scale = 2)
+    BigDecimal verificationScore;
+
+    @Column(name = "verification_comment", columnDefinition = "text")
+    String verificationComment;
+
     @PrePersist
     void prePersist() {
         if (source == null || source.isBlank()) source = "CSV";
