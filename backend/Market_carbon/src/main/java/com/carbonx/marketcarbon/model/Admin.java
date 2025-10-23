@@ -44,4 +44,12 @@ public class Admin extends BaseEntity{
     @Column(length = 512)
     String avatarUrl;
 
+    public String getDisplayName() {
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        }
+        if (name != null) return name;
+        return user != null ? user.getEmail() : "Unknown Admin";
+    }
+
 }

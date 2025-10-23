@@ -15,6 +15,7 @@ import com.carbonx.marketcarbon.repository.EmissionReportDetailRepository;
 import com.carbonx.marketcarbon.repository.EmissionReportRepository;
 import com.carbonx.marketcarbon.repository.ProjectRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.service.AiScoringService;
 import com.carbonx.marketcarbon.service.EmissionReportService;
 import com.carbonx.marketcarbon.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private final EmissionReportDetailRepository detailRepository;
     private final UserRepository userRepository;
     private final FileStorageService storage;
+    private final AiScoringService aiScoringService;
 
     // Hệ số phát thải mặc định nếu CSV không có cột CO2
     private static final BigDecimal DEFAULT_EF_KG_PER_KWH = new BigDecimal("0.4");
@@ -99,15 +101,15 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             Set<String> headers = parser.getHeaderMap().keySet();
 
             // Các header cần/tuỳ chọn
-            String projectHeader = requireHeader(headers, "project_id");                 // bắt buộc
-            String periodHeader = requireHeader(headers, "period");                     // bắt buộc
+            String projectHeader = requireHeader(headers, "project_id");
+            String periodHeader = requireHeader(headers, "period");
             String energyHeader = findHeader(headers,
                     "total_energy", "total_charging_energy", "charging_energy_total", "charging_energy");
             if (energyHeader == null) {
                 throw new AppException(ErrorCode.CSV_MISSING_TOTAL_ENERGY_OR_CHARGING);
             }
-            String co2Header = findHeader(headers, "co2_kg", "co2", "co2e_kg");     // tuỳ chọn
-            String vehicleIdHeader = findHeader(headers, "vehicle_id", "vehicle", "ev_id", "vin"); // khuyến nghị
+            String co2Header = findHeader(headers, "co2_kg", "co2", "co2e_kg");
+            String vehicleIdHeader = findHeader(headers, "vehicle_id", "vehicle", "ev_id", "vin");
 
             for (CSVRecord r : parser) {
                 // Kiểm tra project & period nhất quán
@@ -358,6 +360,50 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         return details.stream()
                 .map(EmissionReportDetailResponse::from)
                 .toList();
+    }
+
+    @Override
+    public EmissionReportResponse aiSuggestScore(Long reportId) {
+        EmissionReport r = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        // chỉ CVA/ADMIN được phép gợi ý
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities().stream().noneMatch(a ->
+                a.getAuthority().equals("ROLE_CVA") || a.getAuthority().equals("ROLE_ADMIN"))) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        var details = detailRepository.findByReport(r);
+        AiScoringService.AiScoreResult rs = aiScoringService.suggestScore(r, details);
+
+        r.setAiPreScore(rs.score());
+        r.setAiPreNotes(rs.notes());
+        r.setAiVersion(rs.version());
+        r.setUpdatedAt(OffsetDateTime.now());
+        reportRepository.save(r);
+
+        return EmissionReportResponse.from(r);
+    }
+
+    @Override
+    public EmissionReportResponse verifyReportWithScore(Long reportId, BigDecimal score, boolean approved, String comment) {
+        EmissionReport r = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User verifier = Optional.ofNullable(userRepository.findByEmail(email))
+                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
+        r.setVerifiedBy(verifier);
+        r.setVerifiedAt(OffsetDateTime.now());
+        r.setVerificationScore(score);
+        r.setVerificationComment(comment);
+        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
+        r.setUpdatedAt(OffsetDateTime.now());
+        reportRepository.save(r);
+
+        return EmissionReportResponse.from(r);
     }
 
 
