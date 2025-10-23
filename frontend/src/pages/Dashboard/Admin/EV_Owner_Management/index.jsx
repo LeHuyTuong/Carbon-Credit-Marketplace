@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllUsers } from "@/apiAdmin/userAdmin.js";
 
-const CompanyTeam = () => {
+const EvOwnerTeam = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [data, setData] = useState([]);
@@ -19,7 +19,7 @@ const CompanyTeam = () => {
         const response = await getAllUsers();
         if (response?.responseData) {
           const users = response.responseData
-            .filter((u) => u.roles?.[0]?.name?.toUpperCase() === "COMPANY")
+            .filter((u) => u.roles?.[0]?.name?.toUpperCase() === "EV_OWNER")
             .map((u, index) => ({
               id: index + 1,
               userid: u.id,
@@ -31,7 +31,7 @@ const CompanyTeam = () => {
           setData(users);
         }
       } catch (err) {
-        console.error("Error fetching Companies:", err);
+        console.error("Error fetching EV Owners:", err);
       }
     }
 
@@ -64,7 +64,7 @@ const CompanyTeam = () => {
       flex: 0.8,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/companies_view/${params.row.email}`} style={{ textDecoration: "none" }}>
+          <Link to={`/admin/ev_owner_view/${params.row.email}`} style={{ textDecoration: "none" }}>
             <div className="viewButton">View</div>
           </Link>
         </div>
@@ -74,7 +74,7 @@ const CompanyTeam = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="COMPANIES" subtitle="Managing Company Accounts" />
+      <Header title="EV OWNERS" subtitle="Managing EV Owner Accounts" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -99,4 +99,4 @@ const CompanyTeam = () => {
   );
 };
 
-export default CompanyTeam;
+export default EvOwnerTeam;

@@ -1,3 +1,4 @@
+// ===================== ViewEvOwner.jsx =====================
 import {
   Box,
   Typography,
@@ -10,21 +11,16 @@ import {
   useTheme,
   Snackbar,
   Alert,
-  Select,
-  MenuItem,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { useState, useEffect, useMemo } from "react";
 import { getUserByEmail, updateUser } from "@/apiAdmin/userAdmin.js";
 
-const ACCESS_TO_ROLE = { company: "COMPANY" };
-const ROLE_TO_ACCESS = { COMPANY: "company" };
-
-const ViewUserCompany = () => {
+const ViewEvOwner = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
@@ -45,36 +41,25 @@ const ViewUserCompany = () => {
     }
   };
 
+  // ===================== FETCH USER =====================
   useEffect(() => {
     async function fetchUser() {
       setLoading(true);
       try {
         const res = await getUserByEmail(email);
         const data = res?.responseData;
-        if (!data) throw new Error("No user data found");
-
-        const primaryRole =
-          Array.isArray(data.roles) && data.roles.length
-            ? data.roles[0].name
-            : "COMPANY";
-        const access = ROLE_TO_ACCESS[primaryRole] ?? "company";
-
-        const companyName =
-          data.wallet?.carbonCredit?.company?.companyName ||
-          data.company?.companyName ||
-          "";
+        if (!data) throw new Error("No user data found in responseData");
 
         const uiUser = {
           id: data.id ?? "",
           name: data.name || data.fullName || "",
           email: data.email || "",
           phone: data.phone || "",
-          access,
           status: data.status || "ACTIVE",
-          createdAt: data.createdAt || "",
+          createdAt: data.createdAt || data.createAt || "",
           country: data.country || "",
           city: data.city || "",
-          company: companyName,
+          access: "ev_owner",
         };
 
         setUser(uiUser);
@@ -98,12 +83,12 @@ const ViewUserCompany = () => {
       if (!u) return "User is empty";
       if (!u.name?.trim()) return "Full Name is required";
       if (!u.email?.trim()) return "Email is required";
-      if (u.access !== "company") return "Invalid role for Company";
       if (!["ACTIVE", "INACTIVE"].includes(u.status)) return "Invalid status";
       return null;
     };
   }, []);
 
+  // ===================== HANDLE UPDATE =====================
   const handleUpdate = async () => {
     const err = validateBeforeUpdate(editedUser);
     if (err) {
@@ -117,10 +102,9 @@ const ViewUserCompany = () => {
       name: editedUser.name,
       phone: editedUser.phone || null,
       status: editedUser.status,
-      roles: [{ name: ACCESS_TO_ROLE[editedUser.access] }],
+      roles: [{ name: "EV_OWNER" }],
       country: editedUser.country || null,
       city: editedUser.city || null,
-      companyName: editedUser.company || null,
     };
 
     try {
@@ -137,9 +121,11 @@ const ViewUserCompany = () => {
   if (loading) return <Typography>Loading...</Typography>;
   if (!user) return <Typography>User not found</Typography>;
 
+  // ===================== UI =====================
   return (
     <Box m="20px">
-      <Header title="COMPANY USER DETAILS" subtitle="View or edit company user information" />
+      <Header title="EV OWNER DETAILS" subtitle="View or edit your profile information" />
+
       <Paper
         elevation={2}
         sx={{
@@ -149,9 +135,10 @@ const ViewUserCompany = () => {
           color: colors.grey[100],
         }}
       >
+        {/* HEADER BUTTONS */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
-            Company Profile
+            Profile Information
           </Typography>
 
           {!editMode ? (
@@ -204,14 +191,18 @@ const ViewUserCompany = () => {
               {user.name || "(No name)"}
             </Typography>
             <Typography variant="body2" color={colors.grey[300]}>
-              {editedUser.access.toUpperCase()}
+              EV Owner
             </Typography>
           </Box>
         </Box>
 
         <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
 
-        {/* COMPANY DETAILS */}
+        {/* PERSONAL DETAILS */}
+        <Typography variant="h6" fontWeight="bold" mb={2}>
+          Personal Details
+        </Typography>
+
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={6}>
             <TextField
@@ -243,25 +234,18 @@ const ViewUserCompany = () => {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TextField
-              label="Company Name"
-              fullWidth
-              value={editedUser.company || ""}
-              InputProps={{ readOnly: !editMode }}
-              onChange={(e) => handleChange("company", e.target.value)}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
             {editMode ? (
-              <Select
+              <TextField
+                select
+                label="Status"
                 fullWidth
+                SelectProps={{ native: true }}
                 value={editedUser.status}
                 onChange={(e) => handleChange("status", e.target.value)}
               >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-              </Select>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </TextField>
             ) : (
               <TextField
                 label="Status"
@@ -307,11 +291,12 @@ const ViewUserCompany = () => {
           </Grid>
         </Grid>
 
+        {/* BUTTON BACK */}
         <Box display="flex" justifyContent="flex-end" mt={4}>
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/admin/companies_management")}
+            onClick={() => navigate("/admin/ev_owner_management")}
             sx={{
               borderColor: colors.blueAccent[400],
               color: colors.blueAccent[400],
@@ -323,6 +308,7 @@ const ViewUserCompany = () => {
         </Box>
       </Paper>
 
+      {/* SNACKBAR */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={3000}
@@ -335,11 +321,11 @@ const ViewUserCompany = () => {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          Company user updated successfully!
+          User information updated successfully!
         </Alert>
       </Snackbar>
     </Box>
   );
 };
 
-export default ViewUserCompany;
+export default ViewEvOwner;

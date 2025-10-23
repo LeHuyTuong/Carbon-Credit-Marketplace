@@ -2,14 +2,21 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.OrderStatus;
 import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.User;
+import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.repository.PaymentOrderRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.repository.WalletRepository;
+import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
+import com.carbonx.marketcarbon.service.WalletService;
+import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
@@ -18,7 +25,9 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,13 +37,17 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentOrderRepository paymentOrderRepository;
+    private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletTransactionService walletTransactionService;
+    private final UserRepository userRepository;
 
-    private final UserRepository  userRepository;
 
     @Value("${stripe.api.key}")
     private String stripeKey;
@@ -96,15 +109,48 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Boolean processPaymentOrder(PaymentOrder paymentOrder, String paymentId) {
-        if(paymentOrder.getStatus().equals(Status.PENDING)){
+    @Transactional
+    public Boolean processPaymentOrder(PaymentOrder order, String paymentId) {
+        // Nếu đơn đã xử lý rồi thì bỏ qua
+        if (order.getStatus() == Status.SUCCEEDED) {
+            log.warn("Payment order {} already processed.", order.getId());
+            return false;
+        }
 
-            paymentOrder.setStatus(Status.SUCCEEDED);
-            paymentOrderRepository.save(paymentOrder);
+        // Giả lập xác nhận thanh toán thành công (hoặc gọi API Stripe/VNPay thật ở đây)
+        boolean paymentConfirmed = true; // hoặc verifyPaymentFromGateway(paymentId)
+
+        if (paymentConfirmed) {
+            // Cập nhật trạng thái đơn
+            order.setStatus(Status.SUCCEEDED);
+            paymentOrderRepository.save(order);
+
+            // Lấy wallet của user
+            Wallet wallet = walletRepository.findByUserId(order.getUser().getId());
+            if (wallet == null) {
+                throw new ResourceNotFoundException("Wallet not found for user " + order.getUser().getId());
+            }
+
+            //  Chỉ tạo transaction nếu chưa tồn tại cho order này
+            if (!walletTransactionRepository.existsByPaymentOrder(order)) {
+                walletTransactionService.createTransaction(
+                        WalletTransactionRequest.builder()
+                                .wallet(wallet)
+                                .paymentOrder(order)
+                                .amount(BigDecimal.valueOf(order.getAmount()))
+                                .type(WalletTransactionType.ADD_MONEY)
+                                .description("Top-up from order #" + order.getId())
+                                .build()
+                );
+            } else {
+                log.warn("Transaction already exists for order {}", order.getId());
+            }
+
             return true;
         }
         return false;
     }
+
 
     @Override
     public PaymentOrderResponse createStripePaymentLink(PaymentOrderRequest request, Long orderId) throws StripeException {

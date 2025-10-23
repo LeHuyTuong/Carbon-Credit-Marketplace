@@ -3,7 +3,7 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.common.*;
 import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
-import com.carbonx.marketcarbon.dto.response.OrderResponse;
+import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
@@ -56,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public OrderResponse createOrder(OrderRequest request) {
+    public CreditTradeResponse createOrder(OrderRequest request) {
         User user = currentUser();
         Company buyerCompany = currentCompany(user);
 
@@ -94,7 +94,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         Order saveOrder = orderRepository.save(order);
-        return OrderResponse.builder()
+        return CreditTradeResponse.builder()
                 .id(saveOrder.getId())
                 .companyId(saveOrder.getCompany().getId())
                 .status(saveOrder.getOrderStatus())
@@ -104,11 +104,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse getOrderById(Long orderId) {
+    public CreditTradeResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(
                 () -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        return OrderResponse.builder()
+        return CreditTradeResponse.builder()
                 .id(order.getId())
                 .companyId(order.getCompany().getId())
                 .status(order.getOrderStatus())
@@ -118,12 +118,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderResponse> getUserOrders() {
+    public List<CreditTradeResponse> getUserOrders() {
         Company company = currentCompany(currentUser());
         List<Order> orders = orderRepository.findByCompany(company);
 
         return orders.stream()
-                .map(order -> OrderResponse.builder()
+                .map(order -> CreditTradeResponse.builder()
                         .id(order.getId())
                         .companyId(company.getId())
                         .status(order.getOrderStatus())
@@ -168,7 +168,6 @@ public class OrderServiceImpl implements OrderService {
         // B3: Lấy thông tin bên mua, bên bán và khối tín chỉ đang được rao bán
         Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
-        CarbonCredit sellerCredit = listing.getCarbonCredit();
 
         BigDecimal quantityToBuy = order.getQuantity();
         BigDecimal totalPrice= order.getTotalPrice();
@@ -196,7 +195,6 @@ public class OrderServiceImpl implements OrderService {
         // 6.2: Trừ số tín chỉ được mua khỏi tổng tín chỉ của người bán (bao gồm cả đang rao bán)
         CarbonCredit sourceCredit = listing.getCarbonCredit();
         int currentListedAmount = sourceCredit.getListedAmount();
-        BigDecimal currentAvailableAmount = sourceCredit.getCarbonCredit(); // Số lượng không niêm yết
 
         // Số lượng niêm yết mới = số lượng niêm yết cũ - số lượng mua
         int updatedListedAmount = currentListedAmount - quantityToBuy.intValueExact();
@@ -211,30 +209,43 @@ public class OrderServiceImpl implements OrderService {
 
         carbonCreditRepository.save(sourceCredit);
 
+        // Trừ số dư tín chỉ tổng trong ví người bán
+        sellerWallet.setCarbonCreditBalance(
+                sellerWallet.getCarbonCreditBalance().subtract(quantityToBuy)
+        );
+        // Đảm bảo không âm
+        if (sellerWallet.getCarbonCreditBalance().compareTo(BigDecimal.ZERO) < 0) {
+            sellerWallet.setCarbonCreditBalance(BigDecimal.ZERO);
+        }
+        walletRepository.save(sellerWallet);
+
         // 6.3: Cộng tín chỉ cho bên mua, tái sử dụng lô cũ nếu có, tạo lô mới nếu chưa có
         // Tạo creditCode mới và duy nhất cho người mua
-        CarbonCredit buyerCredit = buyerCompany.getCarbonCredits().stream()
-                .filter(c -> c.getStatus() == CreditStatus.ISSUE)
-                .findFirst() // tim thay tin chi dau tien neu co
-                .orElseGet(() -> {  // khong co thi tao moi
-                    // code CHỈ CHẠY khi không tìm thấy lô nào có sẵn
-                    CarbonCredit newCredit = new CarbonCredit();
-                    // new credit copy attribute from sourceCredit
-                    newCredit.setCompany(buyerCompany);
-                    newCredit.setProject(sourceCredit.getProject());
-                    newCredit.setStatus(CreditStatus.ISSUE);
-                    newCredit.setName(sourceCredit.getName());
-                    newCredit.setCarbonCredit(BigDecimal.ZERO);
-                    newCredit.setListedAmount(0);// mua về chưa niêm yết
-                    newCredit.setIssuedAt(sourceCredit.getIssuedAt());
-                    newCredit.setCreditCode(generateUniqueCreditCode(sourceCredit));
-                    return newCredit;
-                });
+        CarbonCredit buyerCredit = carbonCreditRepository.findFirstByCompanyAndStatus(
+                buyerCompany, CreditStatus.ISSUE
+        ).orElseGet(() -> {  // Chỉ chạy khi không tìm thấy lô nào có sẵn
+            CarbonCredit newCredit = new CarbonCredit();
+            newCredit.setCompany(buyerCompany);
+            newCredit.setProject(sourceCredit.getProject());
+            newCredit.setStatus(CreditStatus.ISSUE);
+            newCredit.setName(sourceCredit.getName());
+            newCredit.setCarbonCredit(BigDecimal.ZERO);
+            newCredit.setListedAmount(0); // mua về chưa niêm yết
+            newCredit.setIssuedAt(sourceCredit.getIssuedAt());
+            newCredit.setCreditCode(generateUniqueCreditCode(sourceCredit));
+            return newCredit;
+        });
 
         // Cộng số lượng mua vào lô tín chỉ của người mua (lô cũ hoặc lô mới)
         // Chỉ cập nhật số lượng không niêm yết (carbonCredit)
         buyerCredit.setCarbonCredit(buyerCredit.getCarbonCredit().add(quantityToBuy));
         carbonCreditRepository.save(buyerCredit); // Lưu lại thông tin lô tín chỉ của người mua
+
+        // Cộng số dư tín chỉ tổng vào ví người mua
+        buyerWallet.setCarbonCreditBalance(
+                buyerWallet.getCarbonCreditBalance().add(quantityToBuy)
+        );
+        walletRepository.save(buyerWallet);
 
         // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
@@ -254,7 +265,7 @@ public class OrderServiceImpl implements OrderService {
                 .order(order)
                 .type(WalletTransactionType.BUY_CARBON_CREDIT)
                 .description("Buy" + quantityToBuy + "credits from" + sellerCompany.getCompanyName())
-                .amount(totalPrice.negate())
+                .amount(totalPrice)
                 .build());
 
         // 7.2: Ghi nhận cộng tiền cho bên bán

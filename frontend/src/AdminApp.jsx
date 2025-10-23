@@ -4,6 +4,12 @@ import TopBar from "./pages/Dashboard/Admin/global/Topbar";
 import Sidebar from "./pages/Dashboard/Admin/global/Sidebar";
 import Dashboard from "./pages/Dashboard/Admin/dashboard";
 import User_Management from "./pages/Dashboard/Admin/User_Management/index.jsx";
+import EV_Owner_Management from "./pages/Dashboard/Admin/EV_Owner_Management/index.jsx";
+import EV_Owner_View from "./pages/Dashboard/Admin/EV_Owner_Management/view.jsx";
+import Companies_Management from "./pages/Dashboard/Admin/Company_Management/index.jsx";
+import Companies_View from "./pages/Dashboard/Admin/Company_Management/view.jsx";
+import CVA_Management from "./pages/Dashboard/Admin/CVA_Management/index.jsx";
+import CVA_View from "./pages/Dashboard/Admin/CVA_Management/view.jsx";
 import Transaction_Management from "./pages/Dashboard/Admin/Transaction_Management/index.jsx";
 import Credit_Management from "./pages/Dashboard/Admin/Credit_Management/index.jsx";
 import Report_Management from "./pages/Dashboard/Admin/Report_Management/index.jsx";
@@ -18,9 +24,9 @@ import Report_View from "./pages/Dashboard/Admin/Report_Management/view.jsx";
 import EV_View from "./pages/Dashboard/Admin/EV_Management/view.jsx";
 import Project_View from "./pages/Dashboard/Admin/Project_Management/view.jsx";
 import New_Project from "./pages/Dashboard/Admin/Project_Management/newProject.jsx";
-import Company_Management from "./pages/Dashboard/Admin/Company_Management/index.jsx";
-import Company_View from "./pages/Dashboard/Admin/Company_Management/view.jsx";
-import Company_Edit from "./pages/Dashboard/Admin/Company_Management/edit.jsx";
+import Company_Management from "./pages/Dashboard/Admin/Application_Management/index.jsx";
+import Company_View from "./pages/Dashboard/Admin/Application_Management/view.jsx";
+import Company_Edit from "./pages/Dashboard/Admin/Application_Management/edit.jsx";
 import Bar from "./pages/Dashboard/Admin/bar";
 import Form from "./pages/Dashboard/Admin/form";
 import Line from "./pages/Dashboard/Admin/line";
@@ -49,6 +55,12 @@ function App() {
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user_management" element={<User_Management />} />
+              <Route path="/ev_owner_management" element={<EV_Owner_Management />} />
+              <Route path="/ev_owner_view/:email" element={<EV_Owner_View />} />
+              <Route path="/companies_management" element={<Companies_Management />} />
+              <Route path="/companies_view/:email" element={<Companies_View />} />
+              <Route path="/cva_management" element={<CVA_Management />} />
+              <Route path="/cva_view/:email" element={<CVA_View />} />
               <Route path="/credit_management" element={<Credit_Management />} />
               <Route path="/transaction_management" element={<Transaction_Management />} />
               <Route path="/report_management" element={<Report_Management />} />
