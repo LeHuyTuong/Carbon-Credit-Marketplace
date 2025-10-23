@@ -100,7 +100,6 @@
 //                .company(company) // Gán tín chỉ này cho công ty sở hữu.
 //                .project(project) // Nguồn gốc dự án của tín chỉ.
 //                .status(CreditStatus.PENDING)// tình trạng ban đầu là PENDING (Chờ duyệt). Admin sẽ cần phê duyệt để chuyển sang ISSUED (Đã cấp).
-//                .amount(totalCredits.intValue())//  số tín chỉ là kiểu số nguyên không tách rời
 //                .name("Credits from " + project.getTitle() + " - " + LocalDate.now().getYear()) // xác định năm phát sinh của tín chỉ
 //                //tạo mã định danh duy nhất cho lô tín chỉ này, bao gồm ID dự án, ID công ty và thời gian tạo để đảm bảo không trùng lặp.
 //                .creditCode("CC-"+ project.getId() +"-" + company.getId() + "-"+ System.currentTimeMillis())
@@ -121,7 +120,7 @@
 //                .orElseThrow(() -> new AppException(ErrorCode.ADMIN_NOT_FOUND));
 //
 //        //B3 tim project theo company
-//        Project p = projectRepository.findByIdWithCompany(projectId)
+//        ProjectApplication p = projectRepository.findByIdWithCompany(projectId)
 //                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 //
 //        //Neu project chua duoc CVA Approved thi khong cho
@@ -149,9 +148,10 @@
 //                .title(saveProject.getTitle())
 //                .description(saveProject.getDescription())
 //                .status(saveProject.getStatus())
-//                .createdAt(saveProject.getCreateAt())
-//                .companyName(saveProject.getCompany() != null ? saveProject.getCompany().getCompanyName() : null)
-//                .reviewer(saveProject.getReviewer())
+//                .commitments(saveProject.getCommitments())
+//                .technicalIndicators(saveProject.getTechnicalIndicators())
+//                .measurementMethod(saveProject.getMeasurementMethod())
+//                .legalDocsUrl(saveProject.getLegalDocsUrl())
 //                .build();
 //    }
 //

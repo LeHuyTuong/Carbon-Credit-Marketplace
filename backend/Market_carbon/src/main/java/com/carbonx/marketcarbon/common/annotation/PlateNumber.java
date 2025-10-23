@@ -11,7 +11,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PlateNumber {
-    String message() default "Invalid Plate Number";
+    String message() default "Invalid Plate Number , Plate Number like a Format : 11A-52XXX";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

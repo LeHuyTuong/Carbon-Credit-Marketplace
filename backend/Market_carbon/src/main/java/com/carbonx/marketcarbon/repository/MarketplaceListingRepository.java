@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceListing,Long> {
     // Tìm các niêm yết còn hoạt động (chưa hết hạn và còn hàng)
     List<MarketPlaceListing> findByStatusAndExpiresAtAfter(ListingStatus status, LocalDateTime now);

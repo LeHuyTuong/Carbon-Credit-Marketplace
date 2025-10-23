@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -122,13 +123,36 @@ public class GlobalExceptionHandler {
                 .body(buildErrorResponse("500", errorMsg));
     }
 
-    // 400 - Validation
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<CommonResponse<Object>> HandlerMethodValidationException(Exception ex) {
-        log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildErrorResponse("400", errorMsg));
+    public ResponseEntity<CommonResponse<Object>> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
+        log.error("Validation error at handler method: {}", ex.getMessage());
+
+        // Trích xuất chi tiết lỗi validation từ HandlerMethodValidationException
+        String detailedMessage = ex.getAllValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream())
+                .map(error -> {
+                    // Cố gắng lấy thông tin FieldError để có tên trường và message cụ thể
+                    if (error instanceof FieldError fieldError) {
+                        // Loại bỏ tiền tố không cần thiết (thường là tên parameter + "data.")
+                        String fieldName = fieldError.getField();
+                        if (fieldName.contains(".")) {
+                            fieldName = fieldName.substring(fieldName.lastIndexOf('.') + 1);
+                        }
+                        return fieldName + ": " + fieldError.getDefaultMessage();
+                    }
+                    // Nếu không phải FieldError, lấy message mặc định
+                    return error.getDefaultMessage();
+                })
+                .collect(Collectors.joining("; "));
+
+        // Fallback nếu không trích xuất được message chi tiết
+        if (detailedMessage.isBlank()) {
+            detailedMessage = "Validation failure";
+        }
+
+        // Sử dụng hàm buildErrorResponse hiện có của bạn
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse(String.valueOf(HttpStatus.BAD_REQUEST.value()), detailedMessage));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

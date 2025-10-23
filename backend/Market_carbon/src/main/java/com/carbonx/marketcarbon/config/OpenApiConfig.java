@@ -1,5 +1,7 @@
 package com.carbonx.marketcarbon.config;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -12,6 +14,12 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
+@SecurityScheme(
+        name = "bearerAuth",                 // tên scheme (dùng trong controller nếu cần)
+        type = SecuritySchemeType.HTTP,      // kiểu HTTP
+        scheme = "bearer",                   // định nghĩa Bearer
+        bearerFormat = "JWT"                 // format JWT
+)
 public class OpenApiConfig {
 
     @Bean

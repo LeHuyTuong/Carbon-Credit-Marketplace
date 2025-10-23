@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long> {
@@ -14,4 +16,6 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     // Phương thức này dùng để tìm lô tín chỉ có sẵn của một công ty,
     Optional<CarbonCredit> findByCompanyAndStatus(Company owner, CreditStatus status);
     Page<CarbonCredit> findByStatus(CreditStatus status, Pageable pageable);
+    // Explicitly return a List to resolve type ambiguity
+    List<CarbonCredit> findByCreditCode(String creditCode);
 }

@@ -1,14 +1,18 @@
-import React from "react";
+import React, { useRef } from "react";
 import bg from "../../assets/background.jpg";
 import { useAuth } from "../../context/AuthContext.jsx";
-
+import useReveal from "../../hooks/useReveal.js";
 export default function Hero() {
   const { isAuthenticated } = useAuth(); //lấy trạng thái login
+  const sectionRef = useRef(null);
+
+  useReveal(sectionRef);
 
   return (
     <header
       id="top"
-      className="auth-hero hero min-vh-100 d-flex align-items-center"
+      ref={sectionRef}
+      className="auth-hero reveal hero min-vh-100 d-flex align-items-center"
       style={{ "--bg-url": `url(${bg})` }}
     >
       <div className="container">
