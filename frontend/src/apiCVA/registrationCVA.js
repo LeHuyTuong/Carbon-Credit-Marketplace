@@ -1,7 +1,7 @@
 import { apiFetch } from "@/utils/apiFetch";
 
 /**
- * 🔹 Lấy danh sách tất cả project applications
+ * 
  */
 export const getProjectApplications = async () => {
   try {
@@ -10,16 +10,16 @@ export const getProjectApplications = async () => {
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
-      // ✅ Chọn đúng mảng data từ responseData hoặc response
+      //  Chọn đúng mảng data từ responseData hoặc response
       const data = res.responseData || res.response || [];
-      console.log("✅ Project Applications API:", data);
+      console.log(" Project Applications API:", data);
       return data;
     } else {
-      console.warn("⚠️ API returned non-success code:", code);
+      console.warn(" API returned non-success code:", code);
       return [];
     }
   } catch (error) {
-    console.error("❌ Error fetching project applications:", error);
+    console.error(" Error fetching project applications:", error);
     return [];
   }
 };
@@ -36,7 +36,7 @@ export async function getProjectApplicationByIdForCVA(id) {
 }
 
 /**
- * 🔹 Cập nhật quyết định duyệt/không duyệt application
+ *  Cập nhật quyết định duyệt/không duyệt application
  */
 export async function updateApplicationDecision(applicationId, payload) {
   const query = new URLSearchParams({

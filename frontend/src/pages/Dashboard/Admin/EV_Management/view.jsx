@@ -13,14 +13,12 @@ import {
   useTheme,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DownloadIcon from "@mui/icons-material/Download";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataEV } from "@/data/mockData";
+import { getVehicles, updateVehicleById } from "@/apiAdmin/EVAdmin.js";
 
 const ViewEV = () => {
   const theme = useTheme();
@@ -28,31 +26,63 @@ const ViewEV = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // lấy dữ liệu từ mock
-  const [data, setData] = useState(mockDataEV);
-  const [vehicle, setVehicle] = useState(() =>
-    data.find((v) => v.id === Number(id))
-  );
-
+  const [vehicle, setVehicle] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [editedVehicle, setEditedVehicle] = useState({ ...vehicle });
+  const [editedVehicle, setEditedVehicle] = useState({});
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [errorSnackbar, setErrorSnackbar] = useState("");
+
+  // Lấy dữ liệu vehicle từ API
+  useEffect(() => {
+    const fetchVehicle = async () => {
+      try {
+        const res = await getVehicles(0, 100); // hoặc fetch theo id riêng nếu có API get by ID
+        const found = res.data.find((v) => v.id === Number(id));
+        if (found) {
+          setVehicle(found);
+          setEditedVehicle({ ...found });
+        }
+      } catch (err) {
+        console.error("Failed to fetch vehicle:", err);
+        setErrorSnackbar("Failed to load vehicle data");
+      }
+    };
+    fetchVehicle();
+  }, [id]);
 
   const handleChange = (field, value) => {
     setEditedVehicle((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleUpdate = () => {
-    const updatedData = data.map((item) =>
-      item.id === vehicle.id ? editedVehicle : item
-    );
-    setData(updatedData);
-    setVehicle(editedVehicle);
-    localStorage.setItem("evData", JSON.stringify(updatedData));
+  const handleUpdate = async () => {
+    try {
+      await updateVehicleById(vehicle.id, {
+        plateNumber: editedVehicle.plateNumber,
+        brand: editedVehicle.brand,
+        model: editedVehicle.model,
+        companyId: editedVehicle.companyId,
+      });
 
-    setEditMode(false);
-    setOpenSnackbar(true);
+      setVehicle({ ...editedVehicle });
+      setEditMode(false);
+      setOpenSnackbar(true);
+    } catch (err) {
+      console.error("Update failed:", err);
+      setErrorSnackbar("Failed to update vehicle");
+    }
   };
+
+  if (!vehicle)
+    return (
+      <Box m="20px">
+        <Typography variant="h5" color="error">
+          Vehicle not found.
+        </Typography>
+        <Button variant="outlined" onClick={() => navigate("/admin/ev_management")}>
+          Back to List
+        </Button>
+      </Box>
+    );
 
   return (
     <Box m="20px">
@@ -67,7 +97,7 @@ const ViewEV = () => {
           color: colors.grey[100],
         }}
       >
-        {/* Header trong card */}
+        {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
             Vehicle Information
@@ -122,7 +152,7 @@ const ViewEV = () => {
             <TextField
               label="EV ID"
               fullWidth
-              value={editedVehicle.evid}
+              value={editedVehicle.id}
               InputProps={{ readOnly: true }}
             />
           </Grid>
@@ -131,8 +161,9 @@ const ViewEV = () => {
             <TextField
               label="Number Plate"
               fullWidth
-              value={editedVehicle.numberplate}
-              InputProps={{ readOnly: true }}
+              value={editedVehicle.plateNumber}
+              onChange={(e) => handleChange("plateNumber", e.target.value)}
+              InputProps={{ readOnly: !editMode }}
             />
           </Grid>
 
@@ -140,8 +171,9 @@ const ViewEV = () => {
             <TextField
               label="Vehicle Brand"
               fullWidth
-              value={editedVehicle.vehiclebrand}
-              InputProps={{ readOnly: true }}
+              value={editedVehicle.brand}
+              onChange={(e) => handleChange("brand", e.target.value)}
+              InputProps={{ readOnly: !editMode }}
             />
           </Grid>
 
@@ -149,85 +181,22 @@ const ViewEV = () => {
             <TextField
               label="Vehicle Model"
               fullWidth
-              value={editedVehicle.vehiclemodel}
-              InputProps={{ readOnly: true }}
+              value={editedVehicle.model}
+              onChange={(e) => handleChange("model", e.target.value)}
+              InputProps={{ readOnly: !editMode }}
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Year of Manufacture"
+              label="Company ID"
               fullWidth
-              value={editedVehicle.yearofmanufacture}
-              InputProps={{ readOnly: true }}
+              value={editedVehicle.companyId}
+              onChange={(e) => handleChange("companyId", Number(e.target.value))}
+              InputProps={{ readOnly: !editMode }}
             />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Company"
-              fullWidth
-              value={editedVehicle.aggregator}
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            {editMode ? (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Status
-                </Typography>
-                <Select
-                  fullWidth
-                  value={editedVehicle.status}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                >
-                  <MenuItem value="approved">Approved</MenuItem>
-                  <MenuItem value="rejected">Rejected</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                </Select>
-              </Box>
-            ) : (
-              <TextField
-                label="Status"
-                fullWidth
-                value={editedVehicle.status}
-                InputProps={{ readOnly: true }}
-              />
-            )}
           </Grid>
         </Grid>
-
-        {/* Driver License Section */}
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          Driver License
-        </Typography>
-        <Box display="flex" gap={2} mb={4}>
-          <Button
-            variant="contained"
-            startIcon={<VisibilityIcon />}
-            sx={{
-              textTransform: "none",
-              backgroundColor: colors.blueAccent[500],
-              "&:hover": { backgroundColor: colors.blueAccent[700] },
-            }}
-          >
-            View
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            sx={{
-              textTransform: "none",
-              borderColor: colors.greenAccent[400],
-              color: colors.greenAccent[400],
-              "&:hover": { borderColor: colors.greenAccent[300] },
-            }}
-          >
-            Download
-          </Button>
-        </Box>
 
         {/* Back Button */}
         <Box display="flex" justifyContent="flex-end">
@@ -246,20 +215,26 @@ const ViewEV = () => {
         </Box>
       </Paper>
 
-      {/* Snackbar thông báo */}
+      {/* Snackbar */}
       <Snackbar
-        open={openSnackbar}
+        open={openSnackbar || !!errorSnackbar}
         autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(false)}
+        onClose={() => {
+          setOpenSnackbar(false);
+          setErrorSnackbar("");
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity="success"
+          onClose={() => {
+            setOpenSnackbar(false);
+            setErrorSnackbar("");
+          }}
+          severity={openSnackbar ? "success" : "error"}
           variant="filled"
           sx={{ width: "100%" }}
         >
-          Vehicle updated successfully!
+          {openSnackbar ? "Vehicle updated successfully!" : errorSnackbar}
         </Alert>
       </Snackbar>
     </Box>

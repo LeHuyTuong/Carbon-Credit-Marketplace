@@ -119,7 +119,7 @@ const Sidebar = () => {
                   Tin Bao
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                 Super Admin
+                 Admin
                 </Typography>
               </Box>
             </Box>
