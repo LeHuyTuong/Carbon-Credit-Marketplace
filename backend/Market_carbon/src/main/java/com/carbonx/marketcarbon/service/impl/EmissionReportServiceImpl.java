@@ -406,6 +406,34 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         return EmissionReportResponse.from(r);
     }
 
+    @Override
+    public List<EmissionReportResponse> listReportsForCompany(String status, Long projectId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new AppException(ErrorCode.UNAUTHORIZED);
+
+        Company company = companyRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        List<EmissionReport> reports;
+
+        if (projectId != null && status != null && !status.isBlank()) {
+            EmissionStatus st = EmissionStatus.valueOf(status.toUpperCase());
+            reports = reportRepository.findBySeller_IdAndProject_IdAndStatus(company.getId(), projectId, st);
+        } else if (projectId != null) {
+            reports = reportRepository.findBySeller_IdAndProject_Id(company.getId(), projectId);
+        } else if (status != null && !status.isBlank()) {
+            EmissionStatus st = EmissionStatus.valueOf(status.toUpperCase());
+            reports = reportRepository.findBySeller_IdAndStatus(company.getId(), st);
+        } else {
+            reports = reportRepository.findBySeller_Id(company.getId());
+        }
+
+        return reports.stream().map(EmissionReportResponse::from).toList();
+    }
+
 
     private static String safeGet(CSVRecord r, String header) {
         String v = r.get(header);
