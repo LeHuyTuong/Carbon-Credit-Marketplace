@@ -44,23 +44,25 @@ public class EmissionReportController {
 
     @Operation(
             summary = "Upload emission report CSV (Company only)",
-            description = "Allows a company to upload a CSV file containing electricity usage data to generate an emission report automatically."
+            description = "Allows a company to upload a CSV file to generate an emission report. Accepts projectId as a form field; CSV may also contain project_id column. If both present, they must match."
     )
     @PreAuthorize("hasRole('COMPANY')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<EmissionReportResponse>> upload(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "projectId", required = false) Long projectId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
         String trace = traceOrNew(requestTrace);
         String now = dateOrNow(requestDateTime);
 
-        EmissionReportResponse data = service.uploadCsvAsReport(file);
+        EmissionReportResponse data = service.uploadCsvAsReport(file, projectId);
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Report uploaded successfully");
         return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
     }
+
 
     @Operation(
             summary = "List emission reports for CVA review",
@@ -230,8 +232,5 @@ public class EmissionReportController {
             @PathVariable("id") Long reportId,
             @Valid @RequestBody CvaVerificationRequest req) {
         return service.verifyReportWithScore(reportId, req.verificationScore(), req.approved(), req.comment());
-
     }
-
-
 }

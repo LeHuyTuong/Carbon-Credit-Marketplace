@@ -16,7 +16,7 @@ import java.util.List;
 public interface EmissionReportService {
 
 
-    EmissionReportResponse uploadCsvAsReport(MultipartFile file);                    // SELLER upload CSV -> SUBMITTED
+    EmissionReportResponse uploadCsvAsReport(MultipartFile file, Long projectId);                    // SELLER upload CSV -> SUBMITTED
     Page<EmissionReportResponse> listReportsForCva(String status, Pageable pageable); // CVA list source=CSV
     byte[] downloadCsv(Long reportId);                                               // tải file gốc
     byte[] exportSummaryCsv(Long reportId);                                          // export CSV tóm tắt 1 dòng
