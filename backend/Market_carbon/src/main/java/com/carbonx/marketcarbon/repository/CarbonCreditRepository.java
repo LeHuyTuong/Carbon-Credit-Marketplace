@@ -18,4 +18,5 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     Page<CarbonCredit> findByStatus(CreditStatus status, Pageable pageable);
     // Explicitly return a List to resolve type ambiguity
     List<CarbonCredit> findByCreditCode(String creditCode);
+    Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
 }
