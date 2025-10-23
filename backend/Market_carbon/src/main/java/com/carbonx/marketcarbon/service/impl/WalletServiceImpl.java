@@ -85,7 +85,8 @@ public class WalletServiceImpl implements WalletService {
         }
 
         // Assuming 'money' is in USD cents (e.g., 1000 for $10.00)
-        BigDecimal amountUsd = BigDecimal.valueOf(money).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP); // Convert cents to dollars
+        BigDecimal amountUsd = BigDecimal.valueOf(money)
+                .setScale(4, BigDecimal.ROUND_HALF_UP);        // Convert cents to dollars
         BigDecimal amountToAddVnd = CurrencyConverter.usdToVnd(amountUsd); // Convert USD to VND
 
         String description = String.format("Add money to wallet (USD %s -> VND %s)",

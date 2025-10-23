@@ -8,7 +8,7 @@ import com.carbonx.marketcarbon.common.OrderType;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
-import com.carbonx.marketcarbon.dto.response.OrderResponse;
+import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.CarbonCredit;
@@ -24,7 +24,6 @@ import com.carbonx.marketcarbon.repository.OrderRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
-import com.carbonx.marketcarbon.service.impl.OrderServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -145,7 +144,7 @@ class OrderServiceImplTest {
                 .quantity(new BigDecimal("10.0000"))
                 .build();
 
-        OrderResponse resp = orderService.createOrder(req);
+        CreditTradeResponse resp = orderService.createOrder(req);
 
         assertThat(resp.getId()).isEqualTo(999L);
         assertThat(resp.getCompanyId()).isEqualTo(company.getId());
@@ -192,7 +191,7 @@ class OrderServiceImplTest {
                 .build();
         when(orderRepository.findById(555L)).thenReturn(Optional.of(order));
 
-        OrderResponse resp = orderService.getOrderById(555L);
+        CreditTradeResponse resp = orderService.getOrderById(555L);
 
         assertThat(resp.getId()).isEqualTo(555L);
         assertThat(resp.getCompanyId()).isEqualTo(company.getId());
@@ -207,7 +206,7 @@ class OrderServiceImplTest {
         Order o2 = Order.builder().id(2L).company(company).orderStatus(OrderStatus.SUCCESS).totalPrice(new BigDecimal("20.00")).createdAt(LocalDateTime.now()).build();
         when(orderRepository.findByCompany(company)).thenReturn(List.of(o1, o2));
 
-        List<OrderResponse> list = orderService.getUserOrders();
+        List<CreditTradeResponse> list = orderService.getUserOrders();
 
         assertThat(list).hasSize(2);
         assertThat(list.get(0).getId()).isEqualTo(1L);
