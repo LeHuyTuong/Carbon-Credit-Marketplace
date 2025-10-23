@@ -2,7 +2,7 @@
 import { apiFetch } from "@/utils/apiFetch";
 
 /**
- * Lấy danh sách báo cáo CVA (list-cva-check)
+ * 📋 Lấy danh sách báo cáo CVA (list-cva-check)
  */
 export const getReportCVAList = async ({
   status,
@@ -27,17 +27,37 @@ export const getReportCVAList = async ({
 };
 
 /**
- * Cập nhật trạng thái report (Approved/Rejected)
+ * ✅ Lấy chi tiết 1 báo cáo cụ thể (dành cho CVA hoặc Admin)
+ * API backend: GET /api/v1/reports/{id}
  */
+export const getReportById = async (reportId) => {
+  if (!reportId) throw new Error("Missing report ID");
+
+  const res = await apiFetch(`/api/v1/reports/${reportId}`, {
+    method: "GET",
+  });
+
+  if (res?.response) return res.response;
+  if (res?.responseData) return res.responseData;
+  if (res?.data?.responseData) return res.data.responseData;
+
+  console.warn("⚠️ Unexpected response structure:", res);
+  return null;
+};
+
+
 /**
- * @param {number} reportId
- * @param {boolean} approved
- * @param {string} comment (optional, required if rejected)
+ * 🧾 Cập nhật trạng thái report (Approved/Rejected)
+ * Backend: PUT /api/v1/reports/{id}/verify?approved=true|false&comment=...
  */
-export const verifyReportCVA = async (reportId, approved, comment = "") => {
+export const verifyReportCVA = async (reportId, { approved, comment = "" }) => {
+  if (!reportId) throw new Error("Missing report ID");
+
   const params = new URLSearchParams();
-  params.append("approved", approved);
-  if (!approved && comment) params.append("comment", comment);
+  params.append("approved", approved ? "true" : "false");
+  if (!approved && comment) {
+    params.append("comment", comment);
+  }
 
   return apiFetch(`/api/v1/reports/${reportId}/verify?${params.toString()}`, {
     method: "PUT",

@@ -1,14 +1,14 @@
 import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllUsers } from "@/apiAdmin/userAdmin.js";
 
-const CompanyTeam = () => {
+const CvaTeam = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [data, setData] = useState([]);
@@ -19,7 +19,7 @@ const CompanyTeam = () => {
         const response = await getAllUsers();
         if (response?.responseData) {
           const users = response.responseData
-            .filter((u) => u.roles?.[0]?.name?.toUpperCase() === "COMPANY")
+            .filter((u) => u.roles?.[0]?.name?.toUpperCase() === "CVA")
             .map((u, index) => ({
               id: index + 1,
               userid: u.id,
@@ -31,7 +31,7 @@ const CompanyTeam = () => {
           setData(users);
         }
       } catch (err) {
-        console.error("Error fetching Companies:", err);
+        console.error("Error fetching CVA users:", err);
       }
     }
 
@@ -64,7 +64,7 @@ const CompanyTeam = () => {
       flex: 0.8,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/companies_view/${params.row.email}`} style={{ textDecoration: "none" }}>
+          <Link to={`/admin/view_user/${params.row.email}`} style={{ textDecoration: "none" }}>
             <div className="viewButton">View</div>
           </Link>
         </div>
@@ -74,7 +74,7 @@ const CompanyTeam = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="COMPANIES" subtitle="Managing Company Accounts" />
+      <Header title="CVA USERS" subtitle="Managing CVA Accounts" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -99,4 +99,4 @@ const CompanyTeam = () => {
   );
 };
 
-export default CompanyTeam;
+export default CvaTeam;

@@ -63,24 +63,6 @@ const EVList = () => {
     { field: "model", headerName: "Model", flex: 1 },
     { field: "companyId", headerName: "Company ID", flex: 1 },
     {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      renderCell: (params) => (
-        <Typography
-          color={
-            params.value === "active"
-              ? colors.greenAccent[400]
-              : params.value === "inactive"
-              ? colors.redAccent[400]
-              : colors.grey[200]
-          }
-        >
-          {params.value || "—"}
-        </Typography>
-      ),
-    },
-    {
       field: "action",
       headerName: "Action",
       flex: 1,

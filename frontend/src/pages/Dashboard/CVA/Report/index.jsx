@@ -24,7 +24,7 @@ const ReportListCVA = () => {
         const res = await getReportCVAList({ page, size: pageSize });
         if (res?.response) {
           setRows(res.response);
-          // 👇 Dùng totalElements từ backend để biết tổng record
+          //  Dùng totalElements từ backend để biết tổng record
           if (res.totalElements !== undefined) setRowCount(res.totalElements);
         }
       } catch (err) {

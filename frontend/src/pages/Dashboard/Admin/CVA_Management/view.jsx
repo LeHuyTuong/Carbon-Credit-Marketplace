@@ -21,10 +21,10 @@ import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect, useMemo } from "react";
 import { getUserByEmail, updateUser } from "@/apiAdmin/userAdmin.js";
 
-const ACCESS_TO_ROLE = { company: "COMPANY" };
-const ROLE_TO_ACCESS = { COMPANY: "company" };
+const ACCESS_TO_ROLE = { cva: "CVA" };
+const ROLE_TO_ACCESS = { CVA: "cva" };
 
-const ViewUserCompany = () => {
+const ViewUserCVA = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
@@ -56,12 +56,13 @@ const ViewUserCompany = () => {
         const primaryRole =
           Array.isArray(data.roles) && data.roles.length
             ? data.roles[0].name
-            : "COMPANY";
-        const access = ROLE_TO_ACCESS[primaryRole] ?? "company";
+            : "CVA";
+        const access = ROLE_TO_ACCESS[primaryRole] ?? "cva";
 
-        const companyName =
-          data.wallet?.carbonCredit?.company?.companyName ||
-          data.company?.companyName ||
+        const organization =
+          data.organization ||
+          data.wallet?.carbonCredit?.project?.applications?.[0]?.reviewer
+            ?.organization ||
           "";
 
         const uiUser = {
@@ -74,7 +75,7 @@ const ViewUserCompany = () => {
           createdAt: data.createdAt || "",
           country: data.country || "",
           city: data.city || "",
-          company: companyName,
+          organization,
         };
 
         setUser(uiUser);
@@ -98,7 +99,7 @@ const ViewUserCompany = () => {
       if (!u) return "User is empty";
       if (!u.name?.trim()) return "Full Name is required";
       if (!u.email?.trim()) return "Email is required";
-      if (u.access !== "company") return "Invalid role for Company";
+      if (u.access !== "cva") return "Invalid role for CVA";
       if (!["ACTIVE", "INACTIVE"].includes(u.status)) return "Invalid status";
       return null;
     };
@@ -120,7 +121,7 @@ const ViewUserCompany = () => {
       roles: [{ name: ACCESS_TO_ROLE[editedUser.access] }],
       country: editedUser.country || null,
       city: editedUser.city || null,
-      companyName: editedUser.company || null,
+      organization: editedUser.organization || null,
     };
 
     try {
@@ -139,7 +140,7 @@ const ViewUserCompany = () => {
 
   return (
     <Box m="20px">
-      <Header title="COMPANY USER DETAILS" subtitle="View or edit company user information" />
+      <Header title="CVA USER DETAILS" subtitle="View or edit CVA information" />
       <Paper
         elevation={2}
         sx={{
@@ -151,7 +152,7 @@ const ViewUserCompany = () => {
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
-            Company Profile
+            CVA Profile
           </Typography>
 
           {!editMode ? (
@@ -211,7 +212,7 @@ const ViewUserCompany = () => {
 
         <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
 
-        {/* COMPANY DETAILS */}
+        {/* CVA DETAILS */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={6}>
             <TextField
@@ -244,11 +245,11 @@ const ViewUserCompany = () => {
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Company Name"
+              label="Organization"
               fullWidth
-              value={editedUser.company || ""}
+              value={editedUser.organization || ""}
               InputProps={{ readOnly: !editMode }}
-              onChange={(e) => handleChange("company", e.target.value)}
+              onChange={(e) => handleChange("organization", e.target.value)}
             />
           </Grid>
 
@@ -311,7 +312,7 @@ const ViewUserCompany = () => {
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/admin/companies_management")}
+            onClick={() => navigate("/admin/cva_management")}
             sx={{
               borderColor: colors.blueAccent[400],
               color: colors.blueAccent[400],
@@ -335,11 +336,11 @@ const ViewUserCompany = () => {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          Company user updated successfully!
+          CVA user updated successfully!
         </Alert>
       </Snackbar>
     </Box>
   );
 };
 
-export default ViewUserCompany;
+export default ViewUserCVA;
