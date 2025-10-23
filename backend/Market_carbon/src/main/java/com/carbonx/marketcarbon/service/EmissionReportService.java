@@ -28,5 +28,6 @@ public interface EmissionReportService {
     List<EmissionReportDetailResponse> getReportDetails(Long reportId);
     EmissionReportResponse aiSuggestScore(Long reportId);
     public EmissionReportResponse verifyReportWithScore(Long reportId, BigDecimal score, boolean approved, String comment);
+    List<EmissionReportResponse> listReportsForCompany(String status, Long projectId);
 
 }
