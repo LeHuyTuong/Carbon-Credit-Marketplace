@@ -3,7 +3,8 @@ import "../../EVOwner/ManageVehicle/manage.css";
 import { Button, Modal, Toast, ToastContainer, Form } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
 import useReveal from "../../../../hooks/useReveal";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function UploadReport() {
   const [reports, setReports] = useState([]);
@@ -16,8 +17,16 @@ export default function UploadReport() {
   });
   const sectionRef = useRef(null);
   useReveal(sectionRef);
+  const { projectId } = useParams();
   const nav = useNavigate();
 
+  useEffect(() => {
+    if (!projectId) {
+      nav("/company/upload-report"); // nếu không có ID → quay lại trang chọn project
+    }
+  }, [projectId, nav]);
+
+  //list report đã nộp
   const fetchReports = async () => {
     try {
       setUploading(true);
@@ -25,11 +34,14 @@ export default function UploadReport() {
         method: "GET",
       });
 
-      //dữ liệu BE trả về trong res.response
       const data = res?.response || [];
+      console.log("API data:", data);
+      console.log("projectId param:", projectId);
 
-      // map sang định dạng UI
-      const mapped = data.map((r) => ({
+      //lọc theo projectId
+      const filtered = data.filter((r) => r.projectId === Number(projectId));
+
+      const mapped = filtered.map((r) => ({
         id: r.id,
         projectName: r.projectName,
         uploadOriginalFilename: r.uploadOriginalFilename,
@@ -48,9 +60,10 @@ export default function UploadReport() {
   };
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    if (projectId) fetchReports();
+  }, [projectId]);
 
+  //upload report
   const handleUpload = async (e) => {
     e.preventDefault();
     const file = e.target.file?.files[0];
@@ -58,6 +71,8 @@ export default function UploadReport() {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("projectId", projectId);
+    console.log("Uploading with projectId:", projectId);
 
     try {
       setUploading(true);
@@ -65,11 +80,31 @@ export default function UploadReport() {
         method: "POST",
         body: formData,
       });
+
+      const code =
+        res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
+
       showToast("Report uploaded successfully.");
       fetchReports();
       setShow(false);
     } catch (err) {
-      showToast("Upload failed: " + err.message, "danger");
+      console.error("Upload failed:", err);
+
+      // Lấy code từ error trả về
+      const backendCode =
+        err?.response?.responseStatus?.responseCode || err?.code || err?.status;
+
+      if (backendCode === "409101") {
+        showToast(
+          "A report for this project and period already exists. Please check your previous uploads.",
+          "warning"
+        );
+      } else {
+        showToast(
+          "Upload failed: " + (err.message || "Unexpected error."),
+          "danger"
+        );
+      }
     } finally {
       setUploading(false);
     }
@@ -89,7 +124,7 @@ export default function UploadReport() {
 
           {/* Nút xem mẫu CSV */}
           <Button
-            variant="outline-warning"
+            variant="outline-info"
             className="mb-3"
             onClick={() => window.open("/sample-report.csv", "_blank")}
           >
@@ -140,55 +175,45 @@ export default function UploadReport() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {reports.length > 0 ? (
-              reports.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.id}</td>
-                  <td>{r.projectName}</td>
-                  <td>
-                    <a
-                      href={r.uploadStorageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {r.uploadOriginalFilename || "—"}
-                    </a>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${r.status?.toLowerCase()}`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>
-                    {new Date(r.submittedAt).toLocaleString("vi-VN", {
-                      timeZone: "Asia/Ho_Chi_Minh",
-                      hour12: false,
-                    })}
-                  </td>{" "}
-                  <td className="action-buttons">
-                    <button
-                      className="action-btn view"
-                      title="View Details"
-                      onClick={() => nav(`/detail-report/${r.id}`)}
-                    >
-                      <i className="bi bi-eye"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="no-data text-center py-5">
-                  <i className="bi bi-file-earmark-text text-accent fs-3 d-block mb-2"></i>
-                  <h5 className="text-dark">No reports yet</h5>
-                  <p className="text-muted">
-                    Upload your first emission report to get started.
-                  </p>
+          <PaginatedTable
+            items={reports}
+            itemsPerPage={5}
+            renderRow={(r, index) => (
+              <tr key={r.id}>
+                <td>{index + 1}</td>
+                <td>{r.projectName}</td>
+                <td>
+                  <a
+                    href={r.uploadStorageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {r.uploadOriginalFilename || "—"}
+                  </a>
+                </td>
+                <td>
+                  <span className={`status-badge ${r.status?.toLowerCase()}`}>
+                    {r.status}
+                  </span>
+                </td>
+                <td>
+                  {new Date(r.submittedAt).toLocaleString("vi-VN", {
+                    timeZone: "Asia/Ho_Chi_Minh",
+                    hour12: false,
+                  })}
+                </td>
+                <td className="action-buttons">
+                  <button
+                    className="action-btn view"
+                    title="View Details"
+                    onClick={() => nav(`/detail-report/${r.id}`)}
+                  >
+                    <i className="bi bi-eye"></i>
+                  </button>
                 </td>
               </tr>
             )}
-          </tbody>
+          />
         </table>
       </div>
 

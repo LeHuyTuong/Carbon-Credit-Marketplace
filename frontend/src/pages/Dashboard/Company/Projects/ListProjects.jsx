@@ -6,6 +6,7 @@ import { useAuth } from "../../../../context/AuthContext";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { FaArrowLeft } from "react-icons/fa";
 import useReveal from "../../../../hooks/useReveal";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function ListProjects() {
   const { user } = useAuth();
@@ -129,17 +130,19 @@ export default function ListProjects() {
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody>
-                {applications.map((a, index) => (
+              <PaginatedTable
+                items={applications}
+                itemsPerPage={5}
+                renderRow={(a, index) => (
                   <tr key={a.id}>
                     <td className="fw-semibold">{index + 1}</td>
                     <td className="fw-semibold">{a.projectTitle}</td>
                     <td>
                       <span
-                        className={`badge px-3 py-2 ${
-                          a.status === "APPROVED"
+                        className={`badge text-light px-3 py-2 ${
+                          a.status === "ADMIN_APPROVED"
                             ? "bg-success"
-                            : a.status === "REJECTED"
+                            : a.status.includes("REJECTED")
                             ? "bg-danger"
                             : a.status === "UNDER_REVIEW"
                             ? "bg-warning text-dark"
@@ -151,27 +154,13 @@ export default function ListProjects() {
                       </span>
                     </td>
 
-                    {/* Hiển thị thời gian nộp (fallback sang requestDateTime nếu null) */}
                     <td className="text-muted">
                       {a.submittedAt
-                        ? new Date(a.submittedAt).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
+                        ? new Date(a.submittedAt).toLocaleString("vi-VN", {
+                            timeZone: "Asia/Ho_Chi_Minh",
+                            hour12: false,
                           })
-                        : new Date(
-                            requestDateTime || Date.now()
-                          ).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                          })}
+                        : "—"}
                     </td>
 
                     <td className="text-muted">
@@ -190,8 +179,8 @@ export default function ListProjects() {
                       </Button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                )}
+              />
             </Table>
           )}
         </Card>

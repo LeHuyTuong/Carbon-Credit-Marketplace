@@ -81,7 +81,7 @@ export default function VerifyOtp() {
     if (sec > 0 || loading) return;
     setLoading(true);
     try {
-      await apiFetch("/api/v1/send-otp-forgot", {
+      await apiFetch("/api/v1/forgot-password/resend-otp", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });

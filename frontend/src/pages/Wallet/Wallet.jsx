@@ -170,13 +170,8 @@ export default function Wallet() {
   const handleWithdrawSubmit = async (values) => {
     setLoading(true);
     try {
-      const res = await apiFetch("/api/v1/withdrawal", {
+      const res = await apiFetch(`/api/v1/withdrawal/${values.amount}`, {
         method: "POST",
-        body: {
-          data: {
-            amount: parseFloat(values.amount),
-          },
-        },
       });
 
       if (res?.response) {
@@ -301,7 +296,6 @@ export default function Wallet() {
         onHide={() => setShowWithdrawModal(false)}
         onSubmit={handleWithdrawSubmit}
         wallet={wallet}
-        paymentDetail={{ accountName: "hehe", maskedNumber: "**4180" }}
       />
 
       {/*toast */}

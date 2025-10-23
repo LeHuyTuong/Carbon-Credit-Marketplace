@@ -10,6 +10,7 @@ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.OrderService;
+import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class OrderServiceImpl implements OrderService {
     private final CompanyRepository companyRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
+    private final WalletService  walletService;
 
     // helper find user login
     private User currentUser(){
@@ -101,7 +103,6 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    @Transactional
     @Override
     public OrderResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(
@@ -195,24 +196,23 @@ public class OrderServiceImpl implements OrderService {
         // 6.2: Trừ số tín chỉ được mua khỏi tổng tín chỉ của người bán (bao gồm cả đang rao bán)
         CarbonCredit sourceCredit = listing.getCarbonCredit();
         int currentListedAmount = sourceCredit.getListedAmount();
-        BigDecimal totalSellerCredits = sourceCredit.getCarbonCredit()
-                .add(BigDecimal.valueOf(currentListedAmount));
+        BigDecimal currentAvailableAmount = sourceCredit.getCarbonCredit(); // Số lượng không niêm yết
 
+        // Số lượng niêm yết mới = số lượng niêm yết cũ - số lượng mua
         int updatedListedAmount = currentListedAmount - quantityToBuy.intValueExact();
         int safeListedAmount = Math.max(0, updatedListedAmount);
 
-        BigDecimal remainingTotalCredits = totalSellerCredits.subtract(quantityToBuy);
-        if (remainingTotalCredits.compareTo(BigDecimal.ZERO) < 0) {
-            remainingTotalCredits = BigDecimal.ZERO;
-        }
 
+        // Số lượng khả dụng mới (không niêm yết) = số lượng khả dụng cũ (không thay đổi trực tiếp ở đây vì đã trừ từ listing)
+        // Tổng số tín chỉ của người bán (cả niêm yết và không niêm yết) sẽ giảm sau giao dịch
+        // Tuy nhiên, việc cập nhật `carbonCredit` (số lượng không niêm yết) nên xảy ra khi niêm yết hoặc hủy niêm yết.
+        // Ở đây chỉ cần cập nhật `listedAmount`.
         sourceCredit.setListedAmount(safeListedAmount);
-        sourceCredit.setCarbonCredit(remainingTotalCredits);
-        sourceCredit.setCreditCode(order.getCarbonCredit().getCreditCode());
 
         carbonCreditRepository.save(sourceCredit);
 
         // 6.3: Cộng tín chỉ cho bên mua, tái sử dụng lô cũ nếu có, tạo lô mới nếu chưa có
+        // Tạo creditCode mới và duy nhất cho người mua
         CarbonCredit buyerCredit = buyerCompany.getCarbonCredits().stream()
                 .filter(c -> c.getStatus() == CreditStatus.ISSUE)
                 .findFirst() // tim thay tin chi dau tien neu co
@@ -221,18 +221,20 @@ public class OrderServiceImpl implements OrderService {
                     CarbonCredit newCredit = new CarbonCredit();
                     // new credit copy attribute from sourceCredit
                     newCredit.setCompany(buyerCompany);
+                    newCredit.setProject(sourceCredit.getProject());
                     newCredit.setStatus(CreditStatus.ISSUE);
                     newCredit.setName(sourceCredit.getName());
                     newCredit.setCarbonCredit(BigDecimal.ZERO);
-                    newCredit.setCreditCode(order.getCarbonCredit().getCreditCode());
+                    newCredit.setListedAmount(0);// mua về chưa niêm yết
+                    newCredit.setIssuedAt(sourceCredit.getIssuedAt());
+                    newCredit.setCreditCode(generateUniqueCreditCode(sourceCredit));
                     return newCredit;
                 });
 
-        BigDecimal buyerTotalCredits = buyerCredit.getCarbonCredit()
-                .add(BigDecimal.valueOf(buyerCredit.getListedAmount()));
-        BigDecimal updatedBuyerTotal = buyerTotalCredits.add(quantityToBuy);
-        buyerCredit.setCarbonCredit(updatedBuyerTotal);
-        carbonCreditRepository.save(buyerCredit);
+        // Cộng số lượng mua vào lô tín chỉ của người mua (lô cũ hoặc lô mới)
+        // Chỉ cập nhật số lượng không niêm yết (carbonCredit)
+        buyerCredit.setCarbonCredit(buyerCredit.getCarbonCredit().add(quantityToBuy));
+        carbonCreditRepository.save(buyerCredit); // Lưu lại thông tin lô tín chỉ của người mua
 
         // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
@@ -267,14 +269,16 @@ public class OrderServiceImpl implements OrderService {
 
 
 
+
+    // Helper method to generate a unique credit code (can be customized)
     private String generateUniqueCreditCode(CarbonCredit referenceCredit){
-        String prefix = (referenceCredit != null && referenceCredit.getCreditCode() != null)
-                ? referenceCredit.getCreditCode()
-                : "CC";
+        // Example: Use a simple prefix + UUID
+        String prefix = "TRADED"; // Indicate it's a traded credit
         String candidate;
         do {
-            candidate = prefix + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        } while (!carbonCreditRepository.findByCreditCode(candidate).isEmpty());
+            // Generate a random part and check for uniqueness
+            candidate = prefix + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        } while (!carbonCreditRepository.findByCreditCode(candidate).isEmpty()); // Ensure it's unique in the DB
         return candidate;
     }
 

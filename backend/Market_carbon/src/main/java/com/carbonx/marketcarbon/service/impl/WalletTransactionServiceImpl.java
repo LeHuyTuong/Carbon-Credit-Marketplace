@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
+import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
@@ -10,6 +11,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,19 +41,16 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     }
 
     @Override
-    public WalletTransaction createTransaction(WalletTransactionRequest request) {
+    @Transactional
+    public WalletTransactionResponse createTransaction(WalletTransactionRequest request) {
 
         // check wallet
         Wallet wallet;
-        if (request.getWallet() != null) {
+        if (request.getWallet() != null && request.getWallet().getId() != null) {
             wallet = walletRepository.findById(request.getWallet().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found for transaction"));
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId()));
         } else {
-            User currentUser = currentUser();
-            wallet = walletRepository.findByUserId(currentUser.getId());
-            if (wallet == null) {
-                throw new IllegalArgumentException("Wallet cannot be null in WalletTransactionRequest");
-            }
+            throw new IllegalArgumentException("Wallet ID must be provided in WalletTransactionRequest");
         }
 
         if (request.getType() == null) {
@@ -69,10 +69,27 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal balanceAfter;
 
-        if (request.getType() == WalletTransactionType.WITH_DRAWL) {
+        if (request.getType() == WalletTransactionType.WITH_DRAWL ||
+                request.getType() == WalletTransactionType.BUY_CARBON_CREDIT || // Buyer pays
+                request.getType() == WalletTransactionType.EV_OWNER_PAYOUT) // Aggregator pays out
+        {
+            // For subtraction, the requested amount should likely be positive, then negated logic applies
+            if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Amount for withdrawal/payment types should be positive.");
+            }
             balanceAfter = balanceBefore.subtract(amount);
-        } else {
+        } else if (request.getType() == WalletTransactionType.ADD_MONEY ||
+                request.getType() == WalletTransactionType.SELL_CARBON_CREDIT || // Seller receives
+                request.getType() == WalletTransactionType.EV_OWNER_PAYOUT_RECEIVE) // EV Owner receives
+        {
+            // phải dương
+            if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Amount for deposit/receive types should be positive.");
+            }
             balanceAfter = balanceBefore.add(amount);
+        } else {
+            // nếu không thì không làm gì cả sau trước như 1
+            balanceAfter = balanceBefore;
         }
 
         // so tien sau khi nap ko dc am
@@ -80,11 +97,13 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             throw new IllegalStateException("Insufficient balance for transaction");
         }
 
+        // update và lưu lại balance
         wallet.setBalance(balanceAfter);
         walletRepository.save(wallet);
 
+        // tạo and lưu the transaction entity
         WalletTransaction transaction = new WalletTransaction();
-        transaction.setWallet(request.getWallet());
+        transaction.setWallet(wallet);
         transaction.setAmount(request.getAmount());
         transaction.setTransactionType(request.getType());
         transaction.setDescription(request.getDescription());
@@ -93,18 +112,55 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
 
-        return walletTransactionRepository.save(transaction);
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        // Map the saved entity to DTO and return
+        return mapToTransactionResponse(savedTransaction);
     }
 
     @Override
-    public List<WalletTransaction> getTransaction() {
+    @Transactional
+    public List<WalletTransactionResponse> getTransactions() {
         User user = currentUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
         if (wallet == null) {
             // Nếu user chưa có ví, trả về danh sách rỗng
             return List.of();
         }
-        return walletTransactionRepository.findByWalletOrderByCreatedAtDesc(wallet);
+        List<WalletTransaction> transactions = walletTransactionRepository.findByWalletOrderByCreatedAtDesc(wallet);
+        // Map entities to DTOs
+        return transactions.stream()
+                .map(this::mapToTransactionResponse) // sử dụng stream map
+                .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
+    public List<WalletTransactionResponse> getTransactionDtosForWallet(Long walletId) {
+        Wallet wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found with id: " + walletId));
+
+        List<WalletTransaction> transactions = walletTransactionRepository.findByWalletOrderByCreatedAtDesc(wallet);
+        // Map entities to DTOs
+        return transactions.stream()
+                .map(this::mapToTransactionResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Helper method to map WalletTransaction entity to WalletTransactionResponse DTO
+    private WalletTransactionResponse mapToTransactionResponse(WalletTransaction transaction) {
+        if (transaction == null) {
+            return null;
+        }
+        return WalletTransactionResponse.builder()
+                .id(transaction.getId())
+                .orderId(transaction.getOrder() != null ? transaction.getOrder().getId() : null)
+                .transactionType(transaction.getTransactionType())
+                .description(transaction.getDescription())
+                .balanceBefore(transaction.getBalanceBefore())
+                .balanceAfter(transaction.getBalanceAfter())
+                .amount(transaction.getAmount())
+                .createdAt(transaction.getCreatedAt())
+                .build();
+    }
 }

@@ -96,21 +96,3 @@
   background-position: center;
   opacity: 1 !important;
 }
-
-/*Custom tab style for CompanyProfile*/
-#company-profile-tabs .nav-link.active {
-  color: #000000 !important;
-  font-weight: 600;
-  background-color: #eaf3ff; /* xanh nhạt nền active tab */
-  border-radius: 6px 6px 0 0;
-}
-
-#company-profile-tabs .nav-link {
-  color: #6c757d; /* màu xám khi chưa active */
-  transition: color 0.2s ease, background-color 0.2s ease;
-}
-
-#company-profile-tabs .nav-link:hover {
-  color: #000000;
-  background-color: #f5f9ff;
-}

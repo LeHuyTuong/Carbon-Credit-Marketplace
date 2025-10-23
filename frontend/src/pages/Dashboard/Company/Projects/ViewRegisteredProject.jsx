@@ -33,7 +33,7 @@ export default function ViewRegisteredProject() {
         }
 
         setApplication(res?.response || {});
-        setRequestDateTime(res?.requestDateTime || new Date().toISOString()); // ✅ lưu thời điểm request
+        setRequestDateTime(res?.requestDateTime || new Date().toISOString()); //lưu thời điểm request
       } catch (err) {
         console.error("Error fetching application:", err);
         setError(err.message || "Failed to fetch detail");
@@ -70,9 +70,9 @@ export default function ViewRegisteredProject() {
     );
 
   const statusColor =
-    application.status === "APPROVED"
+    application.status === "ADMIN_APPROVED"
       ? "success"
-      : application.status === "REJECTED"
+      : application.status.includes("REJECTED")
       ? "danger"
       : application.status === "UNDER_REVIEW"
       ? "warning text-dark"
