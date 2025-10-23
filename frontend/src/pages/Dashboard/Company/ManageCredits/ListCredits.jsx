@@ -15,6 +15,7 @@ import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../../../utils/apiFetch";
 import "../Marketplace/marketplace.css";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 //Validation schema
 const schema = Yup.object().shape({
@@ -30,7 +31,7 @@ const schema = Yup.object().shape({
   expirationDate: Yup.date().required("Expiration date is required"),
 });
 
-export default function ManageCredits() {
+export default function ListCredits() {
   const [credits, setCredits] = useState([]);
   const [userCredits, setUserCredits] = useState([]); // mock dữ liệu user
   const [show, setShow] = useState(false);
@@ -53,12 +54,6 @@ export default function ManageCredits() {
       { id: 102, title: "EV Charging Credit - Project B", balance: 500 },
     ]);
   }, []);
-
-  // // đọc từ localStorage
-  // const fetchCredits = () => {
-  //   const local = JSON.parse(localStorage.getItem("mockCredits") || "[]");
-  //   setCredits(local);
-  // };
 
   useEffect(() => {
     fetchCredits();
@@ -189,35 +184,28 @@ export default function ManageCredits() {
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {credits.length > 0 ? (
-                credits.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.title}</td>
-                    <td>${row.price}</td>
-                    <td>{row.quantity}</td>
-                    <td>{row.seller}</td>
-                    <td>{row.expiresAt}</td>
-                    <td>
-                      <button
-                        className="btn-detail w-90"
-                        onClick={() => nav(`/credit-detail/${row.id}`)}
-                      >
-                        <i></i> View Detail
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="no-data">
-                    <h5>No credits listed</h5>
-                    <p>Add a new credit to start selling.</p>
+            <PaginatedTable
+              items={credits}
+              itemsPerPage={5} // tuỳ chỉnh số item mỗi trang
+              renderRow={(row, index) => (
+                <tr key={row.id}>
+                  <td>{index + 1}</td>
+                  <td>{row.title}</td>
+                  <td>${row.price}</td>
+                  <td>{row.quantity}</td>
+                  <td>{row.seller}</td>
+                  <td>{row.expiresAt}</td>
+                  <td>
+                    <button
+                      className="btn-detail w-90"
+                      onClick={() => nav(`/credit-detail/${row.id}`)}
+                    >
+                      <i></i> View Detail
+                    </button>
                   </td>
                 </tr>
               )}
-            </tbody>
+            />
           </table>
         </div>
       )}

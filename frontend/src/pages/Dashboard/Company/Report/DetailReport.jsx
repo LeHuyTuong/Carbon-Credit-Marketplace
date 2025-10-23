@@ -21,62 +21,26 @@ export default function ReportDetail() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
-  //  useEffect(() => {
-  //   const fetchDetail = async () => {
-  //     try {
-  //       setLoading(true);
-
-  //       // Gọi API chi tiết report theo ID
-  //       const res = await apiFetch(`/api/v1/reports/${id}`, {
-  //         method: "GET",
-  //       });
-
-  //       // backend trả về chi tiết report trong "response"
-  //       setReport(res?.response || null);
-  //     } catch (err) {
-  //       console.error("Failed to load report detail:", err);
-  //       setReport(null);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchDetail();
-  // }, [id]);
-
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        // mock tạm dữ liệu chi tiết
-        const mockDetail = {
-          id,
-          sellerId: 2,
-          sellerName: "EV Green Co.",
-          projectId: 1,
-          projectName: "EV Carbon Marketplace Phase 1",
-          period: "2025-09",
-          totalEnergy: 760.5,
-          totalCo2: 1998.8,
-          vehicleCount: 10,
-          status: "PENDING",
-          source: "CSV Upload",
-          submittedAt: "2025-10-19T03:25:00Z",
-          uploadOriginalFilename: "emission_report_2025-09.csv",
-          uploadMimeType: "text/csv",
-          uploadSizeBytes: 1782,
-          uploadSha256: "9b6f7eac6bfaef00a11c1d7731df",
-          uploadStorageUrl: "#",
-          uploadRows: 10,
-        };
+        setLoading(true);
 
-        await new Promise((r) => setTimeout(r, 500));
-        setReport(mockDetail);
+        // Gọi API chi tiết report theo ID
+        const res = await apiFetch(`/api/v1/reports/${id}`, {
+          method: "GET",
+        });
+
+        // backend trả về chi tiết report trong "response"
+        setReport(res?.response || null);
       } catch (err) {
         console.error("Failed to load report detail:", err);
+        setReport(null);
       } finally {
         setLoading(false);
       }
     };
+
     fetchDetail();
   }, [id]);
 

@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import useReveal from "../../../../hooks/useReveal";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { useAuth } from "../../../../context/AuthContext";
+import CreditDetailCard from "./CreditDetailCard";
 
 export default function Order() {
   const nav = useNavigate();
@@ -46,7 +47,6 @@ export default function Order() {
 
   const [formData, setFormData] = useState({
     quantity: "",
-    beneficiaryName: "",
   });
 
   //tính tổng tiền dựa trên quantity * pricePerTonne
@@ -67,31 +67,6 @@ export default function Order() {
     setShowConfirm(true);
   };
 
-  // //cũ
-  // const handleConfirmPurchase = () => {
-  //   setShowConfirm(false);
-
-  //   // Tạo object đơn hàng mới
-  //   const newPurchase = {
-  //     title: credit.title,
-  //     quantity: Number(formData.quantity),
-  //     pricePerTonne,
-  //     total: Number(totalPrice),
-  //     beneficiaryName: formData.beneficiaryName,
-  //     purchasedAt: new Date().toISOString(),
-  //   };
-
-  //   // lưu vào localStorage (danh sách nhiều giao dịch)
-  //   const history = JSON.parse(localStorage.getItem("purchases") || "[]");
-  //   history.push(newPurchase);
-  //   localStorage.setItem("purchases", JSON.stringify(history));
-
-  //   toast.success("Purchase successfully!");
-  //   setTimeout(
-  //     () => nav("/purchase-history", { state: { from: "order" } }),
-  //     3000
-  //   );
-  // };
   console.log("User context:", user);
 
   const handleConfirmPurchase = async () => {
@@ -165,10 +140,18 @@ export default function Order() {
           </Button>
         </div>
 
+        {/* phần detail */}
+        <CreditDetailCard credit={credit} />
         <Row>
           {/* LEFT FORM */}
           <Col lg={8}>
-            <Card className="shadow-sm border-0 mb-4">
+            <Card
+              className="shadow-sm border-0 mb-4 overflow-hidden"
+              style={{
+                background: "#ffffff",
+                borderRadius: "12px",
+              }}
+            >
               <Card.Body>
                 <h3 className="fw-bold mb-3 d-flex align-items-center gap-2">
                   <FaShoppingCart color="green" /> Buy Carbon Credits
@@ -199,28 +182,13 @@ export default function Order() {
                     />
                   </Form.Group>
 
-                  {/* Beneficiary */}
-                  <Form.Group className="mb-3">
-                    <Form.Label className="fw-semibold">
-                      Beneficiary name <span className="text-danger">*</span>
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="beneficiaryName"
-                      placeholder="Who will receive credit"
-                      value={formData.beneficiaryName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-
                   {/* Submit */}
                   <div className="mt-4">
                     <Button
                       variant="success"
                       type="submit"
                       className="btn-primary w-100 py-2 fw-semibold"
-                      disabled={!formData.quantity || !formData.beneficiaryName}
+                      disabled={!formData.quantity}
                     >
                       Purchase
                     </Button>
@@ -234,10 +202,34 @@ export default function Order() {
               <Accordion.Item eventKey="1">
                 <Accordion.Header>After Purchase</Accordion.Header>
                 <Accordion.Body>
-                  <ul className="mb-0">
-                    <li>Payment is processed securely.</li>
-                    <li>You receive amount of credits in your wallet.</li>
+                  <ul className="mb-3">
+                    <li>
+                      Your payment is securely processed through{" "}
+                      <strong>Stripe or VNPAY</strong>, depending on your
+                      selected method.
+                    </li>
+                    <li>
+                      Once confirmed, the purchased carbon credits are{" "}
+                      <strong>added automatically to your wallet</strong> under
+                      your registered company account.
+                    </li>
+                    <li>
+                      You can review all completed purchases in the{" "}
+                      <strong>“Purchases History”</strong> tab for full
+                      traceability.
+                    </li>
+                    <li>
+                      Every credit purchased is{" "}
+                      <strong>verified and certified by CarbonX</strong> to
+                      ensure authenticity and transparency.
+                    </li>
                   </ul>
+
+                  <p className="text-muted small mb-0">
+                    Note: credits are non-refundable once issued, as they
+                    represent verified carbon offsets registered on the
+                    blockchain ledger.
+                  </p>
                 </Accordion.Body>
               </Accordion.Item>
             </Accordion>
@@ -283,7 +275,13 @@ export default function Order() {
 function ProjectSummary({ totalPrice, quantity, pricePerTonne, title }) {
   return (
     <div className="sticky-top" style={{ top: "80px" }}>
-      <Card className="shadow-sm border-0">
+      <Card
+        className="shadow-sm border-0 overflow-hidden"
+        style={{
+          background: "#ffffff",
+          borderRadius: "12px",
+        }}
+      >
         <Card.Body>
           <Card.Title>{title || "Carbon Credit"}</Card.Title>
           <Row className="mt-3">
