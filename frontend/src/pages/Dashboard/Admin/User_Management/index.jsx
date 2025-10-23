@@ -121,7 +121,7 @@ const Team = () => {
       flex: 0.8,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/view_user/${params.row.userid}`} style={{ textDecoration: "none" }}>
+          <Link to={`/admin/view_user/${params.row.email}`} style={{ textDecoration: "none" }}>
             <div className="viewButton">View</div>
           </Link>
         </div>

@@ -32,3 +32,40 @@ export const getVehicles = async (pageNo = 0, pageSize = 20, sort = "") => {
     return { data: [], pageNo: 0, pageSize: 20, totalPages: 0 };
   }
 };
+
+/**
+ * Update a vehicle by ID
+ * @param {number} id - Vehicle ID
+ * @param {object} data - Vehicle data: { plateNumber, model, brand, companyId }
+ * @returns {Promise<object>}
+ */
+export const updateVehicleById = async (id, data) => {
+  try {
+    const payload = {
+      requestTrace: `trace-update-vehicle-${Date.now()}`,
+      requestDateTime: new Date().toISOString(),
+      data: {
+        plateNumber: data.plateNumber,
+        model: data.model,
+        brand: data.brand,
+        companyId: data.companyId,
+      },
+    };
+
+    const res = await apiFetch(`/api/v1/vehicles/${id}`, {
+      method: "PUT",
+      headers: {
+        "X-Request-Trace": payload.requestTrace,
+        "X-Request-DateTime": payload.requestDateTime,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return res;
+  } catch (error) {
+    console.error("Error in updateVehicleById:", error);
+    throw error;
+  }
+};

@@ -5,7 +5,6 @@ import {
   Button,
   Grid,
   TextField,
-  MenuItem,
   Paper,
   Snackbar,
   Alert,
@@ -15,7 +14,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { getProjectById,updateProjectById } from "@/apiAdmin/projectAdmin.js";
+import { getProjectById, updateProjectById } from "@/apiAdmin/projectAdmin.js";
 import dayjs from "dayjs";
 import "dayjs/locale/en";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -28,71 +27,84 @@ const ViewProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const statusOptions = ["OPEN", "COMING SOON", "CLOSE"];
+
   const [formData, setFormData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-  //  Gọi API lấy chi tiết project theo ID
+  // Fetch project details
   useEffect(() => {
     const fetchProject = async () => {
       try {
         const res = await getProjectById(id);
-        console.log("API project detail:", res);
-
-        // API trả về object => không cần [0]
         const project = res?.response;
         if (project) {
           setFormData({
             projectid: project.id,
             projectname: project.title,
-            shortdescription: project.description,
+            shortdescription: project.description || "",
             starteddate: project.createdDate || "",
             enddate: project.endedDate || "",
             totalexpectedcredits: project.commitments || "",
             totalcompanies: project.technicalIndicators || "",
-            status: project.status || "SUBMITTED",
+            measurementmethod: project.measurementMethod || "",
+            logo: project.logo || "",
+            legaldocurl: project.legalDocsUrl || "",
+            status: project.status || "OPEN",
           });
-        } else {
-          console.warn("Project not found in API response:", res);
         }
-      } catch (error) {
-        console.error(" Error fetching project:", error);
+      } catch (err) {
+        console.error("Error fetching project:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProject();
   }, [id]);
 
   const handleEdit = () => setIsEditing(true);
-  
-  const handleUpdate = async () => {
-  try {
-    const updatedData = {
-      title: formData.projectname,
-      description: formData.shortdescription,
-      logo: formData.logo || "",
-      commitments: formData.totalexpectedcredits,
-      technicalIndicators: formData.totalcompanies,
-      measurementMethod: formData.measurementmethod || "",
-      legalDocsUrl: formData.legaldocurl || "",
-    };
-    console.log(" PUT data:", updatedData);
-    const res = await updateProjectById(formData.projectid, updatedData);
-    console.log("API Update Response:", res);
 
-    if (res?.responseStatus?.responseCode === "200") {
-      setIsEditing(false);
+  const handleUpdate = async () => {
+    try {
+      setUpdateLoading(true);
+      const payload = {
+        requestTrace: `trace_${Date.now()}`,
+        requestDateTime: new Date().toISOString(),
+        title: formData.projectname,
+        description: formData.shortdescription,
+        commitments: formData.totalexpectedcredits,
+        technicalIndicators: formData.totalcompanies,
+        measurementMethod: formData.measurementmethod,
+        logo: formData.logo || "",
+        legalDocsUrl: formData.legaldocurl || "",
+      };
+
+      const res = await updateProjectById(formData.projectid, payload);
+
+      if (res?.responseStatus?.responseCode === "00000000") {
+        setIsEditing(false);
+        setSnackbarMessage("Update successfully!");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+      } else {
+        setSnackbarMessage(res?.responseStatus?.responseMessage || "Update failed!");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+      }
+    } catch (err) {
+      console.error("Error updating project:", err);
+      setSnackbarMessage("Error updating project!");
+      setSnackbarSeverity("error");
       setOpenSnackbar(true);
-    } else {
-      console.error("Update failed:", res);
+    } finally {
+      setUpdateLoading(false);
     }
-  } catch (error) {
-    console.error("Error updating project:", error);
-  }
-};
+  };
 
   const handleCloseSnackbar = () => setOpenSnackbar(false);
 
@@ -101,17 +113,20 @@ const ViewProject = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  //  Loading state
-  if (loading) {
+  if (loading)
     return (
-      <Box m="20px" display="flex" justifyContent="center" alignItems="center" height="60vh">
+      <Box
+        m="20px"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="60vh"
+      >
         <CircularProgress />
       </Box>
     );
-  }
 
-  //  Nếu không có dữ liệu
-  if (!formData) {
+  if (!formData)
     return (
       <Box m="20px">
         <Typography variant="h5" color="error">
@@ -126,9 +141,7 @@ const ViewProject = () => {
         </Button>
       </Box>
     );
-  }
 
-  //  Render giao diện chính
   return (
     <Box m="20px">
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
@@ -214,32 +227,52 @@ const ViewProject = () => {
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Total Expected Credits:
               </Typography>
-              <Typography mb={2}>{formData.totalexpectedcredits || "—"}</Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="totalexpectedcredits"
+                  value={formData.totalexpectedcredits}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.totalexpectedcredits || "—"}</Typography>
+              )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Technical Indicators:
               </Typography>
-              <Typography mb={2}>{formData.totalcompanies || "—"}</Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="totalcompanies"
+                  value={formData.totalcompanies}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.totalcompanies || "—"}</Typography>
+              )}
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Measurement Method:
+              </Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  name="measurementmethod"
+                  value={formData.measurementmethod}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2}>{formData.measurementmethod || "—"}</Typography>
+              )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Status:
               </Typography>
-              {isEditing ? (
-                <TextField
-                  select
-                  fullWidth
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                >
-                  <MenuItem value="SUBMITTED">SUBMITTED</MenuItem>
-                  <MenuItem value="APPROVED">APPROVED</MenuItem>
-                  <MenuItem value="REJECTED">REJECTED</MenuItem>
-                </TextField>
-              ) : (
-                <Typography mb={2}>{formData.status}</Typography>
-              )}
+              <Typography mb={2}>{formData.status}</Typography>
             </Grid>
           </Grid>
         </LocalizationProvider>
@@ -261,8 +294,10 @@ const ViewProject = () => {
               color="success"
               onClick={handleUpdate}
               sx={{ fontWeight: 600 }}
+              disabled={updateLoading}
+              startIcon={updateLoading && <CircularProgress size={20} color="inherit" />}
             >
-              Update
+              {updateLoading ? "Updating..." : "Update"}
             </Button>
           )}
           <Button
@@ -283,8 +318,12 @@ const ViewProject = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
-          Update successfully!
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>

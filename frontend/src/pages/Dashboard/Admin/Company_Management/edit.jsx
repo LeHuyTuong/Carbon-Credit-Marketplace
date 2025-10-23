@@ -1,4 +1,3 @@
-// src/scenes/admin/application_edit.jsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -37,31 +36,30 @@ const ApplicationEdit = () => {
     severity: "success",
   });
 
-  // Map status từ API về giá trị frontend
+  //  Map status từ API
   const mapStatus = (status) => {
     switch (status) {
       case "ADMIN_APPROVED":
-      case "APPROVED":
         return "APPROVED";
       case "ADMIN_REJECTED":
-      case "REJECTED":
         return "REJECTED";
+      case "NEEDS_REVISION":
+        return "NEEDS_REVISION";
       case "UNDER_REVIEW":
         return "UNDER_REVIEW";
-      case "SUBMITTED":
       default:
         return "SUBMITTED";
     }
   };
 
+  //  Fetch dữ liệu
   useEffect(() => {
     const fetchApplication = async () => {
       try {
-        const data = await getProjectApplicationById(id);
-        console.log("📥 Raw API response:", data);
+        const res = await getProjectApplicationById(id);
+        console.log(" Raw API response:", res);
 
-        const appData = data?.response || data;
-
+        const appData = res?.response || res;
         if (appData && appData.id) {
           setApplication(appData);
           setFormData({
@@ -76,7 +74,7 @@ const ApplicationEdit = () => {
           throw new Error("Application not found");
         }
       } catch (error) {
-        console.error("❌ Error fetching application:", error);
+        console.error(" Error fetching application:", error);
         setSnackbar({
           open: true,
           message: "Failed to fetch application.",
@@ -90,66 +88,56 @@ const ApplicationEdit = () => {
     fetchApplication();
   }, [id]);
 
-  // Cập nhật form
+  //  Cập nhật dữ liệu form
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Gửi update
+  //  Gửi cập nhật duyệt (Save)
   const handleUpdate = async () => {
-    if (!application || !application.id) {
-      setSnackbar({
-        open: true,
-        message: "Application not found. Cannot update.",
-        severity: "error",
-      });
-      return;
-    }
-
+  try {
     const payload = {
-      approved: formData.status === "APPROVED",
-      note: formData.finalReviewNote || formData.reviewNote || "",
+      approved: formData.status === "APPROVED", //  chỉ approved nếu status = APPROVED
+      note: formData.finalReviewNote || "No note provided",
     };
 
-    console.log("📤 Sending update payload:", payload);
+    console.log(" Sending update payload:", payload);
 
-    try {
-      const result = await updateApplicationDecision(application.id, payload);
+    const result = await updateApplicationDecision(id, payload);
+    console.log(" Update result:", result);
 
-      if (result?.responseStatus?.responseCode === "200") {
-        setSnackbar({
-          open: true,
-          message: "✅ Updated successfully!",
-          severity: "success",
-        });
-        setTimeout(() => navigate(`/admin/view_company/${application.id}`), 1200);
-      } else {
-        throw new Error(result?.responseStatus?.responseMessage || "Update failed");
-      }
-    } catch (error) {
-      console.error("❌ Update failed:", error);
+    const code = result?.responseStatus?.responseCode;
+    if (code === "200" || code === "00000000") {
       setSnackbar({
         open: true,
-        message: "Update failed! Please check your data.",
-        severity: "error",
+        message: " Updated successfully!",
+        severity: "success",
       });
+      setTimeout(() => navigate("/admin/company_management"), 1000);
+    } else {
+      throw new Error(result?.responseStatus?.responseMessage);
     }
-  };
+  } catch (error) {
+    console.error(" Update failed:", error);
+    setSnackbar({
+      open: true,
+      message: "Application submission failed. Please check your data.",
+      severity: "error",
+    });
+  }
+};
 
-  // Loading
+
+
+  //  Loading state
   if (loading)
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="70vh"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
         <CircularProgress />
       </Box>
     );
 
-  // Không có dữ liệu
+  //  Không tìm thấy dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -166,7 +154,7 @@ const ApplicationEdit = () => {
       </Box>
     );
 
-  // Form edit
+  //  Giao diện form chính
   return (
     <Box m="20px">
       <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -203,6 +191,7 @@ const ApplicationEdit = () => {
         >
           <MenuItem value="SUBMITTED">Submitted</MenuItem>
           <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
+          <MenuItem value="NEEDS_REVISION">Needs Revision</MenuItem>
           <MenuItem value="APPROVED">Approved</MenuItem>
           <MenuItem value="REJECTED">Rejected</MenuItem>
         </TextField>
@@ -215,6 +204,7 @@ const ApplicationEdit = () => {
           multiline
           rows={3}
           sx={{ mt: 2 }}
+          InputProps={{readOnly: true}}
         />
 
         <TextField
@@ -233,6 +223,7 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("applicationDocsUrl", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
+          InputProps={{readOnly: true}}
         />
 
         <Box mt={3} display="flex" gap={2}>

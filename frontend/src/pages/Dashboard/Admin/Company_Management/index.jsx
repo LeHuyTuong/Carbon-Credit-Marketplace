@@ -23,7 +23,7 @@ const ApplicationList = () => {
       } catch (error) {
         console.error("Error fetching applications:", error);
       } finally {
-        setLoading(false); // ✅ đảm bảo loading dừng kể cả khi lỗi
+        setLoading(false); // đảm bảo loading dừng kể cả khi lỗi
       }
     };
 
@@ -85,7 +85,7 @@ const ApplicationList = () => {
             rel="noopener noreferrer"
             style={{ color: "#64B5F6", textDecoration: "underline" }}
           >
-            View Docs
+            View Doc
           </a>
         ) : (
           <span style={{ color: "#aaa" }}>No file</span>
@@ -107,7 +107,7 @@ const ApplicationList = () => {
       renderCell: (params) => (
         <div className="cellAction">
           <Link
-            to={`/admin/view_company/${params.row.id}`}
+            to={`/admin/view_company/${params.row.id || params.row.applicationId}`}
             style={{ textDecoration: "none" }}
           >
             <div className="viewButton">View</div>

@@ -1,4 +1,3 @@
-// src/scenes/admin/view_application.jsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -18,16 +17,29 @@ const ApplicationView = () => {
   const navigate = useNavigate();
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const data = await getProjectApplicationById(id);
-        setApplication(data);
+        console.log(" View page ID:", id);
+        const res = await getProjectApplicationById(id);
+        const data = res?.response || res;
+        console.log(" Raw API response:", data);
+
+        if (data && data.id) setApplication(data);
+        else throw new Error("No valid data received");
       } catch (error) {
-        console.error("Error fetching detail:", error);
-        setSnackbar({ open: true, message: "Failed to fetch application.", severity: "error" });
+        console.error(" Error fetching detail:", error);
+        setSnackbar({
+          open: true,
+          message: "Failed to fetch application.",
+          severity: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -48,7 +60,11 @@ const ApplicationView = () => {
         <Typography variant="h6" color="error">
           Application not found.
         </Typography>
-        <Button onClick={() => navigate(-1)} variant="contained" sx={{ mt: 2 }}>
+        <Button
+          onClick={() => navigate("/admin/company_management")}
+          variant="contained"
+          sx={{ mt: 2 }}
+        >
           Back
         </Button>
       </Box>
@@ -56,23 +72,57 @@ const ApplicationView = () => {
 
   return (
     <Box m="20px">
-      <Header title="APPLICATION DETAIL" subtitle={`ID: ${application.id}`} />
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Typography variant="h6">Project Title: {application.projectTitle}</Typography>
-        <Typography>Company: {application.companyName}</Typography>
-        <Typography>Status: {application.status}</Typography>
-        <Typography>Review Note: {application.reviewNote || "N/A"}</Typography>
-        <Typography>Final Review Note: {application.finalReviewNote || "N/A"}</Typography>
+      {/* Header + Buttons Row */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
+        <Header
+          title="COMPANY APPLICATION DETAIL"
+          subtitle={`ID: ${application.id}`}
+        />
 
-        <Button
-          variant="contained"
-          sx={{ mt: 2 }}
-          onClick={() => navigate(`/admin/edit_company/${id}`)}
-        >
-          Edit
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={() => navigate("/admin/company_management")}
+          >
+             Back
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => navigate(`/admin/edit_company/${application.id}`)}
+          >
+             Edit
+          </Button>
+        </Box>
+      </Box>
 
-        <Typography mt={2}>Submitted At: {new Date(application.submittedAt).toLocaleString()}</Typography>
+      {/* Detail Content */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Project Title: {application.projectTitle}
+        </Typography>
+
+        <Typography sx={{ mt: 1 }}>Company: {application.companyName}</Typography>
+        <Typography sx={{ mt: 1 }}>Status: {application.status}</Typography>
+        <Typography sx={{ mt: 1 }}>
+          Review Note: {application.reviewNote || "N/A"}
+        </Typography>
+        <Typography sx={{ mt: 1 }}>
+          Final Review Note: {application.finalReviewNote || "N/A"}
+        </Typography>
+
+        <Typography sx={{ mt: 2 }}>
+          Submitted At:{" "}
+          {application.submittedAt
+            ? new Date(application.submittedAt).toLocaleString()
+            : "N/A"}
+        </Typography>
 
         {application.applicationDocsUrl ? (
           <Box mt={2}>
@@ -80,7 +130,11 @@ const ApplicationView = () => {
               href={application.applicationDocsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#42A5F5", textDecoration: "underline" }}
+              style={{
+                color: "#1976d2",
+                textDecoration: "underline",
+                fontWeight: 500,
+              }}
             >
               View Attached Docs
             </a>
@@ -90,14 +144,9 @@ const ApplicationView = () => {
             No document attached
           </Typography>
         )}
-
-        <Box mt={3}>
-          <Button variant="contained" onClick={() => navigate(-1)}>
-            Back
-          </Button>
-        </Box>
       </Paper>
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
