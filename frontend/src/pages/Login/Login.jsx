@@ -52,7 +52,11 @@ export default function Login() {
       const user = { email: values.email, role: roles?.[0] || "USER" };
       login(user, token, remember);
 
-      nav("/home", { replace: true });
+      if (user.role === "CVA") {
+        nav("/cva");
+      } else if (user.role === "ADMIN") {
+        nav("/admin");
+      } else nav("/home", { replace: true });
       toast.success("Login successful!");
     } catch (err) {
       const msg = err?.response?.responseStatus?.responseMessage || err.message;
