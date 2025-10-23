@@ -10,22 +10,23 @@ import {
   TextField,
   CircularProgress,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { useState } from "react";
-import { verifyReportCVA } from "@/apiCVA/reportCVA.js";
+import { useState, useEffect } from "react";
+import { verifyReportCVA, getReportById } from "@/apiCVA/reportCVA.js";
 
 const ViewReport = ({ report: initialReport }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const { id } = useParams();
 
   // --- State ---
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!initialReport);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
@@ -34,12 +35,39 @@ const ViewReport = ({ report: initialReport }) => {
     Pending: "#42A5F5",
     Approved: "#4CAF50",
     Rejected: "#E53935",
+    SUBMITTED: "#42A5F5",
+    CVA_APPROVED: "#4CAF50",
+    ADMIN_APPROVED: "#2E7D32",
   };
+
+  // --- Fetch report khi không có prop ---
+  useEffect(() => {
+    if (!report && id) {
+      const fetchReport = async () => {
+        setLoading(true);
+        try {
+          const data = await getReportById(id);
+          if (data) {
+            setReport(data);
+          } else {
+            console.error("Unexpected response:", data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch report:", err);
+          setSnackbarSeverity("error");
+          setSnackbarMsg("Failed to load report data!");
+          setOpenSnackbar(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchReport();
+    }
+  }, [id, report]);
 
   // --- Cập nhật trạng thái report ---
   const handleUpdate = async (approved) => {
     if (!report) return;
-
     setLoading(true);
     try {
       await verifyReportCVA(report.id, {
@@ -49,7 +77,7 @@ const ViewReport = ({ report: initialReport }) => {
 
       setReport((prev) => ({
         ...prev,
-        status: approved ? "Approved" : "Rejected",
+        status: approved ? "CVA_APPROVED" : "REJECTED",
       }));
 
       setSnackbarSeverity("success");
@@ -135,6 +163,11 @@ const ViewReport = ({ report: initialReport }) => {
             </Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
+              Project:
+            </Typography>
+            <Typography>{report.projectName}</Typography>
+
+            <Typography variant="h6" color={colors.grey[100]} mt={2}>
               Reporting Period:
             </Typography>
             <Typography>{report.period}</Typography>
@@ -182,10 +215,10 @@ const ViewReport = ({ report: initialReport }) => {
                 textTransform: "capitalize",
               }}
             >
-              {report.status}
+              {report.status?.replace("_", " ")}
             </Typography>
 
-            {report.status === "Rejected" && (
+            {report.status === "REJECTED" && (
               <Box mt={2}>
                 <Typography variant="h6" color={colors.grey[100]}>
                   Note:
@@ -220,9 +253,7 @@ const ViewReport = ({ report: initialReport }) => {
           >
             Reject
           </Button>
-          <Button variant="contained" color="info">
-            Download Data
-          </Button>
+          
           <Button
             variant="outlined"
             color="inherit"

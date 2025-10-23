@@ -149,6 +149,27 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
             <Item
+              title="Manage EV Owners"
+              to="/admin/ev_owner_management"
+              icon={<PeopleOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Manage Companies"
+              to="/admin/companies_management"
+              icon={<PeopleOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Manage CVA"
+              to="/admin/cva_management"
+              icon={<PeopleOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
               title="Manage Credits"
               to="/admin/credit_management"
               icon={<CreditCardIcon />}
