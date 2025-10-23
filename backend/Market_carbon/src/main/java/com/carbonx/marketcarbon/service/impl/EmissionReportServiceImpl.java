@@ -57,35 +57,27 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private static final BigDecimal DEFAULT_EF_KG_PER_KWH = new BigDecimal("0.4");
 
     @Override
-    public EmissionReportResponse uploadCsvAsReport(MultipartFile file) {
-        // 1) Lấy user & company
+    public EmissionReportResponse uploadCsvAsReport(MultipartFile file, Long projectIdParam) {
+        // 1) User & company như cũ ...
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-
         User currentUser = Optional.ofNullable(userRepository.findByEmail(email))
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        Company seller = companyRepository.findByUserId(currentUser.getId())
+                .orElseGet(() -> companyRepository.findByUserEmail(email));
+        if (seller == null) throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
 
-        Company seller = companyRepository.findByUserId(currentUser.getId()).orElse(null);
-        if (seller == null) {
-            seller = companyRepository.findByUserEmail(email);
-        }
-        if (seller == null) {
-            throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
-        }
-
-        // 2) Lưu file vào storage
+        // 2) Upload storage như cũ ...
         String filename = (file.getOriginalFilename() != null) ? file.getOriginalFilename() : "emission.csv";
         FileStorageService.PutResult put;
-        try {
-            put = storage.putObject("emission-reports", filename, file);
-        } catch (Exception ex) {
-            throw new AppException(ErrorCode.STORAGE_UPLOAD_FAILED);
-        }
+        try { put = storage.putObject("emission-reports", filename, file); }
+        catch (Exception ex) { throw new AppException(ErrorCode.STORAGE_UPLOAD_FAILED); }
         String sha256 = computeSha256(file);
 
-        // 3) Parse CSV -> build list detail theo từng xe
+        // 3) Parse CSV
         String period = null;
-        Long projectId = null;
+        Long projectIdFromCsv = null; // lấy từ CSV nếu có
+        Long finalProjectId = null;
 
         List<EmissionReportDetail> details = new ArrayList<>();
         int rows = 0;
@@ -100,70 +92,67 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             CSVParser parser = format.parse(reader);
             Set<String> headers = parser.getHeaderMap().keySet();
 
-            // Các header cần/tuỳ chọn
-            String projectHeader = requireHeader(headers, "project_id");
-            String periodHeader = requireHeader(headers, "period");
-            String energyHeader = findHeader(headers,
-                    "total_energy", "total_charging_energy", "charging_energy_total", "charging_energy");
-            if (energyHeader == null) {
-                throw new AppException(ErrorCode.CSV_MISSING_TOTAL_ENERGY_OR_CHARGING);
-            }
-            String co2Header = findHeader(headers, "co2_kg", "co2", "co2e_kg");
+            // CHỈNH: project_id trở thành TÙY CHỌN
+            String projectHeader = findHeader(headers, "project_id", "project", "projectId");
+            String periodHeader  = requireHeader(headers, "period");
+            String energyHeader  = findHeader(headers, "total_energy","total_charging_energy","charging_energy_total","charging_energy");
+            if (energyHeader == null) throw new AppException(ErrorCode.CSV_MISSING_TOTAL_ENERGY_OR_CHARGING);
+            String co2Header     = findHeader(headers, "co2_kg", "co2", "co2e_kg");
             String vehicleIdHeader = findHeader(headers, "vehicle_id", "vehicle", "ev_id", "vin");
 
             for (CSVRecord r : parser) {
-                // Kiểm tra project & period nhất quán
-                Long pid = parseLong(safeGet(r, projectHeader));
+                // Lấy projectId từ hàng hiện tại (nếu CSV có), nếu không dùng tham số form
+                Long pidRow = (projectHeader != null) ? parseLong(safeGet(r, projectHeader)) : projectIdParam;
+
+                // Nếu cả CSV lẫn param đều rỗng => lỗi
+                if (pidRow == null) {
+                    // Tận dụng error code sẵn có: thiếu project -> xem như inconsistent / missing
+                    throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
+                }
+
+                // Ghi nhận projectId nhất quán xuyên suốt CSV
+                if (projectIdFromCsv == null && projectHeader != null) projectIdFromCsv = pidRow;
+                // Nếu đã có finalProjectId, mỗi dòng phải khớp
+                if (finalProjectId == null) finalProjectId = pidRow;
+                else if (!finalProjectId.equals(pidRow)) throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
+
+                // Nếu param tồn tại và CSV có project_id thì phải khớp
+                if (projectIdParam != null && projectHeader != null && !projectIdParam.equals(pidRow)) {
+                    throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
+                }
+
                 String per = safeGet(r, periodHeader);
-
-                if (projectId == null) projectId = pid;
-                else if (!projectId.equals(pid)) throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
-
                 if (period == null) period = per;
                 else if (!period.equals(per)) throw new AppException(ErrorCode.CSV_INCONSISTENT_PERIOD);
 
-                // Lấy năng lượng
                 String energyStr = safeGet(r, energyHeader);
-                if (energyStr.isEmpty()) {
-                    throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
-                }
+                if (energyStr.isEmpty()) throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
                 BigDecimal energy = new BigDecimal(energyStr);
 
-                // Lấy CO2 (nếu có), nếu không thì để null - sẽ tính sau theo EF mặc định
                 BigDecimal co2Kg = null;
                 if (co2Header != null) {
                     String c = safeGet(r, co2Header);
-                    if (!c.isEmpty()) {
-                        co2Kg = new BigDecimal(c);
-                    }
+                    if (!c.isEmpty()) co2Kg = new BigDecimal(c);
                 }
 
-                // vehicleId (tuỳ chọn)
                 Long vehicleId = null;
                 if (vehicleIdHeader != null) {
                     String v = safeGet(r, vehicleIdHeader);
                     if (!v.isEmpty()) {
-                        try {
-                            vehicleId = parseLong(v);
-                        } catch (NumberFormatException ignored) {
-                            // nếu VIN alphanumeric -> có thể để null hoặc hash riêng, tuỳ business
-                        }
+                        try { vehicleId = parseLong(v); } catch (NumberFormatException ignored) { /* VIN alpha => bỏ qua */ }
                     }
                 }
 
-                EmissionReportDetail d = EmissionReportDetail.builder()
+                details.add(EmissionReportDetail.builder()
                         .period(per)
                         .companyId(seller.getId())
-                        .projectId(pid)
+                        .projectId(pidRow)
                         .vehicleId(vehicleId)
                         .totalEnergy(energy)
-                        .co2Kg(co2Kg) // có thể null, sẽ fill sau
-                        .build();
-
-                details.add(d);
+                        .co2Kg(co2Kg) // có thể null
+                        .build());
                 rows++;
             }
-
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
@@ -171,11 +160,12 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
         }
 
-        if (details.isEmpty()) {
-            throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
-        }
+        if (details.isEmpty()) throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
 
-        // 4) Lấy project, check trùng kỳ
+        // Ưu tiên: nếu có param thì dùng param; nếu không, dùng giá trị đã suy ra từ CSV
+        final Long projectId = (projectIdParam != null) ? projectIdParam : finalProjectId;
+
+        // 4) Kiểm tra project & kỳ trùng
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
@@ -183,28 +173,19 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             throw new AppException(ErrorCode.REPORT_DUPLICATE_PERIOD);
         }
 
-        // 5) Tính CO2 cho từng detail nếu thiếu, dùng EF mặc định 0.4 kg/kWh
+        // 5) Fill CO2 nếu thiếu
         for (EmissionReportDetail d : details) {
-            if (d.getCo2Kg() == null) {
-                d.setCo2Kg(d.getTotalEnergy().multiply(DEFAULT_EF_KG_PER_KWH));
-            }
+            if (d.getCo2Kg() == null) d.setCo2Kg(d.getTotalEnergy().multiply(DEFAULT_EF_KG_PER_KWH));
         }
 
         // 6) Tổng hợp
-        BigDecimal totalEnergy = details.stream()
-                .map(EmissionReportDetail::getTotalEnergy)
+        BigDecimal totalEnergy = details.stream().map(EmissionReportDetail::getTotalEnergy)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCo2 = details.stream().map(EmissionReportDetail::getCo2Kg)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalCo2 = details.stream()
-                .map(EmissionReportDetail::getCo2Kg)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // vehicleCount: nếu có vehicle_id -> đếm distinct; nếu không -> số dòng
-        long distinctVehicles = details.stream()
-                .map(EmissionReportDetail::getVehicleId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet())
-                .size();
+        long distinctVehicles = details.stream().map(EmissionReportDetail::getVehicleId)
+                .filter(Objects::nonNull).collect(Collectors.toSet()).size();
         int vehicleCount = (distinctVehicles > 0) ? (int) distinctVehicles : details.size();
 
         // 7) Lưu report tổng
@@ -230,14 +211,13 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
         EmissionReport saved = reportRepository.save(report);
 
-        // 8) Gắn report_id cho chi tiết và lưu
-        for (EmissionReportDetail d : details) {
-            d.setReport(saved);
-        }
+        // 8) Gắn report_id cho detail và lưu
+        for (EmissionReportDetail d : details) d.setReport(saved);
         detailRepository.saveAll(details);
 
         return EmissionReportResponse.from(saved);
     }
+
 
     @Override
     public Page<EmissionReportResponse> listReportsForCva(String status, Pageable pageable) {
