@@ -27,7 +27,7 @@ export const getProjectApplicationById = async (id) => {
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
-      return res.response || null;
+      return res; //  trả về nguyên response object
     } else {
       console.error("API returned an error:", res.responseStatus);
       return null;
@@ -37,18 +37,25 @@ export const getProjectApplicationById = async (id) => {
     return null;
   }
 };
+
 export async function updateApplicationDecision(applicationId, payload) {
   const { approved, note = "" } = payload;
 
+  //  Ép approved về true/false (đúng kiểu boolean, không string)
   const query = new URLSearchParams({
-    approved, // bắt buộc
-    note,     // optional
+    approved: approved ? "true" : "false",
+    note: note.trim(),
   }).toString();
 
   return apiFetch(`/api/v1/project-applications/${applicationId}/admin-decision?${query}`, {
     method: "PUT",
+    headers: {
+      "X-Request-Trace": crypto.randomUUID?.() || "trace-id",
+      "X-Request-DateTime": new Date().toISOString(),
+    },
   });
 }
+
 
 
 

@@ -37,36 +37,36 @@ export const getVehicles = async () => {
 export const createVehicle = async (data) => {
   return await apiFetch("/api/v1/vehicles", {
     method: "POST",
-    body:{
-        plateNumber: data.plateNumber,
-        model: data.model,
-        brand: data.brand,
-        companyId: data.companyId,
-    },
-    // body: buildRequestBody({
+    // body:{
     //     plateNumber: data.plateNumber,
     //     model: data.model,
     //     brand: data.brand,
     //     companyId: data.companyId,
-    // }),
+    // },
+    body: buildRequestBody({
+        plateNumber: data.plateNumber,
+        model: data.model,
+        brand: data.brand,
+        companyId: data.companyId,
+    }),
   });
 };
 
 export const updateVehicle = async (id, data) => {
   return await apiFetch(`/api/v1/vehicles/${id}`, {
     method: "PUT",
-    // body: buildRequestBody({
-    //   plateNumber: data.plateNumber,
-    //   model: data.model,
-    //   brand: data.brand,
-    //   companyId: data.companyId,
-    // }),
-        body:{
-        plateNumber: data.plateNumber,
-        model: data.model,
-        brand: data.brand,
-        companyId: data.companyId,
-    },
+    body: buildRequestBody({
+      plateNumber: data.plateNumber,
+      model: data.model,
+      brand: data.brand,
+      companyId: data.companyId,
+    }),
+    //     body:{
+    //     plateNumber: data.plateNumber,
+    //     model: data.model,
+    //     brand: data.brand,
+    //     companyId: data.companyId,
+    // },
   });
 };
 

@@ -1,3 +1,4 @@
+// src/views/ViewReport.jsx
 import {
   Box,
   Typography,
@@ -7,68 +8,105 @@ import {
   Snackbar,
   Alert,
   TextField,
+  CircularProgress,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataReportsCVA } from "@/data/mockData";
 import { useState } from "react";
+import { verifyReportCVA } from "@/apiCVA/reportCVA.js";
 
-const ViewReport = () => {
-  const { id } = useParams();
+const ViewReport = ({ report: initialReport }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const initial = mockDataReportsCVA.find((item) => item.id === parseInt(id));
-
-  if (!initial) {
-    return (
-      <Box m="20px">
-        <Typography variant="h4" color={colors.grey[100]}>
-          Report not found
-        </Typography>
-      </Box>
-    );
-  }
-
-  const [report, setReport] = useState(initial);
-  const [status, setStatus] = useState(report.status || "Pending");
-  const [note, setNote] = useState(report.note || "");
+  // --- State ---
+  const [report, setReport] = useState(initialReport || null);
+  const [note, setNote] = useState(initialReport?.note || "");
+  const [loading, setLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
-
-  const handleUpdate = (newStatus) => {
-    const updated = {
-      ...report,
-      status: newStatus,
-      note: newStatus === "Rejected" ? note : "",
-    };
-    setReport(updated);
-    setStatus(newStatus);
-    setOpenSnackbar(true);
-  };
-
-  const handleSaveNote = () => {
-    const updated = { ...report, note };
-    setReport(updated);
-    setOpenSnackbar(true);
-  };
-
-  const handleCloseSnackbar = () => setOpenSnackbar(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
   const colorMap = {
     Pending: "#42A5F5",
     Approved: "#4CAF50",
     Rejected: "#E53935",
   };
+
+  // --- Cập nhật trạng thái report ---
+  const handleUpdate = async (approved) => {
+    if (!report) return;
+
+    setLoading(true);
+    try {
+      await verifyReportCVA(report.id, {
+        approved,
+        comment: approved ? "" : note,
+      });
+
+      setReport((prev) => ({
+        ...prev,
+        status: approved ? "Approved" : "Rejected",
+      }));
+
+      setSnackbarSeverity("success");
+      setSnackbarMsg("Status updated successfully!");
+    } catch (err) {
+      console.error("Update failed:", err);
+      setSnackbarSeverity("error");
+      setSnackbarMsg("Failed to update status!");
+    } finally {
+      setOpenSnackbar(true);
+      setLoading(false);
+    }
+  };
+
+  const handleCloseSnackbar = () => setOpenSnackbar(false);
+
+  // --- Loading ---
+  if (loading) {
+    return (
+      <Box
+        m="20px"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="70vh"
+      >
+        <CircularProgress color="info" />
+      </Box>
+    );
+  }
+
+  // --- Không có report ---
+  if (!report) {
+    return (
+      <Box m="20px" textAlign="center">
+        <Typography variant="h4" color={colors.grey[100]}>
+          Report data not available
+        </Typography>
+        <Button
+          variant="outlined"
+          color="info"
+          sx={{ mt: 2 }}
+          onClick={() => navigate(-1)}
+        >
+          Back
+        </Button>
+      </Box>
+    );
+  }
+
   const color = colorMap[report.status] || colors.grey[300];
 
   return (
     <Box m="20px">
       <Header
         title="REPORT DETAIL"
-        subtitle={`Details of Report ${report.reportid}`}
+        subtitle={`Details of Report ${report.id}`}
       />
 
       <Paper
@@ -81,53 +119,53 @@ const ViewReport = () => {
         }}
       >
         <Grid container spacing={2}>
-          {/* Cột trái */}
+          {/* Left Column */}
           <Grid item xs={12} sm={6}>
             <Typography variant="h6" color={colors.grey[100]}>
               Report ID:
             </Typography>
-            <Typography>{report.reportid}</Typography>
+            <Typography>{report.id}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
               Company (Sender):
             </Typography>
-            <Typography>{report.company}</Typography>
-
+            <Typography>{report.sellerName}</Typography>
             <Typography variant="body2" color={colors.grey[300]}>
-              ID: {report.companyid || "CMP-001"}
-            </Typography>
-            <Typography variant="body2" color={colors.grey[300]}>
-              Email: {report.companyemail || "contact@company.com"}
+              ID: {report.sellerId}
             </Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
               Reporting Period:
             </Typography>
-            <Typography>{report.reportingperiod}</Typography>
+            <Typography>{report.period}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
-              Total EV Owners:
+              Total Energy:
             </Typography>
-            <Typography>{report.totalEV}</Typography>
+            <Typography>{report.totalEnergy}</Typography>
           </Grid>
 
-          {/* Cột phải */}
+          {/* Right Column */}
           <Grid item xs={12} sm={6}>
             <Typography variant="h6" color={colors.grey[100]}>
-              Total Proposed Credits (tCO₂):
+              Total CO₂:
             </Typography>
-            <Typography>{report.totalcredits}</Typography>
+            <Typography>{report.totalCo2}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
               Submission Date:
             </Typography>
-            <Typography>{report.submissiondate}</Typography>
+            <Typography>{report.submittedAt}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>
               Attachment:
             </Typography>
-            {report.file ? (
-              <Button variant="outlined" color="info">
+            {report.uploadStorageUrl ? (
+              <Button
+                variant="outlined"
+                color="info"
+                onClick={() => window.open(report.uploadStorageUrl, "_blank")}
+              >
                 Download File
               </Button>
             ) : (
@@ -161,39 +199,29 @@ const ViewReport = () => {
                   onChange={(e) => setNote(e.target.value)}
                   sx={{ mt: 1 }}
                 />
-                <Box display="flex" justifyContent="flex-end" mt={2}>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    onClick={handleSaveNote}
-                    disabled={!note.trim()}
-                  >
-                     Save Note
-                  </Button>
-                </Box>
               </Box>
             )}
           </Grid>
         </Grid>
 
-        {/* Nút hành động */}
+        {/* Action Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
           <Button
             variant="contained"
             color="success"
-            onClick={() => handleUpdate("Approved")}
+            onClick={() => handleUpdate(true)}
           >
-             Approve
+            Approve
           </Button>
           <Button
             variant="contained"
             color="error"
-            onClick={() => handleUpdate("Rejected")}
+            onClick={() => handleUpdate(false)}
           >
             Reject
           </Button>
           <Button variant="contained" color="info">
-             Download Data
+            Download Data
           </Button>
           <Button
             variant="outlined"
@@ -214,12 +242,10 @@ const ViewReport = () => {
       >
         <Alert
           onClose={handleCloseSnackbar}
-          severity="success"
+          severity={snackbarSeverity}
           sx={{ width: "100%" }}
         >
-          {status === "Rejected" && note
-            ? "Note saved successfully!"
-            : "Status updated successfully!"}
+          {snackbarMsg}
         </Alert>
       </Snackbar>
     </Box>

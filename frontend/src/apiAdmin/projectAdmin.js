@@ -1,10 +1,10 @@
 import { apiFetch } from "@/utils/apiFetch";
 
 //  Tạo mới project
-export async function createProject(payload) {
+export async function createProject(formData) {
   return await apiFetch("/api/v1/projects", {
     method: "POST",
-    body: payload,
+    body: formData,
   });
 }
 
@@ -21,25 +21,20 @@ export async function getProjectById(id) {
   });
 }
 // Cập nhật project theo id
-export const updateProjectById = async (id, data) => {
-  const body = {
-    requestTrace: "trace-update-project",
-    requestDateTime: new Date().toISOString(),
-    data: {
-      title: data.title,
-      description: data.description,
-      logo: data.logo,
-      commitments: data.commitments,
-      technicalIndicators: data.technicalIndicators,
-      measurementMethod: data.measurementMethod,
-      legalDocsUrl: data.legalDocsUrl,
-    },
-  };
-
-  return await apiFetch(`/api/v1/projects/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+export const updateProjectById = async (id, payload) => {
+  try {
+    const res = await fetch(`/api/v1/projects/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload), // gửi thẳng JSON
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Error updating project:", err);
+    throw err;
+  }
 };
+
 

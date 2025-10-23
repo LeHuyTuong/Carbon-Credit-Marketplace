@@ -29,7 +29,7 @@ const EVList = () => {
 
         const res = await getVehicles(pageNo, pageSize);
 
-        // ✅ đọc đúng key `data` từ API
+        //  đọc đúng key `data` từ API
         const items = res?.data || [];
 
         setData(
@@ -44,7 +44,7 @@ const EVList = () => {
         setTotalCount(totalRows);
 
       } catch (err) {
-        console.error("❌ Failed to fetch vehicles:", err);
+        console.error(" Failed to fetch vehicles:", err);
         setError("Failed to load vehicles");
         setData([]);
         setTotalCount(0);
