@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/themeCVA";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
@@ -10,54 +10,25 @@ import Header from "@/components/Chart/Header.jsx";
 import LineChart from "@/components/Chart/LineChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
-import { apiFetch } from "@/utils/apiFetch";
+
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [applications, setApplications] = useState([]);
-  const [stats, setStats] = useState({
-    reports: 0,
-    transactions: 0,
-    users: 0,
-    vehicles: 0,
-  });
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Nếu API yêu cầu token
-        const token = localStorage.getItem("token");
-
-        const response = await apiFetch.get("/api/v1/project-applications", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = response.data.data || [];
-
-        setApplications(data);
-        setStats({
-          reports: data.length,
-          transactions: 5732,
-          users: 32441,
-          vehicles: 1325134,
-        });
-      } catch (error) {
-        console.error("❌ Failed to fetch dashboard data:", error);
-      }
-    };
-    fetchDashboardData();
-  }, []);
-
+  // Dữ liệu mẫu tĩnh (không dùng API)
+  const stats = {
+    reports: 128,
+    transactions: 5732,
+    users: 32441,
+    vehicles: 1325134,
+  };
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="DASHBOARD-CARBON VERIFICATION AUTHORITY"
+          title="DASHBOARD - CARBON VERIFICATION AUTHORITY"
           subtitle="Welcome to your dashboard"
         />
       </Box>
@@ -85,6 +56,7 @@ const Dashboard = () => {
             icon={<AssessmentIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.greenAccent[800]}
@@ -93,13 +65,14 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="5,732"
+            title={stats.transactions.toLocaleString()}
             subtitle="Credits"
             progress="0.50"
             increase="+21%"
             icon={<CreditCardIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.greenAccent[800]}
@@ -108,13 +81,14 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="32,441"
+            title={stats.users.toLocaleString()}
             subtitle="Companies"
             progress="0.30"
             increase="+5%"
             icon={<CorporateFareIcon sx={{ color: colors.primary[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.greenAccent[800]}
@@ -123,7 +97,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,325,134"
+            title={stats.vehicles.toLocaleString()}
             subtitle="Projects"
             progress="0.80"
             increase="+43%"
@@ -165,7 +139,7 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* ROW 2 - BAR CHART (thay thế Recent Transactions) */}
+        {/* ROW 2 - BAR CHART */}
         <Box
           gridColumn="span 6"
           gridRow="span 2"

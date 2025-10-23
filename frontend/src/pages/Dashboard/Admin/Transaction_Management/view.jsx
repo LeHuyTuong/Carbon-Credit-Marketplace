@@ -37,9 +37,9 @@ const ViewTransaction = () => {
       setMessage("Processing...");
       const res = await processWithdrawal(trx.id, accept);
       if (res) setTrx(res);
-      setMessage(accept ? "✅ Approved successfully!" : "❌ Rejected successfully!");
+      setMessage(accept ? " Approved successfully!" : " Rejected successfully!");
     } catch {
-      setMessage("❌ Failed to process transaction.");
+      setMessage(" Failed to process transaction.");
     } finally {
       setTimeout(() => setMessage(""), 2500);
     }

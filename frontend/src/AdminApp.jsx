@@ -63,7 +63,7 @@ function App() {
               <Route path="/geography" element={<Geography />} />
               <Route path="/view_profile_admin" element={<View_Profile />} />
               <Route path="/edit_profile_admin" element={<Edit_Profile />} />
-              <Route path="/view_user/:id" element={<User_View />} />
+              <Route path="/view_user/:email" element={<User_View />} />
               <Route path="/view_credit/:id" element={<Credit_View />} />
               <Route path="/transaction/:id" element={<Transaction_Page />} />
               <Route path="/view_report/:id" element={<Report_View />} />
