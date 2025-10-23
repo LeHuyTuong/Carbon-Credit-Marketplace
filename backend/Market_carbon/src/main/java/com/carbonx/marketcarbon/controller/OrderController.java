@@ -3,7 +3,7 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
-import com.carbonx.marketcarbon.dto.response.OrderResponse;
+import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 import com.carbonx.marketcarbon.service.OrderService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
@@ -23,14 +23,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('COMPANY')")
 public class OrderController {
 
     private final OrderService orderService;
 
     @Operation(summary = "Buyer company create a new Order" , description = "Buyer company creates a Pending order based on marketplace listing")
     @PostMapping
-    public ResponseEntity<TuongCommonResponse<OrderResponse>> createOrder(
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<TuongCommonResponse<CreditTradeResponse>> createOrder(
             @Valid  @RequestBody TuongCommonRequest<OrderRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -38,11 +38,11 @@ public class OrderController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        OrderResponse order = orderService.createOrder(request.getData());
+        CreditTradeResponse order = orderService.createOrder(request.getData());
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<OrderResponse> response = new TuongCommonResponse<>(now,trace,rs, order);
+        TuongCommonResponse<CreditTradeResponse> response = new TuongCommonResponse<>(now,trace,rs, order);
         return ResponseEntity.ok(response);
     }
 
@@ -69,7 +69,7 @@ public class OrderController {
 
     @Operation(summary = "Get Order by ID", description = "Retrieves the details of a specific order.")
     @GetMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<OrderResponse>> getOrderById(
+    public ResponseEntity<TuongCommonResponse<CreditTradeResponse>> getOrderById(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -77,24 +77,25 @@ public class OrderController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        OrderResponse responseData = orderService.getOrderById(orderId);
+        CreditTradeResponse responseData = orderService.getOrderById(orderId);
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<OrderResponse> response = new TuongCommonResponse<>(trace, now, rs, responseData);
+        TuongCommonResponse<CreditTradeResponse> response = new TuongCommonResponse<>(trace, now, rs, responseData);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get User's Order History", description = "Retrieves all orders placed by the current user's company.")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<OrderResponse>>> getUserOrders(
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<TuongCommonResponse<List<CreditTradeResponse>>> getUserOrders(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        List<OrderResponse> orders = orderService.getUserOrders();
+        List<CreditTradeResponse> orders = orderService.getUserOrders();
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<OrderResponse>> response = new TuongCommonResponse<>(trace, now, rs, orders);
+        TuongCommonResponse<List<CreditTradeResponse>> response = new TuongCommonResponse<>(trace, now, rs, orders);
         return ResponseEntity.ok(response);
     }
 

@@ -33,6 +33,12 @@ public class PaymentOrder extends BaseEntity{
     @JsonIgnore
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "payment_order_id")
+    @JsonIgnore
+    private PaymentOrder order;
+
+
     @Column(unique = true)
     private String vnpTxnRef; // Mã giao dịch của VNPay
 }

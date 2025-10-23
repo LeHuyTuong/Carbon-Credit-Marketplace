@@ -70,17 +70,17 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         BigDecimal balanceAfter;
 
         if (request.getType() == WalletTransactionType.WITH_DRAWL ||
-                request.getType() == WalletTransactionType.BUY_CARBON_CREDIT || // Buyer pays
-                request.getType() == WalletTransactionType.EV_OWNER_PAYOUT) // Aggregator pays out
+            request.getType() == WalletTransactionType.BUY_CARBON_CREDIT
+        )
         {
             // For subtraction, the requested amount should likely be positive, then negated logic applies
             if (amount.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Amount for withdrawal/payment types should be positive.");
+                throw new IllegalArgumentException("Amount for withdrawal should be positive.");
             }
             balanceAfter = balanceBefore.subtract(amount);
-        } else if (request.getType() == WalletTransactionType.ADD_MONEY ||
-                request.getType() == WalletTransactionType.SELL_CARBON_CREDIT || // Seller receives
-                request.getType() == WalletTransactionType.EV_OWNER_PAYOUT_RECEIVE) // EV Owner receives
+        }
+        else if (request.getType() == WalletTransactionType.ADD_MONEY ||
+        request.getType() == WalletTransactionType.SELL_CARBON_CREDIT)
         {
             // phải dương
             if (amount.compareTo(BigDecimal.ZERO) < 0) {

@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -47,4 +48,10 @@ public class WalletTransaction {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToOne
+    @JoinColumn(name = "payment_order_id")
+    @JsonIgnore
+    private PaymentOrder paymentOrder;
+
 }
