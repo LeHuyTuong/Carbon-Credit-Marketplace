@@ -12,6 +12,7 @@ import {
   updateVehicle,
   deleteVehicle,
 } from "../ManageVehicle/manageApi";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 //validation schema
 const schema = Yup.object().shape({
@@ -135,10 +136,12 @@ export default function Manage() {
             </tr>
           </thead>
           <tbody>
-            {vehicles.length > 0 ? (
-              vehicles.map((row) => (
+            <PaginatedTable
+              items={vehicles}
+              itemsPerPage={5}
+              renderRow={(row, index) => (
                 <tr key={row.id}>
-                  <td>{row.id}</td>
+                  <td>{index + 1}</td>
                   <td>{row.plateNumber}</td>
                   <td>{row.brand}</td>
                   <td>{row.model}</td>
@@ -158,16 +161,15 @@ export default function Manage() {
                     </button>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="no-data text-center py-5">
+              )}
+              renderEmpty={() => (
+                <>
                   <i className="bi bi-car-front text-accent fs-3 d-block mb-2"></i>
                   <h5 className="text-dark">No vehicles yet</h5>
                   <p className="text-muted">Add your vehicle to get started.</p>
-                </td>
-              </tr>
-            )}
+                </>
+              )}
+            />
           </tbody>
         </table>
       </div>

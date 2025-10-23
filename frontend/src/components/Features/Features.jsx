@@ -5,6 +5,7 @@ import useRipple from "../../hooks/useRipple";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import useReveal from "../../hooks/useReveal.js";
+import PaginatedList from "../Pagination/PaginatedList.jsx";
 export default function Features() {
   const sectionRef1 = useRef(null);
   const sectionRef2 = useRef(null);
@@ -47,10 +48,11 @@ export default function Features() {
           <h2 className="section-title text-center text-dark mb-5">
             Choose Carbon Projects
           </h2>
-          <div className="row g-4">
-            {/* Các dự án do Admin tạo */}
-            {adminProjects.length > 0 &&
-              adminProjects.map((proj) => (
+          {adminProjects.length > 0 && (
+            <PaginatedList
+              items={adminProjects}
+              itemsPerPage={3} // 3 card mỗi trang
+              renderItem={(proj) => (
                 <div className="col-md-4" key={`admin-${proj.id}`}>
                   <div className="card h-100 overflow-hidden position-relative shadow-sm">
                     <div className="bg-image hover-overlay">
@@ -77,7 +79,6 @@ export default function Features() {
                         className="btn btn-primary position-relative overflow-hidden mt-3"
                         onClick={(e) => {
                           ripple(e, e.currentTarget);
-                          // nav(`/marketplace?project=${proj.id}`);
                           nav(`/detail-project/${proj.id}`);
                         }}
                       >
@@ -86,8 +87,9 @@ export default function Features() {
                     </div>
                   </div>
                 </div>
-              ))}
-          </div>
+              )}
+            />
+          )}
         </div>
       </section>
 

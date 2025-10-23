@@ -1,66 +1,46 @@
 import { useEffect, useState, useRef } from "react";
 import { Button, Table, Spinner, Card } from "react-bootstrap";
-import { toast } from "react-toastify";
+import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
 import { apiFetch } from "../../../../utils/apiFetch";
-import { FaArrowLeft } from "react-icons/fa";
 import useReveal from "../../../../hooks/useReveal";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function PurchaseHistory() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [requestDateTime, setRequestDateTime] = useState(null); //lưu thời gian response
   const sectionRef = useRef(null);
   const { state } = useLocation();
   const from = state?.from || "marketplace";
+
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useReveal(sectionRef);
-
-  //cũ
-  // useEffect(() => {
-  //   setLoading(true);
-  //   const stored = JSON.parse(localStorage.getItem("purchases") || "[]");
-  //   setApplications(stored);
-  //   setLoading(false);
-  // }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // gọi api
-        const res = await apiFetch("/api/v1/orders", {
-          method: "GET",
-        });
-
-        // dữ liệu chuẩn từ BE
+        const res = await apiFetch("/api/v1/orders", { method: "GET" });
         const list = res?.response || [];
-
-        // map dữ liệu sang UI-friendly
-        const mapped = list.map((o) => ({
-          id: o.id,
-          companyId: o.companyId,
-          status: o.status,
-          totalAmount: o.totalAmount,
-          createdAt: o.createAt,
-        }));
-
-        setOrders(mapped);
+        setOrders(
+          list.map((o) => ({
+            id: o.id,
+            companyId: o.companyId,
+            status: o.status,
+            totalAmount: o.totalAmount,
+            createdAt: o.createAt,
+          }))
+        );
       } catch (err) {
-        console.error("Failed to fetch order history:", err);
         setError(err.message || "Unable to load orders.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, []);
 
@@ -75,7 +55,6 @@ export default function PurchaseHistory() {
       ref={sectionRef}
       className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
     >
-      {/* nút back */}
       <Button
         variant="outline-info"
         size="sm"
@@ -93,10 +72,7 @@ export default function PurchaseHistory() {
 
       <div
         className="container"
-        style={{
-          maxWidth: "1100px",
-          marginTop: "4rem",
-        }}
+        style={{ maxWidth: "1100px", marginTop: "4rem" }}
       >
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h2 className="fw-bold text-white mb-0 text-shadow">
@@ -136,15 +112,17 @@ export default function PurchaseHistory() {
                   <th>Created At</th>
                 </tr>
               </thead>
-              <tbody>
-                {orders.map((o, index) => (
+              <PaginatedTable
+                items={orders}
+                itemsPerPage={5}
+                renderRow={(o, index) => (
                   <tr key={o.id || index}>
                     <td>{index + 1}</td>
                     <td>{o.id}</td>
                     <td>
                       <span
                         className={`badge bg-${
-                          o.status === "COMPLETED"
+                          o.status === "SUCCESS"
                             ? "success"
                             : o.status === "PENDING"
                             ? "warning"
@@ -156,17 +134,16 @@ export default function PurchaseHistory() {
                     </td>
                     <td>${o.totalAmount?.toLocaleString() || 0}</td>
                     <td>
-                      {new Date(o.createdAt).toLocaleString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {o.createdAt
+                        ? new Date(o.createdAt).toLocaleString("vi-VN", {
+                            timeZone: "Asia/Ho_Chi_Minh",
+                            hour12: false,
+                          })
+                        : "—"}
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                )}
+              />
             </Table>
           )}
         </Card>

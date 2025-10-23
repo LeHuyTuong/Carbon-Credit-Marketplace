@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import useReveal from "../../../../hooks/useReveal";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { Spinner } from "react-bootstrap";
+import PaginatedList from "../../../../components/Pagination/PaginatedList";
 
 export default function Marketplace() {
   const sectionRef = useRef(null);
@@ -57,7 +58,7 @@ export default function Marketplace() {
     <section
       id="projects"
       ref={sectionRef}
-      className="features-section reveal auth-hero min-vh-100 d-flex align-items-center justify-content-center"
+      className="features-section reveal auth-hero min-vh-100"
     >
       <div className="container">
         <div className="text-center mb-5 mt-2">
@@ -72,8 +73,11 @@ export default function Marketplace() {
             No active credits available.
           </p>
         ) : (
-          <div className="project-grid">
-            {credits.map((c) => (
+          <PaginatedList
+            items={credits}
+            itemsPerPage={3} //3 card mỗi trang
+            useGrid
+            renderItem={(c) => (
               <div className="project-card" key={c.id}>
                 <div className="card-img-container">
                   <img src={c.img} className="card-img-top" alt={c.title} />
@@ -108,8 +112,8 @@ export default function Marketplace() {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          />
         )}
       </div>
     </section>
