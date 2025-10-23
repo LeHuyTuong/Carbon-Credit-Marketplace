@@ -118,7 +118,9 @@ class WalletTransactionServiceImplTest {
         WalletTransaction transaction = walletTransactionService.createTransaction(request);
 
         assertThat(wallet.getBalance()).isEqualByComparingTo(BigDecimal.valueOf(50));
-        transaction.setWallet(wallet);
+        verify(walletTransactionRepository).save(transactionCaptor.capture());
+        WalletTransaction savedTransaction = transactionCaptor.getValue();
+        assertThat(savedTransaction.getWallet()).isSameAs(wallet);
         assertThat(transaction.getWallet()).isSameAs(wallet);
     }
 
