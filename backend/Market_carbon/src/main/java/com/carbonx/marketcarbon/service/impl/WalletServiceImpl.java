@@ -74,6 +74,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    @Transactional
     public WalletResponse addBalanceToWallet( Long money) throws WalletException {
         // 1lấy số tiền hiện tại đang có trong ví
         User user = currentUser();
@@ -84,9 +85,8 @@ public class WalletServiceImpl implements WalletService {
             wallet = generateWallet(user);
         }
 
-        // Assuming 'money' is in USD cents (e.g., 1000 for $10.00)
         BigDecimal amountUsd = BigDecimal.valueOf(money)
-                .setScale(4, BigDecimal.ROUND_HALF_UP);        // Convert cents to dollars
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
         BigDecimal amountToAddVnd = CurrencyConverter.usdToVnd(amountUsd); // Convert USD to VND
 
         String description = String.format("Add money to wallet (USD %s -> VND %s)",

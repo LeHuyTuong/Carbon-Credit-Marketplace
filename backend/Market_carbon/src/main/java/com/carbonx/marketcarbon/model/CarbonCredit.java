@@ -53,9 +53,9 @@ public class CarbonCredit extends BaseEntity{
     @Builder.Default
     private CreditStatus status = CreditStatus.PENDING;
 
-    private int amount; // số lượng tín chỉ có
+    private BigDecimal amount; // số lượng tín chỉ có
 
-    private int listedAmount = 0; // số lượng tín chỉ đang niêm yết
+    private BigDecimal listedAmount ; // số lượng tín chỉ đang niêm yết
 
     @Column(name = "issued_at")
     private OffsetDateTime issuedAt;
