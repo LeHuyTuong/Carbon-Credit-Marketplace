@@ -189,6 +189,11 @@ public class VehicleControlServiceImpl implements VehicleControlService {
                 .build();
     }
 
+    @Override
+    public long getTotalVehicleCount() {
+        return vehicleRepository.count();
+    }
+
 
     // Cho aggrerator trả về thời gian tạo và thời gian update
     @Override
