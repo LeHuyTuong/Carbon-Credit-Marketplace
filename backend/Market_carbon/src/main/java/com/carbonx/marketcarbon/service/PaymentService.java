@@ -13,7 +13,7 @@ public interface PaymentService {
     PaymentOrderResponse createOrder(PaymentOrderRequest request);
     List<PaymentOrder> getAllPaymentByUser();
     PaymentOrder getPaymentOrderById(Long id);
-    Boolean processPaymentOrder(PaymentOrder paymentOrder, String paymentId) ;
+    Boolean processPaymentOrder(Long orderId, String paymentId) ;
     PaymentOrderResponse createStripePaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws StripeException;
     PaymentOrderResponse createPayPalPaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws PayPalRESTException;
 

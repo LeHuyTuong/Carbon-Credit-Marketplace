@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,6 +29,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -65,7 +68,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
         // 3 update amount in carbon credit block
         creditToSell.setCarbonCredit(creditToSell.getCarbonCredit().subtract(request.getQuantity()));
-        creditToSell.setListedAmount(creditToSell.getListedAmount() + request.getQuantity().intValueExact());
+        creditToSell.setListedAmount(creditToSell.getListedAmount().add(request.getQuantity()));
         carbonCreditRepository.save(creditToSell);
 
         //4 create a new listing to marketplace
@@ -75,7 +78,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .quantity(request.getQuantity())
                 .pricePerCredit(request.getPricePerCredit())
                 .status(ListingStatus.AVAILABLE)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(VIETNAM_ZONE))
                 .expiresAt(request.getExpirationDate())
                 .build();
 
