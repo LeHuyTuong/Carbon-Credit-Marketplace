@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +19,8 @@ import java.util.Map;
 public class ApplicationNotificationServiceImpl implements ApplicationNotificationService {
 
     private final EmailService emailService;
+
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss dd-MM-yyyy");
 
     @Async
     @Override
@@ -80,6 +85,33 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
             log.info(" Admin decision email sent to {}", email);
         } catch (Exception e) {
             log.warn(" Failed to send Admin decision email to {}: {}", email, e.getMessage());
+        }
+    }
+
+    @Async // Đảm bảo chạy bất đồng bộ
+    @Override
+    public void sendAdminConfirmRequestWithdrawal(
+            String userEmail,
+            Long withdrawalId,
+            BigDecimal amount,
+            LocalDateTime requestedAt
+    ) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("withdrawalId", withdrawalId);
+        vars.put("amount", amount.toPlainString()); // Chuyển BigDecimal thành String để hiển thị
+        // Định dạng lại thời gian cho dễ đọc trong email
+        vars.put("processedAt", requestedAt.format(DATETIME_FORMATTER));
+
+        String subject = "[CarbonX] Yêu cầu rút tiền của bạn đã được duyệt";
+
+        try {
+            // Giả sử bạn có phương thức render email này trong EmailService
+            // Và template tương ứng: emails/withdrawal-confirmation.html
+            String html = emailService.renderWithdrawalConfirmationEmail(vars);
+            emailService.sendHtml(userEmail, subject, html);
+            log.info(" Withdrawal confirmation email sent to {}", userEmail);
+        } catch (Exception e) {
+            log.warn(" Failed to send withdrawal confirmation email to {}: {}", userEmail, e.getMessage());
         }
     }
 }
