@@ -126,4 +126,11 @@ public class EmailServiceImpl implements EmailService {
             throw ex; // giữ hành vi theo interface
         }
     }
+
+    @Override
+    public String renderWithdrawalConfirmationEmail(Map<String, Object> variables) {
+        Context ctx = new Context();
+        ctx.setVariables(variables);
+        return templateEngine.process("emails/withdrawal-confirmation.html", ctx);
+    }
 }
