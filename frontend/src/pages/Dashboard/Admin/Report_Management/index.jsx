@@ -1,67 +1,84 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataReports } from "@/data/mockData";
-const Invoices = () => {
+import { useState, useEffect } from "react";
+import "@/styles/actionadmin.scss";
+import { getAllReportsAdmin } from "@/apiAdmin/reportAdmin.js";
+
+const ReportsList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  // lưu dữ liệu (để có thể xóa hàng)
-  const [data, setData] = useState(mockDataReports);
-  
+  // State
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch API
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await getAllReportsAdmin({ page: 0, size: 20 });
+        if (res?.response) {
+          // API trả về res.response là mảng report
+          const formatted = res.response.map((item) => ({
+            id: item.id,
+            sellerName: item.sellerName,
+            projectName: item.projectName,
+            period: item.period,
+            totalEnergy: item.totalEnergy,
+            totalCo2: item.totalCo2,
+            vehicleCount: item.vehicleCount,
+            status: item.status,
+            submittedAt: item.submittedAt,
+          }));
+          setData(formatted);
+        }
+      } catch (error) {
+        console.error("Failed to fetch reports:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  // Cột hiển thị đúng field của BE
   const columns = [
-    { field: "id", headerName: "" },
-    { field: "reportid", headerName: "Report ID", flex: 1 },
+    { field: "id", headerName: "ID", flex: 0.5 },
+    { field: "sellerName", headerName: "Company", flex: 1 },
+    { field: "projectName", headerName: "Project", flex: 1 },
+    { field: "period", headerName: "Reporting Period", flex: 1 },
+    { field: "vehicleCount", headerName: "Vehicle Count", flex: 0.8 },
+    { field: "totalEnergy", headerName: "Total Energy", flex: 1 },
+    { field: "totalCo2", headerName: "Total CO₂", flex: 1 },
     {
-      field: "aggregator",
-      headerName: "Company",
+      field: "submittedAt",
+      headerName: "Submitted At",
       flex: 1,
-      cellClassName: "name-column--cell",
+      renderCell: ({ value }) =>
+        value ? new Date(value).toLocaleString() : "—",
     },
     {
-      field: "reportingperiod",
-      headerName: "Reporting Period",
-      flex: 1,
-    },
-    {
-      field: "totalevowner",
-      headerName: "Total Ev_Owner",
-      flex: 1,
-    },
-    {
-      field: "submissiondate",
-      headerName: "Submission Date",
-      flex: 1,
-    },
-    {
-      field: "status", // Trạng thái (Đã duyệt / Chờ duyệt / Bị từ chối)
+      field: "status",
       headerName: "Status",
       flex: 1,
       renderCell: ({ row: { status } }) => {
         const statusColorMap = {
-          Pending: colors.blueAccent[500],
-          Approved: colors.greenAccent[500],
-          Rejected: colors.redAccent[500],
+          SUBMITTED: colors.blueAccent[500],
+          APPROVED: colors.greenAccent[500],
+          REJECTED: colors.redAccent[500],
         };
         return (
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="left"
-            height="100%"
+          <Typography
+            color={statusColorMap[status] || colors.grey[100]}
+            fontWeight="600"
+            sx={{ textTransform: "capitalize", lineHeight: 1 }}
           >
-            <Typography
-              color={statusColorMap[status] || colors.grey[100]}
-              fontWeight="600"
-              sx={{ textTransform: "capitalize", lineHeight: 1 }}
-            >
-              {status}
-            </Typography>
-          </Box>
+            {status || "—"}
+          </Typography>
         );
       },
     },
@@ -69,25 +86,22 @@ const Invoices = () => {
       field: "action",
       headerName: "Action",
       flex: 1,
-      renderCell: (params) => {
-        return (
-          <div className="cellAction">
-            <Link
-              to={`/admin/view_report/${params.row.id}`}
-              style={{ textDecoration: "none" }}
-            >
-              <div className="viewButton">View</div>
-            </Link>
-            
-          </div>
-        );
-      },
+      renderCell: (params) => (
+        <div className="cellAction">
+          <Link
+            to={`/admin/view_report/${params.row.id}`}
+            style={{ textDecoration: "none" }}
+          >
+            <div className="viewButton">View</div>
+          </Link>
+        </div>
+      ),
     },
   ];
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="REPORTS" subtitle="List of reports" />
+      <Header title="REPORTS" subtitle="List of all submitted reports" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -97,9 +111,6 @@ const Invoices = () => {
           },
           "& .MuiDataGrid-cell": {
             borderBottom: "none",
-          },
-          "& .name-column--cell": {
-            color: colors.greenAccent[300],
           },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
@@ -115,29 +126,29 @@ const Invoices = () => {
           "& .MuiCheckbox-root": {
             color: `${colors.greenAccent[200]} !important`,
           },
-          "& .MuiTablePagination-root": {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-          },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
-            {
-              marginTop: 0,
-              marginBottom: 0,
-              lineHeight: "normal",
-            },
-          "& .MuiTablePagination-select": {
-            marginTop: "0 !important",
-            marginBottom: "0 !important",
-            paddingTop: "0 !important",
-            paddingBottom: "0 !important",
-          },
         }}
       >
-        <DataGrid checkboxSelection rows={data} columns={columns} />
+        {loading ? (
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            height="100%"
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            checkboxSelection
+            rows={data}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[10, 20, 50]}
+          />
+        )}
       </Box>
     </Box>
   );
 };
 
-export default Invoices;
+export default ReportsList;

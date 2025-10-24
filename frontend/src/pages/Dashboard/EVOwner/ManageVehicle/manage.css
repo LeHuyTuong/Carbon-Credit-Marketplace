@@ -10,6 +10,18 @@
   position: relative;
 }
 
+.vehicle-search-section2 {
+  background: url('/src//assets/background.jpg') center/cover no-repeat;
+  height: 50vh; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-align: center;
+  position: relative;
+}
+
 .vehicle-search-section .title {
   font-size: 2.5rem;
   font-weight: bold;

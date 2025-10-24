@@ -5,7 +5,6 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.response.PageResponse;
 import com.carbonx.marketcarbon.dto.response.VehicleResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
-import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
 import com.carbonx.marketcarbon.dto.request.VehicleUpdateRequest;
 import com.carbonx.marketcarbon.service.VehicleControlService;
