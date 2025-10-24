@@ -52,4 +52,5 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     """)
     long sumAmountByCompany_IdAndStatus(@Param("companyId") Long companyId,
                                         @Param("status") CreditStatus status);
+    Optional<CarbonCredit> findByCreditCode(String creditCode);
 }
