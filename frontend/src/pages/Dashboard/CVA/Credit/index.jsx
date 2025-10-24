@@ -117,8 +117,8 @@ const Contacts = () => {
   return (
     <Box m="20px" className="actionadmin">
       <Header
-        title="CREDITS"
-        subtitle="List of Carbon Credits in the System"
+        title="CREDIT"
+        subtitle="List of Carbon Credits"
 
       />
       <Box

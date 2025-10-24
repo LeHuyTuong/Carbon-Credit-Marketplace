@@ -6,21 +6,16 @@ import {
   TextField,
   Button,
   Divider,
-  Select,
-  MenuItem,
   Snackbar,
   Alert,
   useTheme,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { useState, useEffect } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DownloadIcon from "@mui/icons-material/Download";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataEV } from "@/data/mockData";
+import { getVehicles } from "@/apiAdmin/EVAdmin.js";
 
 const ViewEV = () => {
   const theme = useTheme();
@@ -28,35 +23,49 @@ const ViewEV = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // lấy dữ liệu từ mock
-  const [data, setData] = useState(mockDataEV);
-  const [vehicle, setVehicle] = useState(() =>
-    data.find((v) => v.id === Number(id))
-  );
+  const [vehicle, setVehicle] = useState(null);
+  const [errorSnackbar, setErrorSnackbar] = useState("");
 
-  const [editMode, setEditMode] = useState(false);
-  const [editedVehicle, setEditedVehicle] = useState({ ...vehicle });
-  const [openSnackbar, setOpenSnackbar] = useState(false);
+  // Lấy dữ liệu vehicle từ API
+  useEffect(() => {
+    const fetchVehicle = async () => {
+      try {
+        const res = await getVehicles(0, 100);
+        const found = res.data.find((v) => v.id === Number(id));
+        if (found) {
+          setVehicle(found);
+        } else {
+          setErrorSnackbar("Vehicle not found");
+        }
+      } catch (err) {
+        console.error("Failed to fetch vehicle:", err);
+        setErrorSnackbar("Failed to load vehicle data");
+      }
+    };
+    fetchVehicle();
+  }, [id]);
 
-  const handleChange = (field, value) => {
-    setEditedVehicle((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleUpdate = () => {
-    const updatedData = data.map((item) =>
-      item.id === vehicle.id ? editedVehicle : item
+  if (!vehicle)
+    return (
+      <Box m="20px">
+        <Typography variant="h5" color="error">
+          Vehicle not found.
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => navigate("/admin/ev_management")}
+        >
+          Back to List
+        </Button>
+      </Box>
     );
-    setData(updatedData);
-    setVehicle(editedVehicle);
-    localStorage.setItem("evData", JSON.stringify(updatedData));
-
-    setEditMode(false);
-    setOpenSnackbar(true);
-  };
 
   return (
     <Box m="20px">
-      <Header title="EV DETAILS" subtitle="View or edit electric vehicle information" />
+      <Header
+        title="EV DETAILS"
+        subtitle="View electric vehicle information"
+      />
 
       <Paper
         elevation={2}
@@ -67,47 +76,11 @@ const ViewEV = () => {
           color: colors.grey[100],
         }}
       >
-        {/* Header trong card */}
+        {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
             Vehicle Information
           </Typography>
-          {!editMode ? (
-            <Button
-              variant="contained"
-              startIcon={<EditOutlinedIcon />}
-              onClick={() => setEditMode(true)}
-              sx={{
-                backgroundColor: "#3b82f6",
-                textTransform: "none",
-                "&:hover": { backgroundColor: "#2563eb" },
-              }}
-            >
-              Edit
-            </Button>
-          ) : (
-            <Box display="flex" gap={2}>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={handleUpdate}
-                sx={{ textTransform: "none" }}
-              >
-                Update
-              </Button>
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={() => {
-                  setEditedVehicle(vehicle);
-                  setEditMode(false);
-                }}
-                sx={{ textTransform: "none" }}
-              >
-                Cancel
-              </Button>
-            </Box>
-          )}
         </Box>
 
         <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
@@ -122,7 +95,7 @@ const ViewEV = () => {
             <TextField
               label="EV ID"
               fullWidth
-              value={editedVehicle.evid}
+              value={vehicle.id}
               InputProps={{ readOnly: true }}
             />
           </Grid>
@@ -131,7 +104,7 @@ const ViewEV = () => {
             <TextField
               label="Number Plate"
               fullWidth
-              value={editedVehicle.numberplate}
+              value={vehicle.plateNumber || ""}
               InputProps={{ readOnly: true }}
             />
           </Grid>
@@ -140,7 +113,7 @@ const ViewEV = () => {
             <TextField
               label="Vehicle Brand"
               fullWidth
-              value={editedVehicle.vehiclebrand}
+              value={vehicle.brand || ""}
               InputProps={{ readOnly: true }}
             />
           </Grid>
@@ -149,85 +122,20 @@ const ViewEV = () => {
             <TextField
               label="Vehicle Model"
               fullWidth
-              value={editedVehicle.vehiclemodel}
+              value={vehicle.model || ""}
               InputProps={{ readOnly: true }}
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Year of Manufacture"
+              label="Company ID"
               fullWidth
-              value={editedVehicle.yearofmanufacture}
+              value={vehicle.companyId || ""}
               InputProps={{ readOnly: true }}
             />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Company"
-              fullWidth
-              value={editedVehicle.aggregator}
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            {editMode ? (
-              <Box>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Status
-                </Typography>
-                <Select
-                  fullWidth
-                  value={editedVehicle.status}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                >
-                  <MenuItem value="approved">Approved</MenuItem>
-                  <MenuItem value="rejected">Rejected</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                </Select>
-              </Box>
-            ) : (
-              <TextField
-                label="Status"
-                fullWidth
-                value={editedVehicle.status}
-                InputProps={{ readOnly: true }}
-              />
-            )}
           </Grid>
         </Grid>
-
-        {/* Driver License Section */}
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          Driver License
-        </Typography>
-        <Box display="flex" gap={2} mb={4}>
-          <Button
-            variant="contained"
-            startIcon={<VisibilityIcon />}
-            sx={{
-              textTransform: "none",
-              backgroundColor: colors.blueAccent[500],
-              "&:hover": { backgroundColor: colors.blueAccent[700] },
-            }}
-          >
-            View
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            sx={{
-              textTransform: "none",
-              borderColor: colors.greenAccent[400],
-              color: colors.greenAccent[400],
-              "&:hover": { borderColor: colors.greenAccent[300] },
-            }}
-          >
-            Download
-          </Button>
-        </Box>
 
         {/* Back Button */}
         <Box display="flex" justifyContent="flex-end">
@@ -246,20 +154,20 @@ const ViewEV = () => {
         </Box>
       </Paper>
 
-      {/* Snackbar thông báo */}
+      {/* Snackbar */}
       <Snackbar
-        open={openSnackbar}
+        open={!!errorSnackbar}
         autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(false)}
+        onClose={() => setErrorSnackbar("")}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity="success"
+          onClose={() => setErrorSnackbar("")}
+          severity="error"
           variant="filled"
           sx={{ width: "100%" }}
         >
-          Vehicle updated successfully!
+          {errorSnackbar}
         </Alert>
       </Snackbar>
     </Box>

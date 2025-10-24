@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,10 +25,20 @@ public class PaymentOrder extends BaseEntity{
 
     private Status status = Status.PENDING;
 
+    @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod ;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIgnore
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "payment_order_id")
+    @JsonIgnore
+    private PaymentOrder order;
+
+
+    @Column(unique = true)
+    private String vnpTxnRef; // Mã giao dịch của VNPay
 }
