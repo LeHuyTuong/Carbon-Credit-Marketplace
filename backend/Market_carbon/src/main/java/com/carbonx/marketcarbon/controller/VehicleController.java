@@ -114,6 +114,40 @@ public class VehicleController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "API Count My vehicles , ev owner , company " , description = "API to count vehicle of user , company")
+    @GetMapping("/my/count")
+    public ResponseEntity<TuongCommonResponse<Long>> countMyVehicles(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ){
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        long count = vehicleService.countMyVehicles();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "API Count ALL vehicles for admin " , description = "API to count vehicle of user , company")
+    @GetMapping("count")
+    public ResponseEntity<TuongCommonResponse<Long>> countAllVehicles(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ){
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        long count = vehicleControlService.getTotalVehicleCount();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "Get list of vehicle per pageNo", description = "send a request via this API to get vehicle list by pageNo and pageSize")
     @GetMapping("/list")
     public ResponseEntity<TuongCommonResponse<?>> getAllVehicles(

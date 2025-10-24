@@ -147,6 +147,17 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public long countMyTransactions() {
+        User user = currentUser();
+        return walletTransactionRepository.countByWalletUserId(user.getId());
+    }
+
+    @Override
+    public long countAllTransactions() {
+        return walletTransactionRepository.count();
+    }
+
     // Helper method to map WalletTransaction entity to WalletTransactionResponse DTO
     private WalletTransactionResponse mapToTransactionResponse(WalletTransaction transaction) {
         if (transaction == null) {
