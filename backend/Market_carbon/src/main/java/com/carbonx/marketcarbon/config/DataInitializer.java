@@ -38,13 +38,13 @@ public class DataInitializer {
     @NonFinal
     static final String ADMIN_USER_NAME = "admin@gmail.com";
     @NonFinal
-    static final String ADMIN_PASSWORD = "Password@1"; // Changed default password
+    static final String ADMIN_PASSWORD = "Password@1";
 
     // --- New Company Constants ---
     @NonFinal
     static final String COMPANY_USER_EMAIL = "company@example.com";
     @NonFinal
-    static final String COMPANY_PASSWORD = "Password@1"; // Use a strong password
+    static final String COMPANY_PASSWORD = "Password@1";
     // --- End New Company Constants ---
 
     @Bean("databaseInitializer")
@@ -71,7 +71,6 @@ public class DataInitializer {
 
             Role cvaRole = roleRepository.findByName(PredefinedRole.CVA_ROLE)
                     .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.CVA_ROLE).description("CVA role").build()));
-
 
             // Initialize Admin User
             User adminUser = userRepository.findByEmail(ADMIN_USER_NAME);
@@ -100,13 +99,12 @@ public class DataInitializer {
                         return companyRepository.save(newCompany);
                     });
 
-
             // Initialize a Wallet for the Admin user
             if (walletRepository.findByUserId(adminUser.getId()) == null) {
                 log.info("Creating a wallet for admin user...");
                 Wallet newWallet = Wallet.builder()
                         .user(adminUser)
-                        .balance(BigDecimal.valueOf(1000000))
+                        .balance(BigDecimal.valueOf(1_000_000))
                         .carbonCreditBalance(BigDecimal.ZERO)
                         .company(adminCompany)
                         .build();
@@ -125,7 +123,6 @@ public class DataInitializer {
                                 .build();
                         return projectRepository.save(newProject);
                     });
-
 
             // --- Initialize New Company User ---
             User companyUser = userRepository.findByEmail(COMPANY_USER_EMAIL);
@@ -152,7 +149,6 @@ public class DataInitializer {
                                 .taxCode("COMP_TAX_222")
                                 .address("456 Company Ave")
                                 .build();
-                        // Use saveAndFlush to ensure the company is persisted and has an ID immediately
                         return companyRepository.saveAndFlush(newCompany);
                     });
 
@@ -163,16 +159,19 @@ public class DataInitializer {
                         .user(finalCompanyUser)
                         .balance(new BigDecimal("500000.00"))
                         .carbonCreditBalance(BigDecimal.ZERO)
-                        .company(newRegisteredCompany) // Set the managed company entity which now has a guaranteed ID
+                        .company(newRegisteredCompany)
                         .build();
-                walletRepository.save(companyWallet); // This should now work
+                walletRepository.save(companyWallet);
             }
-
 
             // --- Initialize an ISSUED Carbon Credit block for the new Company ---
             String companyCreditCode = "COMP-ISSUED-001";
-            boolean creditExistsForCompany = !carbonCreditRepository.findByCreditCode(companyCreditCode).isEmpty() &&
-                    carbonCreditRepository.findByCreditCode(companyCreditCode).get(0).getCompany().getId().equals(newRegisteredCompany.getId());
+            boolean creditExistsForCompany =
+                    carbonCreditRepository.findByCreditCode(companyCreditCode)
+                            .stream()
+                            .anyMatch(cc -> cc.getCompany() != null
+                                    && cc.getCompany().getId() != null
+                                    && cc.getCompany().getId().equals(newRegisteredCompany.getId()));
 
             if (!creditExistsForCompany) {
                 log.info("Creating an ISSUED carbon credit block for company: {}", newRegisteredCompany.getCompanyName());
@@ -181,7 +180,7 @@ public class DataInitializer {
                         .carbonCredit(new BigDecimal("2500.00"))
                         .company(newRegisteredCompany)
                         .project(testProject)
-                        .status(CreditStatus.ISSUE)
+                        .status(CreditStatus.ISSUE) // đổi thành ISSUED nếu enum của bạn là ISSUED
                         .listedAmount(0)
                         .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                         .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
@@ -189,7 +188,6 @@ public class DataInitializer {
                 carbonCreditRepository.save(companyCredit);
                 log.info("Created ISSUED CarbonCredit with code {} for company {}", companyCreditCode, newRegisteredCompany.getCompanyName());
             }
-
 
             // --- Initialize Credits and Listings for Admin Company (Existing Logic) ---
             String adminIssuedCreditCode1 = "ADMIN-ISSUED-001";
@@ -202,7 +200,7 @@ public class DataInitializer {
                                 .carbonCredit(new BigDecimal("5000.00"))
                                 .company(adminCompany)
                                 .project(testProject)
-                                .status(CreditStatus.ISSUE)
+                                .status(CreditStatus.ISSUE) // đổi thành ISSUED nếu cần
                                 .listedAmount(0)
                                 .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 1 - 2025")
@@ -219,13 +217,12 @@ public class DataInitializer {
                                 .carbonCredit(new BigDecimal("3000.00"))
                                 .company(adminCompany)
                                 .project(testProject)
-                                .status(CreditStatus.ISSUE)
+                                .status(CreditStatus.ISSUE) // đổi thành ISSUED nếu cần
                                 .listedAmount(0)
                                 .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 2 - 2025")
                                 .build());
                     });
-
 
             // Initialize Marketplace Listings for Admin's Company (if none exist)
             if (marketplaceListingRepository.count() == 0) {
@@ -293,4 +290,3 @@ public class DataInitializer {
         };
     }
 }
-
