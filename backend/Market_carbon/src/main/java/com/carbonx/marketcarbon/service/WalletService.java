@@ -1,19 +1,26 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.dto.response.WalletResponse;
 import com.carbonx.marketcarbon.exception.WalletException;
+import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
+
+import java.util.Optional;
 
 public interface WalletService {
 
     // Hiện Ví
-    Wallet getUserWallet() throws WalletException;
+    WalletResponse getUserWallet() throws WalletException;
 
     // nạp tiền vào ví
-    Wallet addBalanceToWallet(Long money) throws WalletException;
+    WalletResponse addBalanceToWallet(Long amount) throws WalletException;
 
     // tìm ví
-    Wallet findWalletById(Long id) throws WalletException;
+    WalletResponse findWalletById(Long id) throws WalletException;
+
+    // Giữ lại phương thức trả về Entity nếu cần dùng nội bộ (optional)
+    Wallet findWalletEntityById(Long id) throws WalletException;
 
     //    TODO Chuyển tiền từ ví người này sang ví người khác (OPTION)
 //    public Wallet walletToWalletTransfer(User sender, Wallet receiverWallet, Long amount) throws WalletException;
