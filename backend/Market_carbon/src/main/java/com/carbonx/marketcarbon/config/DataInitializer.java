@@ -182,7 +182,7 @@ public class DataInitializer {
                         .company(newRegisteredCompany)
                         .project(testProject)
                         .status(CreditStatus.ISSUE)
-                        .listedAmount(0)
+                        .listedAmount(BigDecimal.ZERO)
                         .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                         .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
                         .build();
@@ -203,7 +203,7 @@ public class DataInitializer {
                                 .company(adminCompany)
                                 .project(testProject)
                                 .status(CreditStatus.ISSUE)
-                                .listedAmount(0)
+                                .listedAmount(BigDecimal.ZERO)
                                 .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 1 - 2025")
                                 .build());
@@ -220,7 +220,7 @@ public class DataInitializer {
                                 .company(adminCompany)
                                 .project(testProject)
                                 .status(CreditStatus.ISSUE)
-                                .listedAmount(0)
+                                .listedAmount(BigDecimal.ZERO)
                                 .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                                 .name("Admin Sample Listable Credits 2 - 2025")
                                 .build());
@@ -241,7 +241,7 @@ public class DataInitializer {
                         .build();
                 marketplaceListingRepository.save(listing1);
                 adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing1.getQuantity()));
-                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount() + listing1.getQuantity().intValueExact());
+                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing1.getQuantity()));
                 carbonCreditRepository.save(adminListableCredit1);
 
                 MarketPlaceListing listing2 = MarketPlaceListing.builder()
@@ -254,7 +254,7 @@ public class DataInitializer {
                         .build();
                 marketplaceListingRepository.save(listing2);
                 adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing2.getQuantity()));
-                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount() + listing2.getQuantity().intValueExact());
+                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing2.getQuantity()));
                 carbonCreditRepository.save(adminListableCredit1);
 
                 MarketPlaceListing listing3 = MarketPlaceListing.builder()
@@ -267,7 +267,7 @@ public class DataInitializer {
                         .build();
                 marketplaceListingRepository.save(listing3);
                 adminListableCredit2.setCarbonCredit(adminListableCredit2.getCarbonCredit().subtract(listing3.getQuantity()));
-                adminListableCredit2.setListedAmount(adminListableCredit2.getListedAmount() + listing3.getQuantity().intValueExact());
+                adminListableCredit2.setListedAmount(adminListableCredit2.getListedAmount().add(listing3.getQuantity()));
                 carbonCreditRepository.save(adminListableCredit2);
 
                 log.info("Sample MarketPlaceListings created.");

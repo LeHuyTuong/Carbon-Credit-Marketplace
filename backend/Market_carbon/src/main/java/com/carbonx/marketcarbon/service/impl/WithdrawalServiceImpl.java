@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,8 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
     private final WalletTransactionService walletTransactionService;
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -60,7 +63,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
                     .status(Status.PENDING)
-                    .requestedAt(LocalDateTime.now())
+                    .requestedAt(LocalDateTime.now(VIETNAM_ZONE))
                     .user(user)
                     .build();
             return withdrawalRepository.save(withdrawal);

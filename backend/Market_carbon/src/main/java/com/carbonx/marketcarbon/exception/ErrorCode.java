@@ -106,7 +106,9 @@ public enum ErrorCode {
 
     REPORT_NOT_APPROVED(400, "Emission report must be approved before issuing credits.", HttpStatus.BAD_REQUEST),
     CREDIT_ALREADY_ISSUED(409, "Carbon credits already issued for this report.", HttpStatus.CONFLICT),
-    CREDIT_QUANTITY_INVALID(400, "Computed credit quantity is invalid or zero.", HttpStatus.BAD_REQUEST);
+    CREDIT_QUANTITY_INVALID(400, "Computed credit quantity is invalid or zero.", HttpStatus.BAD_REQUEST),
+    SELLER_COMPANY_INVALID(400, "Seller company can not buy their credit listing ", HttpStatus.BAD_REQUEST);
+
 
     private final int code;
     private final String message;

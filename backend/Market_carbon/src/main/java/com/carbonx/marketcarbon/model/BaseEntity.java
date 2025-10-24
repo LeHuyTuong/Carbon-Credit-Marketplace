@@ -13,6 +13,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 @MappedSuperclass
@@ -30,13 +31,13 @@ public abstract class BaseEntity {
 
     @PrePersist
     protected void onCreate(){
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")); // set giờ việt nam UTC + 7
         createAt = now;
         updatedAt = now;
     }
 
     @PreUpdate
     protected void onUpdate(){
-        updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        updatedAt = OffsetDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 }
