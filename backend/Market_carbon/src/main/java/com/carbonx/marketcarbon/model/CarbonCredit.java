@@ -71,9 +71,12 @@ public class CarbonCredit extends BaseEntity{
     private double currentPrice;
 
 
-    // Getter to extract the year from issueAt, fulfilling the "năm phát sinh" requirement
+    @Column(name = "vintage_year", nullable = false)
+    private Integer vintageYear;
+
     @Transient
-    public Integer getVintageYear() {
-        return issuedAt != null ? issuedAt.getYear() : null;
+    public Integer getIssuedYear() {
+        return issuedAt != null ? issuedAt.getYear() : vintageYear;
     }
-}
+    }
+
