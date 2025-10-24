@@ -12,4 +12,5 @@ public interface VehicleControlService {
      PageResponse<?>  getAllVehiclesWithSortByMultipleColumns(int pageNo, int pageSize, String... sortBy);
      PageResponse<?>  getAllVehiclesWithSortByMultipleColumnsAndSearch(int pageNo, int pageSize, String search, String sortBy);
      PageResponse<?> getAllVehiclesOfCompanyWithSortBy(int pageNo, int pageSize, String sortBy);
+    long getTotalVehicleCount(); // Đếm tổng số xe trong hệ thống
 }
