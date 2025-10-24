@@ -85,13 +85,12 @@ public class WalletController {
             throws WalletException{
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        PaymentOrder order = paymentService.getPaymentOrderById(orderId);
-
-        Boolean status = paymentService.processPaymentOrder(order, paymentId);
+        Boolean status = paymentService.processPaymentOrder(orderId, paymentId);
 
         WalletResponse walletDto = null;
         if (status) {
             // If payment succeeded, add balance to the wallet and get the updated wallet DTO
+            PaymentOrder order = paymentService.getPaymentOrderById(orderId);
             walletDto = walletService.addBalanceToWallet(order.getAmount()); // addBalanceToWallet now returns DTO
         } else {
             // If payment failed or was already processed, just get the current wallet state
