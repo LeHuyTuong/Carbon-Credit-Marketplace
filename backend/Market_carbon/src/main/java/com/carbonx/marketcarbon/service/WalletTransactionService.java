@@ -15,4 +15,8 @@ public interface WalletTransactionService {
 
     // New method to get DTOs specifically for a wallet ID
     List<WalletTransactionResponse> getTransactionDtosForWallet(Long walletId);
+
+    long countMyTransactions(); // Đếm giao dịch của người dùng hiện tại
+    long countAllTransactions(); // Đếm tất cả giao dịch (cho Admin)
+
 }
