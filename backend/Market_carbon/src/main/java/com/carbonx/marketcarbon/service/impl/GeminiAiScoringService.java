@@ -58,7 +58,7 @@ public class GeminiAiScoringService implements AiScoringService {
                         "  \"version\": \"v1.0\",\n" +
                         "  \"notes\": string\n" +
                         "}\n\n" +
-                        "Requirements: 5 initial lines, 1 separator line, and 2 blocks 📊 and  as described.\n";
+                        "Requirements: 5 initial lines, 1 separator line, and 2 blocks and  as described.\n";
 
         String projectContext =
                 "Project context:\n" +
@@ -92,10 +92,10 @@ public class GeminiAiScoringService implements AiScoringService {
                     .retrieve()
                     .bodyToMono(Map.class)
                     .timeout(Duration.ofSeconds(90)) // ⏱ Tăng timeout phản hồi lên 90s
-                    .retryWhen(Retry.fixedDelay(2, Duration.ofSeconds(3))) // 🔁 Retry 2 lần nếu lỗi mạng
-                    .doOnSubscribe(sub -> log.info("🚀 Sending request to Gemini AI..."))
-                    .doOnError(err -> log.warn("⚠️ Gemini request failed once: {}", err.toString()))
-                    .doOnSuccess(resp -> log.info("✅ Gemini AI responded successfully"))
+                    .retryWhen(Retry.fixedDelay(2, Duration.ofSeconds(3))) //  Retry 2 lần nếu lỗi mạng
+                    .doOnSubscribe(sub -> log.info(" Sending request to Gemini AI..."))
+                    .doOnError(err -> log.warn(" Gemini request failed once: {}", err.toString()))
+                    .doOnSuccess(resp -> log.info(" Gemini AI responded successfully"))
                     .block();
 
             String jsonText = extractText(raw);
@@ -109,11 +109,11 @@ public class GeminiAiScoringService implements AiScoringService {
             return new AiScoreResult(score, notes, version);
 
         } catch (Exception ex) {
-            log.error("❌ Gemini scoring failed: {}", ex.toString(), ex);
+            log.error(" Gemini scoring failed: {}", ex.toString(), ex);
 
             if (ex instanceof java.util.concurrent.TimeoutException
                     || ex.getCause() instanceof java.util.concurrent.TimeoutException) {
-                log.warn("⏰ Gemini API timeout - model took too long to respond.");
+                log.warn(" Gemini API timeout - model took too long to respond.");
             }
 
             return new AiScoreResult(BigDecimal.ZERO, "AI error: " + ex.getClass().getSimpleName(), "error");

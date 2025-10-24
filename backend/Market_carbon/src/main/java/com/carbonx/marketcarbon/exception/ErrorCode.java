@@ -42,12 +42,15 @@ public enum ErrorCode {
     ADMIN_NOT_FOUND(404, "Admin not found.", HttpStatus.NOT_FOUND),
     KYC_EXISTED(409, "KYC already exists.", HttpStatus.CONFLICT),
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
-        APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
+    APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
 
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_PROCESSING(202, "Application is being processed.", HttpStatus.PROCESSING),
     APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),
     REPORT_DETAILS_NOT_FOUND(404, "Report details not found", HttpStatus.NOT_FOUND),
+    CREDIT_NOT_FOUND(404, "Credit not found", HttpStatus.NOT_FOUND),
+    INVALID_INPUT(400, "Invalid request input", HttpStatus.BAD_REQUEST),
+    INVALID_CREDIT_STATUS(400, "Invalid credit status", HttpStatus.BAD_REQUEST),
 
     // ==== VALIDATION & STATE ====
     INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),
