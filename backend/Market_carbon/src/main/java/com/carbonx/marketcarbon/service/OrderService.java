@@ -1,17 +1,17 @@
 package com.carbonx.marketcarbon.service;
 
 import com.carbonx.marketcarbon.dto.request.OrderRequest;
-import com.carbonx.marketcarbon.dto.response.OrderResponse;
+import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 
 import java.util.List;
 
 public interface OrderService {
 
-    OrderResponse createOrder(OrderRequest request );
+    CreditTradeResponse createOrder(OrderRequest request );
 
-    OrderResponse getOrderById(Long orderId);
+    CreditTradeResponse getOrderById(Long orderId);
 
-    List<OrderResponse> getUserOrders();
+    List<CreditTradeResponse> getUserOrders();
 
     void cancelOrder(Long orderId);
 

@@ -168,15 +168,7 @@ const schema = Yup.object().shape({
   bankCode: Yup.string().required("Bank code is required"),
 });
 // Modal tạo/sửa
-function UpdateModal({
-  show,
-  onHide,
-  data,
-  paymentId,
-  token,
-  isCreating,
-  onSuccess,
-}) {
+function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
   const handleSubmitForm = async (values) => {
     try {
       const payload = {

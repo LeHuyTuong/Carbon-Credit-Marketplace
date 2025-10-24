@@ -1,7 +1,7 @@
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
-  //ưu tiên đọc token từ AuthContext
+  // lấy token từ session hoặc localStorage
   let token;
   try {
     const authData =
@@ -12,72 +12,47 @@ export async function apiFetch(path, options = {}) {
     token = null;
   }
 
-  //giữ lại token cũ nếu project trước đây lưu ở "token"
-  if (!token) {
-    token = localStorage.getItem("token");
-  }
+  if (!token) token = localStorage.getItem("token");
 
-  //tạo traceId và datetime
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
-
-  // //cấu hình fetch
-  // const config = {
-  //   method: options.method || "GET",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     Accept: "*/*",
-  //     "X-Request-Trace": crypto.randomUUID(),
-  //     "X-Request-DateTime": new Date().toISOString(),
-  //     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  //     ...(options.headers || {}),
-  //   },
-  // };
+  const hasValidToken = token && token !== "null" && token !== "undefined";
 
   const headers = {
     Accept: "*/*",
-    "X-Request-Trace": crypto.randomUUID(),
-    "X-Request-DateTime": new Date().toISOString(),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    "X-Request-Trace": traceId,
+    "X-Request-DateTime": dateTime,
+    ...(hasValidToken ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
-  // Chỉ thêm Content-Type nếu có body (hoặc không phải GET)
-  if (options.body && (options.method || "GET") !== "GET") {
-    headers["Content-Type"] = "application/json";
-  }
+  const method = options.method || "GET";
+  const config = { method, headers };
 
-  const config = {
-    method: options.method || "GET",
-    headers,
-  };
+  // handle body
+  if (method !== "GET" && options.body) {
+    const isFormData = options.body instanceof FormData;
 
-
-  //tự động thêm trace và datetime vào body (nếu payload là JSON)
-  if (config.method !== "GET" && options.body) {
-    let body = options.body;
-
-    //nếu payload là object, gắn thêm trace + datetime vào body
-    if (typeof body === "object") {
-      body = {
-        requestTrace: traceId,
-        requestDateTime: dateTime,
-        ...body,
-      };
-      config.body = JSON.stringify(body);
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+      config.body =
+        typeof options.body === "object"
+          ? JSON.stringify(options.body)
+          : options.body;
     } else {
-      config.body = body; // fallback nếu đã stringify trước
+      config.body = options.body;
     }
   }
-  console.log("Fetching:", `${API}${path}`, config); //debug
 
-  //thực hiện fetch
+  console.log("Fetching:", `${API}${path}`, config);
+
   const res = await fetch(`${API}${path}`, config);
   const data = await res.json().catch(() => ({}));
 
-  //nếu lỗi, log chi tiết và ném lỗi với thông báo phù hợp
+  // HTTP-level error
   if (!res.ok) {
     console.error("API Error:", { path, status: res.status, data });
+
     let userMessage;
     switch (true) {
       case path.includes("/auth/login"):
@@ -89,17 +64,8 @@ export async function apiFetch(path, options = {}) {
       case path.includes("/auth/change-password"):
         userMessage = "Password change failed. Please try again.";
         break;
-      case path.includes("/auth/reset-password"):
-        userMessage = "Password reset failed. Please try again.";
-        break;
-      case path.includes("/kyc"):
-        userMessage = "KYC verification failed. Please try again.";
-        break;
-      case path.includes("/wallet"):
-        userMessage = "Wallet transaction failed. Please try again.";
-        break;
-      case path.includes("/withdrawal"):
-        userMessage = "Withdrawal request failed. Please try again.";
+      case path.includes("/project-applications"):
+        userMessage = "Application submission failed. Please check your data.";
         break;
       case path.includes("/projects"):
         userMessage = "Project operation failed. Please try again.";
@@ -111,8 +77,39 @@ export async function apiFetch(path, options = {}) {
 
     const error = new Error(userMessage);
     error.status = res.status;
+    error.response = data;
     throw error;
   }
 
-  return data;
+  //be-level logic check
+const rawCode = data?.responseStatus?.responseCode ?? "";
+const rawMessage = data?.responseStatus?.responseMessage ?? "";
+
+const code = String(rawCode).trim().toUpperCase();
+const message = String(rawMessage).trim().toUpperCase();
+
+const successValues = ["200", "201", "00000000", "SUCCESS", "OK"];
+
+// Nếu không có responseStatus → mặc định thành công
+let isSuccess = !data?.responseStatus;
+
+// Nếu có → chỉ cần code hoặc message nằm trong successValues là pass
+if (!isSuccess) {
+  isSuccess =
+    successValues.some((val) => code.includes(val) || message.includes(val));
+}
+
+console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
+
+if (!isSuccess) {
+  //ném lỗi có đủ thông tin BE trả về
+  const errMsg = data?.responseStatus?.responseMessage || "Server logical error.";
+  const error = new Error(errMsg);
+  error.status = res.status; // HTTP status (200)
+  error.response = data; // toàn bộ payload BE
+  error.code = code; // thêm code để FE nhận diện
+  throw error;
+}
+
+return data;
 }

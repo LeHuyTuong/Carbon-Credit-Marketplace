@@ -14,7 +14,9 @@ export default function Deposit({ show, onHide, onSubmit }) {
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Top Up Your Wallet</Modal.Title>
+        <Modal.Title className="fw-bold text-center w-100">
+          Top Up Your Wallet
+        </Modal.Title>
       </Modal.Header>
 
       <Formik

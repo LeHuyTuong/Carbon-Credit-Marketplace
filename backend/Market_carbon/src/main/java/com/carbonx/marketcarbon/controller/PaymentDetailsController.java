@@ -8,6 +8,7 @@ import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class PaymentDetailsController {
     @Operation(summary = "Create a method to withdrawl" , description = "Add bankAccount to withdrawl")
     @PostMapping
     public ResponseEntity<TuongCommonResponse<PaymentDetails>> createPaymentDetails(
-            @RequestBody TuongCommonRequest<PaymentDetailsRequest> req,
+            @Valid  @RequestBody TuongCommonRequest<PaymentDetailsRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
             ) {

@@ -13,42 +13,34 @@ const ListProjects = () => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
 
-  //  Gọi API khi load trang
+  // Gọi API khi load trang
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const res = await apiFetch("/api/v1/projects/all", { method: "GET" });
-        console.log(" API Project List:", res);
+        console.log("API Project List:", res);
 
         const projects = (res?.response || []).map((item, idx) => ({
           id: item.id || idx,
           projectid: item.id,
           projectname: item.title || "-",
           shortdescription: item.description || "-",
-          companyname: item.companyName || "-",
           commitments: item.commitments || "-",
           measurementmethod: item.measurementMethod || "-",
           totalexpectedcredits: item.technicalIndicators || "-",
-          reviewer: item.reviewer || "-",
-          reviewnote: item.reviewNote || "-",
-          finalreviewer: item.finalReviewer || "-",
-          starteddate: item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString()
-            : "-",
           status: item.status || "Coming_Soon",
         }));
 
         setData(projects);
       } catch (error) {
-        console.error(" Failed to fetch projects:", error);
+        console.error("Failed to fetch projects:", error);
       }
     };
 
     fetchProjects();
   }, []);
 
-
-  //  Cấu hình cột hiển thị DataGrid
+  // Cấu hình cột hiển thị DataGrid
   const columns = [
     { field: "id", headerName: "#", width: 70 },
     { field: "projectid", headerName: "Project ID", flex: 1 },
@@ -57,7 +49,13 @@ const ListProjects = () => {
       headerName: "Project Name",
       flex: 1.5,
       renderCell: (params) => (
-        <Typography sx={{ whiteSpace: "normal", wordWrap: "break-word", lineHeight: 1.4 }}>
+        <Typography
+          sx={{
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+          }}
+        >
           {params.value}
         </Typography>
       ),
@@ -67,16 +65,16 @@ const ListProjects = () => {
       headerName: "Description",
       flex: 1.5,
       renderCell: (params) => (
-        <Typography sx={{ whiteSpace: "normal", wordWrap: "break-word", lineHeight: 1.4 }}>
+        <Typography
+          sx={{
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+          }}
+        >
           {params.value}
         </Typography>
       ),
-    },
-    {
-      field: "companyname",
-      headerName: "Company",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
     },
     {
       field: "commitments",
@@ -97,23 +95,6 @@ const ListProjects = () => {
       renderCell: (params) => <Typography>{params.value}</Typography>,
     },
     {
-      field: "reviewer",
-      headerName: "Reviewer",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
-    },
-    {
-      field: "finalreviewer",
-      headerName: "Final Reviewer",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
-    },
-    {
-      field: "starteddate",
-      headerName: "Created Date",
-      flex: 1,
-    },
-    {
       field: "status",
       headerName: "Status",
       flex: 1,
@@ -127,7 +108,12 @@ const ListProjects = () => {
           Ended: colors.redAccent[500],
         };
         return (
-          <Box display="flex" alignItems="center" justifyContent="left" height="100%">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="left"
+            height="100%"
+          >
             <Typography
               color={statusColorMap[status] || colors.grey[100]}
               fontWeight="600"
