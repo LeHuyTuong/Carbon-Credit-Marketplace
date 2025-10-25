@@ -18,6 +18,8 @@ public interface EmailService {
     void sendHtml(String to, String subject, String html) throws MessagingException;
 
     String renderWithdrawalConfirmationEmail(Map<String, Object> variables);
+
+    String renderWithdrawalFailedEmail(Map<String, Object> variables);
 }
 
 
