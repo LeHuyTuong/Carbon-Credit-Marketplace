@@ -69,7 +69,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal balanceAfter;
 
-        if (request.getType() == WalletTransactionType.WITH_DRAWL ||
+        if (request.getType() == WalletTransactionType.WITHDRAWAL ||
             request.getType() == WalletTransactionType.BUY_CARBON_CREDIT
         )
         {

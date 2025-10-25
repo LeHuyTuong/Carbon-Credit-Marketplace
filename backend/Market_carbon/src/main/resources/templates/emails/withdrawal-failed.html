@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Withdrawal Request Failed/Rejected Notification</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; line-height: 1.5; color: #333; }
+        .container { padding: 20px; border: 1px solid #ddd; max-width: 600px; margin: auto; }
+        .header { font-weight: bold; margin-bottom: 15px; }
+        .label { font-weight: bold; display: inline-block; min-width: 150px; }
+        .value { display: inline-block; }
+        .amount { color: #dc3545; font-weight: bold; } /* Red color for the amount */
+        .reason { color: #dc3545; } /* Red color for the reason */
+        .footer { margin-top: 20px; font-size: 0.9em; color: #777; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <p class="header">Dear <span th:text="${userName ?: 'Customer'}">[Customer Name]</span>,</p>
+
+    <p>CarbonX regrets to inform you that your withdrawal request was not successful:</p>
+
+    <p><span class="label">Request ID:</span> <span class="value" th:text="${withdrawalId}">[Request ID]</span></p>
+    <p><span class="label">Requested Amount:</span> <span class="value amount"><span th:text="${amount}">[Amount]</span> USD</span></p>
+    <p><span class="label">Processed At:</span> <span class="value" th:text="${processedAt}">[Date Time]</span></p>
+    <p><span class="label">Reason:</span> <span class="value reason" th:text="${reason}">[Reason for failure/rejection]</span></p>
+
+    <p class="footer">
+        Please review your information or contact our support team if you require further assistance.
+        <br>
+        Thank you for using CarbonX!
+    </p>
+</div>
+</body>
+</html>

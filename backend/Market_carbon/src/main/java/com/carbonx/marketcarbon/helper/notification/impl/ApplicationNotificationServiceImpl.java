@@ -102,16 +102,41 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
         // Định dạng lại thời gian cho dễ đọc trong email
         vars.put("processedAt", requestedAt.format(DATETIME_FORMATTER));
 
-        String subject = "[CarbonX] Yêu cầu rút tiền của bạn đã được duyệt";
+        String subject = "[CarbonX] Your request withdrawal is approved";
 
         try {
-            // Giả sử bạn có phương thức render email này trong EmailService
-            // Và template tương ứng: emails/withdrawal-confirmation.html
             String html = emailService.renderWithdrawalConfirmationEmail(vars);
             emailService.sendHtml(userEmail, subject, html);
             log.info(" Withdrawal confirmation email sent to {}", userEmail);
         } catch (Exception e) {
             log.warn(" Failed to send withdrawal confirmation email to {}: {}", userEmail, e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendWithdrawalFailedOrRejected(
+            String userEmail,
+            Long withdrawalId,
+            BigDecimal amount,
+            String reason,
+            LocalDateTime processedAt) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("withdrawalId", withdrawalId);
+        vars.put("amount", amount.toPlainString());
+        vars.put("reason", reason); // Truyền lý do vào template
+        vars.put("processedAt", processedAt.format(DATETIME_FORMATTER));
+        // Bạn có thể thêm userName nếu cần
+        // vars.put("userName", "Tên người dùng"); // Lấy từ User entity nếu cần
+
+        String subject = "[CarbonX] Yêu cầu rút tiền của bạn không thành công";
+
+        try {
+            // Render template mới: emails/withdrawal-failed.html
+            String html = emailService.renderWithdrawalFailedEmail(vars);
+            emailService.sendHtml(userEmail, subject, html);
+            log.info(" Withdrawal failed/rejected email sent to {}", userEmail);
+        } catch (Exception e) {
+            log.warn(" Failed to send withdrawal failed/rejected email to {}: {}", userEmail, e.getMessage());
         }
     }
 }
