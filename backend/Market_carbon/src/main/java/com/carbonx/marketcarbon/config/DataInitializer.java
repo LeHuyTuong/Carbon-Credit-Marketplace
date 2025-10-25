@@ -182,6 +182,7 @@ public class DataInitializer {
                         .project(testProject)
                         .status(CreditStatus.ISSUE)
                         .listedAmount(BigDecimal.ZERO)
+                        .vintageYear(2025)
                         .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
                         .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
                         .build();
@@ -200,6 +201,7 @@ public class DataInitializer {
                                 .carbonCredit(new BigDecimal("5000.00"))
                                 .company(adminCompany)
                                 .project(testProject)
+                                .vintageYear(2025)
                                 .status(CreditStatus.ISSUE)
                                 .listedAmount(BigDecimal.ZERO)
                                 .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
@@ -216,6 +218,7 @@ public class DataInitializer {
                                 .creditCode(adminIssuedCreditCode2)
                                 .carbonCredit(new BigDecimal("3000.00"))
                                 .company(adminCompany)
+                                .vintageYear(2025)
                                 .project(testProject)
                                 .status(CreditStatus.ISSUE)
                                 .listedAmount(BigDecimal.ZERO)
@@ -278,6 +281,7 @@ public class DataInitializer {
                         .carbonCredit(new BigDecimal("1000.00"))
                         .company(adminCompany)
                         .project(testProject)
+                        .vintageYear(2025)
                         .status(CreditStatus.PENDING)
                         .name("Admin Sample Pending Credits - 2025")
                         .build();

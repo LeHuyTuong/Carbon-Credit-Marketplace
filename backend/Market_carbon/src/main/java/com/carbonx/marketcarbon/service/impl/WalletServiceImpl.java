@@ -2,12 +2,17 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
+import com.carbonx.marketcarbon.dto.response.WalletCarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.WalletResponse;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
+import com.carbonx.marketcarbon.model.CarbonCredit;
+import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
+import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
+import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.WalletService;
@@ -21,6 +26,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -32,6 +40,10 @@ public class WalletServiceImpl implements WalletService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final WalletTransactionService walletTransactionService;
+
+
+    private final CarbonCreditRepository carbonCreditRepository;
+    private final CompanyRepository companyRepository;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -52,6 +64,7 @@ public class WalletServiceImpl implements WalletService {
         wallet.setCarbonCreditBalance(BigDecimal.ZERO);
         //B2 Set user , moi vi duoc 1 user
         wallet.setUser(user);
+        companyRepository.findByUserId(user.getId()).ifPresent(wallet::setCompany);
         //B3 luu lai vi theo user
         return walletRepository.save(wallet);
     }
@@ -70,7 +83,7 @@ public class WalletServiceImpl implements WalletService {
         // Fetch updated transactions DTOs
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(wallet.getId());
         // Map entity to DTO
-        return mapToWalletResponse(wallet, transactionDtos);
+        return mapToWalletResponse( transactionDtos);
     }
 
     @Override
@@ -86,7 +99,7 @@ public class WalletServiceImpl implements WalletService {
         }
 
         BigDecimal amountUsd = BigDecimal.valueOf(money)
-                .setScale(2, BigDecimal.ROUND_HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         BigDecimal amountToAddVnd = CurrencyConverter.usdToVnd(amountUsd); // Convert USD to VND
 
         String description = String.format("Add money to wallet (USD %s -> VND %s)",
@@ -107,7 +120,7 @@ public class WalletServiceImpl implements WalletService {
 
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(updatedWallet.getId());
         // Map updated entity to DTO
-        return mapToWalletResponse(updatedWallet, transactionDtos);
+        return mapToWalletResponse( transactionDtos);
     }
 
 
@@ -119,7 +132,7 @@ public class WalletServiceImpl implements WalletService {
         // Fetch transaction DTOs for the wallet
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(wallet.getId());
         // Map entity to DTO
-        return mapToWalletResponse(wallet, transactionDtos);
+        return mapToWalletResponse( transactionDtos);
     }
 
     @Override
@@ -130,16 +143,97 @@ public class WalletServiceImpl implements WalletService {
     }
 
     // Helper method to map Wallet entity to WalletResponse DTO
-    private WalletResponse mapToWalletResponse(Wallet wallet, List<WalletTransactionResponse> transactions) {
+    private WalletResponse mapToWalletResponse( List<WalletTransactionResponse> transactions) {
+        User user = currentUser();
+        Long id = user.getId();
+
+        Wallet wallet = walletRepository.findByUserId(id);
+
         if (wallet == null) {
             return null;
         }
+        List<WalletCarbonCreditResponse> creditSummaries = resolveCarbonCreditSummaries();
+
         return WalletResponse.builder()
                 .id(wallet.getId())
                 .userId(wallet.getUser() != null ? wallet.getUser().getId() : null)
                 .balance(wallet.getBalance())
                 .carbonCreditBalance(wallet.getCarbonCreditBalance())
                 .walletTransactions(transactions) // Use the passed DTO list
+                .carbonCredits(creditSummaries)
                 .build();
+    }
+
+    private List<WalletCarbonCreditResponse> resolveCarbonCreditSummaries() {
+        User user = currentUser();
+        Long id = user.getId();
+
+        Wallet wallet = walletRepository.findByUserId(id);
+        if(wallet.getCompany() == null){
+            return Collections.emptyList();
+        }
+
+        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(wallet.getCompany().getId());
+
+        List<WalletCarbonCreditResponse> response = new ArrayList<>();
+
+        for(CarbonCredit credit : credits) {
+            CarbonCredit sourceCredit = credit.getSourceCredit();
+            Company seller = sourceCredit != null ? sourceCredit.getCompany() : null;
+
+            CarbonCredit originCredit = resolveRootCredit(credit);
+            Company originCompany = null;
+
+            if (originCredit != null) {
+                originCompany = originCredit.getCompany();
+            }
+            if (originCompany == null && credit.getBatch() != null) {
+                originCompany = credit.getBatch().getCompany();
+            }
+
+            BigDecimal availableQuantity = credit.getCarbonCredit() != null
+                    ? credit.getCarbonCredit()
+                    : BigDecimal.ZERO;
+
+            BigDecimal listedQuantity = credit.getListedAmount() != null
+                    ? credit.getListedAmount()
+                    : BigDecimal.ZERO;
+
+            response.add(WalletCarbonCreditResponse.builder()
+                    .creditId(credit.getId())
+                    .creditCode(credit.getCreditCode())
+                    .availableQuantity(availableQuantity)
+                    .listedQuantity(listedQuantity)
+                    .status(credit.getStatus())
+                    .sellerCompanyId(seller != null ? seller.getId() : null)
+                    .sellerCompanyName(seller != null ? seller.getCompanyName() : null)
+                    .sourceCreditId(sourceCredit != null ? sourceCredit.getId() : null)
+                    .sourceCreditCode(sourceCredit != null ? sourceCredit.getCreditCode() : null)
+                    .originCreditId(originCredit != null ? originCredit.getId() : null)
+                    .originCreditCode(originCredit != null ? originCredit.getCreditCode() : null)
+                    .originCompanyId(originCompany != null ? originCompany.getId() : null)
+                    .originCompanyName(originCompany != null ? originCompany.getCompanyName() : null)
+                    .build());
+        }
+        return response;
+    }
+
+    private CarbonCredit resolveRootCredit(CarbonCredit credit) {
+        if (credit == null) {
+            return null;
+        }
+
+        CarbonCredit current = credit;
+        int depth = 0;
+
+        while (current.getSourceCredit() != null) {
+            current = current.getSourceCredit();
+            depth++;
+            if (depth > 20) {
+                log.warn("Detected unusually deep carbon credit chain starting from credit {}",credit.getId());
+                break;
+            }
+        }
+        return current;
     }
 }
