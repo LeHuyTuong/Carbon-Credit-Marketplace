@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.model.Order;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
@@ -69,7 +70,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal balanceAfter;
 
-        if (request.getType() == WalletTransactionType.WITH_DRAWL ||
+        if (request.getType() == WalletTransactionType.WITHDRAWAL ||
             request.getType() == WalletTransactionType.BUY_CARBON_CREDIT
         )
         {
@@ -163,14 +164,19 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         if (transaction == null) {
             return null;
         }
+        Order order = transaction.getOrder();
+
         return WalletTransactionResponse.builder()
                 .id(transaction.getId())
-                .orderId(transaction.getOrder() != null ? transaction.getOrder().getId() : null)
+                .orderId(order != null ? order.getId() : null)
                 .transactionType(transaction.getTransactionType())
                 .description(transaction.getDescription())
                 .balanceBefore(transaction.getBalanceBefore())
                 .balanceAfter(transaction.getBalanceAfter())
                 .amount(transaction.getAmount())
+                // Lưu thêm số lượng tín chỉ và đơn giá hiện thị cho client
+                .carbonCreditQuantity(order != null ? order.getQuantity() : null)
+                .unitPrice(order != null ? order.getUnitPrice() : null)
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }

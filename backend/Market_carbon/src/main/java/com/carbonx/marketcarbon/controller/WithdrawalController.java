@@ -60,7 +60,7 @@ public class WithdrawalController {
         // 3. Create the withdrawal transaction request DTO using the Wallet entity
         WalletTransactionRequest transactionRequest = WalletTransactionRequest.builder()
                 .wallet(userWalletEntity) // Use the fetched Wallet entity
-                .type(WalletTransactionType.WITH_DRAWL)
+                .type(WalletTransactionType.WITHDRAWAL)
                 .description("Bank account withdrawal request initiated. ID: " + withdrawal.getId())
                 // Pass the POSITIVE amount requested by the user
                 .amount(withdrawal.getAmount())
@@ -68,7 +68,6 @@ public class WithdrawalController {
 
         // 4. Create the transaction (this service call now returns a DTO)
         WalletTransactionResponse createdTransaction = walletTransactionService.createTransaction(transactionRequest);
-
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
@@ -110,7 +109,7 @@ public class WithdrawalController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get withdrawl history by admin" , description = "API admin to get all history of User withdrawal request")
+    @Operation(summary = "Get withdrawal history by admin" , description = "API admin to get all history of User withdrawal request")
     @GetMapping("/admin")
     public ResponseEntity<TuongCommonResponse<List<Withdrawal>>> getALlWithdrawalRequest(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

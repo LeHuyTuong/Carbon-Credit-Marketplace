@@ -2,21 +2,24 @@ package com.carbonx.marketcarbon.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Value;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
 @Builder
+@Value
 public class WalletResponse {
-    private Long id;
+     Long id;
 
     // Chỉ lấy userId thay vì cả object User
-    private Long userId;
+     Long userId;
 
-    private BigDecimal balance;
-    private BigDecimal carbonCreditBalance;
+     BigDecimal balance;
+     BigDecimal carbonCreditBalance;
 
-    // Thay thế List<WalletTransaction> bằng List<WalletTransactionResponse>
-    private List<WalletTransactionResponse> walletTransactions;
+     List<WalletTransactionResponse> walletTransactions;
+
+     List<WalletCarbonCreditResponse> carbonCredits;
 }

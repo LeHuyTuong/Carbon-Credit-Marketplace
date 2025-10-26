@@ -9,8 +9,8 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
+import com.carbonx.marketcarbon.service.CreditIssuanceService;
 import com.carbonx.marketcarbon.service.OrderService;
-import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +36,8 @@ public class OrderServiceImpl implements OrderService {
     private final CompanyRepository companyRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
-    private final WalletService walletService;
+    private final CreditIssuanceService creditIssuanceService;
+
 
     // Định nghĩa múi giờ Việt Nam
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -188,6 +189,8 @@ public class OrderServiceImpl implements OrderService {
 
         // B4: Kiểm tra số lượng còn lại trên sàn có đủ để đáp ứng đơn hay không
         if (listing.getQuantity().compareTo(quantityToBuy) < 0) {
+            order.setOrderStatus(OrderStatus.ERROR);
+            orderRepository.save(order);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
@@ -221,8 +224,19 @@ public class OrderServiceImpl implements OrderService {
         sourceCredit.setCompany(buyerCompany); // Gán công ty người mua cho tín chỉ này
         sourceCredit.setStatus(CreditStatus.ISSUE); // Đảm bảo trạng thái là ISSUE sau khi mua
 
-        // Lưu lại tín chỉ đã cập nhật chủ sở hữu và số lượng niêm yết
+        // Lưu lại tín chỉ đã cập nhật số lượng niêm yết cho bên bán
         carbonCreditRepository.save(sourceCredit);
+
+        String issuedBy = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(Authentication::getName)
+                .orElse(buyerCompany.getUser() != null ? buyerCompany.getUser().getEmail() : "system@carbon.con") ;
+
+        CarbonCredit carbonCredit = creditIssuanceService.issueTradeCredit(
+                sourceCredit,
+                buyerCompany,
+                quantityToBuy,
+                listing.getPricePerCredit(),
+                issuedBy);
 
         // 6.3 Cập nhật số dư credit carbon trong vi
         // Cộng số lượng tín chỉ đã mua vào ví người mua
@@ -241,7 +255,11 @@ public class OrderServiceImpl implements OrderService {
         walletRepository.save(sellerWallet);
 
         // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
+        // Cập nhật tồn kho listing sau khi giao dịch hoàn tất
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
+        BigDecimal currentSold = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
+        listing.setSoldQuantity(currentSold.add(quantityToBuy));
+
         if (listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             listing.setStatus(ListingStatus.SOLD);
             listing.setExpiresAt(LocalDateTime.now(VIETNAM_ZONE)); // Cập nhật thời gian hết hạn khi bán hết

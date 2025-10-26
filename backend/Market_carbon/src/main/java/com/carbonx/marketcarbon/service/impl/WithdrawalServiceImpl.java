@@ -56,7 +56,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
         Wallet wallet =  walletRepository.findByUserId(user.getId());
-        if(amount < 10 ){
+        if(amount < 2 ){
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
         //B1 tạo request withdrawal
@@ -87,23 +87,17 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
         Withdrawal withdrawalRequest = withdrawal.get();
         withdrawalRequest.setProcessedAt(LocalDateTime.now(VIETNAM_ZONE));
-        if (accept) {
-            User user = withdrawalRequest.getUser();
-            Wallet wallet = walletRepository.findByUserId(user.getId());
-            BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
+        String reason = ""; // reason
+        User user = withdrawalRequest.getUser();
+        Wallet wallet = walletRepository.findByUserId(user.getId());
+        BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
 
+        if (accept) {
             if (wallet.getBalance().compareTo(amountToWithdraw) < 0) {
                 withdrawalRequest.setStatus(Status.FAILED);
                 withdrawalRepository.save(withdrawalRequest);
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
-
-            walletTransactionService.createTransaction(WalletTransactionRequest.builder()
-                    .wallet(wallet)
-                    .type(WalletTransactionType.WITH_DRAWL)
-                    .description("Bank account withdrawal approved. ID: " + withdrawalId)
-                    .amount(amountToWithdraw)
-                    .build());
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);
             Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
@@ -121,8 +115,33 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             return savedWithdrawal;
         } else {
             withdrawalRequest.setStatus(Status.REJECTED);
-            return withdrawalRepository.save(withdrawalRequest);
+            reason = "Withdrawal request rejected by administrator."; // Lý do bị từ chối
         }
+        // Lưu trạng thái FAILED hoặc REJECTED
+        Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
+
+        //  Gửi email thất bại/từ chối (chỉ khi FAILED hoặc REJECTED)
+        if (savedWithdrawal.getStatus() == Status.FAILED || savedWithdrawal.getStatus() == Status.REJECTED) {
+            try {
+                applicationNotificationService.sendWithdrawalFailedOrRejected(
+                        user.getEmail(),
+                        savedWithdrawal.getId(),
+                        amountToWithdraw,
+                        reason, // Truyền lý do vào hàm gửi mail
+                        savedWithdrawal.getProcessedAt() // Sử dụng thời gian đã xử lý
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send withdrawal failed/rejected email for user {}: {}", user.getEmail(), e.getMessage());
+            }
+        }
+        // Ném Exception sau khi lưu và gửi mail FAILED để báo lỗi rõ ràng
+        if (savedWithdrawal.getStatus() == Status.FAILED) {
+            throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+        }
+        if (savedWithdrawal.getStatus() == Status.FAILED) {
+            throw new ResourceNotFoundException("Wallet not found for user processing withdrawal " + withdrawalId);
+        }
+        return savedWithdrawal; // Trả về withdrawal với trạng thái FAILED/REJECTED
     }
 
     @Override

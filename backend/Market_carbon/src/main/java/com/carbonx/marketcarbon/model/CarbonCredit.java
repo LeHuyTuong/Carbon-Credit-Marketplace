@@ -30,6 +30,11 @@ public class CarbonCredit extends BaseEntity{
     @Builder.Default
     private BigDecimal carbonCredit = BigDecimal.ONE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_credit_id")
+    @JsonIgnore
+    private CarbonCredit sourceCredit;
+
     @Column(name = "t_co2e", precision = 18, scale = 3, nullable = false)
     @Builder.Default
     private BigDecimal tCo2e = BigDecimal.ONE;
