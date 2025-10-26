@@ -61,14 +61,20 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.COMPANY_NOT_OWN);
         }
 
-        BigDecimal availableQuantity = creditToSell.getCarbonCredit();
+        BigDecimal availableQuantity = creditToSell.getCarbonCredit() != null
+                ? creditToSell.getCarbonCredit()
+                : BigDecimal.ZERO; ;
         if(availableQuantity.compareTo(request.getQuantity()) < 0){
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
         // 3 update amount in carbon credit block
-        creditToSell.setCarbonCredit(creditToSell.getCarbonCredit().subtract(request.getQuantity()));
-        creditToSell.setListedAmount(creditToSell.getListedAmount().add(request.getQuantity()));
+        creditToSell.setCarbonCredit(availableQuantity.subtract(request.getQuantity()));
+        BigDecimal currentListedAmount = creditToSell.getListedAmount() != null
+                ? creditToSell.getListedAmount()
+                : BigDecimal.ZERO;
+        creditToSell.setListedAmount(currentListedAmount.add(request.getQuantity()));
+
         carbonCreditRepository.save(creditToSell);
 
         //4 create a new listing to marketplace
@@ -77,15 +83,31 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .carbonCredit(creditToSell)
                 .quantity(request.getQuantity())
                 .pricePerCredit(request.getPricePerCredit())
+                .originalQuantity(request.getQuantity())
+                .soldQuantity(BigDecimal.ZERO)
                 .status(ListingStatus.AVAILABLE)
                 .createdAt(LocalDateTime.now(VIETNAM_ZONE))
                 .expiresAt(request.getExpirationDate())
                 .build();
 
+
         MarketPlaceListing savedListing = marketplaceListingRepository.save(newListing);
-        return MarketplaceListingResponse.builder()
+
+        BigDecimal remainingQuantity = savedListing.getQuantity() != null ? savedListing.getQuantity() : BigDecimal.ZERO;
+        BigDecimal soldQuantity = savedListing.getSoldQuantity() != null ? savedListing.getSoldQuantity() : BigDecimal.ZERO;
+
+        // Tính lại originalQuantity đề phòng dữ liệu cũ chưa được set giá trị
+        BigDecimal originalQuantity = savedListing.getOriginalQuantity();
+        if (originalQuantity == null || originalQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+            originalQuantity = remainingQuantity.add(soldQuantity);
+        }
+
+        return  MarketplaceListingResponse.builder()
                 .listingId(savedListing.getId())
-                .quantity(savedListing.getQuantity())
+                .quantity(remainingQuantity)
+                .availableQuantity(remainingQuantity)
+                .originalQuantity(originalQuantity)
+                .soldQuantity(soldQuantity)
                 .pricePerCredit(savedListing.getPricePerCredit())
                 .sellerCompanyName(savedListing.getCompany().getCompanyName())
                 .projectId(savedListing.getCarbonCredit().getProject().getId())
@@ -99,15 +121,30 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDateTime.now());
 
         return activeListings.stream()
-                .map(listing -> MarketplaceListingResponse.builder()
-                        .listingId(listing.getId())
-                        .quantity(listing.getQuantity())
-                        .pricePerCredit(listing.getPricePerCredit())
-                        .sellerCompanyName(listing.getCompany().getCompanyName())
-                        .projectId(listing.getCarbonCredit().getProject().getId())
-                        .projectTitle(listing.getCarbonCredit().getProject().getTitle())
-                        .expiresAt(listing.getExpiresAt())
-                        .build())
+                .map(listing -> {
+                    BigDecimal remainingQuantity = listing.getQuantity() != null ? listing.getQuantity() : BigDecimal.ZERO;
+                    BigDecimal soldQuantity = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
+
+                    // Giữ lại fallback cho dữ liệu cũ chưa set originalQuantity
+                    BigDecimal originalQuantity = listing.getOriginalQuantity();
+                    if (originalQuantity == null || originalQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                        originalQuantity = remainingQuantity.add(soldQuantity);
+                    }
+
+                    return MarketplaceListingResponse.builder()
+                            .listingId(listing.getId())
+                            .quantity(remainingQuantity)
+                            .availableQuantity(remainingQuantity)
+                            .originalQuantity(originalQuantity)
+                            .soldQuantity(soldQuantity)
+                            .pricePerCredit(listing.getPricePerCredit())
+                            .sellerCompanyName(listing.getCompany().getCompanyName())
+                            .projectId(listing.getCarbonCredit().getProject().getId())
+                            .projectTitle(listing.getCarbonCredit().getProject().getTitle())
+                            .expiresAt(listing.getExpiresAt())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 }
+
