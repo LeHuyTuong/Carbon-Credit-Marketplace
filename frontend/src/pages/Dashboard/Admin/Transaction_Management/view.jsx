@@ -1,10 +1,23 @@
-// src/pages/Dashboard/Admin/Transaction_Management/ViewTransaction.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Box, Typography, Divider, Chip, Button, useTheme } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Divider,
+  Chip,
+  Button,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  useTheme,
+} from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { processWithdrawal, getWithdrawalsAdmin } from "@/apiAdmin/transactionAdmin.js";
+import {
+  processWithdrawal,
+  getWithdrawalsAdmin,
+  getPaymentDetails,
+} from "@/apiAdmin/transactionAdmin.js";
 
 const ViewTransaction = () => {
   const { id } = useParams(); // lấy id từ URL
@@ -13,39 +26,80 @@ const ViewTransaction = () => {
   const navigate = useNavigate();
 
   const [trx, setTrx] = useState(null);
-  const [message, setMessage] = useState("");
+  const [payment, setPayment] = useState(null); //  lưu thông tin payment riêng
   const [loading, setLoading] = useState(true);
+  const [alert, setAlert] = useState({
+    open: false,
+    type: "info",
+    text: "",
+  });
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        const list = await getWithdrawalsAdmin(); // lấy toàn bộ withdrawals
-        const transaction = list.find((t) => t.id.toString() === id); // tìm theo id
-        setTrx(transaction || null);
-      } catch (error) {
-        console.error(error);
+ useEffect(() => {
+  const fetchTransaction = async () => {
+    try {
+      const list = await getWithdrawalsAdmin();
+      const transaction = list.find((t) => t.id.toString() === id);
+
+      // Lấy payment detail của current user
+      const paymentRes = await getPaymentDetails();
+      console.log(" Payment detail:", paymentRes);
+
+      // Gắn luôn payment detail (vì API là của current user)
+      if (transaction) {
+        transaction.paymentDetails = paymentRes;
+        setTrx(transaction);
+      } else {
         setTrx(null);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchTransaction();
-  }, [id]);
+
+    } catch (error) {
+      console.error(error);
+      setAlert({
+        open: true,
+        type: "error",
+        text: "Failed to load transaction data.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchTransaction();
+}, [id]);
+
+
 
   const handleProcess = async (accept) => {
     try {
-      setMessage("Processing...");
+      setAlert({
+        open: true,
+        type: "info",
+        text: "Processing transaction...",
+      });
       const res = await processWithdrawal(trx.id, accept);
       if (res) setTrx(res);
-      setMessage(accept ? " Approved successfully!" : " Rejected successfully!");
-    } catch {
-      setMessage(" Failed to process transaction.");
-    } finally {
-      setTimeout(() => setMessage(""), 2500);
+      setAlert({
+        open: true,
+        type: accept ? "success" : "error",
+        text: accept
+          ? "Withdrawal approved successfully!"
+          : "Withdrawal rejected successfully!",
+      });
+    } catch (error) {
+      console.error(error);
+      setAlert({
+        open: true,
+        type: "error",
+        text: "Failed to process transaction.",
+      });
     }
   };
 
-  if (loading) return <Typography m={2}>Loading...</Typography>;
+  if (loading)
+    return (
+      <Box display="flex" justifyContent="center" mt={5}>
+        <CircularProgress color="secondary" />
+      </Box>
+    );
 
   if (!trx) {
     return (
@@ -71,8 +125,8 @@ const ViewTransaction = () => {
     REJECTED: colors.redAccent[400],
   };
 
-  const payment = trx.paymentDetails || {};
   const user = trx.user || {};
+  const paymentInfo = payment || trx.paymentDetails || {}; // Ưu tiên data mới nhất
 
   return (
     <Box m="20px">
@@ -133,13 +187,13 @@ const ViewTransaction = () => {
             Payment Details
           </Typography>
           <Typography>
-            <b>Account Number:</b> {payment.accountNumber || "N/A"}
+            <b>Account Number:</b> {paymentInfo.accountNumber || "N/A"}
           </Typography>
           <Typography>
-            <b>Account Holder:</b> {payment.accountHolderName || "N/A"}
+            <b>Account Holder:</b> {paymentInfo.accountHolderName || "N/A"}
           </Typography>
           <Typography>
-            <b>Bank Code:</b> {payment.bankCode || "N/A"}
+            <b>Bank Code:</b> {paymentInfo.bankCode || "N/A"}
           </Typography>
 
           <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
@@ -189,18 +243,43 @@ const ViewTransaction = () => {
             Back
           </Button>
         </Box>
-
-        {message && (
-          <Typography
-            align="center"
-            mt={2}
-            color={colors.greenAccent[400]}
-            fontWeight="bold"
-          >
-            {message}
-          </Typography>
-        )}
       </Box>
+
+      {/* Snackbar thông báo */}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={5000}
+        onClose={() => setAlert({ ...alert, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{
+          mt: 2,
+          "& .MuiPaper-root": {
+            minWidth: "400px",
+            maxWidth: "80vw",
+          },
+        }}
+      >
+        <Alert
+          onClose={() => setAlert({ ...alert, open: false })}
+          severity={alert.type}
+          variant="filled"
+          sx={{
+            width: "100%",
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+            py: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: 4,
+          }}
+          iconMapping={{
+            info: <CircularProgress size={20} color="inherit" />,
+          }}
+        >
+          {alert.text}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

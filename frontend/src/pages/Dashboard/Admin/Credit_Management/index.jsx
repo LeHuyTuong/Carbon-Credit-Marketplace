@@ -67,23 +67,19 @@ const CreditsList = () => {
       flex: 1,
       renderCell: (params) => {
         const value = params?.row?.status || "unknown";
-        const colorMap = {
-          active: "#4CAF50",
-          revoked: "#E53935",
-          pending: "#42A5F5",
-          sold: "#FFB300",
-          listed: "#FDD835",
-          retire: "#757575",
-        };
-        const color = colorMap[value.toLowerCase()] || "#E0E0E0";
+        const lower = value.toLowerCase();
+
+        // Mặc định ISSUED là xanh lá, các trạng thái khác fallback sang xám
+        const color = lower === "issued" ? "#2E7D32" : "#9E9E9E";
+        
+
         return (
           <div
             style={{
-              width: "100%",
-              height: "100%",
               display: "flex",
               alignItems: "center",
-              justifyContent: "left",
+              justifyContent: "flex-start",
+              width: "100%",
             }}
           >
             <span
@@ -91,9 +87,11 @@ const CreditsList = () => {
                 color,
                 fontWeight: 600,
                 textTransform: "capitalize",
-                padding: "4px 10px",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
+                padding: "4px 12px",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                minWidth: "90px",
+                textAlign: "center",
               }}
             >
               {value}
@@ -102,6 +100,7 @@ const CreditsList = () => {
         );
       },
     },
+
     { field: "expiredday", headerName: "Expired Year", flex: 1 },
     { field: "linkedcertificate", headerName: "Linked Certificate", flex: 1 },
     {
@@ -148,7 +147,33 @@ const CreditsList = () => {
           },
         }}
       >
-        <DataGrid rows={data} columns={columns} components={{ Toolbar: GridToolbar }} />
+        <DataGrid
+          checkboxSelection
+          rows={data}
+          columns={columns}
+          getRowId={(row) => row.id}
+          pagination
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          }}
+          pageSizeOptions={[10, 20, 50]}
+          sx={{
+            "& .MuiDataGrid-footerContainer": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              height: "56px", // chuẩn chiều cao theo Material Design
+              padding: "0 16px",
+            },
+            "& .MuiTablePagination-displayedRows, & .MuiTablePagination-selectLabel": {
+              margin: 0,
+              lineHeight: "1.5rem",
+            },
+            "& .MuiTablePagination-actions": {
+              marginRight: "4px",
+            },
+          }}
+        />
       </Box>
     </Box>
   );

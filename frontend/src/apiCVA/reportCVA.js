@@ -1,8 +1,8 @@
-// src/api/reportCVA.js
+// src/apiCVA/reportCVA.js
 import { apiFetch } from "@/utils/apiFetch";
 
 /**
- * 📋 Lấy danh sách báo cáo CVA (list-cva-check)
+ *  Lấy danh sách báo cáo CVA (list-cva-check)
  */
 export const getReportCVAList = async ({
   status,
@@ -27,7 +27,7 @@ export const getReportCVAList = async ({
 };
 
 /**
- * ✅ Lấy chi tiết 1 báo cáo cụ thể (dành cho CVA hoặc Admin)
+ *  Lấy chi tiết 1 báo cáo cụ thể (dành cho CVA hoặc Admin)
  * API backend: GET /api/v1/reports/{id}
  */
 export const getReportById = async (reportId) => {
@@ -41,13 +41,12 @@ export const getReportById = async (reportId) => {
   if (res?.responseData) return res.responseData;
   if (res?.data?.responseData) return res.data.responseData;
 
-  console.warn("⚠️ Unexpected response structure:", res);
+  console.warn(" Unexpected response structure:", res);
   return null;
 };
 
-
 /**
- * 🧾 Cập nhật trạng thái report (Approved/Rejected)
+ *  Cập nhật trạng thái report (Approved/Rejected)
  * Backend: PUT /api/v1/reports/{id}/verify?approved=true|false&comment=...
  */
 export const verifyReportCVA = async (reportId, { approved, comment = "" }) => {
@@ -63,3 +62,22 @@ export const verifyReportCVA = async (reportId, { approved, comment = "" }) => {
     method: "PUT",
   });
 };
+
+
+/**
+ *  NEW: Lấy chi tiết theo vehicle trong report
+ *  API: GET /api/v1/reports/{id}/details
+ *  Trả về mảng [{id, vehicleId, period, totalEnergy, co2Kg}, ...]
+ */
+export const getReportDetails = async (reportId) => {
+  if (!reportId) throw new Error("Missing report ID");
+
+  const res = await apiFetch(`/api/v1/reports/${reportId}/details`, {
+    method: "GET",
+  });
+
+  // TuongCommonResponse thường đặt ở responseData; fallback nếu môi trường khác.
+  return res?.responseData ?? res?.response ?? res ?? [];
+  
+}
+;

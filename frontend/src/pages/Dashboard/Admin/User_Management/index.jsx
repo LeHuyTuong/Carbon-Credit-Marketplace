@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllUsers } from "@/apiAdmin/userAdmin.js";
-
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 const accessConfig = {
   ADMIN: {
     label: "Admin",
@@ -66,7 +66,7 @@ const Team = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "#" },
+    { field: "id", headerName: "" },
     { field: "userid", headerName: "User ID" },
     { field: "email", headerName: "Email", flex: 1 },
     {
@@ -74,9 +74,19 @@ const Team = () => {
       headerName: "Account Status",
       flex: 1,
       renderCell: ({ row: { status } }) => (
+        <Box
+        sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+        >
         <Typography color={status === "active" ? "green" : "red"} fontWeight="600">
           {status === "active" ? "Active" : "Inactive"}
         </Typography>
+        </Box>
       ),
     },
     {
@@ -113,7 +123,15 @@ const Team = () => {
       field: "balance",
       headerName: "Wallet Balance",
       flex: 1,
-      renderCell: ({ row }) => <Typography>{row.balance} ₫</Typography>,
+      renderCell: ({ row }) => <Box
+       sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+      ><Typography>{row.balance} ₫</Typography></Box>,
     },
     {
       field: "action",
@@ -153,14 +171,8 @@ const Team = () => {
           },
         }}
       >
-        <DataGrid
-          checkboxSelection
-          rows={data}
-          columns={columns}
-          components={{ Toolbar: GridToolbar }} // thêm toolbar filter, sort, column hide
-          filterMode="client"
-          sortingMode="client"
-        />
+         <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
+
       </Box>
     </Box>
   );

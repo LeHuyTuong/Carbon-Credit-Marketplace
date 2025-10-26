@@ -36,7 +36,7 @@ const ApplicationEdit = () => {
     severity: "success",
   });
 
-  //  Map status từ API
+  // Map status từ API
   const mapStatus = (status) => {
     switch (status) {
       case "ADMIN_APPROVED":
@@ -47,17 +47,19 @@ const ApplicationEdit = () => {
         return "NEEDS_REVISION";
       case "UNDER_REVIEW":
         return "UNDER_REVIEW";
+      case "CVA_REJECTED":
+        return "CVA_REJECTED"; // Thêm mapping này
       default:
         return "SUBMITTED";
     }
   };
 
-  //  Fetch dữ liệu
+  // Fetch dữ liệu
   useEffect(() => {
     const fetchApplication = async () => {
       try {
         const res = await getProjectApplicationById(id);
-        console.log(" Raw API response:", res);
+        console.log("Raw API response:", res);
 
         const appData = res?.response || res;
         if (appData && appData.id) {
@@ -74,7 +76,7 @@ const ApplicationEdit = () => {
           throw new Error("Application not found");
         }
       } catch (error) {
-        console.error(" Error fetching application:", error);
+        console.error("Error fetching application:", error);
         setSnackbar({
           open: true,
           message: "Failed to fetch application.",
@@ -88,48 +90,46 @@ const ApplicationEdit = () => {
     fetchApplication();
   }, [id]);
 
-  //  Cập nhật dữ liệu form
+  // Cập nhật dữ liệu form
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  //  Gửi cập nhật duyệt (Save)
+  // Gửi cập nhật duyệt (Save)
   const handleUpdate = async () => {
-  try {
-    const payload = {
-      approved: formData.status === "APPROVED", //  chỉ approved nếu status = APPROVED
-      note: formData.finalReviewNote || "No note provided",
-    };
+    try {
+      const payload = {
+        approved: formData.status === "APPROVED",
+        note: formData.finalReviewNote || "No note provided",
+      };
 
-    console.log(" Sending update payload:", payload);
+      console.log("Sending update payload:", payload);
 
-    const result = await updateApplicationDecision(id, payload);
-    console.log(" Update result:", result);
+      const result = await updateApplicationDecision(id, payload);
+      console.log("Update result:", result);
 
-    const code = result?.responseStatus?.responseCode;
-    if (code === "200" || code === "00000000") {
+      const code = result?.responseStatus?.responseCode;
+      if (code === "200" || code === "00000000") {
+        setSnackbar({
+          open: true,
+          message: "Updated successfully!",
+          severity: "success",
+        });
+        setTimeout(() => navigate("/admin/company_management"), 1000);
+      } else {
+        throw new Error(result?.responseStatus?.responseMessage);
+      }
+    } catch (error) {
+      console.error("Update failed:", error);
       setSnackbar({
         open: true,
-        message: " Updated successfully!",
-        severity: "success",
+        message: "Application submission failed. Please check your data.",
+        severity: "error",
       });
-      setTimeout(() => navigate("/admin/company_management"), 1000);
-    } else {
-      throw new Error(result?.responseStatus?.responseMessage);
     }
-  } catch (error) {
-    console.error(" Update failed:", error);
-    setSnackbar({
-      open: true,
-      message: "Application submission failed. Please check your data.",
-      severity: "error",
-    });
-  }
-};
+  };
 
-
-
-  //  Loading state
+  // Loading state
   if (loading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
@@ -137,7 +137,7 @@ const ApplicationEdit = () => {
       </Box>
     );
 
-  //  Không tìm thấy dữ liệu
+  // Không tìm thấy dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -154,14 +154,11 @@ const ApplicationEdit = () => {
       </Box>
     );
 
-  //  Giao diện form chính
+  // Giao diện form chính
   return (
     <Box m="20px">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
-        <Button variant="outlined" onClick={() => navigate("/admin/applications")}>
-          Back
-        </Button>
       </Box>
 
       <Paper sx={{ p: 3, mt: 2 }}>
@@ -194,6 +191,7 @@ const ApplicationEdit = () => {
           <MenuItem value="NEEDS_REVISION">Needs Revision</MenuItem>
           <MenuItem value="APPROVED">Approved</MenuItem>
           <MenuItem value="REJECTED">Rejected</MenuItem>
+          <MenuItem value="CVA_REJECTED">CVA Rejected</MenuItem>
         </TextField>
 
         <TextField
@@ -204,7 +202,7 @@ const ApplicationEdit = () => {
           multiline
           rows={3}
           sx={{ mt: 2 }}
-          InputProps={{readOnly: true}}
+          InputProps={{ readOnly: true }}
         />
 
         <TextField
@@ -223,13 +221,17 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("applicationDocsUrl", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
-          InputProps={{readOnly: true}}
+          InputProps={{ readOnly: true }}
         />
 
         <Box mt={3} display="flex" gap={2}>
-          <Button variant="contained" onClick={handleUpdate}>
-            Save
-          </Button>
+          {/*  Chỉ hiển thị nút Save nếu status KHÔNG phải CVA_REJECTED */}
+          {formData.status !== "CVA_REJECTED" && (
+            <Button variant="contained" onClick={handleUpdate}>
+              Save
+            </Button>
+          )}
+
           <Button
             variant="outlined"
             onClick={() => navigate(`/admin/view_company/${application.id}`)}
