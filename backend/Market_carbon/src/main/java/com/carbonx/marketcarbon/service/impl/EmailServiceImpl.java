@@ -151,4 +151,9 @@ public class EmailServiceImpl implements EmailService {
     }
 
 
+    public String renderWithdrawalConfirmationEmail(Map<String, Object> variables) {
+        Context ctx = new Context();
+        ctx.setVariables(variables);
+        return templateEngine.process("emails/withdrawal-confirmation.html", ctx);
+    }
 }
