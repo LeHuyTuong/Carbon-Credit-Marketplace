@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -218,12 +219,17 @@ public class EmissionReportController {
             summary = "Get per-vehicle emission details in a report",
             description = "Retrieves all vehicle-level emission details within a specific report, including total energy and CO2 emissions per vehicle."
     )
-    @GetMapping("/{reportId}/details")
-    public ResponseEntity<CommonResponse<List<EmissionReportDetailResponse>>> getReportDetails(
-            @PathVariable Long reportId) {
 
-        List<EmissionReportDetailResponse> data = service.getReportDetails(reportId);
-        return ResponseEntity.ok(ResponseUtil.success(UUID.randomUUID().toString(), data));
+    @GetMapping("/{reportId}/details")
+    public ResponseEntity<CommonResponse<Page<EmissionReportDetailResponse>>> getReportDetails(
+            @PathVariable Long reportId,
+            @RequestParam(required = false) String plateContains,
+            Pageable pageable
+    ) {
+        Page<EmissionReportDetailResponse> page =
+                service.getReportDetails(reportId, plateContains, pageable);
+
+        return ResponseEntity.ok(ResponseUtil.success(UUID.randomUUID().toString(), page));
     }
 
     @PostMapping("/{id}/verify")
