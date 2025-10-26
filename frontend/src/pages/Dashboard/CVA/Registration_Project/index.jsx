@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiCVA/registrationCVA.js";
-
+import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -21,11 +21,11 @@ const ApplicationList = () => {
         console.log("📡 Fetching pending CVA applications...");
         const response = await getProjectApplications();
 
-        console.log("✅ Raw API response:", response);
+        console.log(" Raw API response:", response);
 
         let applications = [];
 
-        // ✅ Chuẩn format data theo swagger
+        //  Chuẩn format data theo swagger
         if (Array.isArray(response?.response)) {
           applications = response.response;
         } else if (Array.isArray(response?.responseData?.response)) {
@@ -34,11 +34,11 @@ const ApplicationList = () => {
           applications = response;
         }
 
-        console.log("📊 Parsed applications:", applications);
+        console.log(" Parsed applications:", applications);
 
         setData(applications || []);
       } catch (error) {
-        console.error("❌ Error fetching applications:", error);
+        console.error(" Error fetching applications:", error);
         setData([]);
       } finally {
         setLoading(false);
@@ -133,13 +133,18 @@ const ApplicationList = () => {
         }}
       >
         {data.length > 0 ? (
-          <DataGrid
-            rows={data}
-            columns={columns}
-            slots={{ toolbar: GridToolbar }}
-            getRowId={(row) => row.id}
-            loading={loading}
-          />
+          <CVADataGrid
+          rows={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          page={page}
+          onPageChange={(newPage) => setPage(newPage)}
+          pageSize={pageSize}
+          onPageSizeChange={(newSize) => setPageSize(newSize)}
+          rowCount={rowCount}
+          loading={loading}
+          getRowHeight={() => "auto"}
+        />
         ) : (
           !loading && (
             <Typography color={colors.grey[300]} align="center" mt={5}>
