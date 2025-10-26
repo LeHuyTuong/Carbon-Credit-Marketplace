@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/theme";
 import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
@@ -27,11 +27,11 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
   const colors = tokens(theme.palette.mode);
   return (
     <MenuItem
-      active={selected === title}
+      active={selected === to}
       style={{
         color: colors.grey[100],
       }}
-      onClick={() => setSelected(title)}
+      onClick={() => setSelected(to)}
       icon={icon}
     >
       <Typography>{title}</Typography>
@@ -43,8 +43,14 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 const Sidebar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selected, setSelected] = useState("Dashboard");
+  const [selected, setSelected] = useState(location.pathname);
+
+  // Cập nhật khi URL đổi (hoặc reload)
+  useEffect(() => {
+    setSelected(location.pathname);
+  }, [location]);
 
   return (
     <Box
@@ -107,7 +113,6 @@ const Sidebar = () => {
                     padding: "10px",
                   }}
                 />
-
               </Box>
               <Box textAlign="center">
                 <Typography
@@ -119,7 +124,7 @@ const Sidebar = () => {
                   Tin Bao
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                 Admin
+                  Admin
                 </Typography>
               </Box>
             </Box>
@@ -177,7 +182,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
             <Item
-              title="Manage Transactions"
+              title="Manage Withdrawl"
               to="/admin/transaction_management"
               icon={<AccountBalanceWalletOutlinedIcon />}
               selected={selected}
@@ -200,17 +205,18 @@ const Sidebar = () => {
             <Item
               title="Manage Projects"
               to="/admin/project_management"
-              icon={< WorkOutlineIcon />}
+              icon={<WorkOutlineIcon />}
               selected={selected}
               setSelected={setSelected}
             />
             <Item
-              title="Manage Companies"
+              title="Manage Application"
               to="/admin/company_management"
               icon={<CorporateFareOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
             />
+
             <Typography
               variant="h6"
               color={colors.grey[300]}
@@ -225,20 +231,7 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-            <Item
-              title="Calendar"
-              to="/admin/calendar"
-              icon={<CalendarTodayOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            <Item
-              title="FAQ Page"
-              to="/admin/faq"
-              icon={<HelpOutlineOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
+            
 
             <Typography
               variant="h6"
@@ -268,13 +261,7 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-            <Item
-              title="Geography Chart"
-              to="/admin/geography"
-              icon={<MapOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
+            
           </Box>
         </Menu>
       </ProSidebar>

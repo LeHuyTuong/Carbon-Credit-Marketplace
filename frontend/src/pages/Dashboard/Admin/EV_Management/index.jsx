@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getVehicles } from "@/apiAdmin/EVAdmin.js";
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
 const EVList = () => {
   const theme = useTheme();
@@ -114,19 +115,7 @@ const EVList = () => {
             <CircularProgress />
           </Box>
         ) : (
-          <DataGrid
-            rows={data}
-            columns={columns}
-            paginationMode="server" // server-side pagination
-            rowCount={totalCount}
-            pagination
-            pageSizeOptions={[10, 20, 50]}
-            paginationModel={{ page: pageNo, pageSize }}
-            onPaginationModelChange={(model) => {
-              setPageNo(model.page);
-              setPageSize(model.pageSize);
-            }}
-          />
+          <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
         )}
       </Box>
 

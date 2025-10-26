@@ -6,8 +6,8 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllReportsAdmin } from "@/apiAdmin/reportAdmin.js";
-
-const ReportsList = () => {
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
+ const ReportsList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -72,6 +72,15 @@ const ReportsList = () => {
           REJECTED: colors.redAccent[500],
         };
         return (
+          <Box
+           sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+          >
           <Typography
             color={statusColorMap[status] || colors.grey[100]}
             fontWeight="600"
@@ -79,6 +88,7 @@ const ReportsList = () => {
           >
             {status || "—"}
           </Typography>
+          </Box>
         );
       },
     },
@@ -138,13 +148,7 @@ const ReportsList = () => {
             <CircularProgress />
           </Box>
         ) : (
-          <DataGrid
-            checkboxSelection
-            rows={data}
-            columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[10, 20, 50]}
-          />
+          <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
         )}
       </Box>
     </Box>

@@ -6,13 +6,13 @@ import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { getWithdrawalsAdmin } from "@/apiAdmin/transactionAdmin.js";
-
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 const TransactionAdmin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [data, setData] = useState([]);
 
-  // ✅ Gọi API khi load trang
+  //  Gọi API khi load trang
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -36,20 +36,30 @@ const TransactionAdmin = () => {
     fetchData();
   }, []);
 
-  // ✅ Cột hiển thị
+  //  Cột hiển thị
   const columns = [
-    { field: "id", headerName: "ID", flex: 0.3 },
+    { field: "id", headerName: "", flex: 0.3 },
     { field: "transactionId", headerName: "Transaction ID", flex: 0.8 },
-    { field: "trader", headerName: "Trader", flex: 1 },
     { field: "email", headerName: "Email", flex: 1 },
     {
       field: "transactionType",
       headerName: "Transaction Type",
       flex: 0.8,
       renderCell: ({ row }) => (
-        <Typography color={colors.blueAccent[500]} fontWeight="600">
-          {row.transactionType}
-        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "left",
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <Typography color={colors.blueAccent[500]} fontWeight="600">
+            {row.transactionType}
+          </Typography>
+        </Box>
       ),
     },
     { field: "date", headerName: "Date", flex: 1 },
@@ -58,9 +68,19 @@ const TransactionAdmin = () => {
       headerName: "Amount",
       flex: 0.6,
       renderCell: ({ row }) => (
-        <Typography color={colors.greenAccent[500]}>
-          ${row.cost?.toLocaleString()}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "left",
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <Typography color={colors.greenAccent[500]}>
+            ${row.cost?.toLocaleString()}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -74,13 +94,23 @@ const TransactionAdmin = () => {
           rejected: colors.redAccent[400],
         };
         return (
-          <Typography
-            color={colorMap[row.status] || colors.grey[100]}
-            fontWeight="600"
-            sx={{ textTransform: "capitalize" }}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
           >
-            {row.status}
-          </Typography>
+            <Typography
+              color={colorMap[row.status] || colors.grey[100]}
+              fontWeight="600"
+              sx={{ textTransform: "capitalize" }}
+            >
+              {row.status}
+            </Typography>
+          </Box>
         );
       },
     },
@@ -120,12 +150,8 @@ const TransactionAdmin = () => {
           },
         }}
       >
-        <DataGrid
-          checkboxSelection
-          rows={data}
-          columns={columns}
-          getRowId={(row) => row.id}
-        />
+        <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
+
       </Box>
     </Box>
   );
