@@ -15,6 +15,7 @@ import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService.SerialRange;
 import com.carbonx.marketcarbon.service.credit.formula.CreditFormula;
+import com.carbonx.marketcarbon.utils.CodeGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -247,5 +248,61 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         CreditBatch b = batchRepo.findById(batchId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
         return CreditBatchResponse.from(b);
+    }
+
+    @Override
+    @Transactional
+    public CarbonCredit issueTradeCredit(CarbonCredit sourceCredit, Company buyerCompany, BigDecimal quantity, BigDecimal pricePerUnit, String issuedBy) {
+        if(sourceCredit == null || sourceCredit.getId() == null){
+            throw new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND);
+        }
+        if(buyerCompany == null || buyerCompany.getId() == null){
+            throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
+        }
+        if(quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0){
+            throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
+        }
+
+        // lấy project từ credit
+        Project project = sourceCredit.getProject();
+        if(project == null || project.getId() == null){
+            throw new AppException(ErrorCode.PROJECT_NOT_FOUND);
+        }
+
+        int year = sourceCredit.getIssuedYear() != null ? sourceCredit.getIssuedYear() : OffsetDateTime.now().getYear();
+
+        // gen companyCode với slug3
+        String companyCode = CodeGenerator.slug3WithId(
+                buyerCompany.getCompanyName(),"COMP",buyerCompany.getId());
+        // gen projectCode với slug3
+        String projectCode = CodeGenerator.slug3WithId(
+                project.getTitle(),"PRJ",project.getId());
+
+        SerialRange range = serialSvc.allocate(project, buyerCompany, year,1);
+
+        String creditCode = serialSvc.buildCode(year,companyCode,projectCode,range.from());
+
+        String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbon.com" : issuedBy;
+
+        CarbonCredit newCredit = CarbonCredit.builder()
+                .batch(sourceCredit.getBatch())
+                .company(buyerCompany)
+                .project(project)
+                .sourceCredit(sourceCredit)
+                .creditCode(creditCode)
+                .status(CreditStatus.ISSUE)
+                .carbonCredit(quantity)
+                .tCo2e(sourceCredit.getTCo2e())
+                .amount(quantity)
+                .name(sourceCredit.getName())
+                .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue()
+                        :sourceCredit.getCurrentPrice())
+                .vintageYear(sourceCredit.getVintageYear())
+                .issuedAt(OffsetDateTime.now())
+                .issuedBy(issuer)
+                .build();
+
+        return creditRepo.save(newCredit);
+
     }
 }

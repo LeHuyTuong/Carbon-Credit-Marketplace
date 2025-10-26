@@ -20,4 +20,12 @@ public interface ApplicationNotificationService {
             BigDecimal amount,        // Số tiền rút
             LocalDateTime requestedAt // Thời gian xử lý
     );
+
+    void sendWithdrawalFailedOrRejected(
+            String userEmail,
+            Long withdrawalId,
+            BigDecimal amount,
+            String reason, // Thêm lý do
+            LocalDateTime processedAt
+    );
 }

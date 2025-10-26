@@ -217,7 +217,7 @@ const Form = () => {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          🎉 Tạo tài khoản thành công!
+           Account created successfully!
         </Alert>
       </Snackbar>
     </Box>

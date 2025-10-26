@@ -111,7 +111,7 @@ class WalletTransactionServiceImplTest {
 
         WalletTransactionRequest request = WalletTransactionRequest.builder()
                 .amount(BigDecimal.valueOf(150))
-                .type(WalletTransactionType.WITH_DRAWL)
+                .type(WalletTransactionType.WITHDRAWAL)
                 .description("Withdraw")
                 .build();
 

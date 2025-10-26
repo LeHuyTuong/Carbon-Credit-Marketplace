@@ -1,11 +1,11 @@
 import { Box, Typography, useTheme, Button } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "@/styles/actionadmin.scss";
 import { apiFetch } from "@/utils/apiFetch";
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
 const ListProjects = () => {
   const theme = useTheme();
@@ -40,64 +40,52 @@ const ListProjects = () => {
     fetchProjects();
   }, []);
 
-  // Cấu hình cột hiển thị DataGrid
+  // ======= Cấu hình cột hiển thị DataGrid =======
+  const textCellStyle = {
+    whiteSpace: "normal",
+    wordWrap: "break-word",
+    overflowWrap: "break-word",
+    lineHeight: 1.4,
+    fontSize: 14,
+  };
+
   const columns = [
     { field: "id", headerName: "#", width: 70 },
     { field: "projectid", headerName: "Project ID", flex: 1 },
     {
       field: "projectname",
       headerName: "Project Name",
-      flex: 1.5,
-      renderCell: (params) => (
-        <Typography
-          sx={{
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.4,
-          }}
-        >
-          {params.value}
-        </Typography>
-      ),
+      flex: 1.2,
+      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
     },
     {
       field: "shortdescription",
       headerName: "Description",
-      flex: 1.5,
-      renderCell: (params) => (
-        <Typography
-          sx={{
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.4,
-          }}
-        >
-          {params.value}
-        </Typography>
-      ),
+      flex: 1,
+      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
     },
     {
       field: "commitments",
       headerName: "Commitments",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
+      flex: 1.2,
+      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
     },
     {
       field: "measurementmethod",
       headerName: "Measurement Method",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
+      flex: 1.2,
+      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
     },
     {
       field: "totalexpectedcredits",
       headerName: "Technical Indicators",
-      flex: 1,
-      renderCell: (params) => <Typography>{params.value}</Typography>,
+      flex: 1.2,
+      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
     },
     {
       field: "status",
       headerName: "Status",
-      flex: 1,
+      flex: 0.5,
       renderCell: ({ row: { status } }) => {
         const statusColorMap = {
           SUBMITTED: colors.blueAccent[400],
@@ -108,12 +96,7 @@ const ListProjects = () => {
           Ended: colors.redAccent[500],
         };
         return (
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="left"
-            height="100%"
-          >
+          <Box display="flex" alignItems="center" height="100%">
             <Typography
               color={statusColorMap[status] || colors.grey[100]}
               fontWeight="600"
@@ -128,7 +111,7 @@ const ListProjects = () => {
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      flex: 0.5,
       renderCell: (params) => (
         <div className="cellAction">
           <Link
@@ -142,6 +125,7 @@ const ListProjects = () => {
     },
   ];
 
+  // ======= Render Component =======
   return (
     <Box m="20px" className="actionadmin">
       <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -163,10 +147,17 @@ const ListProjects = () => {
 
       <Box
         m="40px 0 0 0"
-        height="75vh"
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-cell": { borderBottom: "none" },
+          "& .MuiDataGrid-root": {
+            border: "none",
+            overflowX: "hidden !important", //  Ẩn scroll ngang
+          },
+          "& .MuiDataGrid-cell": {
+            borderBottom: "none",
+            display: "flex",
+            alignItems: "flex-start !important", //  Căn text lên trên
+            whiteSpace: "normal",
+          },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -180,7 +171,13 @@ const ListProjects = () => {
           },
         }}
       >
-        <DataGrid checkboxSelection rows={data} columns={columns} />
+        <AdminDataGrid
+          rows={data}
+          columns={columns}
+          getRowHeight={() => "auto"} //  Auto height
+          autoHeight //  Tự giãn toàn bảng
+          getRowId={(r) => r.id}
+        />
       </Box>
     </Box>
   );

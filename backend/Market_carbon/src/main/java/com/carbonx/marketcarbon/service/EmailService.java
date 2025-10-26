@@ -20,6 +20,8 @@ public interface EmailService {
 
 
     String renderWithdrawalConfirmationEmail(Map<String, Object> variables);
+
+    String renderWithdrawalFailedEmail(Map<String, Object> variables);
 }
 
 

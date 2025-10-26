@@ -28,7 +28,15 @@ public class MarketPlaceListing {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carbon_credits_id", nullable = false)
-    private CarbonCredit carbonCredit; // root credit is selling : 500 is now available
+    private CarbonCredit carbonCredit;
+
+    @Column(nullable = false, precision = 18, scale = 4, columnDefinition = "DECIMAL(18,4) DEFAULT 0")
+    @Builder.Default
+    private BigDecimal originalQuantity = BigDecimal.ZERO; // tổng số tín chỉ ban đầu khi niêm yết
+
+    @Column(nullable = false, precision = 18, scale = 4, columnDefinition = "DECIMAL(18,4) DEFAULT 0")
+    @Builder.Default
+    private BigDecimal soldQuantity = BigDecimal.ZERO; // số lượng đã bán ra khỏi listing này
 
     @Column(nullable = false, precision = 18, scale = 4)
     private BigDecimal quantity; // amount of credit can sell
