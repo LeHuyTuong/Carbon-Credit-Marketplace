@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
+import jakarta.transaction.Transactional;
 
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ public interface WalletService {
     WalletResponse getUserWallet() throws WalletException;
 
     // nạp tiền vào ví
+    @Transactional
     WalletResponse addBalanceToWallet(Long amount) throws WalletException;
 
     // tìm ví

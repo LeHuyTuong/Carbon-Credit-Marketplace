@@ -110,7 +110,10 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public Boolean processPaymentOrder(PaymentOrder order, String paymentId) {
+    public Boolean processPaymentOrder(Long orderId, String paymentId) {
+        PaymentOrder order = paymentOrderRepository.findByIdWithLock(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment order not found with id: " + orderId));
+
         // Nếu đơn đã xử lý rồi thì bỏ qua
         if (order.getStatus() == Status.SUCCEEDED) {
             log.warn("Payment order {} already processed.", order.getId());
@@ -124,28 +127,11 @@ public class PaymentServiceImpl implements PaymentService {
             // Cập nhật trạng thái đơn
             order.setStatus(Status.SUCCEEDED);
             paymentOrderRepository.save(order);
-
             // Lấy wallet của user
             Wallet wallet = walletRepository.findByUserId(order.getUser().getId());
             if (wallet == null) {
                 throw new ResourceNotFoundException("Wallet not found for user " + order.getUser().getId());
             }
-
-            //  Chỉ tạo transaction nếu chưa tồn tại cho order này
-            if (!walletTransactionRepository.existsByPaymentOrder(order)) {
-                walletTransactionService.createTransaction(
-                        WalletTransactionRequest.builder()
-                                .wallet(wallet)
-                                .paymentOrder(order)
-                                .amount(BigDecimal.valueOf(order.getAmount()))
-                                .type(WalletTransactionType.ADD_MONEY)
-                                .description("Top-up from order #" + order.getId())
-                                .build()
-                );
-            } else {
-                log.warn("Transaction already exists for order {}", order.getId());
-            }
-
             return true;
         }
         return false;
