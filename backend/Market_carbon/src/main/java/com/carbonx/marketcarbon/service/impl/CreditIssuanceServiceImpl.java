@@ -14,6 +14,7 @@ import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService.SerialRange;
 import com.carbonx.marketcarbon.service.credit.formula.CreditFormula;
+import com.carbonx.marketcarbon.utils.CodeGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
