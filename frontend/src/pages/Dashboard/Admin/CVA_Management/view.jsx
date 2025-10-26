@@ -10,25 +10,22 @@ import {
   useTheme,
   Snackbar,
   Alert,
-  Select,
-  MenuItem,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { useState, useEffect, useMemo } from "react";
-import { getUserByEmail, updateUser } from "@/apiAdmin/userAdmin.js";
-
-const ACCESS_TO_ROLE = { cva: "CVA" };
-const ROLE_TO_ACCESS = { CVA: "cva" };
+import { useState, useEffect } from "react";
+import {
+  getKycProfileCVA,
+  updateKycProfileCVA,
+} from "@/apiAdmin/CVAAdmin.js";
 
 const ViewUserCVA = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-  const { email } = useParams();
 
   const [user, setUser] = useState(null);
   const [editedUser, setEditedUser] = useState(null);
@@ -49,98 +46,71 @@ const ViewUserCVA = () => {
     async function fetchUser() {
       setLoading(true);
       try {
-        const res = await getUserByEmail(email);
-        const data = res?.responseData;
-        if (!data) throw new Error("No user data found");
-
-        const primaryRole =
-          Array.isArray(data.roles) && data.roles.length
-            ? data.roles[0].name
-            : "CVA";
-        const access = ROLE_TO_ACCESS[primaryRole] ?? "cva";
-
-        const organization =
-          data.organization ||
-          data.wallet?.carbonCredit?.project?.applications?.[0]?.reviewer
-            ?.organization ||
-          "";
+        const res = await getKycProfileCVA();
+        const data = res?.response;
+        if (!data) throw new Error("No CVA KYC data found");
 
         const uiUser = {
           id: data.id ?? "",
-          name: data.name || data.fullName || "",
+          name: data.name || "",
           email: data.email || "",
-          phone: data.phone || "",
-          access,
+          organization: data.organization || "",
+          positionTitle: data.positionTitle || "",
+          accreditationNo: data.accreditationNo || "",
+          capacityQuota: data.capacityQuota ?? 0,
+          notes: data.notes || "",
           status: data.status || "ACTIVE",
           createdAt: data.createdAt || "",
-          country: data.country || "",
-          city: data.city || "",
-          organization,
+          updatedAt: data.updatedAt || "",
         };
 
         setUser(uiUser);
         setEditedUser(uiUser);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching KYC profile:", error);
       } finally {
         setLoading(false);
       }
     }
 
     fetchUser();
-  }, [email]);
+  }, []);
 
   const handleChange = (field, value) => {
     setEditedUser((prev) => ({ ...prev, [field]: value }));
   };
 
-  const validateBeforeUpdate = useMemo(() => {
-    return (u) => {
-      if (!u) return "User is empty";
-      if (!u.name?.trim()) return "Full Name is required";
-      if (!u.email?.trim()) return "Email is required";
-      if (u.access !== "cva") return "Invalid role for CVA";
-      if (!["ACTIVE", "INACTIVE"].includes(u.status)) return "Invalid status";
-      return null;
-    };
-  }, []);
-
   const handleUpdate = async () => {
-    const err = validateBeforeUpdate(editedUser);
-    if (err) {
-      alert(err);
-      return;
-    }
-
-    const payload = {
-      id: editedUser.id,
-      email: editedUser.email,
-      name: editedUser.name,
-      phone: editedUser.phone || null,
-      status: editedUser.status,
-      roles: [{ name: ACCESS_TO_ROLE[editedUser.access] }],
-      country: editedUser.country || null,
-      city: editedUser.city || null,
-      organization: editedUser.organization || null,
-    };
-
     try {
-      await updateUser(editedUser.id, payload);
+      const payload = {
+        name: editedUser.name,
+        email: editedUser.email,
+        organization: editedUser.organization,
+        positionTitle: editedUser.positionTitle,
+        accreditationNo: editedUser.accreditationNo,
+        capacityQuota: Number(editedUser.capacityQuota) || 0,
+        notes: editedUser.notes,
+      };
+
+      await updateKycProfileCVA(payload);
       setUser(editedUser);
       setEditMode(false);
       setOpenSnackbar(true);
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error("Error updating CVA KYC profile:", error);
       alert("Update failed! Please try again.");
     }
   };
 
   if (loading) return <Typography>Loading...</Typography>;
-  if (!user) return <Typography>User not found</Typography>;
+  if (!user) return <Typography>No CVA KYC profile found.</Typography>;
 
   return (
     <Box m="20px">
-      <Header title="CVA USER DETAILS" subtitle="View or edit CVA information" />
+      <Header
+        title="CVA KYC PROFILE"
+        subtitle="View or update your KYC information"
+      />
       <Paper
         elevation={2}
         sx={{
@@ -150,9 +120,14 @@ const ViewUserCVA = () => {
           color: colors.grey[100],
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Typography variant="h5" fontWeight="bold">
-            CVA Profile
+            My KYC Profile
           </Typography>
 
           {!editMode ? (
@@ -193,11 +168,11 @@ const ViewUserCVA = () => {
           )}
         </Box>
 
-        {/* AVATAR */}
+        {/* Avatar */}
         <Box display="flex" alignItems="center" mb={3}>
           <Avatar
-            src={`https://i.pravatar.cc/100?u=${user.id || "na"}`}
-            alt={user.name || "user"}
+            src={`https://i.pravatar.cc/100?u=${user.id || "cva"}`}
+            alt={user.name || "CVA user"}
             sx={{ width: 80, height: 80, mr: 3 }}
           />
           <Box>
@@ -205,15 +180,15 @@ const ViewUserCVA = () => {
               {user.name || "(No name)"}
             </Typography>
             <Typography variant="body2" color={colors.grey[300]}>
-              {editedUser.access.toUpperCase()}
+              {user.email}
             </Typography>
           </Box>
         </Box>
 
         <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
 
-        {/* CVA DETAILS */}
-        <Grid container spacing={3} mb={4}>
+        {/* KYC Details */}
+        <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <TextField
               label="Full Name"
@@ -226,20 +201,10 @@ const ViewUserCVA = () => {
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Email Address"
+              label="Email"
               fullWidth
               value={editedUser.email || ""}
               InputProps={{ readOnly: true }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Phone"
-              fullWidth
-              value={editedUser.phone || ""}
-              InputProps={{ readOnly: !editMode }}
-              onChange={(e) => handleChange("phone", e.target.value)}
             />
           </Grid>
 
@@ -254,23 +219,46 @@ const ViewUserCVA = () => {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            {editMode ? (
-              <Select
-                fullWidth
-                value={editedUser.status}
-                onChange={(e) => handleChange("status", e.target.value)}
-              >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-              </Select>
-            ) : (
-              <TextField
-                label="Status"
-                fullWidth
-                value={editedUser.status}
-                InputProps={{ readOnly: true }}
-              />
-            )}
+            <TextField
+              label="Position Title"
+              fullWidth
+              value={editedUser.positionTitle || ""}
+              InputProps={{ readOnly: !editMode }}
+              onChange={(e) => handleChange("positionTitle", e.target.value)}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Accreditation No"
+              fullWidth
+              value={editedUser.accreditationNo || ""}
+              InputProps={{ readOnly: !editMode }}
+              onChange={(e) => handleChange("accreditationNo", e.target.value)}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Capacity Quota"
+              type="number"
+              fullWidth
+              value={editedUser.capacityQuota || 0}
+              InputProps={{ readOnly: !editMode }}
+              onChange={(e) => handleChange("capacityQuota", e.target.value)}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label="Notes"
+              fullWidth
+              multiline
+              minRows={3}
+              value={editedUser.notes || ""}
+              InputProps={{ readOnly: !editMode }}
+              onChange={(e) => handleChange("notes", e.target.value)}
+            />
           </Grid>
 
           <Grid item xs={12} md={6}>
@@ -281,29 +269,13 @@ const ViewUserCVA = () => {
               InputProps={{ readOnly: true }}
             />
           </Grid>
-        </Grid>
 
-        {/* ADDRESS */}
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          Address
-        </Typography>
-        <Grid container spacing={3} mb={2}>
           <Grid item xs={12} md={6}>
             <TextField
-              label="Country"
+              label="Updated At"
               fullWidth
-              value={editedUser.country || ""}
-              InputProps={{ readOnly: !editMode }}
-              onChange={(e) => handleChange("country", e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="City/State"
-              fullWidth
-              value={editedUser.city || ""}
-              InputProps={{ readOnly: !editMode }}
-              onChange={(e) => handleChange("city", e.target.value)}
+              value={formatDate(editedUser.updatedAt)}
+              InputProps={{ readOnly: true }}
             />
           </Grid>
         </Grid>
@@ -336,7 +308,7 @@ const ViewUserCVA = () => {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          CVA user updated successfully!
+          CVA KYC profile updated successfully!
         </Alert>
       </Snackbar>
     </Box>

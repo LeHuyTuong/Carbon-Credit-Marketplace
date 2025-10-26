@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { approveReportByAdmin, getReportByIdAdmin } from "@/apiAdmin/reportAdmin.js";
+import { issueCredits } from "@/apiAdmin/creditAdmin.js";
 
 const ViewReport = () => {
   const theme = useTheme();
@@ -32,12 +33,31 @@ const ViewReport = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
+  //  State điều khiển hiển thị nút
+  const [approved, setApproved] = useState(false);
+  const [issued, setIssued] = useState(false);
+
   useEffect(() => {
   const fetchReport = async () => {
     try {
       const res = await getReportByIdAdmin(id);
-      console.log(" API response:", res);
-      setReport(res.response || res.responseData || res);
+      const data = res.response || res.responseData || res;
+      setReport(data);
+
+      // ✅ Chuẩn hóa status
+      const status = data.status?.trim().toUpperCase();
+      console.log("Report status:", status);
+
+      // ✅ Xử lý theo API thực tế
+      if (status === "ADMIN_APPROVED") setApproved(true);
+      if (status === "ISSUED") {
+        setApproved(true); // vì issued chỉ xảy ra sau khi approved
+        setIssued(true);
+      }
+      if (status === "REJECTED") {
+        setApproved(false);
+        setIssued(false);
+      }
     } catch (err) {
       console.error("Error fetching report:", err);
     } finally {
@@ -49,21 +69,50 @@ const ViewReport = () => {
 
 
 
-  const handleApproval = async (approved) => {
+  const handleApproval = async (isApproved) => {
     try {
-      const res = await approveReportByAdmin(id, approved, note);
+      const res = await approveReportByAdmin(id, isApproved, note);
+
+      setReport((prev) => ({
+        ...prev,
+        ...res.response,
+        status: isApproved ? "Approved" : "Rejected",
+      }));
+
       setSnackbarSeverity("success");
       setSnackbarMessage(
-        approved
+        isApproved
           ? "Report approved successfully!"
           : "Report rejected successfully!"
       );
       setOpenSnackbar(true);
-      setReport(res.response);
+
+      if (isApproved) {
+        setApproved(true); // ✅ Khi approved thì hiện Issue Credit
+      }
     } catch (err) {
       console.error(err);
       setSnackbarSeverity("error");
       setSnackbarMessage("Failed to update report status!");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleIssueCredit = async () => {
+    try {
+      await issueCredits(id);
+      setSnackbarSeverity("success");
+      setSnackbarMessage("Credits issued successfully!");
+      setOpenSnackbar(true);
+      setIssued(true); // ✅ ẩn nút ngay sau khi ấn
+
+      setTimeout(() => {
+        navigate("/admin/credit_management");
+      }, 1000);
+    } catch (err) {
+      console.error(err);
+      setSnackbarSeverity("error");
+      setSnackbarMessage("Failed to issue credits!");
       setOpenSnackbar(true);
     }
   };
@@ -88,7 +137,6 @@ const ViewReport = () => {
           Report Information
         </Typography>
 
-        {/* ✅ Dùng Grid2 với prop 'size' thay vì item/xs/md */}
         <Grid container spacing={3} mb={2}>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
@@ -185,24 +233,41 @@ const ViewReport = () => {
           </Button>
 
           <Box display="flex" gap={2}>
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<CheckCircleOutlineIcon />}
-              onClick={() => handleApproval(true)}
-              sx={{ textTransform: "none" }}
-            >
-              Approve
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              startIcon={<CancelOutlinedIcon />}
-              onClick={() => handleApproval(false)}
-              sx={{ textTransform: "none" }}
-            >
-              Reject
-            </Button>
+            {/* Khi chưa duyệt thì hiện 2 nút Approve/Reject */}
+            {!approved && !issued && (
+              <>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<CheckCircleOutlineIcon />}
+                  onClick={() => handleApproval(true)}
+                  sx={{ textTransform: "none" }}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<CancelOutlinedIcon />}
+                  onClick={() => handleApproval(false)}
+                  sx={{ textTransform: "none" }}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+
+            {/* Khi đã approved thì hiện Issue Credit */}
+            {approved && !issued && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleIssueCredit}
+                sx={{ textTransform: "none" }}
+              >
+                Issue Credit
+              </Button>
+            )}
           </Box>
         </Box>
       </Paper>
