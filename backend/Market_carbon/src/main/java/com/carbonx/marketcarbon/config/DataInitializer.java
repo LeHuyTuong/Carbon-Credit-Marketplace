@@ -278,7 +278,7 @@ public class DataInitializer {
                         .carbonCredit(new BigDecimal("1000.00"))
                         .company(adminCompany)
                         .project(testProject)
-                        .status(CreditStatus.PENDING)
+                        .status(CreditStatus.AVAILABLE)
                         .name("Admin Sample Pending Credits - 2025")
                         .build();
                 carbonCreditRepository.save(pendingCredit);

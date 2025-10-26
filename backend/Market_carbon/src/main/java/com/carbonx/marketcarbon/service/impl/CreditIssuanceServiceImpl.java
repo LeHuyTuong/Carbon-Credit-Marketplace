@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,6 +115,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .status(CreditStatus.AVAILABLE)
                     .issuedBy(issuedBy)
                     .issuedAt(OffsetDateTime.now())
+                    .expiryDate(LocalDate.now().plusYears(1))
                     .build());
         }
         creditRepo.saveAll(credits);
@@ -146,6 +148,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .amount(issuedCredits)
                 .balanceBefore(before)
                 .balanceAfter(after)
+                .creditBatch(batch)
                 .description("Issued " + result.getCreditsCount() + " Carbon Credits for project " + project.getTitle())
                 .createdAt(java.time.LocalDateTime.now())
                 .build();
@@ -209,7 +212,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         byte[] pdf = certificatePdfService.generatePdf(data);
 
         try {
-            String subject = "🎉 Your Carbon Credit Certificate is Ready!";
+            String subject = " Your Carbon Credit Certificate is Ready!";
             String htmlBody = """
                     <div style='font-family:Arial,sans-serif;color:#333;'>
                       <h2 style='color:#16a34a;'>Congratulations, %s!</h2>
