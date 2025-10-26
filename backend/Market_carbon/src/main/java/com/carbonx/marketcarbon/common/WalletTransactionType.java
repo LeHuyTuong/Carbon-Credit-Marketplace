@@ -1,7 +1,7 @@
 package com.carbonx.marketcarbon.common;
 
 public enum WalletTransactionType {
-    WITH_DRAWL,
+    WITHDRAWAL,
     ADD_MONEY,
     BUY_CARBON_CREDIT,
     SELL_CARBON_CREDIT,

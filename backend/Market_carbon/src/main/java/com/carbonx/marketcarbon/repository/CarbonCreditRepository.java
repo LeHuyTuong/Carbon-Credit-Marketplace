@@ -23,7 +23,8 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     Optional<CarbonCredit> findByCreditCode(String creditCode);
     Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
 
-    // --- Tổng hợp cơ bản ---
+    List<CarbonCredit> findByCompanyId(Long companyId);
+
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
         FROM CarbonCredit c

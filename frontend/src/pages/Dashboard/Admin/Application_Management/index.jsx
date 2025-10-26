@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiAdmin/companyAdmin.js";
-
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -44,14 +44,14 @@ const ApplicationList = () => {
     {
       field: "status",
       headerName: "Status",
-      flex: 0.8,
+      flex: 1.2,
       renderCell: (params) => {
         const value = params?.row?.status || "unknown";
         const colorMap = {
-          SUBMITTED: "#42A5F5",
-          APPROVED: "#4CAF50",
-          REJECTED: "#E53935",
-          REVIEWING: "#FFB300",
+          CVA_APPROVED: "#42A5F5",
+          ADMIN_APPROVED: "#4CAF50",
+          ADMIN_REJECTED: "#E53935",
+          CVA_REJECTED: "#FFB300",
         };
         const color = colorMap[value.toUpperCase()] || "#E0E0E0";
 
@@ -94,7 +94,7 @@ const ApplicationList = () => {
     {
       field: "submittedAt",
       headerName: "Submitted At",
-      flex: 0.8,
+      flex: 1.2,
       renderCell: (params) => {
         const date = params?.value ? new Date(params.value) : null;
         return date ? date.toLocaleString() : "N/A";
@@ -149,13 +149,7 @@ const ApplicationList = () => {
           },
         }}
       >
-        <DataGrid
-          rows={data}
-          columns={columns}
-          slots={{ toolbar: GridToolbar }}
-          getRowId={(row) => row.id}
-          loading={loading}
-        />
+        <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
       </Box>
     </Box>
   );

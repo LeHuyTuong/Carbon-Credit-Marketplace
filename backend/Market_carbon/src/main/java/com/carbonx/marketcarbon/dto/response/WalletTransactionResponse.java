@@ -20,6 +20,10 @@ public class WalletTransactionResponse {
     private BigDecimal balanceBefore;
     private BigDecimal balanceAfter;
     private BigDecimal amount;
+    // Số lượng tín chỉ carbon giao dịch (giúp người dùng đối chiếu với amount)
+    private BigDecimal carbonCreditQuantity;
+    // Đơn giá / tín chỉ nếu transaction gắn với order
+    private BigDecimal unitPrice;
     private LocalDateTime createdAt;
     private String batchCode;
 

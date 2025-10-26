@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { getReportCVAList } from "@/apiCVA/reportCVA.js";
 import "@/styles/actionadmin.scss";
+import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
 
 const ReportListCVA = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -22,13 +23,17 @@ const ReportListCVA = () => {
       try {
         setLoading(true);
         const res = await getReportCVAList({ page, size: pageSize });
+        console.log("API CVA list:", res);
+
         if (res?.response) {
-          setRows(res.response);
-          //  Dùng totalElements từ backend để biết tổng record
+          const list = Array.isArray(res.response)
+            ? res.response
+            : res.response.content || [];
+          setRows(list);
           if (res.totalElements !== undefined) setRowCount(res.totalElements);
         }
       } catch (err) {
-        console.error("Lỗi khi lấy danh sách báo cáo CVA:", err);
+        console.error("Error when getting CVA report list:", err);
       } finally {
         setLoading(false);
       }
@@ -37,7 +42,7 @@ const ReportListCVA = () => {
   }, [page, pageSize]);
 
   const columns = [
-    { field: "id", headerName: "ID", width: 80 },
+    { field: "id", headerName: "", width: 80 },
     { field: "sellerName", headerName: "Seller Name", flex: 1 },
     { field: "projectName", headerName: "Project Name", flex: 1 },
     { field: "period", headerName: "Period", flex: 1 },
@@ -50,28 +55,32 @@ const ReportListCVA = () => {
       flex: 1,
       renderCell: ({ row: { status } }) => {
         const statusColorMap = {
-          Pending: colors.blueAccent[500],
-          Approved: colors.greenAccent[500],
-          Rejected: colors.redAccent[500],
+          SUBMITTED: colors.blueAccent[500],
+          CVA_APPROVED: colors.greenAccent[500],
+          CVA_REJECT: colors.redAccent[500],
         };
         return (
-          <Typography
-            color={statusColorMap[status] || colors.grey[100]}
-            fontWeight="600"
-            sx={{ textTransform: "capitalize" }}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
           >
-            {status}
-          </Typography>
+            <Typography
+              color={statusColorMap[status] || colors.grey[100]}
+              fontWeight="600"
+              sx={{ textTransform: "capitalize" }}
+            >
+              {status}
+            </Typography>
+          </Box>
         );
       },
     },
-    {
-      field: "submittedAt",
-      headerName: "Submitted At",
-      flex: 1,
-      valueGetter: (params) =>
-        params?.value ? new Date(params.value).toLocaleString() : "-",
-    },
+    
     {
       field: "action",
       headerName: "Action",
@@ -108,24 +117,26 @@ const ReportListCVA = () => {
             borderTop: "none",
             backgroundColor: colors.blueAccent[700],
           },
+          "& .MuiDataGrid-cell": {
+            whiteSpace: "normal !important",
+            wordWrap: "break-word !important",
+            lineHeight: "1.4em",
+            display: "flex",
+            alignItems: "flex-start",
+          },
         }}
       >
-        <DataGrid
+        <CVADataGrid
           rows={rows}
           columns={columns}
           getRowId={(r) => r.id}
-          loading={loading}
-          pagination
-          paginationMode="server"
           page={page}
-          pageSize={pageSize}
-          rowCount={rowCount}
           onPageChange={(newPage) => setPage(newPage)}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize);
-            setPage(0); // quay lại trang đầu khi đổi size
-          }}
-          rowsPerPageOptions={[10, 20, 50]}
+          pageSize={pageSize}
+          onPageSizeChange={(newSize) => setPageSize(newSize)}
+          rowCount={rowCount}
+          loading={loading}
+          getRowHeight={() => "auto"}
         />
       </Box>
     </Box>

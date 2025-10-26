@@ -14,6 +14,12 @@ public class MarketplaceListingResponse {
 
     private BigDecimal quantity;
 
+    private BigDecimal availableQuantity;
+
+    private BigDecimal originalQuantity;
+
+    private BigDecimal soldQuantity;
+
     private BigDecimal pricePerCredit;
 
     private String sellerCompanyName;
