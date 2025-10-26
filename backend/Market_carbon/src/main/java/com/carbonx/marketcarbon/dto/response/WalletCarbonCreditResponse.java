@@ -2,15 +2,20 @@ package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
 import jakarta.validation.Valid;
-import lombok.Builder;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Valid
+@Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WalletCarbonCreditResponse {
     Long creditId;
     String creditCode;
+    BigDecimal ownedQuantity;
     BigDecimal availableQuantity;
     BigDecimal listedQuantity;
     CreditStatus status;
@@ -22,4 +27,10 @@ public class WalletCarbonCreditResponse {
     String originCreditCode;
     Long originCompanyId;
     String originCompanyName;
+
+    // Thông tin Batch giúp xác định rõ tín chỉ thuộc về công ty nào
+    Long batchId;
+    String batchCode;
+    Long batchCompanyId;
+    String batchCompanyName;
 }

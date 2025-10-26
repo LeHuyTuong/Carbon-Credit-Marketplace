@@ -255,7 +255,11 @@ public class OrderServiceImpl implements OrderService {
         walletRepository.save(sellerWallet);
 
         // 6.4: Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
+        // Cập nhật tồn kho listing sau khi giao dịch hoàn tất
         listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
+        BigDecimal currentSold = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
+        listing.setSoldQuantity(currentSold.add(quantityToBuy));
+
         if (listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             listing.setStatus(ListingStatus.SOLD);
             listing.setExpiresAt(LocalDateTime.now(VIETNAM_ZONE)); // Cập nhật thời gian hết hạn khi bán hết

@@ -7,10 +7,7 @@ import com.carbonx.marketcarbon.dto.response.WalletResponse;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
-import com.carbonx.marketcarbon.model.CarbonCredit;
-import com.carbonx.marketcarbon.model.Company;
-import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.model.Wallet;
+import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
 import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -191,17 +188,38 @@ public class WalletServiceImpl implements WalletService {
                 originCompany = credit.getBatch().getCompany();
             }
 
-            BigDecimal availableQuantity = credit.getCarbonCredit() != null
-                    ? credit.getCarbonCredit()
+            // Ưu tiên lấy batch trực tiếp, nếu thiếu thì truy ngược theo chuỗi nguồn để tránh null
+            CreditBatch batch = resolveEffectiveBatch(credit,sourceCredit,originCredit);
+            Company batchCompany = null;
+            if(batch != null) {
+                batchCompany = batch.getCompany();
+            }
+            if(batchCompany == null && originCompany != null) {
+                // fallback cuối cùng: dùng công ty gốc nếu batch không có thông tin
+                batchCompany = originCompany;
+            }
+
+            // Số lượng tín chỉ thực sự thuộc về ví (đã mua + tự phát hành)
+            BigDecimal ownedQuantity = credit.getAmount() != null
+                    ? credit.getAmount()
                     : BigDecimal.ZERO;
 
+            // Số lượng đang được niêm yết trên sàn bởi chính doanh nghiệp này
             BigDecimal listedQuantity = credit.getListedAmount() != null
                     ? credit.getListedAmount()
                     : BigDecimal.ZERO;
 
+            // Lượng tín chỉ còn lại có thể sử dụng/niêm yết (không bao gồm phần đã list)
+            BigDecimal availableQuantity = ownedQuantity.subtract(listedQuantity);
+            if (availableQuantity.compareTo(BigDecimal.ZERO) < 0) {
+                availableQuantity = BigDecimal.ZERO;
+            }
+
+
             response.add(WalletCarbonCreditResponse.builder()
                     .creditId(credit.getId())
                     .creditCode(credit.getCreditCode())
+                    .ownedQuantity(ownedQuantity)
                     .availableQuantity(availableQuantity)
                     .listedQuantity(listedQuantity)
                     .status(credit.getStatus())
@@ -213,10 +231,39 @@ public class WalletServiceImpl implements WalletService {
                     .originCreditCode(originCredit != null ? originCredit.getCreditCode() : null)
                     .originCompanyId(originCompany != null ? originCompany.getId() : null)
                     .originCompanyName(originCompany != null ? originCompany.getCompanyName() : null)
+                    .batchId(batch != null ? batch.getId() : null)
+                    .batchCode(batch != null ? batch.getBatchCode() : null)
+                    .batchCompanyId(batch != null ? batch.getCompany().getId() : null)
+                    .batchCompanyName(batch != null ? batch.getCompany().getCompanyName() : null)
                     .build());
         }
         return response;
     }
+
+    /**
+     * Lấy ra batch phù hợp nhất để giảm thiểu tình trạng dữ liệu null trả về cho FE.
+     * Ưu tiên batch hiện tại, nếu không có thì dùng batch của credit nguồn hoặc credit gốc.
+     */
+    private CreditBatch resolveEffectiveBatch(CarbonCredit credit, CarbonCredit sourceCredit, CarbonCredit originCredit) {
+        // batch trực tiếp
+        CreditBatch batch = credit.getBatch();
+        if (batch != null) {
+            return batch;
+        }
+
+        // nếu credit phát sinh từ giao dịch, sử dụng batch của credit nguồn
+        if (sourceCredit != null && sourceCredit.getBatch() != null) {
+            return sourceCredit.getBatch();
+        }
+
+        // truy ngược tới credit gốc (trường hợp chuỗi nhiều cấp)
+        if (originCredit != null && originCredit.getBatch() != null) {
+            return originCredit.getBatch();
+        }
+
+        return null;
+    }
+
 
     private CarbonCredit resolveRootCredit(CarbonCredit credit) {
         if (credit == null) {
