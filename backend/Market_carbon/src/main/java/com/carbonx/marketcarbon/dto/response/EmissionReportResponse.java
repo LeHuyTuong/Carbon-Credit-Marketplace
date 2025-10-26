@@ -82,7 +82,7 @@ public class EmissionReportResponse {
 
                 .verificationScore(r.getVerificationScore())
                 .verificationComment(r.getVerificationComment())
-                .verifiedBy(r.getVerifiedBy() != null ? r.getVerifiedBy().getEmail() : null)
+                .verifiedBy(r.getVerifiedByCva() != null ? r.getVerifiedByCva().getEmail() : null)
                 .verifiedAt(r.getVerifiedAt())
 
                 .approvedAt(r.getApprovedAt())
