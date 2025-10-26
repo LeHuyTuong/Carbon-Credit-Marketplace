@@ -20,6 +20,8 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     Page<CarbonCredit> findByStatus(CreditStatus status, Pageable pageable);
     Optional<CarbonCredit> findByCreditCodeAndCompany_Id(String creditCode, Long companyId);
 
+    List<CarbonCredit> findByCompanyId(Long companyId);
+
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
         FROM CarbonCredit c

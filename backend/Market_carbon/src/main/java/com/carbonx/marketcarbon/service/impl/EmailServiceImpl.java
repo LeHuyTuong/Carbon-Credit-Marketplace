@@ -156,4 +156,12 @@ public class EmailServiceImpl implements EmailService {
         ctx.setVariables(variables);
         return templateEngine.process("emails/withdrawal-confirmation.html", ctx);
     }
+
+    @Override
+    public String renderWithdrawalFailedEmail(Map<String, Object> variables) {
+        Context ctx = new Context();
+        ctx.setVariables(variables);
+        // Sử dụng template mới emails/withdrawal-failed.html
+        return templateEngine.process("emails/withdrawal-failed.html", ctx);
+    }
 }
