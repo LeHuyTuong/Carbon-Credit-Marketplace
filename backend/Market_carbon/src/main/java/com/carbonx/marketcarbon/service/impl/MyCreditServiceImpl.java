@@ -15,7 +15,9 @@ import com.carbonx.marketcarbon.service.CreditQuery;
 import com.carbonx.marketcarbon.service.MyCreditService;
 
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,12 +26,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service cho phép COMPANY xem các tín chỉ đã được cấp, lọc theo dự án, vintage, trạng thái.
- */
+import java.util.ArrayList;
+
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class MyCreditServiceImpl implements MyCreditService {
 
     private final CarbonCreditRepository creditRepo;
@@ -44,11 +47,12 @@ public class MyCreditServiceImpl implements MyCreditService {
         if (user == null) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-
-        return companyRepo.findByUserId(user.getId())
+        Long id = companyRepo.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND))
                 .getId();
+        return id;
     }
+
 
 
     @Override
@@ -84,24 +88,50 @@ public class MyCreditServiceImpl implements MyCreditService {
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public Page<CreditBatchLiteResponse> listMyBatches(Long projectId, Integer vintageYear, Pageable pageable) {
+        log.info("[DEBUG] listMyBatches START - projectId={}, vintageYear={}, pageable={}", projectId, vintageYear, pageable);
+
         Long companyId = currentCompanyId();
+        log.info("[DEBUG] Authenticated companyId = {}", companyId);
 
         Specification<CreditBatch> spec = (root, cq, cb) -> {
-            var predicate = cb.conjunction();
-            predicate.getExpressions().add(cb.equal(root.get("company").get("id"), companyId));
+            cq.distinct(true);
+
+            // JOIN tường minh để chắc chắn ràng buộc dính vào SQL
+            var companyJoin  = root.join("company", JoinType.INNER);
+            var projectJoin  = root.join("project", JoinType.INNER);
+
+            var predicates = new ArrayList<Predicate>();
+            //chỉ batch của công ty đang đăng nhập
+            predicates.add(cb.equal(companyJoin.get("id"), companyId));
+            log.info("[DEBUG] Applied filter companyId = {}", companyId);
 
             if (projectId != null) {
-                predicate.getExpressions().add(cb.equal(root.get("project").get("id"), projectId));
+                predicates.add(cb.equal(projectJoin.get("id"), projectId));
+                log.info("[DEBUG] Applied filter projectId = {}", projectId);
             }
             if (vintageYear != null) {
-                predicate.getExpressions().add(cb.equal(root.get("vintageYear"), vintageYear));
+                predicates.add(cb.equal(root.get("vintageYear"), vintageYear));
+                log.info("[DEBUG] Applied filter vintageYear = {}", vintageYear);
             }
 
-            return predicate;
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
 
-        return batchRepo.findAll(spec, pageable).map(CreditBatchLiteResponse::from);
+        Page<CreditBatch> batches = batchRepo.findAll(spec, pageable);
+
+        log.info("[DEBUG] Result: totalElements={}, totalPages={}, page={}",
+                batches.getTotalElements(), batches.getTotalPages(), batches.getNumber());
+
+        // Log kiểm chứng từng record thật sự khớp filter
+        batches.getContent().forEach(b ->
+                log.debug("[DEBUG] Row => id={}, projectId={}, companyId={}",
+                        b.getId(), b.getProject().getId(), b.getCompany().getId())
+        );
+
+        return batches.map(CreditBatchLiteResponse::from);
     }
+
+
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
