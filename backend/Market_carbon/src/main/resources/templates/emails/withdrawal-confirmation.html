@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Thông báo duyệt yêu cầu rút tiền</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; line-height: 1.5; color: #333; }
+        .container { padding: 20px; border: 1px solid #ddd; max-width: 600px; margin: auto; }
+        .header { font-weight: bold; margin-bottom: 15px; }
+        .label { font-weight: bold; display: inline-block; min-width: 150px; } /* Căn chỉnh label */
+        .value { display: inline-block; }
+        .amount { color: #dc2626; font-weight: bold; } /* Màu đỏ cho số tiền trừ */
+        .footer { margin-top: 20px; font-size: 0.9em; color: #777; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <p class="header">Kính gửi: Quý khách <span th:text="${userName}">[Tên khách hàng]</span>,</p>
+    <p>CarbonX xin thông báo thông tin giao dịch rút tiền của Quý khách như sau:</p>
+
+    <p><span class="label">Mã yêu cầu:</span> <span class="value" th:text="${withdrawalId}">[ID Giao dịch]</span></p>
+    <p><span class="label">Giao dịch:</span> <span class="value amount"><span th:text="${amount}">[Số tiền]</span> USD</span></p> <p><span class="label">Từ nguồn:</span> <span class="value">Ví CarbonX</span></p>
+    <p><span class="label">Ngày, giờ giao dịch:</span> <span class="value" th:text="${processedAt}">[Ngày giờ]</span></p>
+    <p><span class="label">Nội dung:</span> <span class="value">Giao dịch rút tiền về tài khoản ngân hàng</span></p>
+
+    <p class="footer">
+        Số tiền sẽ được chuyển vào tài khoản ngân hàng Quý khách đã đăng ký trong thời gian sớm nhất.
+        <br>
+        Trân trọng cảm ơn Quý khách đã sử dụng dịch vụ của CarbonX!
+    </p>
+</div>
+</body>
+</html>

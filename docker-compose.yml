@@ -19,7 +19,7 @@ services:
       - "3307:3306"
     restart: unless-stopped
 
-  api:
+  be:
     build:
       context: ./backend/Market_carbon
       dockerfile: Dockerfile
@@ -42,6 +42,22 @@ services:
       db:
         condition: service_healthy
     networks: [backend]
+    restart: unless-stopped
+
+  fe:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # cấu hình biến môi trường khi build để React gọi đúng API
+        REACT_APP_API_BASE_URL: https://carbonx.io.vn/api
+    image: carbonx-fe:latest
+    networks:
+      - backend
+    ports:
+      - "3000:80"  # expose cổng 80 trong container ra cổng 3000 trên host
+    depends_on:
+      - api
     restart: unless-stopped
 
 networks:

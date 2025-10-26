@@ -18,6 +18,8 @@ public interface EmailService {
     void sendHtml(String to, String subject, String html) throws MessagingException;
     void sendEmailWithAttachment(String to, String subject, String htmlBody, byte[] file, String filename);
 
+
+    String renderWithdrawalConfirmationEmail(Map<String, Object> variables);
 }
 
 

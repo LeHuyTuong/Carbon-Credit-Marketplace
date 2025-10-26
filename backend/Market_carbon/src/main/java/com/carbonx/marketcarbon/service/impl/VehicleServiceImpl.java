@@ -88,6 +88,18 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
+    public long countMyVehicles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        EVOwner evOwner = evOwnerRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("EV Owner not found with email: " + email));
+        if(evOwner == null){
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+        return vehicleRepository.countByEvOwner_Id(evOwner.getId());
+    }
+
+    @Override
     public VehicleResponse update(Long id, VehicleUpdateRequest req) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
