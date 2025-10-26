@@ -1,7 +1,7 @@
 import { apiFetch } from "@/utils/apiFetch";
 
 /**
- * ✅ Lấy danh sách yêu cầu rút tiền (cho admin)
+ *  Lấy danh sách yêu cầu rút tiền (cho admin)
  */
 export const getWithdrawalsAdmin = async () => {
   try {
@@ -17,7 +17,7 @@ export const getWithdrawalsAdmin = async () => {
 
 
 /**
- * ✅ Duyệt hoặc từ chối yêu cầu rút tiền
+ *  Duyệt hoặc từ chối yêu cầu rút tiền
  * @param {number} id - ID của yêu cầu
  * @param {boolean} accept - true = duyệt, false = từ chối
  */
@@ -32,4 +32,9 @@ export const processWithdrawal = async (id, accept) => {
     console.error("Error processing withdrawal:", error);
     throw error;
   }
+};
+
+export const getPaymentDetails = async () => {
+  const res = await apiFetch("/api/v1/paymentDetails", { method: "GET" });
+  return res?.response || null; // vì response là object chứ không phải mảng
 };
