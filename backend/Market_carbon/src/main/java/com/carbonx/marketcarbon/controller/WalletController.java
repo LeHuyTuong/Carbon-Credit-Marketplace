@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -120,6 +121,40 @@ public class WalletController {
         TuongCommonResponse<List<WalletTransactionResponse>> response = new TuongCommonResponse<>(trace, now , rs ,transactionDtos );
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Count My Transactions", description = "API to count transactions for the current user's wallet")
+    @GetMapping("/transactions/my/count")
+    public ResponseEntity<TuongCommonResponse<Long>> countMyTransactions(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        long count = walletTransactionService.countMyTransactions();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Count All Transactions (Admin)", description = "API for Admin to count all wallet transactions in the system")
+    @GetMapping("/transactions/count")
+//    @PreAuthorize("hasRole('ADMIN')") // Chỉ Admin mới được truy cập
+    public ResponseEntity<TuongCommonResponse<Long>> countAllTransactions(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        long count = walletTransactionService.countAllTransactions();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        return ResponseEntity.ok(response);
+    }
+
 /*
 
     @PutMapping("/order/{orderId}/pay")

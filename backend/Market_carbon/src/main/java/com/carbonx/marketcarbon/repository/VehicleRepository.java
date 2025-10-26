@@ -27,4 +27,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     List<Vehicle> findByCompanyId(Long companyId);
 
+    long count(); // count all vehicle for admin
+
+    long countByEvOwner_Id(Long evOwnerId);
+
+    long countByCompany_Id(Long companyId);
+
 }

@@ -18,4 +18,10 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     boolean existsByOrder(Order order);
 
     boolean existsByPaymentOrder(PaymentOrder paymentOrder);
+
+    long count(); // Đếm tổng số giao dịch
+
+    long countByWallet_Id(Long walletId); // Đếm số giao dịch của một ví cụ thể
+    // SỬA TÊN PHƯƠNG THỨC Ở ĐÂY
+    long countByWalletUserId(Long userId); // Đếm số giao dịch của một người dùng (thay vì countMyTransactions)
 }

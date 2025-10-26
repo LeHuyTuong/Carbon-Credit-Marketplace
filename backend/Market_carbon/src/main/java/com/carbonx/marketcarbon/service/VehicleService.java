@@ -16,5 +16,7 @@ public interface VehicleService {
      void delete(Long id);
      List<VehicleResponse> getOwnerVehicles();
 
+     long countMyVehicles();
+
 }
 

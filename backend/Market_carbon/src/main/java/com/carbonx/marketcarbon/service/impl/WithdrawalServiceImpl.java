@@ -6,6 +6,7 @@ import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
+import com.carbonx.marketcarbon.helper.notification.ApplicationNotificationService;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.Withdrawal;
@@ -16,6 +17,7 @@ import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WithdrawalServiceImpl implements WithdrawalService {
@@ -34,6 +37,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
     private final WalletTransactionService walletTransactionService;
+    private final ApplicationNotificationService applicationNotificationService;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -82,7 +86,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         }
 
         Withdrawal withdrawalRequest = withdrawal.get();
-        withdrawalRequest.setProcessedAt(LocalDateTime.now());
+        withdrawalRequest.setProcessedAt(LocalDateTime.now(VIETNAM_ZONE));
         if (accept) {
             User user = withdrawalRequest.getUser();
             Wallet wallet = walletRepository.findByUserId(user.getId());
@@ -102,11 +106,23 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .build());
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);
+            Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
+            // send notification
+            try{
+                applicationNotificationService.sendAdminConfirmRequestWithdrawal(
+                        user.getEmail(),
+                        withdrawalRequest.getId(),
+                        amountToWithdraw,
+                        withdrawalRequest.getRequestedAt()
+                );
+            }catch (Exception e){
+                log.warn("Failed to send withdrawal confirmation email via notification service for user {}: {}", user.getEmail(), e.getMessage());
+            }
+            return savedWithdrawal;
         } else {
             withdrawalRequest.setStatus(Status.REJECTED);
+            return withdrawalRepository.save(withdrawalRequest);
         }
-
-        return withdrawalRepository.save(withdrawalRequest);
     }
 
     @Override
