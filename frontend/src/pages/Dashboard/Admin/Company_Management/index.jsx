@@ -1,12 +1,11 @@
 import { Box, Typography, useTheme } from "@mui/material";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
-import { getAllUsers } from "@/apiAdmin/userAdmin.js";
+import { getAllCompanyKYCProfiles } from "@/apiAdmin/companiesAdmin.js";
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
 const CompanyTeam = () => {
   const theme = useTheme();
@@ -14,57 +13,58 @@ const CompanyTeam = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchCompanies() {
       try {
-        const response = await getAllUsers();
-        if (response?.responseData) {
-          const users = response.responseData
-            .filter((u) => u.roles?.[0]?.name?.toUpperCase() === "COMPANY")
-            .map((u, index) => ({
-              id: index + 1,
-              userid: u.id,
-              email: u.email,
-              status: u.status?.toLowerCase() === "active" ? "active" : "inactive",
-              access: u.roles?.[0]?.name || "Unknown",
-              balance: u.wallet?.balance ?? 0,
-            }));
-          setData(users);
-        }
+        const response = await getAllCompanyKYCProfiles();
+        console.log("📦 API Company KYC Response:", response);
+
+        const list = Array.isArray(response?.response)
+          ? response.response
+          : [];
+
+        const mapped = list.map((c, index) => ({
+          id: index + 1,
+          companyId: c.id,
+          businessLicense: c.businessLicense || "N/A",
+          taxCode: c.taxCode || "N/A",
+          companyName: c.companyName || "N/A",
+          address: c.address || "N/A",
+          createdAt: c.createAt
+            ? new Date(c.createAt).toLocaleString()
+            : "—",
+          updatedAt: c.updatedAt
+            ? new Date(c.updatedAt).toLocaleString()
+            : "—",
+        }));
+
+        setData(mapped);
       } catch (err) {
-        console.error("Error fetching Companies:", err);
+        console.error("❌ Error fetching company KYC profiles:", err);
       }
     }
 
-    fetchUsers();
+    fetchCompanies();
   }, []);
 
   const columns = [
-    { field: "id", headerName: "#" },
-    { field: "userid", headerName: "User ID" },
-    { field: "email", headerName: "Email", flex: 1 },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      renderCell: ({ row: { status } }) => (
-        <Typography color={status === "active" ? "green" : "red"} fontWeight="600">
-          {status}
-        </Typography>
-      ),
-    },
-    {
-      field: "balance",
-      headerName: "Wallet Balance",
-      flex: 1,
-      renderCell: ({ row }) => <Typography>{row.balance} ₫</Typography>,
-    },
+    { field: "id", headerName: "No.", width: 80 },
+    { field: "companyId", headerName: "Company ID", width: 120 },
+    { field: "companyName", headerName: "Company Name", flex: 1 },
+    { field: "businessLicense", headerName: "Business License", flex: 1 },
+    { field: "taxCode", headerName: "Tax Code", flex: 1 },
+    { field: "address", headerName: "Address", flex: 1.2 },
+    { field: "createdAt", headerName: "Created At", flex: 1 },
+    { field: "updatedAt", headerName: "Updated At", flex: 1 },
     {
       field: "action",
       headerName: "Action",
-      flex: 0.8,
+      flex: 0.6,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/companies_view/${params.row.email}`} style={{ textDecoration: "none" }}>
+          <Link
+            to={`/admin/companies_view/${params.row.companyId}`}
+            style={{ textDecoration: "none" }}
+          >
             <div className="viewButton">View</div>
           </Link>
         </div>
@@ -74,7 +74,7 @@ const CompanyTeam = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header title="COMPANIES" subtitle="Managing Company Accounts" />
+      <Header title="COMPANY KYC PROFILES" subtitle="Managing registered companies" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -93,7 +93,7 @@ const CompanyTeam = () => {
           },
         }}
       >
-        <DataGrid rows={data} columns={columns} components={{ Toolbar: GridToolbar }} />
+        <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
       </Box>
     </Box>
   );

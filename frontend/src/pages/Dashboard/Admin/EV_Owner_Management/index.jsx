@@ -1,13 +1,11 @@
 import { Box, Typography, useTheme } from "@mui/material";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllUsers } from "@/apiAdmin/userAdmin.js";
-
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 const EvOwnerTeam = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -39,24 +37,42 @@ const EvOwnerTeam = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "#" },
+    { field: "id", headerName: "" },
     { field: "userid", headerName: "User ID" },
     { field: "email", headerName: "Email", flex: 1 },
     {
       field: "status",
-      headerName: "Status",
+      headerName: "Account Status",
       flex: 1,
       renderCell: ({ row: { status } }) => (
+        <Box
+        sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+        >
         <Typography color={status === "active" ? "green" : "red"} fontWeight="600">
-          {status}
+          {status === "active" ? "Active" : "Inactive"}
         </Typography>
+        </Box>
       ),
     },
     {
       field: "balance",
       headerName: "Wallet Balance",
       flex: 1,
-      renderCell: ({ row }) => <Typography>{row.balance} ₫</Typography>,
+      renderCell: ({ row }) => <Box
+       sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+      ><Typography>{row.balance} ₫</Typography></Box>,
     },
     {
       field: "action",
@@ -93,7 +109,8 @@ const EvOwnerTeam = () => {
           },
         }}
       >
-        <DataGrid rows={data} columns={columns} components={{ Toolbar: GridToolbar }} />
+         <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
+
       </Box>
     </Box>
   );
