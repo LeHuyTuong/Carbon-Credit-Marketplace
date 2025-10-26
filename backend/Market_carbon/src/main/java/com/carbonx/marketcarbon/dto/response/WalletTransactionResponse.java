@@ -21,5 +21,6 @@ public class WalletTransactionResponse {
     private BigDecimal balanceAfter;
     private BigDecimal amount;
     private LocalDateTime createdAt;
+    private String batchCode;
 
 }

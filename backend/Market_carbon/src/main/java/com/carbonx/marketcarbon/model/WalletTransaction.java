@@ -54,4 +54,7 @@ public class WalletTransaction {
     @JsonIgnore
     private PaymentOrder paymentOrder;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "credit_batch_id")
+    private CreditBatch creditBatch;
 }

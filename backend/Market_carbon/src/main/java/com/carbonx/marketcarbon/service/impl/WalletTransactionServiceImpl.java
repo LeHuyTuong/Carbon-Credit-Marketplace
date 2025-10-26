@@ -172,6 +172,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .balanceAfter(transaction.getBalanceAfter())
                 .amount(transaction.getAmount())
                 .createdAt(transaction.getCreatedAt())
+                .batchCode(transaction.getCreditBatch() != null
+                        ? transaction.getCreditBatch().getBatchCode()
+                        : null)
                 .build();
     }
 }
