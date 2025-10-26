@@ -7,10 +7,7 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.CarbonCredit;
 import com.carbonx.marketcarbon.model.CreditBatch;
 import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
-import com.carbonx.marketcarbon.repository.CompanyRepository;
-import com.carbonx.marketcarbon.repository.CreditBatchRepository;
-import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CreditQuery;
 import com.carbonx.marketcarbon.service.MyCreditService;
 
@@ -39,6 +36,7 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CreditBatchRepository batchRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
+    private final WalletRepository walletRepo;
 
 
     private Long currentCompanyId() {
