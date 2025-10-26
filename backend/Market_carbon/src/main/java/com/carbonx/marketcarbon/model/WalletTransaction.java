@@ -31,7 +31,7 @@ public class WalletTransaction {
     private Order order;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 40)
     private WalletTransactionType transactionType;
 
     @Column(length = 500)
@@ -54,4 +54,7 @@ public class WalletTransaction {
     @JsonIgnore
     private PaymentOrder paymentOrder;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "credit_batch_id")
+    private CreditBatch creditBatch;
 }
