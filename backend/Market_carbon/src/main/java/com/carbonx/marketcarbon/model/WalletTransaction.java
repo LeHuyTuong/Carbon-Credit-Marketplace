@@ -31,7 +31,7 @@ public class WalletTransaction {
     private Order order;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 40)
     private WalletTransactionType transactionType;
 
     @Column(length = 500)
