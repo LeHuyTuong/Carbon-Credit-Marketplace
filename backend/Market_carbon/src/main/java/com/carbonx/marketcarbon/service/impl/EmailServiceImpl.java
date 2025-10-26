@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.service.EmailService;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -38,10 +40,6 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.mail.display-name:CarbonX team}")
     String displayName;
 
-    /**
-     * Gửi email HTML đến nhiều người nhận, giữ tên hiển thị theo cấu hình.
-     * Bắt UnsupportedEncodingException tại chỗ để không làm vỡ luồng.
-     */
     @Async
     public void sendEmail(String subject, String content, List<String> toList) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -123,7 +121,34 @@ public class EmailServiceImpl implements EmailService {
             log.info("HTML email sent to {}", to);
         } catch (MessagingException ex) {
             log.error("Failed to send HTML email to {}: {}", to, ex.getMessage(), ex);
-            throw ex; // giữ hành vi theo interface
+            throw ex;
         }
     }
+
+    @Override
+    public void sendEmailWithAttachment(String to, String subject, String htmlBody, byte[] file, String filename) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(new InternetAddress("hoang106408@donga.edu.vn", "CarbonX Marketplace"));
+            helper.setTo(to);
+            helper.setSubject(subject);
+
+            helper.setText(htmlBody, true);
+
+            if (file != null && file.length > 0 && filename != null) {
+                helper.addAttachment(filename, new ByteArrayResource(file));
+            }
+
+            mailSender.send(message);
+            log.info("[MAIL] Sent certificate email to {}", to);
+
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            log.error("[MAIL] Failed to send email with attachment: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to send email", e);
+        }
+    }
+
+
 }

@@ -25,7 +25,7 @@ public interface EmissionReportService {
     Page<EmissionReportResponse> listReportsForAdmin(String status, Pageable pageable);
     List<EmissionReportResponse> listReportsForCompany(String status);
     EmissionReportResponse getById(Long reportId);
-    List<EmissionReportDetailResponse> getReportDetails(Long reportId);
+    Page<EmissionReportDetailResponse> getReportDetails(Long reportId, String plateContains, Pageable pageable);
     EmissionReportResponse aiSuggestScore(Long reportId);
     public EmissionReportResponse verifyReportWithScore(Long reportId, BigDecimal score, boolean approved, String comment);
     List<EmissionReportResponse> listReportsForCompany(String status, Long projectId);

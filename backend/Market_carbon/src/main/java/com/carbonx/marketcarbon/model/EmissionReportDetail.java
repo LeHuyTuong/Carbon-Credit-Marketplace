@@ -31,12 +31,13 @@ public class EmissionReportDetail {
     @Column(name = "project_id", nullable = false)
     Long projectId;
 
-    @Column(name = "vehicle_id")
-    Long vehicleId;
 
     @Column(name = "total_energy", precision = 18, scale = 4, nullable = false)
     BigDecimal totalEnergy;
 
     @Column(name = "co2_kg", precision = 18, scale = 4, nullable = false)
     BigDecimal co2Kg;
+
+    @Column(name = "vehicle_plate", length = 50)
+    private String vehiclePlate;
 }

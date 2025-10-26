@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Builder
 public class EmissionReportDetailResponse {
     private Long id;
-    private Long vehicleId;
+    private String vehiclePlate;
     private String period;
     private BigDecimal totalEnergy;
     private BigDecimal co2Kg;
@@ -18,10 +18,10 @@ public class EmissionReportDetailResponse {
     public static EmissionReportDetailResponse from(EmissionReportDetail d) {
         return EmissionReportDetailResponse.builder()
                 .id(d.getId())
-                .vehicleId(d.getVehicleId())
                 .period(d.getPeriod())
                 .totalEnergy(d.getTotalEnergy())
                 .co2Kg(d.getCo2Kg())
+                .vehiclePlate(d.getVehiclePlate())
                 .build();
     }
 }
