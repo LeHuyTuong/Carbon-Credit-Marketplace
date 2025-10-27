@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Tabs, Tab, Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState, useRef } from "react";
+import { Modal, Button, Form, Card } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { apiFetch } from "../../utils/apiFetch";
-import { useAuth } from "../../context/AuthContext";
+import { apiFetch } from "../../../../utils/apiFetch";
+import { useAuth } from "../../../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import ChangePasswordForm from "../ChangePasswordForm/ChangePasswordForm";
+import useReveal from "../../../../hooks/useReveal";
 
 export default function Profile() {
   const { user, token } = useAuth();
@@ -15,6 +15,8 @@ export default function Profile() {
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const nav = useNavigate();
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   //fetch KYC
   useEffect(() => {
@@ -66,19 +68,14 @@ export default function Profile() {
   }, [token, user]);
 
   //loading and error states
-  if (!user)
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100 text-center">
-        <div>
-          <h4>You are not logged in</h4>
-          <p>Please log in to access your profile.</p>
-        </div>
-      </div>
-    );
+  if (!user) return;
 
   if (loading)
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
+      <div
+        ref={sectionRef}
+        className="d-flex justify-content-center align-items-center vh-100 reveal"
+      >
         <div className="spinner-border text-primary" />
       </div>
     );
@@ -107,64 +104,38 @@ export default function Profile() {
 
   return (
     <div className="auth-hero d-flex justify-content-center align-items-center min-vh-100 bg-light">
-      <div
-        className="card shadow-lg border-0 rounded-4 p-4"
+      <Card
+        className="shadow-lg border-0 rounded-4 p-4"
         style={{ maxWidth: "700px", width: "100%" }}
       >
-        <Tabs defaultActiveKey="info" id="ev-profile-tabs" className="mb-3">
-          {/*tab 1: profile info */}
-          <Tab
-            eventKey="info"
-            title={
-              <>
-                <i className="bi bi-person-circle me-2"></i> Profile Information
-              </>
-            }
-          >
-            <div className="row g-3 mt-2">
-              {Object.entries(kycData).map(([key, value]) => (
-                <div key={key} className="col-md-6">
-                  <label className="fw-semibold text-muted text-capitalize">
-                    {key}
-                  </label>
-                  <input
-                    className="form-control"
-                    value={value || ""}
-                    disabled
-                  />
-                </div>
-              ))}
-            </div>
+        <h3 className="fw-bold mb-4 d-flex align-items-center text-dark">
+          <i className="bi bi-person-circle me-2"></i> Profile Information
+        </h3>
 
-            <div className="text-end mt-4">
-              <Button variant="primary" onClick={() => setShowModal(true)}>
-                Update Profile
-              </Button>
+        <div className="row g-3 mt-2">
+          {Object.entries(kycData).map(([key, value]) => (
+            <div key={key} className="col-md-6">
+              <label className="fw-semibold text-muted text-capitalize">
+                {key}
+              </label>
+              <input className="form-control" value={value || ""} disabled />
             </div>
+          ))}
+        </div>
 
-            <UpdateEvModal
-              show={showModal}
-              onHide={() => setShowModal(false)}
-              data={kycData}
-              onSuccess={handleSuccess}
-            />
-          </Tab>
+        <div className="text-end mt-4">
+          <Button variant="primary" onClick={() => setShowModal(true)}>
+            Update Profile
+          </Button>
+        </div>
 
-          {/*tab 2: vhange password */}
-          <Tab
-            eventKey="security"
-            title={
-              <>
-                <i className="bi bi-shield-lock me-2"></i> Change Password
-              </>
-            }
-          >
-            <div className="mt-3">
-              <ChangePasswordForm />
-            </div>
-          </Tab>
-        </Tabs>
-      </div>
+        <UpdateEvModal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          data={kycData}
+          onSuccess={handleSuccess}
+        />
+      </Card>
     </div>
   );
 }

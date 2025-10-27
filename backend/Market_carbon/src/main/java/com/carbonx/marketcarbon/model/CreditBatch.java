@@ -1,10 +1,13 @@
 package com.carbonx.marketcarbon.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "credit_batches",
@@ -64,6 +67,11 @@ public class CreditBatch {
 
     @Column(name = "issued_by", length = 100)
     private String issuedBy;
+
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<CarbonCredit> carbonCredit = new ArrayList<>();
 
     @PrePersist
     void pre() {

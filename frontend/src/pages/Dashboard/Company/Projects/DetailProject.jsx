@@ -58,7 +58,10 @@ export default function ProjectDetailsPage() {
 
   if (loading)
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+      <div
+        ref={sectionRef}
+        className="reveal d-flex justify-content-center align-items-center vh-100 bg-light"
+      >
         <Spinner animation="border" variant="primary" />
       </div>
     );
@@ -92,7 +95,7 @@ export default function ProjectDetailsPage() {
   };
 
   return (
-    <>
+    <div>
       <Button
         variant="outline-info"
         size="sm"
@@ -114,6 +117,8 @@ export default function ProjectDetailsPage() {
           minHeight: "100vh",
         }}
       >
+        <h1 className="text-center fw-bold mb-5">Register Project</h1>
+
         <Container>
           <Row className="g-4 align-items-start">
             {/* LEFT: Project Info */}
@@ -203,7 +208,7 @@ export default function ProjectDetailsPage() {
                   </Card>
                 </Col>
 
-                {project.legalDocsUrl && (
+                {project.legalDocsFile && (
                   <Col>
                     <Card className="shadow-sm border-0 rounded-4 h-100">
                       <Card.Header className="fw-semibold bg-light border-0">
@@ -211,7 +216,7 @@ export default function ProjectDetailsPage() {
                       </Card.Header>
                       <Card.Body>
                         <a
-                          href={project.legalDocsUrl}
+                          href={project.legalDocsFile}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -262,6 +267,6 @@ export default function ProjectDetailsPage() {
           </Row>
         </Container>
       </div>
-    </>
+    </div>
   );
 }
