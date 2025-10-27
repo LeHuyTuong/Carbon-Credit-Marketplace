@@ -111,6 +111,7 @@ public class OrderServiceImpl implements OrderService {
                 .companyId(saveOrder.getCompany().getId())
                 .status(saveOrder.getOrderStatus())
                 .totalAmount(saveOrder.getTotalPrice())
+                .creditAmount(saveOrder.getQuantity())
                 .createAt(saveOrder.getCreatedAt())
                 .build();
     }
@@ -126,6 +127,7 @@ public class OrderServiceImpl implements OrderService {
                 .status(order.getOrderStatus())
                 .totalAmount(order.getTotalPrice())
                 .createAt(order.getCreatedAt())
+                .creditAmount(order.getQuantity())
                 .build();
     }
 
@@ -140,6 +142,7 @@ public class OrderServiceImpl implements OrderService {
                         .companyId(company.getId())
                         .status(order.getOrderStatus())
                         .totalAmount(order.getTotalPrice())
+                        .creditAmount(order.getQuantity())
                         .createAt(order.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
