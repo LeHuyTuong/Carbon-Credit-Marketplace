@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../../context/AuthContext.jsx";
 import { Form, Button } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { apiFetch } from "../../utils/apiFetch.js";
+import { apiFetch } from "../../../../utils/apiFetch.js";
 
 const today = new Date();
 const minAdultDate = new Date(
@@ -160,7 +160,9 @@ export default function KYC() {
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="card shadow container">
         <div className="card-body">
-          <h2 className="mb-4 text-center">Identity Verification (KYC)</h2>
+          <h3 className="mb-4 text-center fw-bold">
+            Identity Verification (KYC)
+          </h3>
 
           <Formik
             enableReinitialize
