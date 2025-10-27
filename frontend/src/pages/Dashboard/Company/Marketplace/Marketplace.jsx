@@ -7,7 +7,6 @@ import useRipple from "../../../../hooks/useRipple";
 import { useNavigate } from "react-router-dom";
 import useReveal from "../../../../hooks/useReveal";
 import { apiFetch } from "../../../../utils/apiFetch";
-import { Spinner } from "react-bootstrap";
 import PaginatedList from "../../../../components/Pagination/PaginatedList";
 
 export default function Marketplace() {
@@ -40,6 +39,7 @@ export default function Marketplace() {
           quantity: item.quantity,
           expiresAt: new Date(item.expiresAt).toLocaleDateString("en-GB"),
           img: projectImages[index % projectImages.length],
+          soldQuantity: item.soldQuantity,
         }));
 
         setCredits(formatted);

@@ -105,7 +105,7 @@ export default function KYCCompany() {
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="card shadow" style={{ maxWidth: "500px", width: "100%" }}>
         <div className="card-body">
-          <h2 className="mb-4 text-center">Company KYC</h2>
+          <h3 className="mb-4 text-center fw-bold">Company KYC</h3>
 
           <Formik
             enableReinitialize
