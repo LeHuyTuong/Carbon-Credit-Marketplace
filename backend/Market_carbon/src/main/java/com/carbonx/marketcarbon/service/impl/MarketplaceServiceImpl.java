@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.ListingStatus;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
 import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
@@ -19,8 +20,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,11 +69,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
 
         // 1 check infor input
-        CarbonCredit creditToSell = carbonCreditRepository.findById(request.getCarbonCreditId())
-                .orElseThrow(() -> new ResourceNotFoundException("Carbon credit block not found"));
+        CarbonCredit creditToSell = resolveOwnedCredit(request.getCarbonCreditId(), sellerCompany);
+
 
         // 2 check Authorized and credit quantity available
-        if(!Objects.equals(creditToSell.getCompany().getId(), sellerCompany.getId())){
+        if (!verifyOwnership(creditToSell, sellerCompany, currentUser)) {
             throw new AppException(ErrorCode.COMPANY_NOT_OWN);
         }
 
@@ -82,11 +85,19 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
 
         // 3 update amount in carbon credit block
-        creditToSell.setCarbonCredit(availableQuantity.subtract(request.getQuantity()));
         BigDecimal currentListedAmount = creditToSell.getListedAmount() != null
                 ? creditToSell.getListedAmount()
                 : BigDecimal.ZERO;
-        creditToSell.setListedAmount(currentListedAmount.add(request.getQuantity()));
+
+        BigDecimal updatedListedAmount = currentListedAmount.add(request.getQuantity());
+        creditToSell.setListedAmount(updatedListedAmount);
+
+        BigDecimal recalculatedTotal = BigDecimal.ZERO;
+        if (creditToSell.getCarbonCredit() != null) {
+            recalculatedTotal = recalculatedTotal.add(creditToSell.getCarbonCredit());
+        }
+        recalculatedTotal = recalculatedTotal.add(updatedListedAmount);
+        creditToSell.setAmount(recalculatedTotal);
 
         carbonCreditRepository.save(creditToSell);
 
@@ -239,5 +250,124 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .logo(project != null ? project.getLogo() : null)
                 .build();
     }
+    private BigDecimal getAvailableCreditAmount(CarbonCredit credit) {
+        if (credit == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal directBalance = credit.getCarbonCredit();
+        if (directBalance != null && directBalance.compareTo(BigDecimal.ZERO) > 0) {
+            return directBalance;
+        }
+
+        BigDecimal amount = credit.getAmount();
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal listedAmount = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
+            BigDecimal remaining = amount.subtract(listedAmount);
+            if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+                return BigDecimal.ZERO;
+            }
+            return remaining;
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    private boolean verifyOwnership(CarbonCredit credit, Company company, User user) {
+        return verifyOwnership(credit, company, user, new HashSet<>());
+    }
+
+    private boolean verifyOwnership(CarbonCredit credit, Company company, User user, Set<Long> visited) {
+        if (credit == null || company == null || user == null) {
+            return false;
+        }
+
+        Long creditId = credit.getId();
+        if (creditId != null && !visited.add(creditId)) {
+            return false;
+        }
+
+        Company creditCompany = credit.getCompany();
+        if (creditCompany != null && Objects.equals(creditCompany.getId(), company.getId())) {
+            return true;
+        }
+
+        Wallet wallet = walletRepository.findByCompany(company).orElse(null);
+        if (wallet == null) {
+            wallet = walletRepository.findByUserId(user.getId());
+        }
+
+        if (wallet != null) {
+            CreditBatch creditBatch = credit.getBatch();
+            if (creditBatch != null) {
+                List<WalletTransaction> batchTransactions = walletTransactionRepository
+                        .findByWalletAndCreditBatchOrderByCreatedAtDesc(wallet, creditBatch);
+                if (!batchTransactions.isEmpty()) {
+                    return true;
+                }
+            }
+
+            List<WalletTransaction> buyTransactions = walletTransactionRepository
+                    .findByWalletAndTransactionTypeOrderByCreatedAtDesc(wallet, WalletTransactionType.BUY_CARBON_CREDIT);
+            for (WalletTransaction transaction : buyTransactions) {
+                Order order = transaction.getOrder();
+                if (order != null) {
+                    CarbonCredit orderCredit = order.getCarbonCredit();
+                    if (orderCredit != null && Objects.equals(orderCredit.getId(), creditId)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        CarbonCredit sourceCredit = credit.getSourceCredit();
+        if (sourceCredit != null) {
+            return verifyOwnership(sourceCredit, company, user, visited);
+        }
+
+        return false;
+    }
+    private CarbonCredit resolveOwnedCredit(Long creditId, Company company) {
+        if (creditId == null) {
+            throw new ResourceNotFoundException("Carbon credit block not found");
+        }
+
+        CarbonCredit directCredit = carbonCreditRepository.findById(creditId).orElse(null);
+        if (directCredit != null) {
+            return directCredit;
+        }
+
+        List<CarbonCredit> ownedCredits = carbonCreditRepository.findByCompanyId(company.getId());
+
+        for (CarbonCredit ownedCredit : ownedCredits) {
+            if (isLinkedToCreditChain(ownedCredit, creditId, new HashSet<>())) {
+                return ownedCredit;
+            }
+            CreditBatch batch = ownedCredit.getBatch();
+            if (batch != null && Objects.equals(batch.getId(), creditId)) {
+                return ownedCredit;
+            }
+        }
+
+        throw new ResourceNotFoundException("Carbon credit block not found");
+    }
+
+    private boolean isLinkedToCreditChain(CarbonCredit credit, Long targetId, Set<Long> visited) {
+        if (credit == null || targetId == null) {
+            return false;
+        }
+
+        Long currentId = credit.getId();
+        if (currentId != null && !visited.add(currentId)) {
+            return false;
+        }
+
+        if (Objects.equals(currentId, targetId)) {
+            return true;
+        }
+
+        return isLinkedToCreditChain(credit.getSourceCredit(), targetId, visited);
+    }
+
 }
 

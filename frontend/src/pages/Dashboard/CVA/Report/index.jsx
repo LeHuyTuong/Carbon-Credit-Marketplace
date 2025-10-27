@@ -80,13 +80,21 @@ const ReportListCVA = () => {
         );
       },
     },
-    
+
     {
       field: "action",
       headerName: "Action",
       flex: 1,
       renderCell: (params) => (
-        <div className="cellAction">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "left",
+            width: "100%",
+            height: "100%",
+          }}
+          className="cellAction">
           <Link
             to={`/cva/view_report/${params.row.id}`}
             style={{ textDecoration: "none" }}
@@ -105,7 +113,7 @@ const ReportListCVA = () => {
         m="40px 0 0 0"
         height="75vh"
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          "& .MuiDataGrid-root": { border: "none", },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -115,7 +123,7 @@ const ReportListCVA = () => {
           },
           "& .MuiDataGrid-footerContainer": {
             borderTop: "none",
-            backgroundColor: colors.blueAccent[700],
+            backgroundColor: colors.greenAccent[400],
           },
           "& .MuiDataGrid-cell": {
             whiteSpace: "normal !important",

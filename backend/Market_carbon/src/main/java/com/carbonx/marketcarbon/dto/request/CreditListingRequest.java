@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -18,6 +19,9 @@ public class CreditListingRequest {
 
     @NotNull(message = "Carbon Credit ID cannot be null")
     private Long carbonCreditId;
+
+    private List<Long> carbonCreditIds;
+
 
     @NotNull(message = "Quantity cannot be null")
     @Positive(message = "Quantity must be positive")
