@@ -1,12 +1,11 @@
 import React, { useState, useRef } from "react";
-import { Tabs, Tab, Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Card } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import { useCompanyProfile } from "../../../../hooks/useCompanyProfile";
 import { toast } from "react-toastify";
-import ChangePasswordForm from "../../../ChangePasswordForm/ChangePasswordForm";
 import useReveal from "../../../../hooks/useReveal";
 
 export default function CompanyProfile() {
@@ -55,68 +54,38 @@ export default function CompanyProfile() {
   //giao diện chính
   return (
     <div className="auth-hero d-flex justify-content-center align-items-center min-vh-100 bg-light">
-      <div
-        className="card shadow-lg border-0 rounded-4 p-4"
-        style={{ maxWidth: "600px", width: "100%" }}
+      <Card
+        className="shadow-lg border-0 rounded-4 p-4"
+        style={{ maxWidth: "700px", width: "100%" }}
       >
-        <Tabs
-          defaultActiveKey="info"
-          id="company-profile-tabs"
-          className="mb-3"
-        >
-          {/*tab 1:company info*/}
-          <Tab
-            eventKey="info"
-            title={
-              <>
-                <i className="bi bi-building me-2"></i> Company Information
-              </>
-            }
-          >
-            <div className="row g-3 mt-2">
-              {Object.entries(updatedCompany || company).map(([key, value]) => (
-                <div key={key}>
-                  <label className="fw-semibold text-muted text-capitalize">
-                    {key}
-                  </label>
-                  <input
-                    className="form-control"
-                    value={value || ""}
-                    disabled
-                  />
-                </div>
-              ))}
-            </div>
+        <h3 className="fw-bold mb-4 d-flex align-items-center text-dark">
+          <i className="bi bi-building me-2"></i> Company Information
+        </h3>
 
-            <div className="text-end mt-4">
-              <Button variant="primary" onClick={() => setShowModal(true)}>
-                Update Profile
-              </Button>
+        <div className="row g-3 mt-2">
+          {Object.entries(updatedCompany || company).map(([key, value]) => (
+            <div key={key}>
+              <label className="fw-semibold text-muted text-capitalize">
+                {key}
+              </label>
+              <input className="form-control" value={value || ""} disabled />
             </div>
+          ))}
+        </div>
 
-            <UpdateCompanyModal
-              show={showModal}
-              onHide={() => setShowModal(false)}
-              data={updatedCompany || company}
-              onSuccess={handleSuccess}
-            />
-          </Tab>
+        <div className="text-end mt-4">
+          <Button variant="primary" onClick={() => setShowModal(true)}>
+            Update Profile
+          </Button>
+        </div>
 
-          {/*tab 2:hange password*/}
-          <Tab
-            eventKey="security"
-            title={
-              <>
-                <i className="bi bi-shield-lock me-2"></i> Change Password
-              </>
-            }
-          >
-            <div className="mt-3">
-              <ChangePasswordForm />
-            </div>
-          </Tab>
-        </Tabs>
-      </div>
+        <UpdateCompanyModal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          data={updatedCompany || company}
+          onSuccess={handleSuccess}
+        />
+      </Card>
     </div>
   );
 }

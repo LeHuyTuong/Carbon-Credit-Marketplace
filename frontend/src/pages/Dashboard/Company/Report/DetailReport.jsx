@@ -32,7 +32,7 @@ export default function ReportDetail() {
         });
 
         // backend trả về chi tiết report trong "response"
-        setReport(res?.response || null);
+        setReport(res?.responseData || null);
       } catch (err) {
         console.error("Failed to load report detail:", err);
         setReport(null);
@@ -93,7 +93,7 @@ export default function ReportDetail() {
           }}
         >
           <Card.Body>
-            <h3 className="fw-bold mb-3">Report #{id}</h3>
+            <h3 className="fw-bold mb-3">Detail Report</h3>
             <Row className="g-3">
               <Col md={6}>
                 <p>

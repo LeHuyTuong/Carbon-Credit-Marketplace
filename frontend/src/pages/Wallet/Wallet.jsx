@@ -8,6 +8,7 @@ import Deposit from "./Deposit/Deposit";
 import Withdraw from "./Withdraw/Withdraw";
 import useReveal from "../../hooks/useReveal";
 import CreditsList from "./components/CreditsList";
+import CreditSummaryCard from "./components/CreditSummaryCard";
 
 export default function Wallet() {
   const nav = useNavigate();
@@ -15,8 +16,21 @@ export default function Wallet() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
-  const { wallet, loading, setLoading, fetchWallet, fetchTransactions } =
-    useWalletData();
+  // dùng hook chính
+  const {
+    wallet,
+    transactions,
+    issuedCredits,
+    purchasedCredits,
+    summary,
+    loading,
+    setLoading,
+    fetchWallet,
+    fetchTransactions,
+    fetchIssuedCredits,
+    fetchPurchasedCredits,
+    fetchSummary,
+  } = useWalletData();
 
   const [toast, setToast] = React.useState({
     show: false,
@@ -26,14 +40,23 @@ export default function Wallet() {
   const [showDepositModal, setShowDepositModal] = React.useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
   const [showPaymentToast, setShowPaymentToast] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("issued");
 
-  //khi load trang: check nếu có order_id & payment_id
+  //khi trở lại từ Order.jsx với state.refreshCredits
+  useEffect(() => {
+    if (location.state?.refreshCredits) {
+      console.log("Refreshing credits after purchase...");
+      fetchIssuedCredits();
+      fetchPurchasedCredits();
+      nav("/wallet", { replace: true });
+    }
+  }, [location.state]);
+
+  //load trang: check nếu có order_id & payment_id
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const orderId = params.get("order_id");
     const paymentId = params.get("payment_id");
-
-    console.log("Redirect params:", orderId, paymentId);
 
     const authData =
       JSON.parse(sessionStorage.getItem("auth")) ||
@@ -44,21 +67,31 @@ export default function Wallet() {
       console.warn("Token is not ready, delay confirm...");
       const timer = setTimeout(() => {
         if (orderId) confirmDeposit(orderId, paymentId || "");
-        else fetchWallet();
+        else {
+          fetchWallet();
+          fetchIssuedCredits();
+          fetchPurchasedCredits();
+          fetchSummary();
+        }
       }, 1000);
       return () => clearTimeout(timer);
     }
 
     if (orderId) confirmDeposit(orderId, paymentId || "");
-    else fetchWallet();
+    else {
+      fetchWallet();
+      fetchIssuedCredits();
+      fetchPurchasedCredits();
+      fetchSummary();
+    }
   }, [location.search]);
 
-  //khi ví đã có ID -> gọi transaction list
+  //khi ví có ID -> lấy lịch sử giao dịch
   useEffect(() => {
     if (wallet?.id) fetchTransactions();
   }, [wallet]);
 
-  // =============== HANDLE ADD MONEY ==================
+  //handle add money
   const handleDepositSubmit = async (values) => {
     setLoading(true);
     try {
@@ -100,7 +133,7 @@ export default function Wallet() {
     }
   };
 
-  // =============== CONFIRM PAYMENT ==================
+  //confirm payment
   const confirmDeposit = async (orderId, paymentId) => {
     setLoading(true);
     try {
@@ -109,18 +142,19 @@ export default function Wallet() {
         { method: "POST" }
       );
 
-      // reload ví + giao dịch
-      await fetchWallet();
-      await fetchTransactions();
+      await Promise.all([
+        fetchWallet(),
+        fetchTransactions(),
+        fetchIssuedCredits(),
+        fetchPurchasedCredits(),
+      ]);
 
-      // show thông báo thành công
       setToast({
         show: true,
         msg: "Deposit successful! Balance updated.",
         type: "success",
       });
 
-      // xóa param khỏi URL
       nav("/wallet", { replace: true });
     } catch (err) {
       console.error("Deposit confirmation failed:", err);
@@ -134,39 +168,7 @@ export default function Wallet() {
     }
   };
 
-  // =============== HANDLE WITHDRAW ==================
-  // const handleWithdrawSubmit = async (values) => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await apiFetch(`/api/v1/withdrawal/${values.amount}`, {
-  //       method: "POST",
-  //     });
-
-  //     if (res?.responseStatus?.responseCode === "00" || res?.response) {
-  //       setToast({
-  //         show: true,
-  //         msg: "Withdrawal request has been submitted successfully!",
-  //         type: "success",
-  //       });
-  //       await fetchWallet();
-  //       await fetchTransactions();
-  //     } else {
-  //       throw new Error(
-  //         res?.responseStatus?.responseMessage || "Withdrawal failed"
-  //       );
-  //     }
-  //   } catch (err) {
-  //     console.error("Withdraw error:", err);
-  //     setToast({
-  //       show: true,
-  //       msg: err.message || "Unable to process withdrawal request.",
-  //       type: "danger",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //     setShowWithdrawModal(false);
-  //   }
-  // };
+  //handle withdraw
   const handleWithdrawSubmit = async (values) => {
     setLoading(true);
     try {
@@ -180,9 +182,7 @@ export default function Wallet() {
           msg: "Withdrawal request submitted. Awaiting admin approval.",
           type: "info",
         });
-        await fetchWallet();
-        await fetchTransactions();
-        // Nếu muốn tự reload danh sách yêu cầu rút tiền thì gọi hàm fetchWithdrawals() ở đây
+        await Promise.all([fetchWallet(), fetchTransactions()]);
       } else {
         throw new Error(
           res?.responseStatus?.responseMessage || "Withdrawal failed."
@@ -201,21 +201,12 @@ export default function Wallet() {
     }
   };
 
-  // =============== CREDITS LIST ==================
-  // const [credits, setCredits] = useState([]);
-
-  // useEffect(() => {
-  //   apiFetch("/api/v1/credits", { method: "GET" })
-  //     .then((res) => setCredits(res.response || []))
-  //     .catch((err) => console.error("Failed to fetch credits:", err));
-  // }, []);
-
   return (
     <div
       ref={sectionRef}
       className="auth-hero2 wallet-page reveal d-flex flex-column align-items-center py-5"
     >
-      {/*header */}
+      {/* Header */}
       <div className="text-center mb-4">
         <div
           className="d-flex justify-content-center align-items-center gap-2 mb-2"
@@ -226,7 +217,7 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/*balance card */}
+      {/* Balance Card */}
       <WalletCard
         balance={wallet?.balance}
         currency={wallet?.currency || "USD"}
@@ -235,6 +226,7 @@ export default function Wallet() {
         loading={loading}
       />
 
+      {/* Buttons */}
       <div className="wallet-history-btn m-3 d-flex flex-wrap justify-content-end gap-2">
         <button
           className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
@@ -255,42 +247,49 @@ export default function Wallet() {
         </button>
       </div>
 
-      {/* Credits Section */}
-      {/* <CreditsList credits={credits} /> */}
+      {/* Credit Summary */}
+      <CreditSummaryCard summary={summary} />
 
-      <CreditsList
-        credits={[
-          {
-            id: "1760684896281",
-            creditCode: "EV-2025-001",
-            title: "EV Charging Credit",
-            price: 50000,
-            quantity: 1000,
-            sold: 200,
-            status: "active",
-            expiresAt: "10/17/2025, 2:08:16 PM",
-          },
-          {
-            id: "1760684905467",
-            creditCode: "EV-2025-002",
-            title: "EV Charging Credit",
-            price: 50000,
-            quantity: 800,
-            sold: 100,
-            status: "active",
-            expiresAt: "10/17/2025, 2:08:29 PM",
-          },
-        ]}
-      />
+      {/* Tabs for Issued / Purchased */}
+      <div className="wallet-credits-tabs mt-0 w-100">
+        <div className="d-flex justify-content-center mb-3">
+          <div className="btn-group">
+            <button
+              className={`btn ${
+                activeTab === "issued" ? "btn-accent" : "btn-outline-accent"
+              }`}
+              onClick={() => setActiveTab("issued")}
+            >
+              Issued Credits
+            </button>
+            <button
+              className={`btn ${
+                activeTab === "purchased" ? "btn-accent" : "btn-outline-accent"
+              }`}
+              onClick={() => setActiveTab("purchased")}
+            >
+              Purchased Credits
+            </button>
+          </div>
+        </div>
 
-      {/*deposit modal */}
+        <div className="tab-content">
+          {activeTab === "issued" ? (
+            <CreditsList credits={issuedCredits} />
+          ) : (
+            <CreditsList credits={purchasedCredits} />
+          )}
+        </div>
+      </div>
+
+      {/* Deposit Modal */}
       <Deposit
         show={showDepositModal}
         onHide={() => setShowDepositModal(false)}
         onSubmit={handleDepositSubmit}
       />
 
-      {/*withdraw modal */}
+      {/* Withdraw Modal */}
       <Withdraw
         show={showWithdrawModal}
         onHide={() => setShowWithdrawModal(false)}
@@ -298,7 +297,7 @@ export default function Wallet() {
         wallet={wallet}
       />
 
-      {/*toast */}
+      {/* Toast */}
       <WalletToast
         toast={toast}
         setToast={setToast}
