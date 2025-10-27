@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,6 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
     private final WalletRepository walletRepo;
-
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -107,10 +106,8 @@ public class MyCreditServiceImpl implements MyCreditService {
         log.info("[DEBUG] Credits found = {}", credits.getTotalElements());
 
         credits.getContent().forEach(this::checkAndMarkExpired);
-
         return credits.map(CarbonCreditResponse::from);
     }
-
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
@@ -163,11 +160,9 @@ public class MyCreditServiceImpl implements MyCreditService {
         }
 
         checkAndMarkExpired(credit);
-
         return CarbonCreditResponse.from(credit);
     }
 
-    // Xem chi tiết tín chỉ theo mã code (chỉ khi thuộc công ty)
     @Override
     public CarbonCreditResponse getMyCreditByCode(String creditCode) {
         Long companyId = currentCompanyId();
@@ -176,6 +171,24 @@ public class MyCreditServiceImpl implements MyCreditService {
         CarbonCredit credit = creditRepo.findByCreditCodeAndCompany_Id(creditCode, companyId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_NOT_FOUND));
 
+        checkAndMarkExpired(credit);
         return CarbonCreditResponse.from(credit);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('COMPANY')")
+    public List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId) {
+        Long companyId = currentCompanyId();
+        log.info("[DEBUG] getMyCreditsByBatchId() - batchId={}, companyId={}", batchId, companyId);
+
+        var credits = creditRepo.findByBatch_IdAndCompany_Id(batchId, companyId);
+        if (credits.isEmpty()) {
+            log.warn("[DEBUG] No credits found for batchId={} and companyId={}", batchId, companyId);
+        }
+
+        credits.forEach(this::checkAndMarkExpired);
+        return credits.stream()
+                .map(CarbonCreditResponse::from)
+                .toList();
     }
 }

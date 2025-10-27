@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -154,4 +155,28 @@ public class MyCreditController {
         );
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "[COMPANY] Get Credits in a Batch",
+            description = "Returns list of carbon credits owned by company that belong to a specific batch.")
+    @GetMapping("/batch/{batchId}")
+    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> getCreditsInBatch(
+            @PathVariable("batchId") Long batchId,
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
+    ) {
+        String traceId = trace != null ? trace : UUID.randomUUID().toString();
+        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        // Gọi service để lấy danh sách credit thuộc batch này và thuộc công ty hiện tại
+        List<CarbonCreditResponse> credits = creditService.getMyCreditsByBatchId(batchId);
+
+        var response = new TuongCommonResponse<>(
+                traceId,
+                now,
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get credits by batch successfully"),
+                credits
+        );
+        return ResponseEntity.ok(response);
+    }
+
 }
