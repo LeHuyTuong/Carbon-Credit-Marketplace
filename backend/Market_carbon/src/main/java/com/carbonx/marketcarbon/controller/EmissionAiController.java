@@ -1,13 +1,11 @@
 package com.carbonx.marketcarbon.controller;
 
+import com.carbonx.marketcarbon.dto.response.AiEvaluationResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.service.EmissionReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/reports")
@@ -18,7 +16,12 @@ public class EmissionAiController {
 
     @PostMapping("/{id}/ai-score")
     @PreAuthorize("hasAnyRole('CVA','ADMIN')")
-    public EmissionReportResponse aiScore(@PathVariable("id") Long reportId) {
-        return emissionReportService.aiSuggestScore(reportId);
+    public AiEvaluationResponse aiScore(@PathVariable("id") Long reportId) {
+        EmissionReportResponse updated = emissionReportService.aiSuggestScore(reportId);
+        return new AiEvaluationResponse(
+                updated.getAiPreScore() != null ? updated.getAiPreScore().doubleValue() : null,
+                updated.getAiVersion(),
+                updated.getAiPreNotes()
+        );
     }
 }

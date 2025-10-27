@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -57,17 +58,17 @@ public class CreditBatch {
     private Long serialTo;
 
     @Column(length = 16, nullable = false)
-    private String status;                  // ISSUED / CERTIFIED / ...
+    private String status;
 
-    private OffsetDateTime issuedAt;
-    private OffsetDateTime createdAt;
+    private LocalDateTime issuedAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "issued_by", length = 100)
     private String issuedBy;
 
     @PrePersist
     void pre() {
-        createdAt = OffsetDateTime.now();
+        createdAt = LocalDateTime.now();
         if (issuedAt == null) issuedAt = createdAt;
         if (status == null) status = "ISSUED";
     }

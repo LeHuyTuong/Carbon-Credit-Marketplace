@@ -1,9 +1,9 @@
-// src/main/java/com/carbonx/marketcarbon/config/AiConfig.java
 package com.carbonx.marketcarbon.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
@@ -13,38 +13,31 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "ai.gemini")
+@ConfigurationProperties(prefix = "ai.gemini") // chỉ giữ dòng này, bỏ EnableConfigurationProperties
 public class AiConfig {
 
     private String apiKey;
-    private String model = "gemini-1.5-flash";
+    private String model = "gemini-2.5-flash";
     private boolean enabled = true;
-    private int timeoutMs = 240000; // 60 giây để tránh timeout sớm
+    private int timeoutMs = 30000;
 
     @Bean("geminiWebClient")
     public WebClient geminiWebClient() {
-
-        // Cấu hình HttpClient với các mức timeout chi tiết
-        HttpClient http = HttpClient.create()
-                // Timeout khi kết nối TCP
+        HttpClient httpClient = HttpClient.create()
                 .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
-                // Timeout khi đọc / ghi dữ liệu (stream)
                 .doOnConnected(conn -> conn
                         .addHandlerLast(new io.netty.handler.timeout.ReadTimeoutHandler(timeoutMs, TimeUnit.MILLISECONDS))
                         .addHandlerLast(new io.netty.handler.timeout.WriteTimeoutHandler(timeoutMs, TimeUnit.MILLISECONDS))
                 )
-                // Timeout tổng thể cho toàn bộ request
-                .responseTimeout(Duration.ofMillis(timeoutMs * 2));
+                .responseTimeout(Duration.ofMillis(timeoutMs));
 
-        // Cấu hình WebClient chính
         return WebClient.builder()
                 .baseUrl("https://generativelanguage.googleapis.com")
-                .clientConnector(new ReactorClientHttpConnector(http))
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader("Content-Type", "application/json")
                 .defaultHeader("Accept", "application/json")
-                // Dễ debug nếu cần: hiển thị thông tin request
                 .filter((request, next) -> {
-                    System.out.println(" [Gemini Request] " + request.method() + " " + request.url());
+                    System.out.println("[Gemini Request] " + request.method() + " " + request.url());
                     return next.exchange(request);
                 })
                 .build();
