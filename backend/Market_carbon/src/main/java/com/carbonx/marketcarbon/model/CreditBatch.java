@@ -68,7 +68,7 @@ public class CreditBatch {
     @Column(name = "issued_by", length = 100)
     private String issuedBy;
 
-    @OneToMany(mappedBy = "carbon_credit_id", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
     private List<CarbonCredit> carbonCredit = new ArrayList<>();
