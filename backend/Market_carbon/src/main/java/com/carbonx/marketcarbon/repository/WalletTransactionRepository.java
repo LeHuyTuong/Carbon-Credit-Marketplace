@@ -23,4 +23,10 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     long countByWallet_Id(Long walletId); // Đếm số giao dịch của một ví cụ thể
     // SỬA TÊN PHƯƠNG THỨC Ở ĐÂY
     long countByWalletUserId(Long userId); // Đếm số giao dịch của một người dùng (thay vì countMyTransactions)
+
+
+    List<WalletTransaction> findByWalletAndCreditBatchOrderByCreatedAtDesc(Wallet wallet, CreditBatch creditBatch);
+
+    List<WalletTransaction> findByWalletAndTransactionTypeOrderByCreatedAtDesc(Wallet wallet, WalletTransactionType transactionType);
+
 }

@@ -49,42 +49,42 @@ export default function ListCredits() {
   useEffect(() => {
     const fetchUserCredits = async () => {
       try {
-        const [creditsRes, walletRes] = await Promise.all([
-          apiFetch("/api/v1/my/credits/batches", {
-            method: "GET",
-          }),
-          apiFetch("/api/v1/wallet", {
-            method: "GET",
-          }),
-        ]);
+         const walletRes = await apiFetch("/api/v1/wallet", {
+          method: "GET",
+        });
 
-        const allCredits = creditsRes?.response?.content || [];
         const wallet = walletRes?.response;
 
-        const issuedCredits = allCredits
-          .filter((c) => c.status === "ISSUED" || c.status === "AVAILABLE")
-          .map((c) => ({
-            id: c.id,
-            title: `${c.projectTitle || "Untitled"} (${c.batchCode || "N/A"})`,
-            balance: c.residualTco2e ?? c.totalTco2e ?? 0,
-            type: "ISSUED",
-          }));
+        const walletCredits = (wallet?.carbonCredits || [])
+          .filter((credit) => {
+            if (!credit?.creditId) {
+              return false;
+            }
+            const availableRaw =
+              credit.availableQuantity ?? credit.ownedQuantity ?? 0;
+            const available = Number(availableRaw);
+            return !Number.isNaN(available) && available > 0;
+          })
+          .map((credit) => {
+            const availableRaw =
+              credit.availableQuantity ?? credit.ownedQuantity ?? 0;
+            const available = Number(availableRaw);
+            const labelParts = [
+              credit.creditCode || credit.batchCode || "Carbon Credit",
+            ];
+            if (credit.batchCode) {
+              labelParts.push(`Batch ${credit.batchCode}`);
+            }
 
-        const walletCredits =
-          wallet?.walletTransactions
-            ?.filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT")
-            .map((tx) => {
-              const match = tx.description.match(/Buy(\d+(\.\d+)?)credits/);
-              const creditAmount = match ? parseFloat(match[1]) : 0;
-              return {
-                id: tx.id,
-                title: `Order #${tx.orderId} - Purchased Credits`,
-                balance: creditAmount,
-                type: "WALLET",
-              };
-            }) || [];
+            return {
+              id: credit.creditId,
+              title: labelParts.join(" · "),
+              balance: available,
+              type: "WALLET",
+            };
+          });
 
-        setUserCredits([...issuedCredits, ...walletCredits]);
+        setUserCredits(walletCredits);
       } catch (err) {
         console.error("Failed to fetch user credits:", err);
         setUserCredits([]);
