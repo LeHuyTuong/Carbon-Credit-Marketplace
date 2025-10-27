@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
 import com.carbonx.marketcarbon.exception.AppException;
@@ -7,10 +8,7 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.CarbonCredit;
 import com.carbonx.marketcarbon.model.CreditBatch;
 import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
-import com.carbonx.marketcarbon.repository.CompanyRepository;
-import com.carbonx.marketcarbon.repository.CreditBatchRepository;
-import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CreditQuery;
 import com.carbonx.marketcarbon.service.MyCreditService;
 
@@ -26,8 +24,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,119 +38,140 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CreditBatchRepository batchRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
+    private final WalletRepository walletRepo;
 
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("[DEBUG] Authenticated email = {}", email);
+
         User user = userRepo.findByEmail(email);
         if (user == null) {
+            log.error("[DEBUG] User not found for email {}", email);
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        Long id = companyRepo.findByUserId(user.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND))
-                .getId();
-        return id;
+        log.info("[DEBUG] Found user.id = {}", user.getId());
+
+        var companyOpt = companyRepo.findByUserId(user.getId());
+        if (companyOpt.isEmpty()) {
+            log.error("[DEBUG] No company found for user.id = {}", user.getId());
+            throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
+        }
+
+        var company = companyOpt.get();
+        log.info("[DEBUG] Found company.id = {}, name = {}", company.getId(), company.getCompanyName());
+        return company.getId();
     }
 
+    private void checkAndMarkExpired(CarbonCredit credit) {
+        if (credit.getExpiryDate() != null &&
+                credit.getExpiryDate().isBefore(LocalDate.now()) &&
+                credit.getStatus() != CreditStatus.EXPIRED) {
 
+            credit.setStatus(CreditStatus.EXPIRED);
+            creditRepo.save(credit);
+            log.info("[AUTO-EXPIRE] Credit {} marked as EXPIRED (expiryDate={})",
+                    credit.getCreditCode(), credit.getExpiryDate());
+        }
+    }
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public Page<CarbonCreditResponse> listMyCredits(CreditQuery q, Pageable pageable) {
         Long companyId = currentCompanyId();
+        log.info("[DEBUG] listMyCredits() - companyId={}, q={}", companyId, q);
 
         Specification<CarbonCredit> spec = (root, cq, cb) -> {
-            var predicate = cb.conjunction();
-            predicate.getExpressions().add(cb.equal(root.get("company").get("id"), companyId));
+            var predicates = new ArrayList<Predicate>();
 
+            // Bắt buộc lọc theo công ty
+            predicates.add(cb.equal(root.get("company").get("id"), companyId));
+
+            // Các điều kiện lọc tùy chọn
             if (q != null) {
                 if (q.projectId() != null) {
-                    predicate.getExpressions().add(cb.equal(root.get("project").get("id"), q.projectId()));
+                    predicates.add(cb.equal(root.get("project").get("id"), q.projectId()));
                 }
                 if (q.vintageYear() != null) {
-                    predicate.getExpressions().add(
-                            cb.equal(root.join("batch", JoinType.LEFT).get("vintageYear"), q.vintageYear())
-                    );
+                    predicates.add(cb.equal(root.join("batch", JoinType.LEFT).get("vintageYear"), q.vintageYear()));
                 }
                 if (q.status() != null) {
-                    predicate.getExpressions().add(cb.equal(root.get("status"), q.status()));
+                    predicates.add(cb.equal(root.get("status"), q.status()));
                 }
             }
 
-            return predicate;
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return creditRepo.findAll(spec, pageable).map(CarbonCreditResponse::from);
+        Page<CarbonCredit> credits = creditRepo.findAll(spec, pageable);
+        log.info("[DEBUG] Credits found = {}", credits.getTotalElements());
+
+        credits.getContent().forEach(this::checkAndMarkExpired);
+
+        return credits.map(CarbonCreditResponse::from);
     }
 
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public Page<CreditBatchLiteResponse> listMyBatches(Long projectId, Integer vintageYear, Pageable pageable) {
-        log.info("[DEBUG] listMyBatches START - projectId={}, vintageYear={}, pageable={}", projectId, vintageYear, pageable);
-
         Long companyId = currentCompanyId();
-        log.info("[DEBUG] Authenticated companyId = {}", companyId);
+        log.info("[DEBUG] listMyBatches() - companyId={}, projectId={}, vintageYear={}",
+                companyId, projectId, vintageYear);
 
         Specification<CreditBatch> spec = (root, cq, cb) -> {
             cq.distinct(true);
-
-            // JOIN tường minh để chắc chắn ràng buộc dính vào SQL
-            var companyJoin  = root.join("company", JoinType.INNER);
-            var projectJoin  = root.join("project", JoinType.INNER);
-
             var predicates = new ArrayList<Predicate>();
-            //chỉ batch của công ty đang đăng nhập
+
+            var companyJoin = root.join("company", JoinType.INNER);
             predicates.add(cb.equal(companyJoin.get("id"), companyId));
-            log.info("[DEBUG] Applied filter companyId = {}", companyId);
 
             if (projectId != null) {
-                predicates.add(cb.equal(projectJoin.get("id"), projectId));
-                log.info("[DEBUG] Applied filter projectId = {}", projectId);
+                predicates.add(cb.equal(root.join("project", JoinType.INNER).get("id"), projectId));
             }
             if (vintageYear != null) {
                 predicates.add(cb.equal(root.get("vintageYear"), vintageYear));
-                log.info("[DEBUG] Applied filter vintageYear = {}", vintageYear);
             }
 
-            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Page<CreditBatch> batches = batchRepo.findAll(spec, pageable);
+        log.info("[DEBUG] Batches found = {}", batches.getTotalElements());
 
-        log.info("[DEBUG] Result: totalElements={}, totalPages={}, page={}",
-                batches.getTotalElements(), batches.getTotalPages(), batches.getNumber());
-
-        // Log kiểm chứng từng record thật sự khớp filter
         batches.getContent().forEach(b ->
-                log.debug("[DEBUG] Row => id={}, projectId={}, companyId={}",
-                        b.getId(), b.getProject().getId(), b.getCompany().getId())
+                log.debug("[DEBUG] BatchRow => id={}, projectId={}, companyId={}",
+                        b.getId(),
+                        b.getProject() != null ? b.getProject().getId() : null,
+                        b.getCompany() != null ? b.getCompany().getId() : null)
         );
 
         return batches.map(CreditBatchLiteResponse::from);
     }
 
-
-
     @Override
-    @PreAuthorize("hasRole('COMPANY')")
     public CarbonCreditResponse getMyCreditById(Long creditId) {
         Long companyId = currentCompanyId();
+        log.info("[DEBUG] getMyCreditById() - creditId={}, companyId={}", creditId, companyId);
 
         CarbonCredit credit = creditRepo.findById(creditId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_NOT_FOUND));
 
         if (!credit.getCompany().getId().equals(companyId)) {
+            log.error("[DEBUG] Access denied! Credit belongs to company {} not {}", credit.getCompany().getId(), companyId);
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
+
+        checkAndMarkExpired(credit);
 
         return CarbonCreditResponse.from(credit);
     }
 
+    // Xem chi tiết tín chỉ theo mã code (chỉ khi thuộc công ty)
     @Override
-    @PreAuthorize("hasRole('COMPANY')")
     public CarbonCreditResponse getMyCreditByCode(String creditCode) {
         Long companyId = currentCompanyId();
+        log.info("[DEBUG] getMyCreditByCode() - code={}, companyId={}", creditCode, companyId);
 
         CarbonCredit credit = creditRepo.findByCreditCodeAndCompany_Id(creditCode, companyId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_NOT_FOUND));

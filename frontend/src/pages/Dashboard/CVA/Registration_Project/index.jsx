@@ -8,6 +8,8 @@ import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiCVA/registrationCVA.js";
 import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
 
+
+
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -30,7 +32,9 @@ const ApplicationList = () => {
 
         let applications = [];
 
-        // Chuẩn format data theo swagger
+
+        //  Chuẩn format data theo swagger
+
         if (Array.isArray(response?.response)) {
           applications = response.response;
         } else if (Array.isArray(response?.responseData?.response)) {
@@ -142,6 +146,7 @@ const ApplicationList = () => {
       >
         {data.length > 0 ? (
           <CVADataGrid
+
             rows={data}
             columns={columns}
             getRowId={(r) => r.id}
@@ -153,6 +158,7 @@ const ApplicationList = () => {
             loading={loading}
             getRowHeight={() => "auto"}
           />
+
         ) : (
           !loading && (
             <Typography color={colors.grey[300]} align="center" mt={5}>
