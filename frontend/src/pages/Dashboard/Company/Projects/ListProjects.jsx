@@ -86,7 +86,7 @@ export default function ListProjects() {
             Your Projects Registered
           </h2>
           <Button
-            onClick={() => nav("/company/project-register")}
+            onClick={() => nav("/home#register")}
             className="fw-semibold px-4"
             style={{
               background: "#28a745",
