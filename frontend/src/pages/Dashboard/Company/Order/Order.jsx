@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Form,
@@ -7,11 +7,11 @@ import {
   Card,
   Row,
   Col,
-  Alert,
   Container,
+  Modal,
+  Spinner,
 } from "react-bootstrap";
-import { FaLock, FaArrowLeft, FaShoppingCart } from "react-icons/fa";
-import { Modal, Toast, ToastContainer } from "react-bootstrap";
+import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { toast } from "react-toastify";
 import useReveal from "../../../../hooks/useReveal";
 import { apiFetch } from "../../../../utils/apiFetch";
@@ -24,9 +24,12 @@ export default function Order() {
   const { user } = useAuth();
   const credit = state?.credit;
   const [showConfirm, setShowConfirm] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [loadingBalance, setLoadingBalance] = useState(false);
   const sectionRef = useRef(null);
   useReveal(sectionRef);
-  // Nếu user vào thẳng /order không qua marketplace thì redirect
+
+  // nếu user vào thẳng /order không qua marketplace
   if (!credit) {
     return (
       <div
@@ -41,39 +44,49 @@ export default function Order() {
     );
   }
 
-  //thông tin giá & tồn kho từ credit được chọn
+  //fetch số dư ví
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      try {
+        setLoadingBalance(true);
+        const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+        const balance = res?.response?.balance || 0;
+        setWalletBalance(balance);
+      } catch (err) {
+        console.error("Failed to load wallet:", err);
+        setWalletBalance(0);
+      } finally {
+        setLoadingBalance(false);
+      }
+    };
+
+    fetchWalletBalance();
+  }, []);
+
   const pricePerTonne = credit.price;
   const availableTonnes = credit.quantity;
+  const [formData, setFormData] = useState({ quantity: "" });
 
-  const [formData, setFormData] = useState({
-    quantity: "",
-  });
-
-  //tính tổng tiền dựa trên quantity * pricePerTonne
   const totalPrice =
     formData.quantity && formData.quantity > 0
       ? (formData.quantity * pricePerTonne).toFixed(2)
       : "0.00";
 
-  //cập nhật state khi user nhập form
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  //khi user bấm “Purchase” → mở modal xác nhận
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowConfirm(true);
   };
 
-  console.log("User context:", user);
-
+  //khi user confirm mua
   const handleConfirmPurchase = async () => {
     setShowConfirm(false);
-
     try {
-      //lấy KYC của công ty hiện tại để có companyId
+      // lấy company ID qua KYC
       const kycRes = await apiFetch("/api/v1/kyc/company", { method: "GET" });
       const buyerCompanyId = kycRes?.response?.id;
 
@@ -84,7 +97,7 @@ export default function Order() {
         return;
       }
 
-      //tạo new order
+      // tạo order
       const payload = {
         data: {
           buyerCompanyId,
@@ -93,26 +106,26 @@ export default function Order() {
         },
       };
 
-      console.log("Payload send:", payload);
-
       const res = await apiFetch("/api/v1/orders", {
         method: "POST",
         body: payload,
       });
 
       const orderId = res?.response?.id;
-
       if (!orderId) {
         toast.error("Order created but missing ID.");
         return;
       }
-      // Gọi API hoàn tất order
+
+      // complete order
       await apiFetch(`/api/v1/orders/${orderId}/complete`, { method: "POST" });
-      toast.success("Order placed successfully!");
-      setTimeout(
-        () => nav("/purchase-history", { state: { from: "order" } }),
-        2000
-      );
+
+      toast.success("Order completed successfully!");
+
+      //navigate về purchase history
+      setTimeout(() => {
+        nav("/purchase-history", { state: { refreshCredits: true } });
+      }, 2000);
     } catch (err) {
       console.error("Order create error:", err);
       toast.error(err.message || "Unable to create order.");
@@ -122,8 +135,8 @@ export default function Order() {
   return (
     <div ref={sectionRef} className="auth-hero min-vh-100 py-5 bg-light reveal">
       <Container>
+        {/* back button */}
         <div className="mb-4">
-          {/*nút Back to marketplace cố định góc trên trái */}
           <Button
             variant="outline-info"
             size="sm"
@@ -140,17 +153,15 @@ export default function Order() {
           </Button>
         </div>
 
-        {/* phần detail */}
+        {/* credit detail */}
         <CreditDetailCard credit={credit} />
+
         <Row>
           {/* LEFT FORM */}
           <Col lg={8}>
             <Card
               className="shadow-sm border-0 mb-4 overflow-hidden"
-              style={{
-                background: "#ffffff",
-                borderRadius: "12px",
-              }}
+              style={{ background: "#fff", borderRadius: "12px" }}
             >
               <Card.Body>
                 <h3 className="fw-bold mb-3 d-flex align-items-center gap-2">
@@ -161,7 +172,6 @@ export default function Order() {
                 </p>
 
                 <Form onSubmit={handleSubmit}>
-                  {/* Quantity */}
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">
                       Quantity (tonnes) <span className="text-danger">*</span>
@@ -182,7 +192,6 @@ export default function Order() {
                     />
                   </Form.Group>
 
-                  {/* Submit */}
                   <div className="mt-4">
                     <Button
                       variant="success"
@@ -197,38 +206,31 @@ export default function Order() {
               </Card.Body>
             </Card>
 
-            {/* After purchase info */}
+            {/* Info after purchase */}
             <Accordion>
               <Accordion.Item eventKey="1">
                 <Accordion.Header>After Purchase</Accordion.Header>
                 <Accordion.Body>
                   <ul className="mb-3">
                     <li>
-                      Your payment is securely processed through{" "}
-                      <strong>Stripe or VNPAY</strong>, depending on your
-                      selected method.
+                      Payment processed securely via{" "}
+                      <strong>Stripe or VNPAY</strong>.
                     </li>
                     <li>
-                      Once confirmed, the purchased carbon credits are{" "}
-                      <strong>added automatically to your wallet</strong> under
-                      your registered company account.
+                      Purchased credits are{" "}
+                      <strong>added to your wallet</strong> once confirmed.
                     </li>
                     <li>
-                      You can review all completed purchases in the{" "}
-                      <strong>“Purchases History”</strong> tab for full
-                      traceability.
+                      Review your purchases under{" "}
+                      <strong>“Purchases History”</strong>.
                     </li>
                     <li>
-                      Every credit purchased is{" "}
-                      <strong>verified and certified by CarbonX</strong> to
-                      ensure authenticity and transparency.
+                      All credits are <strong>verified by CarbonX</strong> for
+                      authenticity.
                     </li>
                   </ul>
-
                   <p className="text-muted small mb-0">
-                    Note: credits are non-refundable once issued, as they
-                    represent verified carbon offsets registered on the
-                    blockchain ledger.
+                    Note: credits are non-refundable after issuance.
                   </p>
                 </Accordion.Body>
               </Accordion.Item>
@@ -242,10 +244,13 @@ export default function Order() {
               quantity={formData.quantity}
               pricePerTonne={pricePerTonne}
               title={credit.title}
+              walletBalance={walletBalance}
+              loadingBalance={loadingBalance}
             />
           </Col>
         </Row>
-        {/*confirm modal */}
+
+        {/* Confirm Modal */}
         <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Confirm Purchase</Modal.Title>
@@ -272,15 +277,19 @@ export default function Order() {
   );
 }
 
-function ProjectSummary({ totalPrice, quantity, pricePerTonne, title }) {
+function ProjectSummary({
+  totalPrice,
+  quantity,
+  pricePerTonne,
+  title,
+  walletBalance,
+  loadingBalance,
+}) {
   return (
     <div className="sticky-top" style={{ top: "80px" }}>
       <Card
         className="shadow-sm border-0 overflow-hidden"
-        style={{
-          background: "#ffffff",
-          borderRadius: "12px",
-        }}
+        style={{ background: "#fff", borderRadius: "12px" }}
       >
         <Card.Body>
           <Card.Title>{title || "Carbon Credit"}</Card.Title>
@@ -307,6 +316,19 @@ function ProjectSummary({ totalPrice, quantity, pricePerTonne, title }) {
             </Col>
             <Col xs={6} className="text-end fw-bold text-success">
               ${totalPrice}
+            </Col>
+          </Row>
+          <hr />
+          <Row>
+            <Col xs={6} className="text-muted">
+              Your Wallet Balance
+            </Col>
+            <Col xs={6} className="text-end fw-bold text-warning">
+              {loadingBalance ? (
+                <Spinner size="sm" animation="border" />
+              ) : (
+                `$${walletBalance?.toLocaleString() || 0}`
+              )}
             </Col>
           </Row>
         </Card.Body>
