@@ -10,6 +10,7 @@ import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
 
 
 
+
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -25,7 +26,7 @@ const ApplicationList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("📡 Fetching pending CVA applications...");
+        console.log("Fetching pending CVA applications...");
         const response = await getProjectApplications();
 
         console.log(" Raw API response:", response);
@@ -33,7 +34,9 @@ const ApplicationList = () => {
         let applications = [];
 
 
+
         //  Chuẩn format data theo swagger
+
 
         if (Array.isArray(response?.response)) {
           applications = response.response;
@@ -128,7 +131,7 @@ const ApplicationList = () => {
         m="40px 0 0 0"
         height="75vh"
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          "& .MuiDataGrid-root": { border: "none", },
           "& .MuiDataGrid-cell": { borderBottom: "none" },
           "& .name-column--cell": { color: colors.greenAccent[300] },
           "& .MuiDataGrid-columnHeaders": {
@@ -140,7 +143,7 @@ const ApplicationList = () => {
           },
           "& .MuiDataGrid-footerContainer": {
             borderTop: "none",
-            backgroundColor: colors.blueAccent[700],
+            backgroundColor: colors.greenAccent[700],
           },
         }}
       >
