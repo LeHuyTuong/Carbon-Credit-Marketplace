@@ -31,6 +31,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletRepository walletRepository;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -53,6 +55,15 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public MarketplaceListingResponse listCreditsForSale(CreditListingRequest request) {
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
+//
+//        // B1 tìm ví của company
+//        Wallet companyWallet = walletRepository.findByUserId(currentUser.getId());
+//        // B2 vào trong ví để tìm wallet transaction để tìm credit batch
+//        WalletTransaction walletTransaction = walletTransactionRepository.findByWalletId(companyWallet.getId());
+//
+//        //B3 tìm ID credit batch muốn list
+//        CreditBatch batch = walletTransaction.getCreditBatch();
+
 
         // 1 check infor input
         CarbonCredit creditToSell = carbonCreditRepository.findById(request.getCarbonCreditId())
