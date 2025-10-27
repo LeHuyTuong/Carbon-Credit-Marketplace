@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.common.EmissionStatus;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.response.CreditBatchResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -25,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +46,9 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final EmailService emailService;
     private final CreditFormula creditFormula;
     private final SerialNumberService serialSvc;
+    private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+
 
     @Transactional
     @Override
@@ -111,9 +116,44 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .status(CreditStatus.AVAILABLE)
                     .issuedBy(issuedBy)
                     .issuedAt(OffsetDateTime.now())
+                    .expiryDate(LocalDate.now().plusYears(1))
                     .build());
         }
         creditRepo.saveAll(credits);
+
+        //Nạp tín chỉ vào ví & tạo WalletTransaction
+        Wallet wallet = walletRepository.findByCompany(company)
+                .orElseGet(() -> {
+                    // Kiểm tra thêm ví của user để tránh tạo trùng
+                    Wallet existing = walletRepository.findByUserId(company.getUser().getId());
+                    if (existing != null) return existing;
+
+                    Wallet newWallet = Wallet.builder()
+                            .company(company)
+                            .user(company.getUser())
+                            .balance(BigDecimal.ZERO)
+                            .carbonCreditBalance(BigDecimal.ZERO)
+                            .build();
+                    return walletRepository.save(newWallet);
+                });
+
+        BigDecimal issuedCredits = BigDecimal.valueOf(result.getCreditsCount());
+        BigDecimal before = wallet.getCarbonCreditBalance();
+        BigDecimal after = before.add(issuedCredits);
+        wallet.setCarbonCreditBalance(after);
+        walletRepository.save(wallet);
+
+        WalletTransaction tx = WalletTransaction.builder()
+                .wallet(wallet)
+                .transactionType(WalletTransactionType.ISSUE_CREDIT)
+                .amount(issuedCredits)
+                .balanceBefore(before)
+                .balanceAfter(after)
+                .creditBatch(batch)
+                .description("Issued " + result.getCreditsCount() + " Carbon Credits for project " + project.getTitle())
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        walletTransactionRepository.save(tx);
 
         report.setStatus(EmissionStatus.CREDIT_ISSUED);
         reportRepo.save(report);
@@ -173,7 +213,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         byte[] pdf = certificatePdfService.generatePdf(data);
 
         try {
-            String subject = "🎉 Your Carbon Credit Certificate is Ready!";
+            String subject = " Your Carbon Credit Certificate is Ready!";
             String htmlBody = """
                     <div style='font-family:Arial,sans-serif;color:#333;'>
                       <h2 style='color:#16a34a;'>Congratulations, %s!</h2>
@@ -263,6 +303,8 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .build();
 
         return creditRepo.save(newCredit);
+
+
 
     }
 }

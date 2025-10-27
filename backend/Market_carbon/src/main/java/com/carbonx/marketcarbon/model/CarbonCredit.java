@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -56,7 +57,7 @@ public class CarbonCredit extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
-    private CreditStatus status = CreditStatus.PENDING;
+    private CreditStatus status = CreditStatus.AVAILABLE;
 
     private BigDecimal amount; // số lượng tín chỉ có
 
@@ -78,6 +79,9 @@ public class CarbonCredit extends BaseEntity{
 
     @Column(name = "vintage_year", nullable = false)
     private Integer vintageYear;
+
+    @Column(name = "expiry_date")
+    private LocalDate expiryDate;
 
     @Transient
     public Integer getIssuedYear() {

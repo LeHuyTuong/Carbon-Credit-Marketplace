@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
@@ -28,7 +27,6 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     private final CarbonCreditRepository creditRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
-
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -45,13 +43,14 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public CreditInventorySummaryResponse getMyInventorySummary() {
         Long companyId = currentCompanyId();
 
-        var byStatusRaw = creditRepo.sumAmountByStatus(companyId);
-        var byProjectRaw = creditRepo.sumAmountByProject(companyId);
-        var byVintageRaw = creditRepo.sumAmountByVintage(companyId);
+        // 🟢 Bỏ qua các tín chỉ EXPIRED trong thống kê
+        var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED.name());
+        var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED.name());
+        var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED.name());
 
         long total = 0, available = 0, reserved = 0, sold = 0, retired = 0;
-
         List<StatusCount> byStatus = new ArrayList<>();
+
         for (Object[] row : byStatusRaw) {
             String status = String.valueOf(row[0]);
             long sum = ((Number) row[1]).longValue();
@@ -105,6 +104,6 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public long getMyAvailableBalance() {
-        return creditRepo.sumAmountByCompany_IdAndStatus(currentCompanyId(), CreditStatus.AVAILABLE);
+        return creditRepo.sumAmountByCompany_IdAndStatusNot(currentCompanyId(), CreditStatus.EXPIRED);
     }
 }
