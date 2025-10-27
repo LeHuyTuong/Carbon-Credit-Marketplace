@@ -220,11 +220,31 @@ public class OrderServiceImpl implements OrderService {
         // 6.2: Trừ số tín chỉ được mua khỏi tổng tín chỉ của người bán (bao gồm cả đang rao bán)
         // Trừ số lượng khỏi phần đang niêm yết (listedAmount) của tín chỉ gốc
         BigDecimal currentListedAmount = sourceCredit.getListedAmount();
+        if (currentListedAmount == null) {
+            currentListedAmount = BigDecimal.ZERO;
+        }
+
         // Số lượng niêm yết mới = số lượng niêm yết cũ - số lượng mua
         BigDecimal updatedListedAmount = currentListedAmount.subtract(quantityToBuy);
-        sourceCredit.setListedAmount(updatedListedAmount.max(BigDecimal.ZERO));
+        if (updatedListedAmount.compareTo(BigDecimal.ZERO) < 0) {
+            updatedListedAmount = BigDecimal.ZERO;
+        }
+        sourceCredit.setListedAmount(updatedListedAmount);
 
-        sourceCredit.setCompany(buyerCompany); // Gán công ty người mua cho tín chỉ này
+        BigDecimal directBalance = sourceCredit.getCarbonCredit();
+        if (directBalance == null) {
+            directBalance = BigDecimal.ZERO;
+        }
+        BigDecimal recalculatedOwned = directBalance.add(updatedListedAmount);
+        BigDecimal existingOwned = sourceCredit.getAmount();
+        if (existingOwned != null) {
+            BigDecimal adjustedOwned = existingOwned.subtract(quantityToBuy);
+            if (adjustedOwned.compareTo(BigDecimal.ZERO) < 0) {
+                adjustedOwned = BigDecimal.ZERO;
+            }
+            recalculatedOwned = adjustedOwned;
+        }
+        sourceCredit.setAmount(recalculatedOwned);
         sourceCredit.setStatus(CreditStatus.ISSUE); // Đảm bảo trạng thái là ISSUE sau khi mua
 
         // Lưu lại tín chỉ đã cập nhật số lượng niêm yết cho bên bán
