@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.ListingStatus;
 import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
+import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -9,6 +10,7 @@ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.MarketplaceService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +31,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletRepository walletRepository;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -51,6 +55,15 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public MarketplaceListingResponse listCreditsForSale(CreditListingRequest request) {
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
+//
+//        // B1 tìm ví của company
+//        Wallet companyWallet = walletRepository.findByUserId(currentUser.getId());
+//        // B2 vào trong ví để tìm wallet transaction để tìm credit batch
+//        WalletTransaction walletTransaction = walletTransactionRepository.findByWalletId(companyWallet.getId());
+//
+//        //B3 tìm ID credit batch muốn list
+//        CreditBatch batch = walletTransaction.getCreditBatch();
+
 
         // 1 check infor input
         CarbonCredit creditToSell = carbonCreditRepository.findById(request.getCarbonCreditId())
@@ -121,30 +134,110 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDateTime.now());
 
         return activeListings.stream()
-                .map(listing -> {
-                    BigDecimal remainingQuantity = listing.getQuantity() != null ? listing.getQuantity() : BigDecimal.ZERO;
-                    BigDecimal soldQuantity = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
-
-                    // Giữ lại fallback cho dữ liệu cũ chưa set originalQuantity
-                    BigDecimal originalQuantity = listing.getOriginalQuantity();
-                    if (originalQuantity == null || originalQuantity.compareTo(BigDecimal.ZERO) <= 0) {
-                        originalQuantity = remainingQuantity.add(soldQuantity);
-                    }
-
-                    return MarketplaceListingResponse.builder()
-                            .listingId(listing.getId())
-                            .quantity(remainingQuantity)
-                            .availableQuantity(remainingQuantity)
-                            .originalQuantity(originalQuantity)
-                            .soldQuantity(soldQuantity)
-                            .pricePerCredit(listing.getPricePerCredit())
-                            .sellerCompanyName(listing.getCompany().getCompanyName())
-                            .projectId(listing.getCarbonCredit().getProject().getId())
-                            .projectTitle(listing.getCarbonCredit().getProject().getTitle())
-                            .expiresAt(listing.getExpiresAt())
-                            .build();
-                })
+                .map(this::buildListingResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public MarketplaceListingResponse updateListCredits(CreditListingUpdateRequest request) {
+        if (request == null) {
+            throw new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE);
+        }
+
+        Long listingId = request.getListingId();
+        BigDecimal pricePerCredit = request.getPricePerCredit();
+
+        if (listingId == null) {
+            throw new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE);
+        }
+        if (pricePerCredit == null || pricePerCredit.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
+        }
+
+        User currentUser = currentUser();
+        Company sellerCompany = currentCompany(currentUser);
+
+        MarketPlaceListing listing = marketplaceListingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE));
+
+        if (!Objects.equals(listing.getCompany().getId(), sellerCompany.getId())) {
+            throw new AppException(ErrorCode.COMPANY_NOT_OWN);
+        }
+        if (listing.getStatus() != ListingStatus.AVAILABLE) {
+            throw new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE);
+        }
+
+        listing.setPricePerCredit(pricePerCredit);
+        MarketPlaceListing savedListing = marketplaceListingRepository.save(listing);
+
+        return buildListingResponse(savedListing);
+    }
+
+    @Override
+    @Transactional
+    public MarketplaceListingResponse deleteListCredits(Long creditListingId) {
+        if (creditListingId == null) {
+            throw new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE);
+        }
+
+        User currentUser = currentUser();
+        Company sellerCompany = currentCompany(currentUser);
+
+        MarketPlaceListing listing = marketplaceListingRepository.findById(creditListingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE));
+
+        if (!Objects.equals(listing.getCompany().getId(), sellerCompany.getId())) {
+            throw new AppException(ErrorCode.COMPANY_NOT_OWN);
+        }
+
+        CarbonCredit carbonCredit = listing.getCarbonCredit();
+        if (carbonCredit != null) {
+            BigDecimal remainingQuantity = listing.getQuantity() != null ? listing.getQuantity() : BigDecimal.ZERO;
+            BigDecimal creditBalance = carbonCredit.getCarbonCredit() != null ? carbonCredit.getCarbonCredit() : BigDecimal.ZERO;
+            BigDecimal listedAmount = carbonCredit.getListedAmount() != null ? carbonCredit.getListedAmount() : BigDecimal.ZERO;
+
+            carbonCredit.setCarbonCredit(creditBalance.add(remainingQuantity));
+            BigDecimal updatedListed = listedAmount.subtract(remainingQuantity);
+            if (updatedListed.compareTo(BigDecimal.ZERO) < 0) {
+                updatedListed = BigDecimal.ZERO;
+            }
+            carbonCredit.setListedAmount(updatedListed);
+            carbonCreditRepository.save(carbonCredit);
+        }
+
+        listing.setQuantity(BigDecimal.ZERO);
+        listing.setStatus(ListingStatus.CANCELLED);
+        MarketplaceListingResponse response = buildListingResponse(listing);
+        marketplaceListingRepository.delete(listing);
+
+        return response;
+    }
+
+    private MarketplaceListingResponse buildListingResponse(MarketPlaceListing listing) {
+        BigDecimal remainingQuantity = listing.getQuantity() != null ? listing.getQuantity() : BigDecimal.ZERO;
+        BigDecimal soldQuantity = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
+
+        BigDecimal originalQuantity = listing.getOriginalQuantity();
+        if (originalQuantity == null || originalQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+            originalQuantity = remainingQuantity.add(soldQuantity);
+        }
+
+        Project project = listing.getCarbonCredit().getProject();
+
+        return MarketplaceListingResponse.builder()
+                .listingId(listing.getId())
+                .quantity(remainingQuantity)
+                .availableQuantity(remainingQuantity)
+                .originalQuantity(originalQuantity)
+                .soldQuantity(soldQuantity)
+                .pricePerCredit(listing.getPricePerCredit())
+                .sellerCompanyName(listing.getCompany().getCompanyName())
+                .projectId(project != null ? project.getId() : null)
+                .projectTitle(project != null ? project.getTitle() : null)
+                .expiresAt(listing.getExpiresAt())
+                .logo(project != null ? project.getLogo() : null)
+                .build();
     }
 }
 

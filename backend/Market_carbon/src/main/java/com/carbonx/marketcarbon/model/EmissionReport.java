@@ -51,9 +51,8 @@ public class EmissionReport {
     EmissionStatus status = EmissionStatus.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "verified_by")
-    @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
-    User verifiedBy;
+    @JoinColumn(name = "verified_by_cva_id")
+     Cva verifiedByCva;
 
     @Column(columnDefinition = "text")
     String comment;

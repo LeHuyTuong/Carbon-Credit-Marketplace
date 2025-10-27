@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button, Nav } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import PaginatedList from "../../../components/Pagination/PaginatedList";
+import useReveal from "../../../hooks/useReveal";
 
 export default function WalletHistory() {
   const nav = useNavigate();
@@ -11,6 +12,8 @@ export default function WalletHistory() {
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   useEffect(() => {
     if (tab === "transactions") fetchTransactions();
@@ -50,7 +53,10 @@ export default function WalletHistory() {
   };
 
   return (
-    <div className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5">
+    <div
+      ref={sectionRef}
+      className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5 reveal"
+    >
       <Button
         variant="outline-info"
         size="sm"

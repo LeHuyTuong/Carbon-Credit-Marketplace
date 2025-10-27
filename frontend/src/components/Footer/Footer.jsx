@@ -1,5 +1,5 @@
 import React from "react";
-import "./Footer.css";
+import "./footer.css";
 import logo from "/src/assets/logo.png";
 
 export default function Footer() {
@@ -17,11 +17,11 @@ export default function Footer() {
               Turning EV emission reductions into verified, tradable carbon
               credits.
             </p>
-            <p className="footer-copy" style={{marginTop: '10px'}}>
-              Address: 7 D1 Street, Long Thanh My, Thu Duc, Ho Chi Minh 
+            <p className="footer-copy" style={{ marginTop: "10px" }}>
+              Address: 7 D1 Street, Long Thanh My, Thu Duc, Ho Chi Minh
             </p>
-            <p className="footer-copy" style={{marginTop: '10px'}}>
-              Email: carbonX@gmail.com 
+            <p className="footer-copy" style={{ marginTop: "10px" }}>
+              Email: carbonX@gmail.com
             </p>
           </div>
 

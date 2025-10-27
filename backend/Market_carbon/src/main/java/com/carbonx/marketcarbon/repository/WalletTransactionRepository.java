@@ -1,10 +1,7 @@
 package com.carbonx.marketcarbon.repository;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
-import com.carbonx.marketcarbon.model.Order;
-import com.carbonx.marketcarbon.model.PaymentOrder;
-import com.carbonx.marketcarbon.model.Wallet;
-import com.carbonx.marketcarbon.model.WalletTransaction;
+import com.carbonx.marketcarbon.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +11,8 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     // list theo danh sách order gần nhất
     List<WalletTransaction> findByWalletOrderByCreatedAtDesc(Wallet wallet);
     boolean existsByOrderAndTransactionType(Order order, WalletTransactionType transactionType);
+
+    WalletTransaction findByWalletId(Long id);
 
     boolean existsByOrder(Order order);
 
