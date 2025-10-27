@@ -33,33 +33,72 @@ const schema = Yup.object().shape({
 
 export default function ListCredits() {
   const [credits, setCredits] = useState([]);
-  const [userCredits, setUserCredits] = useState([]); // mock dữ liệu user
+  const [userCredits, setUserCredits] = useState([]);
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [editData, setEditData] = useState(null);
-  const [confirm, setConfirm] = useState({ show: false, id: null });
-  const nav = useNavigate();
   const [toast, setToast] = useState({
     show: false,
     message: "",
     variant: "success",
   });
+  const nav = useNavigate();
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
-  // mock credit có sẵn của user
+  //fetch user credits
   useEffect(() => {
-    setUserCredits([
-      { id: 101, title: "EV Charging Credit - Project A", balance: 200 },
-      { id: 102, title: "EV Charging Credit - Project B", balance: 500 },
-    ]);
+    const fetchUserCredits = async () => {
+      try {
+        const [creditsRes, walletRes] = await Promise.all([
+          apiFetch("/api/v1/my/credits/batches", {
+            method: "GET",
+          }),
+          apiFetch("/api/v1/wallet", {
+            method: "GET",
+          }),
+        ]);
+
+        const allCredits = creditsRes?.response?.content || [];
+        const wallet = walletRes?.response;
+
+        const issuedCredits = allCredits
+          .filter((c) => c.status === "ISSUED" || c.status === "AVAILABLE")
+          .map((c) => ({
+            id: c.id,
+            title: `${c.projectTitle || "Untitled"} (${c.batchCode || "N/A"})`,
+            balance: c.residualTco2e ?? c.totalTco2e ?? 0,
+            type: "ISSUED",
+          }));
+
+        const walletCredits =
+          wallet?.walletTransactions
+            ?.filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT")
+            .map((tx) => {
+              const match = tx.description.match(/Buy(\d+(\.\d+)?)credits/);
+              const creditAmount = match ? parseFloat(match[1]) : 0;
+              return {
+                id: tx.id,
+                title: `Order #${tx.orderId} - Purchased Credits`,
+                balance: creditAmount,
+                type: "WALLET",
+              };
+            }) || [];
+
+        setUserCredits([...issuedCredits, ...walletCredits]);
+      } catch (err) {
+        console.error("Failed to fetch user credits:", err);
+        setUserCredits([]);
+      }
+    };
+
+    fetchUserCredits();
   }, []);
 
+  //fetch list credit(Marketplace)
   useEffect(() => {
     fetchCredits();
   }, []);
 
-  // fetch danh sách credit đang bán
   const fetchCredits = async () => {
     try {
       setLoading(true);
@@ -71,7 +110,10 @@ export default function ListCredits() {
         price: item.pricePerCredit,
         quantity: item.quantity,
         seller: item.sellerCompanyName,
-        expiresAt: new Date(item.expiresAt).toLocaleDateString("en-GB"),
+        expiresAt:
+          item.expiresAt && !isNaN(new Date(item.expiresAt))
+            ? new Date(item.expiresAt).toLocaleDateString("en-GB")
+            : "N/A",
         status: "active",
       }));
       setCredits(mapped);
@@ -83,7 +125,7 @@ export default function ListCredits() {
     }
   };
 
-  // submit đăng bán credit
+  //handle submit
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
@@ -101,7 +143,7 @@ export default function ListCredits() {
 
       showToast("Credit listed successfully!");
       setShow(false);
-      await fetchCredits(); // reload sau khi đăng
+      await fetchCredits();
     } catch (error) {
       console.error("Submit error:", error);
       showToast(error.message || "Failed to publish credit.", "danger");
@@ -110,35 +152,9 @@ export default function ListCredits() {
     }
   };
 
-  // Mở modal
-  const handleAdd = () => {
-    setEditData(null);
-    setShow(true);
-  };
-
-  // Xoá tín chỉ
-  const handleDeleteClick = (id) => {
-    setConfirm({ show: true, id });
-  };
-
-  const handleConfirmDelete = () => {
-    const updated = credits.filter((c) => c.id !== confirm.id);
-    localStorage.setItem("mockCredits", JSON.stringify(updated));
-    setCredits(updated);
-    setConfirm({ show: false, id: null });
-    showToast("Credit removed successfully");
-  };
-
-  const handleCancelDelete = () => setConfirm({ show: false, id: null });
-
   const showToast = (message, variant = "success") => {
     setToast({ show: true, message, variant });
     setTimeout(() => setToast({ show: false, message: "", variant }), 3000);
-  };
-
-  const handleClose = () => {
-    setShow(false);
-    setEditData(null);
   };
 
   return (
@@ -162,9 +178,15 @@ export default function ListCredits() {
       <div className="vehicle-search-section">
         <h1 className="title">List Your Credits For Sale</h1>
         <Button className="mb-3" onClick={() => setShow(true)}>
-          Add Credit
+          List Credit
         </Button>
       </div>
+
+      {userCredits.length === 0 && (
+        <p className="text-warning small">
+          You don't have any issued credits yet. Wait for admin approval.
+        </p>
+      )}
 
       {loading ? (
         <div className="d-flex justify-content-center align-items-center py-5">
@@ -175,7 +197,7 @@ export default function ListCredits() {
           <table className="vehicle-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Title</th>
                 <th>Price ($)</th>
                 <th>Quantity</th>
@@ -186,7 +208,7 @@ export default function ListCredits() {
             </thead>
             <PaginatedTable
               items={credits}
-              itemsPerPage={5} // tuỳ chỉnh số item mỗi trang
+              itemsPerPage={5}
               renderRow={(row, index) => (
                 <tr key={row.id}>
                   <td>{index + 1}</td>
@@ -200,7 +222,7 @@ export default function ListCredits() {
                       className="btn-detail w-90"
                       onClick={() => nav(`/credit-detail/${row.id}`)}
                     >
-                      <i></i> View Detail
+                      View Detail
                     </button>
                   </td>
                 </tr>
@@ -212,7 +234,7 @@ export default function ListCredits() {
 
       <CreditModal
         show={show}
-        onHide={handleClose}
+        onHide={() => setShow(false)}
         onSubmit={handleSubmit}
         userCredits={userCredits}
       />
@@ -232,7 +254,7 @@ export default function ListCredits() {
   );
 }
 
-// Modal đăng credit thật
+//modal up credit
 function CreditModal({ show, onHide, onSubmit, userCredits }) {
   const initialValues = {
     carbonCreditId: "",

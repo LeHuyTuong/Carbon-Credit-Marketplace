@@ -178,6 +178,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .carbonCreditQuantity(order != null ? order.getQuantity() : null)
                 .unitPrice(order != null ? order.getUnitPrice() : null)
                 .createdAt(transaction.getCreatedAt())
+                .batchCode(transaction.getCreditBatch() != null
+                        ? transaction.getCreditBatch().getBatchCode()
+                        : null)
                 .build();
     }
 }

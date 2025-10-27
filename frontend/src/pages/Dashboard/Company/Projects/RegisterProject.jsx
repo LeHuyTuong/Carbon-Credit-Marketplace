@@ -94,7 +94,7 @@ export default function RegisterProject() {
     <div className="d-flex align-items-center justify-content-center">
       <div className="card shadow" style={{ maxWidth: "600px", width: "100%" }}>
         <div className="card-body">
-          <h2 className="mb-4 text-center">Register Project</h2>
+          <h3 className="mb-4 text-center fw-bold">Form Information</h3>
 
           <Formik
             validationSchema={PROJECT_SCHEMA}

@@ -5,19 +5,12 @@ import com.carbonx.marketcarbon.dto.response.EmissionReportDetailResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
-import com.carbonx.marketcarbon.model.Company;
-import com.carbonx.marketcarbon.model.EmissionReport;
-import com.carbonx.marketcarbon.model.EmissionReportDetail;
-import com.carbonx.marketcarbon.model.Project;
-import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.repository.CompanyRepository;
-import com.carbonx.marketcarbon.repository.EmissionReportDetailRepository;
-import com.carbonx.marketcarbon.repository.EmissionReportRepository;
-import com.carbonx.marketcarbon.repository.ProjectRepository;
-import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.model.*;
+import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.AiScoringService;
 import com.carbonx.marketcarbon.service.EmissionReportService;
 import com.carbonx.marketcarbon.service.FileStorageService;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -30,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -52,33 +46,57 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private final UserRepository userRepository;
     private final FileStorageService storage;
     private final AiScoringService aiScoringService;
+    private final CvaRepository cvaRepository;
 
     // Hệ số phát thải mặc định nếu CSV không có cột CO2
     private static final BigDecimal DEFAULT_EF_KG_PER_KWH = new BigDecimal("0.4");
 
+    private Long currentCompanyId() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        return companyRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND))
+                .getId();
+    }
+
     @Override
+    @PreAuthorize("hasRole('COMPANY')")
+    @Transactional
     public EmissionReportResponse uploadCsvAsReport(MultipartFile file, Long projectIdParam) {
-        // 1) User & company như cũ ...
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
+
         User currentUser = Optional.ofNullable(userRepository.findByEmail(email))
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
-        Company seller = companyRepository.findByUserId(currentUser.getId())
-                .orElseGet(() -> companyRepository.findByUserEmail(email));
-        if (seller == null) throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
 
-        // 2) Upload storage như cũ ...
-        String filename = (file.getOriginalFilename() != null) ? file.getOriginalFilename() : "emission.csv";
+        Company seller = companyRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        log.info("[CSV-UPLOAD] User = {}, Company = {} (ID={})",
+                email, seller.getCompanyName(), seller.getId());
+
+        if (projectIdParam == null)
+            throw new AppException(ErrorCode.PROJECT_NOT_FOUND);
+
+        Project project = projectRepository.findById(projectIdParam)
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+        String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "emission.csv";
         FileStorageService.PutResult put;
-        try { put = storage.putObject("emission-reports", filename, file); }
-        catch (Exception ex) { throw new AppException(ErrorCode.STORAGE_UPLOAD_FAILED); }
+        try {
+            put = storage.putObject("emission-reports", filename, file);
+        } catch (Exception ex) {
+            log.error("[CSV-UPLOAD] Upload storage failed: {}", ex.getMessage(), ex);
+            throw new AppException(ErrorCode.STORAGE_UPLOAD_FAILED);
+        }
+
         String sha256 = computeSha256(file);
 
-        // 3) Parse CSV
         String period = null;
-        Long projectIdFromCsv = null; // lấy từ CSV nếu có
-        Long finalProjectId = null;
-
         List<EmissionReportDetail> details = new ArrayList<>();
         int rows = 0;
 
@@ -92,41 +110,30 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             CSVParser parser = format.parse(reader);
             Set<String> headers = parser.getHeaderMap().keySet();
 
-            // CHỈNH: project_id trở thành TÙY CHỌN
-            String projectHeader = findHeader(headers, "project_id", "project", "projectId");
-            String periodHeader  = requireHeader(headers, "period");
-            String energyHeader  = findHeader(headers, "total_energy","total_charging_energy","charging_energy_total","charging_energy");
-            if (energyHeader == null) throw new AppException(ErrorCode.CSV_MISSING_TOTAL_ENERGY_OR_CHARGING);
-            String co2Header     = findHeader(headers, "co2_kg", "co2", "co2e_kg");
-            String vehicleIdHeader = findHeader(headers, "vehicle_id", "vehicle", "ev_id", "vin");
+            log.info("[CSV-UPLOAD] Headers: {}", headers);
+
+            // Các header cần thiết
+            String periodHeader = requireHeader(headers, "period");
+            String energyHeader = findHeader(headers, "total_energy", "total_charging_energy",
+                    "charging_energy_total", "charging_energy");
+
+            if (energyHeader == null)
+                throw new AppException(ErrorCode.CSV_MISSING_TOTAL_ENERGY_OR_CHARGING);
+
+            String co2Header = findHeader(headers, "co2_kg", "co2", "co2e_kg");
+            String plateHeader = findHeader(headers, "license_plate", "plate", "plate_number",
+                    "vehicle_plate", "bien_so", "bien_so_xe");
 
             for (CSVRecord r : parser) {
-                // Lấy projectId từ hàng hiện tại (nếu CSV có), nếu không dùng tham số form
-                Long pidRow = (projectHeader != null) ? parseLong(safeGet(r, projectHeader)) : projectIdParam;
-
-                // Nếu cả CSV lẫn param đều rỗng => lỗi
-                if (pidRow == null) {
-                    // Tận dụng error code sẵn có: thiếu project -> xem như inconsistent / missing
-                    throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
-                }
-
-                // Ghi nhận projectId nhất quán xuyên suốt CSV
-                if (projectIdFromCsv == null && projectHeader != null) projectIdFromCsv = pidRow;
-                // Nếu đã có finalProjectId, mỗi dòng phải khớp
-                if (finalProjectId == null) finalProjectId = pidRow;
-                else if (!finalProjectId.equals(pidRow)) throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
-
-                // Nếu param tồn tại và CSV có project_id thì phải khớp
-                if (projectIdParam != null && projectHeader != null && !projectIdParam.equals(pidRow)) {
-                    throw new AppException(ErrorCode.CSV_INCONSISTENT_PROJECT_ID);
-                }
-
                 String per = safeGet(r, periodHeader);
                 if (period == null) period = per;
-                else if (!period.equals(per)) throw new AppException(ErrorCode.CSV_INCONSISTENT_PERIOD);
+                else if (!period.equals(per))
+                    throw new AppException(ErrorCode.CSV_INCONSISTENT_PERIOD);
 
                 String energyStr = safeGet(r, energyHeader);
-                if (energyStr.isEmpty()) throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
+                if (energyStr.isEmpty())
+                    throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
+
                 BigDecimal energy = new BigDecimal(energyStr);
 
                 BigDecimal co2Kg = null;
@@ -135,60 +142,56 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                     if (!c.isEmpty()) co2Kg = new BigDecimal(c);
                 }
 
-                Long vehicleId = null;
-                if (vehicleIdHeader != null) {
-                    String v = safeGet(r, vehicleIdHeader);
-                    if (!v.isEmpty()) {
-                        try { vehicleId = parseLong(v); } catch (NumberFormatException ignored) { /* VIN alpha => bỏ qua */ }
-                    }
+                String licensePlate = null;
+                if (plateHeader != null) {
+                    String p = safeGet(r, plateHeader);
+                    if (!p.isBlank()) licensePlate = p.trim();
                 }
 
                 details.add(EmissionReportDetail.builder()
                         .period(per)
                         .companyId(seller.getId())
-                        .projectId(pidRow)
-                        .vehicleId(vehicleId)
+                        .projectId(projectIdParam)
+                        .vehiclePlate(licensePlate)
                         .totalEnergy(energy)
-                        .co2Kg(co2Kg) // có thể null
+                        .co2Kg(co2Kg)
                         .build());
                 rows++;
             }
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            log.error("CSV parse error", e);
+            log.error("[CSV-UPLOAD] Parse error: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
         }
 
-        if (details.isEmpty()) throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
-
-        // Ưu tiên: nếu có param thì dùng param; nếu không, dùng giá trị đã suy ra từ CSV
-        final Long projectId = (projectIdParam != null) ? projectIdParam : finalProjectId;
-
-        // 4) Kiểm tra project & kỳ trùng
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+        if (details.isEmpty())
+            throw new AppException(ErrorCode.CSV_TOTAL_ENERGY_NOT_FOUND);
 
         if (reportRepository.findBySellerIdAndProjectIdAndPeriod(seller.getId(), project.getId(), period).isPresent()) {
             throw new AppException(ErrorCode.REPORT_DUPLICATE_PERIOD);
         }
 
-        // 5) Fill CO2 nếu thiếu
         for (EmissionReportDetail d : details) {
-            if (d.getCo2Kg() == null) d.setCo2Kg(d.getTotalEnergy().multiply(DEFAULT_EF_KG_PER_KWH));
+            if (d.getCo2Kg() == null)
+                d.setCo2Kg(d.getTotalEnergy().multiply(DEFAULT_EF_KG_PER_KWH));
         }
 
-        // 6) Tổng hợp
-        BigDecimal totalEnergy = details.stream().map(EmissionReportDetail::getTotalEnergy)
+        BigDecimal totalEnergy = details.stream()
+                .map(EmissionReportDetail::getTotalEnergy)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalCo2 = details.stream().map(EmissionReportDetail::getCo2Kg)
+        BigDecimal totalCo2 = details.stream()
+                .map(EmissionReportDetail::getCo2Kg)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        long distinctVehicles = details.stream().map(EmissionReportDetail::getVehicleId)
-                .filter(Objects::nonNull).collect(Collectors.toSet()).size();
-        int vehicleCount = (distinctVehicles > 0) ? (int) distinctVehicles : details.size();
+        long distinctPlates = details.stream()
+                .map(EmissionReportDetail::getVehiclePlate)
+                .filter(p -> p != null && !p.isBlank())
+                .collect(Collectors.toSet())
+                .size();
 
-        // 7) Lưu report tổng
+        int vehicleCount = (distinctPlates > 0) ? (int) distinctPlates : details.size();
+
         EmissionReport report = EmissionReport.builder()
                 .seller(seller)
                 .project(project)
@@ -211,14 +214,14 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
         EmissionReport saved = reportRepository.save(report);
 
-        // 8) Gắn report_id cho detail và lưu
         for (EmissionReportDetail d : details) d.setReport(saved);
         detailRepository.saveAll(details);
 
+        log.info("[CSV-UPLOAD] Report {} uploaded successfully for company '{}' ({}) — period={}, rows={}, vehicles={}",
+                saved.getId(), seller.getCompanyName(), seller.getId(), period, rows, vehicleCount);
+
         return EmissionReportResponse.from(saved);
     }
-
-
     @Override
     public Page<EmissionReportResponse> listReportsForCva(String status, Pageable pageable) {
         if (status == null || status.isBlank()) {
@@ -261,16 +264,21 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User verifier = Optional.ofNullable(userRepository.findByEmail(email))
-                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        r.setVerifiedBy(verifier);
+        Cva cva = cvaRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
+
+        r.setVerifiedByCva(cva);
         r.setVerifiedAt(OffsetDateTime.now());
         r.setComment(comment);
         r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
+        r.setUpdatedAt(OffsetDateTime.now());
+
         reportRepository.save(r);
+
         return EmissionReportResponse.from(r);
     }
+
 
     @Override
     public EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note) {
@@ -328,18 +336,26 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     }
 
     @Override
-    public List<EmissionReportDetailResponse> getReportDetails(Long reportId) {
+    @PreAuthorize("hasRole('COMPANY')")
+    @Transactional(readOnly = true)
+    public Page<EmissionReportDetailResponse> getReportDetails(Long reportId, String plateContains, Pageable pageable) {
         EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
-        List<EmissionReportDetail> details = detailRepository.findByReport(report);
-        if (details.isEmpty()) {
+        Long companyId = currentCompanyId();
+        if (!report.getSeller().getId().equals(companyId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Page<EmissionReportDetail> page = (plateContains != null && !plateContains.isBlank())
+                ? detailRepository.findByReport_IdAndVehiclePlateContainingIgnoreCase(reportId, plateContains, pageable)
+                : detailRepository.findByReport_Id(reportId, pageable);
+
+        if (page.isEmpty()) {
             throw new AppException(ErrorCode.REPORT_DETAILS_NOT_FOUND);
         }
 
-        return details.stream()
-                .map(EmissionReportDetailResponse::from)
-                .toList();
+        return page.map(EmissionReportDetailResponse::from);
     }
 
     @Override
@@ -372,19 +388,22 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User verifier = Optional.ofNullable(userRepository.findByEmail(email))
-                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        r.setVerifiedBy(verifier);
+        Cva cva = cvaRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
+
+        r.setVerifiedByCva(cva);
         r.setVerifiedAt(OffsetDateTime.now());
         r.setVerificationScore(score);
         r.setVerificationComment(comment);
         r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
         r.setUpdatedAt(OffsetDateTime.now());
+
         reportRepository.save(r);
 
         return EmissionReportResponse.from(r);
     }
+
 
     @Override
     public List<EmissionReportResponse> listReportsForCompany(String status, Long projectId) {

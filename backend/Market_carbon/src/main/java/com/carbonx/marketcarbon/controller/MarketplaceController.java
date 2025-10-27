@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
+import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
 import com.carbonx.marketcarbon.service.MarketplaceService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
@@ -58,6 +59,44 @@ public class MarketplaceController {
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<List<MarketplaceListingResponse>> response = new TuongCommonResponse<>(trace, now , rs , listings);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Update marketplace listing", description = "API to update listing price")
+    @PutMapping
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<TuongCommonResponse<MarketplaceListingResponse>> updateListing(
+            @Valid @RequestBody TuongCommonRequest<@Valid CreditListingUpdateRequest> req,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        MarketplaceListingResponse data = marketplaceService.updateListCredits(req.getData());
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<MarketplaceListingResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Cancel marketplace listing", description = "API to cancel an active listing")
+    @DeleteMapping("/{listingId}")
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<TuongCommonResponse<MarketplaceListingResponse>> cancelListing(
+            @PathVariable("listingId") Long listingId,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        MarketplaceListingResponse data = marketplaceService.deleteListCredits(listingId);
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+                StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<MarketplaceListingResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 }

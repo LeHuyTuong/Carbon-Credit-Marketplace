@@ -25,5 +25,6 @@ public class WalletTransactionResponse {
     // Đơn giá / tín chỉ nếu transaction gắn với order
     private BigDecimal unitPrice;
     private LocalDateTime createdAt;
+    private String batchCode;
 
 }
