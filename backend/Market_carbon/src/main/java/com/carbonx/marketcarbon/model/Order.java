@@ -59,5 +59,8 @@ public class Order {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
 
 }

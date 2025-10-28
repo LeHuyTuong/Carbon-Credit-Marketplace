@@ -26,6 +26,12 @@ public class MarketPlaceListing {
     @JoinColumn(name = "company_id" , nullable = false)
     private Company company;
 
+    // cơ chế idempotency(Khóa bất biến) để tránh xử lý trùng lặp
+    //Idempotency (Tính bất biến)thực hiện 1 vc nhiều lần thì kết quả vẫn y hệt như khi thực hiện chỉ một lần.
+    //Mục đích của nó là để biến một hành động không bất biến (như "tạo đơn hàng") thành một hành động bất biến.
+    @Column(name = "idempotency_key")
+    private String idempotencyKey;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carbon_credits_id", nullable = false)
     private CarbonCredit carbonCredit;
