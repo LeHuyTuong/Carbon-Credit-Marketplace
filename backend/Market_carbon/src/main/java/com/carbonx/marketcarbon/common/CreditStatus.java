@@ -2,7 +2,8 @@ package com.carbonx.marketcarbon.common;
 
 public enum CreditStatus {
     AVAILABLE,
-    ISSUE, // admin cấp phát
+    ISSUE,
+    ISSUED, // admin cấp phát
     TRADED, // tín chỉ được để lên sàn
     PENDING,
     EXPIRED

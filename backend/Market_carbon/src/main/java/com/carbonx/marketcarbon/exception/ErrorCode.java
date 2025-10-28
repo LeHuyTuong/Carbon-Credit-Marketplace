@@ -35,10 +35,10 @@ public enum ErrorCode {
     // ==== ENTITY NOT FOUND ====
     SELLER_NOT_FOUND(404, "Seller not found.", HttpStatus.NOT_FOUND),
     VEHICLE_NOT_FOUND(404, "Vehicle not found.", HttpStatus.NOT_FOUND),
-    COMPANY_NOT_FOUND(404, "Company not found.", HttpStatus.NOT_FOUND),
+    COMPANY_NOT_FOUND(404, "Company must KYC before use service", HttpStatus.NOT_FOUND),
     PROJECT_NOT_FOUND(404, "Project not found.", HttpStatus.NOT_FOUND),
     PAYMENT_NOT_FOUND(404, "Payment not found.", HttpStatus.NOT_FOUND),
-    CVA_NOT_FOUND(404, "CVA not found.", HttpStatus.NOT_FOUND),
+    CVA_NOT_FOUND(404, "CVA must KYC before use service", HttpStatus.NOT_FOUND),
     ADMIN_NOT_FOUND(404, "Admin not found.", HttpStatus.NOT_FOUND),
     KYC_EXISTED(409, "KYC already exists.", HttpStatus.CONFLICT),
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),

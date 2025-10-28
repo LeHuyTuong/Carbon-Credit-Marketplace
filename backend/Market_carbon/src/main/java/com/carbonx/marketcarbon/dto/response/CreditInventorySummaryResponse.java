@@ -7,6 +7,7 @@ import java.util.List;
 @Builder
 public record CreditInventorySummaryResponse(
         long total,
+        long issued,
         long available,
         long reserved,
         long sold,

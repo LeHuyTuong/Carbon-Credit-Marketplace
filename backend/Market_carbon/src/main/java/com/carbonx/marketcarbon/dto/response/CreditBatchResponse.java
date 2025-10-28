@@ -5,7 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -25,7 +25,7 @@ public class CreditBatchResponse {
     String companyName;
     String projectTitle;
     String status;
-    OffsetDateTime issuedAt;
+    LocalDateTime issuedAt;
 
     public static CreditBatchResponse from(CreditBatch entity) {
         return CreditBatchResponse.builder()
