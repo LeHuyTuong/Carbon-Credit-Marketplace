@@ -59,6 +59,8 @@ public class Order {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+
+    // Thêm vào Order.java - timestamp hoàn tất
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
