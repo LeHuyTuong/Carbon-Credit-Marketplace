@@ -10,24 +10,31 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import { useNavigate } from "react-router-dom";
+import { apiKYCAdmin } from "@/apiAdmin/apiLogin.js"; // 🟩 Gọi API KYC
 
 const AdminKYC = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
+  const savedEmail =
+  sessionStorage.getItem("admin_email") || localStorage.getItem("admin_email") || "";
+
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    email: "phanthuthuongta.aec@gmail.com", // autofill
+    email: savedEmail, // ✅ tự động điền từ login
     phone: "",
     dob: "",
-    role: "Admin", // fixed
+    role: "Admin",
     country: "",
     city: "",
   });
 
+
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -36,11 +43,11 @@ const AdminKYC = () => {
     }
   };
 
-  // Custom English validation
+  // 🔹 Custom English validation
   const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
-      if (!value && key !== "email") {
+      if (!value && key !== "email" && key !== "role") {
         newErrors[key] = "Please fill out this field.";
       }
     });
@@ -48,12 +55,36 @@ const AdminKYC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // 🔹 Handle Submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    console.log("✅ KYC Data:", form);
-    // TODO: Gửi API lưu KYC
-    navigate("/admin/dashboard");
+
+    try {
+      setLoading(true);
+
+      // 🟢 Tạo formData đúng format gửi lên server
+      const formData = new FormData();
+
+      // 🟩 Thêm full name để backend không lỗi
+      formData.append("name", `${form.firstName} ${form.lastName}`.trim());
+
+      Object.entries(form).forEach(([key, value]) => {
+        if (key !== "name") formData.append(key, value);
+      });
+
+
+      const res = await apiKYCAdmin(formData);
+      console.log("✅ KYC Success:", res);
+
+      alert("KYC submitted successfully!");
+      navigate("/admin/dashboard");
+    } catch (err) {
+      console.error("❌ KYC Error:", err.message);
+      alert(`KYC submission failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -94,7 +125,6 @@ const AdminKYC = () => {
           Please complete your personal and address information.
         </Typography>
 
-        {/* 🧩 noValidate disables default browser popup */}
         <form onSubmit={handleSubmit} noValidate>
           {/* PERSONAL INFO */}
           <Typography
@@ -117,10 +147,7 @@ const AdminKYC = () => {
                 error={!!errors.firstName}
                 helperText={errors.firstName}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
@@ -134,10 +161,7 @@ const AdminKYC = () => {
                 error={!!errors.lastName}
                 helperText={errors.lastName}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
@@ -149,10 +173,7 @@ const AdminKYC = () => {
                 fullWidth
                 disabled
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
@@ -167,14 +188,10 @@ const AdminKYC = () => {
                 error={!!errors.phone}
                 helperText={errors.phone}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
-            {/* Date of Birth + Role same row */}
             <Grid item xs={6}>
               <TextField
                 label="Date of Birth"
@@ -187,10 +204,7 @@ const AdminKYC = () => {
                 helperText={errors.dob}
                 InputLabelProps={{ shrink: true }}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
@@ -202,10 +216,7 @@ const AdminKYC = () => {
                 fullWidth
                 disabled
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
           </Grid>
@@ -231,10 +242,7 @@ const AdminKYC = () => {
                 error={!!errors.country}
                 helperText={errors.country}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
 
@@ -248,30 +256,40 @@ const AdminKYC = () => {
                 error={!!errors.city}
                 helperText={errors.city}
                 variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
+                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
               />
             </Grid>
           </Grid>
 
+          {/* Buttons */}
           <Button
             type="submit"
             fullWidth
             variant="contained"
+            disabled={loading}
             sx={{
               mt: 1,
               py: 1.2,
               backgroundColor: colors.greenAccent[600],
               color: colors.grey[900],
               fontWeight: "bold",
-              "&:hover": {
-                backgroundColor: colors.greenAccent[700],
-              },
+              "&:hover": { backgroundColor: colors.greenAccent[700] },
             }}
           >
-            SUBMIT KYC
+            {loading ? "Submitting..." : "SUBMIT KYC"}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => navigate(-1)}
+            sx={{
+              mt: 1.5,
+              color: colors.blueAccent[400],
+              "&:hover": { color: colors.blueAccent[300] },
+            }}
+          >
+            Back
           </Button>
         </form>
       </Paper>
