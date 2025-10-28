@@ -3,11 +3,13 @@ package com.carbonx.marketcarbon.repository;
 import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.model.CarbonCredit;
 import com.carbonx.marketcarbon.model.Company;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -130,5 +132,24 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     long sumRecentlyIssued(@Param("companyId") Long companyId,
                            @Param("cutoffDate") java.time.OffsetDateTime cutoffDate);
 
+    // Phương thức tìm kiếm với khóa pessimistic
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM CarbonCredit c WHERE c.id = :id")
+    Optional<CarbonCredit> findByIdWithPessimisticLock(@Param("id") Long id);
 
+    // Tìm trực tiếp theo ID và companyId
+    Optional<CarbonCredit> findByIdAndCompanyId(Long id, Long companyId);
+
+    // Query tối ưu để tìm credit phù hợp
+    @Query(nativeQuery = true, value =
+            "SELECT c.* FROM carbon_credit c " +
+                    "LEFT JOIN credit_batch b ON c.batch_id = b.id " +
+                    "WHERE (c.company_id = :companyId) AND " +
+                    "((c.id = :creditId) OR (c.source_credit_id = :creditId) OR (b.id = :creditId)) AND " +
+                    "((c.carbon_credit >= :requiredAmount) OR (:requiredAmount IS NULL)) " +
+                    "ORDER BY c.carbon_credit DESC LIMIT 1")
+    List<CarbonCredit> findCreditsBatchOrChainLinkedToIdWithSufficientAmount(
+            @Param("creditId") Long creditId,
+            @Param("companyId") Long companyId,
+            @Param("requiredAmount") BigDecimal requiredAmount);
 }

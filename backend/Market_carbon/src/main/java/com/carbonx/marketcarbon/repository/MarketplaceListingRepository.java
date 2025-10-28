@@ -24,4 +24,10 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT m FROM MarketPlaceListing m WHERE m.id = :id")
     Optional<MarketPlaceListing> findByIdWithPessimisticLock(@Param("id") Long id);
+
+    //listing theo công ty và carbon credit
+    List<MarketPlaceListing> findByCompanyIdAndCarbonCreditIdAndStatus(
+            Long companyId,
+            Long carbonCreditId,
+            ListingStatus status);
 }
