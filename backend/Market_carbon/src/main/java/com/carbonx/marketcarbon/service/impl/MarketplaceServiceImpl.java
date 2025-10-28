@@ -59,8 +59,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Override
     @Transactional
     public MarketplaceListingResponse listCreditsForSale(CreditListingRequest request) {
-        log.info("Listing credits for sale: quantity={}, price={}",
-                request.getQuantity(), request.getPricePerCredit());
+        log.info("Listing credits for sale: quantity={}, price={}, expiresAt={}",
+                request.getQuantity(), request.getPricePerCredit(), request.getExpirationDate());
 
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
@@ -130,6 +130,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             // Cập nhật giá nếu có request thay đổi
             existingListing.setPricePerCredit(request.getPricePerCredit());
 
+            // Cập nhật thời gian hết hạn nếu thời gian mới muộn hơn
+            if (request.getExpirationDate().isAfter(existingListing.getExpiresAt())) {
+                existingListing.setExpiresAt(request.getExpirationDate());
+            }
 
             MarketPlaceListing updatedListing = marketplaceListingRepository.save(existingListing);
             log.info("Updated existing listing ID: {} with additional quantity: {}",
@@ -171,6 +175,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .soldQuantity(BigDecimal.ZERO)
                 .status(ListingStatus.AVAILABLE)
                 .createdAt(LocalDateTime.now(VIETNAM_ZONE))
+                .expiresAt(request.getExpirationDate())
                 .build();
 
         MarketPlaceListing savedListing = marketplaceListingRepository.save(newListing);
