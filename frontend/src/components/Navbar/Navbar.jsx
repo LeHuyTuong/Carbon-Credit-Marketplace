@@ -65,6 +65,11 @@ export default function Navbar() {
                     E-WALLET
                   </NavLink>
                 </li>
+                <li className="nav-item">
+                  <NavLink to="/retire" className={linkCls}>
+                    RETIRE
+                  </NavLink>
+                </li>
               </>
             )}
 

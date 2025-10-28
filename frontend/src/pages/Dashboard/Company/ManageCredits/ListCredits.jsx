@@ -49,40 +49,26 @@ export default function ListCredits() {
   useEffect(() => {
     const fetchUserCredits = async () => {
       try {
-         const walletRes = await apiFetch("/api/v1/wallet", {
+        const walletRes = await apiFetch("/api/v1/wallet", {
           method: "GET",
         });
 
         const wallet = walletRes?.response;
 
+        // lấy danh sách tín chỉ khả dụng
         const walletCredits = (wallet?.carbonCredits || [])
           .filter((credit) => {
-            if (!credit?.creditId) {
-              return false;
-            }
-            const availableRaw =
-              credit.availableQuantity ?? credit.ownedQuantity ?? 0;
-            const available = Number(availableRaw);
-            return !Number.isNaN(available) && available > 0;
+            const available = Number(credit.availableQuantity ?? 0);
+            // chỉ lấy credit còn khả dụng và chưa list
+            return credit.status === "AVAILABLE" && available > 0;
           })
-          .map((credit) => {
-            const availableRaw =
-              credit.availableQuantity ?? credit.ownedQuantity ?? 0;
-            const available = Number(availableRaw);
-            const labelParts = [
-              credit.creditCode || credit.batchCode || "Carbon Credit",
-            ];
-            if (credit.batchCode) {
-              labelParts.push(`Batch ${credit.batchCode}`);
-            }
-
-            return {
-              id: credit.creditId,
-              title: labelParts.join(" · "),
-              balance: available,
-              type: "WALLET",
-            };
-          });
+          .map((credit) => ({
+            id: credit.creditId,
+            title: `${credit.creditCode || "Credit"} · Batch ${
+              credit.batchCode || "N/A"
+            }`,
+            balance: Number(credit.availableQuantity ?? 0),
+          }));
 
         setUserCredits(walletCredits);
       } catch (err) {
@@ -184,7 +170,7 @@ export default function ListCredits() {
 
       {userCredits.length === 0 && (
         <p className="text-warning small">
-          You don't have any issued credits yet. Wait for admin approval.
+          You don’t have any available credits to list yet.
         </p>
       )}
 
