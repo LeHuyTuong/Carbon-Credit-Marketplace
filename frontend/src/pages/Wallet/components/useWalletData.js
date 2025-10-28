@@ -116,19 +116,13 @@ export default function useWalletData() {
   const fetchMyCredits = async (batchId) => {
     try {
       setLoading(true);
-      const res = await apiFetch(`/api/v1/my/credits/${batchId}`, {
+      const res = await apiFetch(`/api/v1/my/credits/batch/${batchId}`, {
         method: "GET",
       });
 
       // Nếu API trả về 1 object, thì wrap lại trong mảng
       const data = res?.response;
-      if (Array.isArray(data)) {
-        setCreditDetails(data);
-      } else if (data) {
-        setCreditDetails([data]);
-      } else {
-        setCreditDetails([]);
-      }
+      setCreditDetails(data);
     } catch (err) {
       console.error("Failed to fetch credit details:", err);
       setCreditDetails([]);
@@ -172,10 +166,118 @@ export default function useWalletData() {
     }
   };
 
-
   useEffect(() => {
     fetchWallet();
   }, []);
+
+  // === FETCH ALL MY CREDITS (tổng hợp) ===
+const fetchAllCredits = async (filters = {}) => {
+  try {
+    setLoading(true);
+    const params = new URLSearchParams({
+      projectId: filters.projectId || "",
+      status: filters.status || "",
+      vintageYear: filters.vintageYear || "",
+      page: filters.page || 0,
+      size: filters.size || 20,
+    }).toString();
+
+    const res = await apiFetch(`/api/v1/my/credits?${params}`, { method: "GET" });
+    const list = res?.response?.content || [];
+
+    const mapped = list.map((c) => ({
+      id: c.id,
+      creditCode: c.creditCode,
+      status: c.status,
+      projectId: c.projectId,
+      projectTitle: c.projectTitle,
+      companyId: c.companyId,
+      companyName: c.companyName,
+      vintageYear: c.vintageYear,
+      batchCode: c.batchCode,
+      issuedAt: c.issuedAt
+        ? new Date(c.issuedAt).toLocaleString("vi-VN", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            hour12: false,
+          })
+        : "-",
+      expiryDate: c.expiryDate,
+      availableAmount: c.availableAmount,
+      listedAmount: c.listedAmount,
+    }));
+
+    return mapped;
+  } catch (err) {
+    console.error("Failed to fetch credits:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+// === RETIRE CREDIT=== 
+  const retireCredits = async (creditIds = []) => {
+    if (!creditIds.length) return;
+
+    try {
+      setLoading(true);
+
+      const MOCK_ENABLED = true;
+      if (MOCK_ENABLED) {
+        console.log("Mock retire credits:", creditIds);
+        await new Promise((r) => setTimeout(r, 1000));
+        return {
+          message: "Mock: retired successfully",
+          retiredIds: creditIds,
+        };
+      }
+
+      const res = await apiFetch("/api/v1/my/credits/retire", {
+        method: "POST",
+        body: { creditIds },
+      });
+
+      return res?.response || {};
+    } catch (err) {
+      console.error("Failed to retire credits:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH RETIRED CREDITS===
+  const fetchRetiredCredits = async () => {
+    try {
+      setLoading(true);
+      console.log("Mock retired credits (fetchRetiredCredits)");
+      await new Promise((r) => setTimeout(r, 600));
+
+      return [
+        {
+          id: 201,
+          creditCode: "CC-R01",
+          projectTitle: "EV Fleet Offset Program",
+          vintageYear: 2023,
+          status: "RETIRED",
+          issuedAt: "2024-02-12",
+        },
+        {
+          id: 202,
+          creditCode: "CC-R02",
+          projectTitle: "Solar Power Transition",
+          vintageYear: 2024,
+          status: "RETIRED",
+          issuedAt: "2024-05-22",
+        },
+      ];
+    } catch (err) {
+      console.error("Failed to fetch retired credits:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     wallet,
@@ -195,5 +297,8 @@ export default function useWalletData() {
     fetchCreditBalance,
     fetchCreditById,
     fetchMyCredits,
+    fetchAllCredits,
+    retireCredits,
+    fetchRetiredCredits,
   };
 }

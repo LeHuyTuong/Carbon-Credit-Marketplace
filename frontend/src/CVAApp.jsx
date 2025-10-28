@@ -29,11 +29,19 @@ import { ColorModeContext, useMode } from "./themeCVA";
 import Calendar from "./pages/Dashboard/CVA/calendar/Calendar.jsx";
 //  import css admin riêng
 import "./admin.css";
-
+import AIReportInsightPanel from "./components/AI/AIInsightPanel.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
+import { useLocation } from "react-router-dom";
 
 function App() {
   const [theme, colorMode] = useMode();
   const [isSidebar, setIsSidebar] = useState(true);
+  const { user } = useAuth();
+  const location = useLocation();
+  const path = location.pathname;
+
+  // chỉ hiện AI ở những trang không phải dashboard
+  const showAI = !path.includes("/dashboard");
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -45,11 +53,23 @@ function App() {
             <TopBar setIsSidebar={setIsSidebar} />
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/report_management" element={<Report_Management />} />
-              <Route path="/credit_management" element={<Credit_Management />} />
-              <Route path="/company_management" element={<Company_Management />} />
+              <Route
+                path="/report_management"
+                element={<Report_Management />}
+              />
+              <Route
+                path="/credit_management"
+                element={<Credit_Management />}
+              />
+              <Route
+                path="/company_management"
+                element={<Company_Management />}
+              />
               <Route path="/log_management" element={<Log_Management />} />
-              <Route path="/project_management" element={<Project_Management />} />
+              <Route
+                path="/project_management"
+                element={<Project_Management />}
+              />
               <Route path="/form" element={<Form />} />
               <Route path="/bar" element={<Bar />} />
               <Route path="/pie" element={<Pie />} />
@@ -64,14 +84,26 @@ function App() {
               <Route path="/view_report/:id" element={<Report_View />} />
               <Route path="/view_log/:id" element={<Log_View />} />
               <Route path="/view_project/:id" element={<Project_View />} />
-              <Route path="/registration_project_management" element={<Registration_Project_Management />} />
-              <Route path="/view_registration_project/:id" element={<Registration_Project_View />} />
-              <Route path="/edit_registration_project/:id" element={<Registraion_Project_Edit />} />
+              <Route
+                path="/registration_project_management"
+                element={<Registration_Project_Management />}
+              />
+              <Route
+                path="/view_registration_project/:id"
+                element={<Registration_Project_View />}
+              />
+              <Route
+                path="/edit_registration_project/:id"
+                element={<Registraion_Project_Edit />}
+              />
               {/*fallback */}
               <Route path="*" element={<Dashboard />} />
             </Routes>
           </main>
         </div>
+        {user?.role === "CVA" && showAI && (
+          <AIReportInsightPanel show={true} onClose={() => {}} report={null} />
+        )}
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
