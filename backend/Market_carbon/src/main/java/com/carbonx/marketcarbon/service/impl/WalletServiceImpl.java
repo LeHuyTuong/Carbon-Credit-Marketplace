@@ -166,11 +166,21 @@ public class WalletServiceImpl implements WalletService {
         Long id = user.getId();
 
         Wallet wallet = walletRepository.findByUserId(id);
-        if(wallet.getCompany() == null){
+        if (wallet == null) {
             return Collections.emptyList();
         }
 
-        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(wallet.getCompany().getId());
+        Company company = wallet.getCompany();
+        if (company == null) {
+            company = companyRepository.findByUserId(id).orElse(null);
+            if (company == null) {
+                return Collections.emptyList();
+            }
+            wallet.setCompany(company);
+            walletRepository.save(wallet);
+        }
+
+        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(company.getId());
 
         List<WalletCarbonCreditResponse> response = new ArrayList<>();
 
