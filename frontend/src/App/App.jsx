@@ -42,6 +42,9 @@ import ChooseProjectToUpload from "../pages/Dashboard/Company/Report/ChooseProje
 import DetailReport from "../pages/Dashboard/Company/Report/DetailReport.jsx";
 import CreditDetail from "../pages/Dashboard/Company/ManageCredits/CreditDetail.jsx";
 import CreditBatchDetail from "../pages/Wallet/components/CreditBatchDetail.jsx";
+import RetireCredits from "../pages/RetireCredits/RetireCredits.jsx";
+import RetiredHistory from "../pages/RetireCredits/RetiredHistory.jsx";
+import AIChatWidget from "../components/AI/AIChatWidget.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -66,6 +69,8 @@ function RequireAuth({ children }) {
 }
 
 export default function App() {
+  const { user } = useAuth();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -83,6 +88,7 @@ export default function App() {
           <Route path="/change-password" element={<ChangePasswordPage />} />
           <Route path="/upload-report" element={<ChooseProjectToUpload />} />
           <Route path="/upload-report/:projectId" element={<UploadReport />} />
+          <Route path="/retire" element={<RetireCredits />} />
 
           <Route
             path="/kyc"
@@ -152,6 +158,7 @@ export default function App() {
         <Route path="/detail-report/:id" element={<DetailReport />} />
         <Route path="/detail-credit/:id" element={<CreditDetail />} />
         <Route path="/wallet/credits/:id" element={<CreditBatchDetail />} />
+        <Route path="/retired-history" element={<RetiredHistory />} />
         <Route
           path="/view-registered-project/:id"
           element={<ViewRegisteredProject />}
@@ -167,6 +174,10 @@ export default function App() {
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* hiển thị AIChatWidget chỉ cho COMPANY */}
+      {user?.role?.includes("COMPANY") && <AIChatWidget />}
+
       <ToastContainer
         position="top-center"
         autoClose={2500}
