@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import PaginatedTable from "../../../components/Pagination/PaginatedTable";
+import { Table } from "react-bootstrap";
 
 export default function CreditsList({ credits = [] }) {
   const nav = useNavigate();
@@ -20,7 +22,7 @@ export default function CreditsList({ credits = [] }) {
         {isPurchased ? "Purchased Credits" : "Issued Credits"}
       </h5>
 
-      <table className="table table-dark table-hover align-middle mb-0">
+      <Table className="table table-dark table-hover align-middle mb-0">
         <thead>
           <tr className="text-accent text-uppercase small">
             {isPurchased ? (
@@ -45,46 +47,51 @@ export default function CreditsList({ credits = [] }) {
             )}
           </tr>
         </thead>
-        <tbody>
-          {isPurchased
-            ? credits.map((p) => (
-                <tr key={p.id}>
-                  <td>#{p.orderId}</td>
-                  <td>{p.description}</td>
-                  <td>{p.unitPrice} USD</td>
-                  <td>{p.quantity}</td>
-                  <td>{p.amount} USD</td>
-                  <td>{p.createdAt}</td>
-                </tr>
-              ))
-            : credits.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.batchCode}</td>
-                  <td>{b.projectTitle}</td>
-                  <td>{b.totalTco2e}</td>
-                  <td>{b.creditsCount}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        b.status === "ISSUED" ? "bg-success" : "bg-secondary"
-                      }`}
-                    >
-                      {b.status}
-                    </span>
-                  </td>
-                  <td>{b.issuedAt}</td>
-                  <td>
-                    <button
-                      className="btn btn-outline-info btn-sm"
-                      onClick={() => nav(`/wallet/credits/${b.id}`)}
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-        </tbody>
-      </table>
+        <PaginatedTable
+          items={credits}
+          itemsPerPage={5}
+          renderEmpty={() => (
+            <p className="text-muted mb-0">No credit data available</p>
+          )}
+          renderRow={(item) =>
+            isPurchased ? (
+              <tr key={item.id}>
+                <td>#{item.orderId}</td>
+                <td>{item.description}</td>
+                <td>{item.unitPrice} USD</td>
+                <td>{item.quantity}</td>
+                <td>{item.amount} USD</td>
+                <td>{item.createdAt}</td>
+              </tr>
+            ) : (
+              <tr key={item.id}>
+                <td>{item.batchCode}</td>
+                <td>{item.projectTitle}</td>
+                <td>{item.totalTco2e}</td>
+                <td>{item.creditsCount}</td>
+                <td>
+                  <span
+                    className={`badge ${
+                      item.status === "ISSUED" ? "bg-success" : "bg-secondary"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+                <td>{item.issuedAt}</td>
+                <td>
+                  <button
+                    className="btn btn-outline-info btn-sm"
+                    onClick={() => nav(`/wallet/credits/${item.id}`)}
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            )
+          }
+        />
+      </Table>
     </div>
   );
 }
