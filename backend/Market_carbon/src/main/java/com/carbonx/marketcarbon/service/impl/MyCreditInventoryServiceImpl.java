@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,10 +44,14 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public CreditInventorySummaryResponse getMyInventorySummary() {
         Long companyId = currentCompanyId();
 
-        // 🟢 Bỏ qua các tín chỉ EXPIRED trong thống kê
-        var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED.name());
-        var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED.name());
-        var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED.name());
+        // Lấy dữ liệu thật từ DB
+        var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED);
+        var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED);
+        var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED);
+
+        // Giả sử muốn tính trong 7 ngày gần nhất
+        OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(7);
+        long issuedVirtual = creditRepo.sumRecentlyIssued(companyId, cutoffDate);
 
         long total = 0, available = 0, reserved = 0, sold = 0, retired = 0;
         List<StatusCount> byStatus = new ArrayList<>();
@@ -68,6 +73,17 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .count(sum)
                     .build());
         }
+
+        // Thêm trạng thái ISSUED ảo vào danh sách
+        if (issuedVirtual > 0) {
+            byStatus.add(StatusCount.builder()
+                    .status("ISSUED")
+                    .count(issuedVirtual)
+                    .build());
+        }
+
+        // Tổng = tổng hiện có + số phát hành ảo
+        total += issuedVirtual;
 
         List<ProjectCount> byProject = new ArrayList<>();
         for (Object[] row : byProjectRaw) {
@@ -91,6 +107,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
 
         return CreditInventorySummaryResponse.builder()
                 .total(total)
+                .issued(issuedVirtual)
                 .available(available)
                 .reserved(reserved)
                 .sold(sold)
@@ -100,6 +117,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                 .byVintage(byVintage)
                 .build();
     }
+
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
