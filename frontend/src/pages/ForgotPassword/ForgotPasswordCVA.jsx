@@ -1,29 +1,41 @@
 import React, { useState } from "react";
-import { Box, Button, TextField, Typography, useTheme, Paper } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  useTheme,
+  Paper,
+} from "@mui/material";
 import { tokens } from "@/theme";
-import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
+import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import { useNavigate } from "react-router-dom";
 
-const AdminLogin = () => {
+const CVAForgotPassword = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // demo logic đăng nhập — sau này bạn sẽ thay bằng API login thực tế
-    if (form.email === "phanthuthuongta.aec@gmail.com" && form.password === "Maythichnhinko567@") {
-      navigate("/admin/kyc");
+    if (!email) {
+      setError("Please enter your email!");
+      return;
+    }
+
+    // Giả lập gửi yêu cầu reset (sau này bạn thay bằng API thật)
+    if (email === "tinbaoblizard567@gmail.com") {
+      setMessage("A reset link has been sent to your email.");
+      setError("");
+      setTimeout(() => navigate("/cva/change-password"), 3000); // quay lại sau 3s
     } else {
-      setError("Invalid email or password!");
+      setError("Email not found in cva records!");
+      setMessage("");
     }
   };
 
@@ -47,46 +59,34 @@ const AdminLogin = () => {
           backgroundColor: colors.primary[500],
         }}
       >
-        {/* Icon + title */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
-          <SupervisorAccount
+          <MarkEmailReadIcon
             sx={{
               fontSize: 48,
               color: colors.greenAccent[500],
               mb: 1,
             }}
           />
-          <Typography variant="h4" fontWeight="bold" color={colors.blueAccent[400]}>
-            Admin Login
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            color={colors.blueAccent[400]}
+          >
+            Forgot Password
           </Typography>
           <Typography variant="body2" color={colors.grey[300]}>
-            Please sign in with your admin email
+            Enter your cva email to reset your password
           </Typography>
         </Box>
 
-        {/* Form login */}
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Email"
-            name="email"
+            label="Admin Email"
             type="email"
-            value={form.email}
-            onChange={handleChange}
             fullWidth
-            variant="filled"
-            sx={{
-              mb: 2,
-              backgroundColor: colors.primary[400],
-              borderRadius: "6px",
-            }}
-          />
-          <TextField
-            label="Password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            fullWidth
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             variant="filled"
             sx={{
               mb: 2,
@@ -96,12 +96,14 @@ const AdminLogin = () => {
           />
 
           {error && (
-            <Typography
-              color="error"
-              variant="body2"
-              sx={{ mb: 2, fontWeight: "bold" }}
-            >
+            <Typography color="error" variant="body2" sx={{ mb: 2 }}>
               {error}
+            </Typography>
+          )}
+
+          {message && (
+            <Typography color={colors.greenAccent[500]} variant="body2" sx={{ mb: 2 }}>
+              {message}
             </Typography>
           )}
 
@@ -120,7 +122,22 @@ const AdminLogin = () => {
               },
             }}
           >
-            Login
+            Send
+          </Button>
+
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => navigate("/cva/login")}
+            sx={{
+              mt: 1.5,
+              color: colors.blueAccent[400],
+              "&:hover": {
+                color: colors.blueAccent[300],
+              },
+            }}
+          >
+            Back to Login
           </Button>
         </form>
 
@@ -136,4 +153,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default CVAForgotPassword;
