@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -28,7 +29,7 @@ public class MarketplaceListingResponse {
 
     private String projectTitle;
 
-    private LocalDateTime expiresAt;
+    private LocalDate expiresAt;
 
     private String logo;
 

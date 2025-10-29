@@ -74,7 +74,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .build();
 
             String message = " deposit with money "  + withdrawalAmount  + " USD"  ;
-            sseService.sendNotificationToUser( message);
+            sseService.sendNotificationToUser(user.getId(), message);
 
             return withdrawalRepository.save(withdrawal);
         }else{
@@ -121,7 +121,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             }
 
             String message = " deposit with money "  + amountToWithdraw  + " USD"  ;
-            sseService.sendNotificationToUser(message);
+            sseService.sendNotificationToUser(user.getId(), message);
 
             return savedWithdrawal;
         } else {

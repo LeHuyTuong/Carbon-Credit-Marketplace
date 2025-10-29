@@ -240,6 +240,7 @@ public class WalletServiceImpl implements WalletService {
                     .originCreditCode(originCredit != null ? originCredit.getCreditCode() : null)
                     .originCompanyId(originCompany != null ? originCompany.getId() : null)
                     .originCompanyName(originCompany != null ? originCompany.getCompanyName() : null)
+                    .expirationDate(credit.getExpiryDate())
                     .batchId(batch != null ? batch.getId() : null)
                     .batchCode(batch != null ? batch.getBatchCode() : null)
                     .batchCompanyId(batch != null ? batch.getCompany().getId() : null)

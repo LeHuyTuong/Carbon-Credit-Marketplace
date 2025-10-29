@@ -20,6 +20,9 @@ public class SseServiceImpl implements SseService {
 
     private final UserRepository  userRepository;
 
+    // Sử dụng ConcurrentHashMap để map userId (dưới dạng String) với kết nối SseEmitter
+    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
+
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -30,10 +33,6 @@ public class SseServiceImpl implements SseService {
         return user;
     }
 
-
-    // Sử dụng ConcurrentHashMap để map userId (dưới dạng String) với kết nối SseEmitter
-    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
-
     /**
      * Client đăng ký nhận thông báo.
      * @return SseEmitter để giữ kết nối.
@@ -42,42 +41,47 @@ public class SseServiceImpl implements SseService {
     public SseEmitter subscribe() {
         // Tạo emitter với thời gian timeout dài
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+
         User currentUser = currentUser();
+        Long userId = currentUser.getId();
 
         // Xóa emitter khỏi map khi hoàn thành, hết hạn hoặc lỗi
-        emitter.onCompletion(() -> emitters.remove(emitter));
-        emitter.onTimeout(() -> emitters.remove(emitter));
-        emitter.onError((e) -> emitters.remove(emitter));
+        emitter.onCompletion(() -> emitters.remove(userId, emitter));
+        emitter.onTimeout(() -> emitters.remove(userId, emitter));
+        emitter.onError((e) -> emitters.remove(userId, emitter));
+
 
         // Lưu emitter vào map với key là userId
-        this.emitters.put(currentUser().getId(), emitter);
+
+        SseEmitter previous = emitters.put(userId, emitter);
+        if (previous != null) {
+            previous.complete();
+        }
 
         // Gửi một sự kiện "init" để xác nhận kết nối
         try{
-            emitter.send(SseEmitter.event().name("init").data("Connection established for user " + currentUser.getId()));
+            emitter.send(SseEmitter.event().name("init").data("Connection established for user " + userId));
         }catch (IOException e){
             // Lỗi thì xóa emitter
-            this.emitters.remove(emitter);
+            emitters.remove(userId, emitter);
         }
-        return  emitter;
+        return emitter;
     }
 
     /**
      * Gửi thông báo đến một người dùng cụ thể.
      * @param message Nội dung thông báo (có thể là JSON string).
      */
-    public void sendNotificationToUser(String message) {
+    public void sendNotificationToUser(Long userId,String message) {
         // Lấy emitter của người dùng từ map
-        User  currentUser = currentUser();
-        SseEmitter emitter = emitters.get(currentUser().getId());
-        if (emitter != null) {
-            try {
-                // Gửi sự kiện với tên là "notification" và data là message
-                emitter.send(SseEmitter.event().name("notification").data(message));
-            } catch (IOException e) {
-                // Nếu lỗi (ví dụ: client ngắt kết nối), xóa emitter khỏi map
-                emitters.remove(currentUser().getId());
-            }
+        SseEmitter emitter = emitters.get(userId);
+        if (emitter == null) {
+            return;
+        }
+        try {
+            emitter.send(SseEmitter.event().name("notification").data(message));
+        } catch (IOException e) {
+            emitters.remove(userId, emitter);
         }
     }
 
@@ -90,7 +94,7 @@ public class SseServiceImpl implements SseService {
             try {
                 emitter.send(SseEmitter.event().name("notification").data(message));
             } catch (IOException e) {
-                emitters.remove(userId);
+                emitters.remove(userId, emitter);
             }
         });
     }
