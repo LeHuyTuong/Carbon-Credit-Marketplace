@@ -2,7 +2,16 @@ export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
   // lấy token từ session hoặc localStorage
-  let token;
+  // lấy token từ session hoặc localStorage
+let token;
+
+// 🟩 Ưu tiên token admin trước nếu có
+const adminToken =
+  sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token");
+
+if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
+  token = adminToken;
+} else {
   try {
     const authData =
       JSON.parse(sessionStorage.getItem("auth")) ||
@@ -13,6 +22,8 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!token) token = localStorage.getItem("token");
+}
+
 
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
@@ -52,64 +63,50 @@ export async function apiFetch(path, options = {}) {
   // HTTP-level error
   if (!res.ok) {
     console.error("API Error:", { path, status: res.status, data });
+      //Ưu tiên message thật từ backend nếu có
+  const beMsg =
+    data?.responseStatus?.responseMessage ||
+    data?.message ||
+    data?.error ||
+    `HTTP ${res.status}`;
 
-    let userMessage;
-    switch (true) {
-      case path.includes("/auth/login"):
-        userMessage = "Login failed. Please check your credentials.";
-        break;
-      case path.includes("/auth/register"):
-        userMessage = "Registration failed. Please try again.";
-        break;
-      case path.includes("/auth/change-password"):
-        userMessage = "Password change failed. Please try again.";
-        break;
-      case path.includes("/project-applications"):
-        userMessage = "Application submission failed. Please check your data.";
-        break;
-      case path.includes("/projects"):
-        userMessage = "Project operation failed. Please try again.";
-        break;
-      default:
-        userMessage = "Something went wrong. Please try again later.";
-        break;
-    }
-
-    const error = new Error(userMessage);
+    const error = new Error(beMsg);
     error.status = res.status;
     error.response = data;
+    error.code =
+    data?.responseStatus?.responseCode?.toString() || res.status.toString();
     throw error;
   }
 
   //be-level logic check
-const rawCode = data?.responseStatus?.responseCode ?? "";
-const rawMessage = data?.responseStatus?.responseMessage ?? "";
+  const rawCode = data?.responseStatus?.responseCode ?? "";
+  const rawMessage = data?.responseStatus?.responseMessage ?? "";
 
-const code = String(rawCode).trim().toUpperCase();
-const message = String(rawMessage).trim().toUpperCase();
+  const code = String(rawCode).trim().toUpperCase();
+  const message = String(rawMessage).trim().toUpperCase();
 
-const successValues = ["200", "201", "00000000", "SUCCESS", "OK"];
+  const successValues = ["200", "201", "00000000", "SUCCESS", "OK"];
 
-// Nếu không có responseStatus → mặc định thành công
-let isSuccess = !data?.responseStatus;
+  // Nếu không có responseStatus → mặc định thành công
+  let isSuccess = !data?.responseStatus;
 
-// Nếu có → chỉ cần code hoặc message nằm trong successValues là pass
-if (!isSuccess) {
-  isSuccess =
-    successValues.some((val) => code.includes(val) || message.includes(val));
-}
+  // Nếu có → chỉ cần code hoặc message nằm trong successValues là pass
+  if (!isSuccess) {
+    isSuccess =
+      successValues.some((val) => code.includes(val) || message.includes(val));
+  }
 
-console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
+  console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
 
-if (!isSuccess) {
-  //ném lỗi có đủ thông tin BE trả về
-  const errMsg = data?.responseStatus?.responseMessage || "Server logical error.";
-  const error = new Error(errMsg);
-  error.status = res.status; // HTTP status (200)
-  error.response = data; // toàn bộ payload BE
-  error.code = code; // thêm code để FE nhận diện
-  throw error;
-}
+  if (!isSuccess) {
+    //ném lỗi có đủ thông tin BE trả về
+    const errMsg = data?.responseStatus?.responseMessage || "Server logical error.";
+    const error = new Error(errMsg);
+    error.status = res.status; // HTTP status (200)
+    error.response = data; // toàn bộ payload BE
+    error.code = code; // thêm code để FE nhận diện
+    throw error;
+  }
 
-return data;
-}
+  return data;
+  }

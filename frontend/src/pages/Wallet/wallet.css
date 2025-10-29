@@ -1,3 +1,4 @@
+/* === Wallet Page Base === */
 .wallet-page {
   min-height: 100vh;
   background: radial-gradient(circle at top left, #0d1b1e, #000);
@@ -8,6 +9,7 @@
   color: #00ffcc;
 }
 
+/* === Glass Card === */
 .glass-card {
   background: rgba(15, 15, 15, 0.7);
   backdrop-filter: blur(10px);
@@ -22,6 +24,7 @@
   transform: translateY(-3px);
 }
 
+/* === Wallet Actions === */
 .wallet-action {
   display: flex;
   flex-direction: column;
@@ -40,6 +43,7 @@
   transform: translateY(-2px);
 }
 
+/* === Wallet History === */
 .wallet-history {
   width: 100%;
   max-width: 800px;
@@ -59,6 +63,7 @@
   border-bottom: none;
 }
 
+/* === History Buttons === */
 .wallet-history-btn {
   position: absolute;
   top: 100px;
@@ -79,6 +84,7 @@
   background-color: rgba(0, 255, 200, 0.1);
 }
 
+/* === Credits Table === */
 .credits-table {
   width: 100%;
   max-width: 900px;
@@ -115,6 +121,7 @@
   border-radius: 6px;
 }
 
+/* === Nav Tabs Base (Bootstrap override) === */
 .nav-tabs .nav-link {
   color: #b8b8b8 !important;
   background-color: transparent;
@@ -127,18 +134,162 @@
 }
 
 .nav-tabs .nav-link.active {
-  color: #00ffff !important; /* xanh neon hoặc accent */
+  color: #00ffff !important;
   background-color: #1e1e1e !important;
   border: none;
   border-bottom: 2px solid #00ffff !important;
   font-weight: 600;
 }
 
+/* === Credit Summary === */
+.credit-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
 
+.credit-summary-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.credit-summary-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* === Accent Buttons === */
+.btn-accent {
+  background-color: #00e699;
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-outline-accent {
+  border: 1px solid #00e699;
+  color: #00e699;
+}
+
+.btn-outline-accent:hover {
+  background-color: #00e699;
+  color: #000;
+}
+
+/* === Unified Tabs + Table === */
+.wallet-credits-tabs {
+  width: 100%;
+  max-width: 900px;
+  margin: 50px auto 0;
+  text-align: center;
+  position: relative;
+}
+
+.wallet-credits-tabs .btn-group {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 255, 200, 0.25);
+  background: rgba(15, 15, 15, 0.85);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 25px rgba(0, 255, 150, 0.1);
+  margin-bottom: 0;
+}
+
+.wallet-credits-tabs .btn {
+  flex: 1;
+  padding: 10px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #00ffcc;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(0, 255, 200, 0.15);
+  transition: all 0.25s ease-in-out;
+  letter-spacing: 0.5px;
+}
+
+.wallet-credits-tabs .btn:last-child {
+  border-right: none;
+}
+
+.wallet-credits-tabs .btn:hover {
+  background-color: rgba(0, 255, 200, 0.08);
+}
+
+/* Active tab style */
+.wallet-credits-tabs .btn-accent {
+  background-color: rgba(0, 255, 200, 0.25);
+  color: #00ffcc;
+  box-shadow: inset 0 -2px 0 #00ffcc;
+}
+
+.wallet-credits-tabs .btn-accent:hover {
+  background-color: rgba(0, 255, 200, 0.3);
+}
+
+.wallet-credits-tabs .btn-outline-accent {
+  color: #00ffcc;
+}
+
+.wallet-credits-tabs .btn-outline-accent:hover {
+  background-color: rgba(0, 255, 200, 0.1);
+}
+
+/* Table connects seamlessly with tabs */
+.wallet-credits-tabs + .tab-content {
+  margin-top: 0;
+}
+
+.tab-content .credits-table {
+  border-radius: 0 0 12px 12px;
+  border-top: none;
+}
+
+.wallet-credits-tabs,
+.credits-table {
+  box-shadow: 0 0 30px rgba(0, 255, 200, 0.08);
+}
+
+/* Neon divider under tab bar */
+.wallet-credits-tabs::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 200, 0.2) 0%,
+    rgba(0, 255, 200, 0.6) 50%,
+    rgba(0, 255, 200, 0.2) 100%
+  );
+  box-shadow: 0 0 12px rgba(0, 255, 200, 0.3);
+}
+
+/* === Responsive Fix === */
 @media (max-width: 992px) {
   .wallet-history-btn {
     position: static;
     margin-top: 10px;
     justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .wallet-credits-tabs .btn {
+    font-size: 0.8rem;
+    padding: 8px 0;
+  }
+
+  .credits-table th,
+  .credits-table td {
+    padding: 8px 10px;
   }
 }

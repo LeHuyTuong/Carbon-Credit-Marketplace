@@ -51,6 +51,10 @@ export default function UploadReport() {
       }));
 
       setReports(mapped);
+      const approvedReports = data.filter((r) => r.status === "ADMIN_APPROVED");
+      if (approvedReports.length > 0) {
+        sessionStorage.setItem("refreshCredits", "true");
+      }
     } catch (err) {
       console.error("Failed to load reports:", err);
       showToast("Failed to fetch your reports.", "danger");
@@ -66,6 +70,8 @@ export default function UploadReport() {
   //upload report
   const handleUpload = async (e) => {
     e.preventDefault();
+    console.log("projectId from params:", projectId);
+
     const file = e.target.file?.files[0];
     if (!file) return showToast("Please select a file first.", "warning");
 

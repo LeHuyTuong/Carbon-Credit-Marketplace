@@ -21,10 +21,10 @@ export const getApprovedCompanies = async () => {
     name: c.companyName,
   }));
 
-  //fallback tạm cho test
-  if (companies.length === 0) {
-    companies = [{ id: 1, name: "Admin Test Corp (Seed Data)" }];
-  }
+  // //fallback tạm cho test
+  // if (companies.length === 0) {
+  //   companies = [{ id: 1, name: "Admin Test Corp (Seed Data)" }];
+  // }
 
   return companies;
 };
@@ -37,12 +37,6 @@ export const getVehicles = async () => {
 export const createVehicle = async (data) => {
   return await apiFetch("/api/v1/vehicles", {
     method: "POST",
-    // body:{
-    //     plateNumber: data.plateNumber,
-    //     model: data.model,
-    //     brand: data.brand,
-    //     companyId: data.companyId,
-    // },
     body: buildRequestBody({
         plateNumber: data.plateNumber,
         model: data.model,
@@ -61,12 +55,6 @@ export const updateVehicle = async (id, data) => {
       brand: data.brand,
       companyId: data.companyId,
     }),
-    //     body:{
-    //     plateNumber: data.plateNumber,
-    //     model: data.model,
-    //     brand: data.brand,
-    //     companyId: data.companyId,
-    // },
   });
 };
 

@@ -22,5 +22,7 @@ public class CreditTradeResponse {
 
     private BigDecimal totalAmount;
 
+    private BigDecimal creditAmount;
+
     private LocalDateTime createAt = LocalDateTime.now();
 }

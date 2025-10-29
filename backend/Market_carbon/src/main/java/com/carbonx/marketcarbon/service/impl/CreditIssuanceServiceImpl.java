@@ -12,6 +12,7 @@ import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CreditIssuanceService;
 import com.carbonx.marketcarbon.service.EmailService;
+import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService.SerialRange;
 import com.carbonx.marketcarbon.service.credit.formula.CreditFormula;
@@ -49,6 +50,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final SerialNumberService serialSvc;
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final SseService sseService;
 
     @Transactional
     @Override
@@ -172,6 +174,10 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
 
         log.info("Issued {} credits for company {} (project {})",
                 result.getCreditsCount(), company.getCompanyName(), project.getTitle());
+
+
+        String message = "Admin issue " +  result.getCreditsCount() + " to your company wallet" ;
+        sseService.sendNotificationToUser(message);
 
         String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
 

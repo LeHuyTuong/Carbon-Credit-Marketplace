@@ -12,6 +12,7 @@ import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
 import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
+import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
@@ -37,8 +38,6 @@ public class WalletServiceImpl implements WalletService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final WalletTransactionService walletTransactionService;
-
-
     private final CarbonCreditRepository carbonCreditRepository;
     private final CompanyRepository companyRepository;
 
@@ -110,7 +109,7 @@ public class WalletServiceImpl implements WalletService {
                 .build());
 
         Wallet updatedWallet = walletRepository.findById(wallet.getId())
-                .orElseThrow(() -> new WalletException("Wallet disappeared after transaction")); // Should not happen in transaction
+                .orElseThrow(() -> new WalletException("Wallet disappeared after transaction"));
 
         log.info("Balance added to wallet {}. Amount USD: {}, Amount VND: {}. New Balance: {}",
                 wallet.getId(), amountUsd, amountToAddVnd, updatedWallet.getBalance());
@@ -166,11 +165,21 @@ public class WalletServiceImpl implements WalletService {
         Long id = user.getId();
 
         Wallet wallet = walletRepository.findByUserId(id);
-        if(wallet.getCompany() == null){
+        if (wallet == null) {
             return Collections.emptyList();
         }
 
-        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(wallet.getCompany().getId());
+        Company company = wallet.getCompany();
+        if (company == null) {
+            company = companyRepository.findByUserId(id).orElse(null);
+            if (company == null) {
+                return Collections.emptyList();
+            }
+            wallet.setCompany(company);
+            walletRepository.save(wallet);
+        }
+
+        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(company.getId());
 
         List<WalletCarbonCreditResponse> response = new ArrayList<>();
 
@@ -263,7 +272,6 @@ public class WalletServiceImpl implements WalletService {
 
         return null;
     }
-
 
     private CarbonCredit resolveRootCredit(CarbonCredit credit) {
         if (credit == null) {

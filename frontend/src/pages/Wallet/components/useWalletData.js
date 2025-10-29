@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../../utils/apiFetch";
 
-//hook quản lý toàn bộ dữ liệu của ví (wallet & transactions)
 export default function useWalletData() {
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [issuedCredits, setIssuedCredits] = useState([]);
+  const [purchasedCredits, setPurchasedCredits] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [creditDetails, setCreditDetails] = useState([]);
 
-  //lấy thông tin ví hiện tại của user (balance, carbonCreditBalance, ...)
+  // === FETCH WALLET ===
   const fetchWallet = async () => {
     try {
       const res = await apiFetch("/api/v1/wallet", { method: "GET" });
@@ -17,13 +21,12 @@ export default function useWalletData() {
     }
   };
 
-   //lấy lịch sử giao dịch ví
+  // === FETCH TRANSACTIONS ===
   const fetchTransactions = async () => {
     try {
       const res = await apiFetch("/api/v1/wallet/transactions", {
         method: "GET",
       });
-      //sắp xếp các giao dịch theo thời gian (mới nhất trước)
       const sorted = [...(res.response || [])].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -33,18 +36,269 @@ export default function useWalletData() {
     }
   };
 
-  //khi component lần đầu render -> tự động gọi fetchWallet
+  // === FETCH ISSUED CREDITS ===
+  const fetchIssuedCredits = async (filters = {}) => {
+    try {
+      setLoading(true);
+      const query = new URLSearchParams({
+        page: filters.page || 0,
+        size: filters.size || 10,
+      }).toString();
+
+      const res = await apiFetch(`/api/v1/my/credits/batches?${query}`, {
+        method: "GET",
+      });
+
+      const list = res?.response?.content || [];
+
+      const mapped = list.map((item) => ({
+        id: item.id,
+        batchCode: item.batchCode,
+        projectTitle: item.projectTitle,
+        creditsCount: item.creditsCount,
+        totalTco2e: item.totalTco2e,
+        residualTco2e: item.residualTco2e,
+        status: item.status,
+        issuedAt: item.issuedAt
+          ? new Date(item.issuedAt).toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+              hour12: false,
+            })
+          : "Not Issued",
+      }));
+
+      setIssuedCredits(mapped);
+    } catch (err) {
+      console.error("Failed to fetch issued credits:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH PURCHASED CREDITS ===
+  const fetchPurchasedCredits = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+      const walletData = res?.response || {};
+
+      // Dữ liệu giao dịch nằm trong walletTransactions
+      const txList = walletData.walletTransactions || [];
+
+      // Lọc các giao dịch BUY_CARBON_CREDIT
+      const purchases = txList.filter(
+        (tx) => tx.transactionType === "BUY_CARBON_CREDIT"
+      );
+
+      const mapped = purchases.map((tx) => ({
+        id: tx.id,
+        orderId: tx.orderId,
+        description: tx.description || "Carbon credit purchase",
+        unitPrice: tx.unitPrice || 0,
+        amount: tx.amount || 0,
+        quantity: tx.carbonCreditQuantity || 0,
+        createdAt: new Date(tx.createdAt).toLocaleString("vi-VN", {
+          timeZone: "Asia/Ho_Chi_Minh",
+          hour12: false,
+        }),
+      }));
+
+      setPurchasedCredits(mapped);
+    } catch (err) {
+      console.error("Failed to fetch purchased credits:", err);
+      setPurchasedCredits([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH MY CREDITS (theo batchId) ===
+  const fetchMyCredits = async (batchId) => {
+    try {
+      setLoading(true);
+      const res = await apiFetch(`/api/v1/my/credits/batch/${batchId}`, {
+        method: "GET",
+      });
+
+      // Nếu API trả về 1 object, thì wrap lại trong mảng
+      const data = res?.response;
+      setCreditDetails(data);
+    } catch (err) {
+      console.error("Failed to fetch credit details:", err);
+      setCreditDetails([]);
+      setError(err.message || "Unable to load credit details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH SUMMARY ===
+  const fetchSummary = async () => {
+    try {
+      const res = await apiFetch("/api/v1/my/credits/summary", {
+        method: "GET",
+      });
+      setSummary(res?.response || {});
+    } catch (err) {
+      console.error("Failed to fetch summary:", err);
+    }
+  };
+
+  // === FETCH CREDIT BALANCE ===
+  const fetchCreditBalance = async () => {
+    try {
+      const res = await apiFetch("/api/v1/my/credits/balance", { method: "GET" });
+      return res?.response || 0; // có thể set vào state nếu muốn
+    } catch (err) {
+      console.error("Failed to fetch credit balance:", err);
+      return 0;
+    }
+  };
+
+  // === FETCH CREDIT BY ID ===
+  const fetchCreditById = async (id) => {
+    try {
+      const res = await apiFetch(`/api/v1/my/credits/${id}`, { method: "GET" });
+      return res?.response || {};
+    } catch (err) {
+      console.error(`Failed to fetch credit #${id}:`, err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchWallet();
   }, []);
 
-  //trả ra tất cả dữ liệu và hàm helper để component khác sử dụng
+  // === FETCH ALL MY CREDITS (tổng hợp) ===
+const fetchAllCredits = async (filters = {}) => {
+  try {
+    setLoading(true);
+    const params = new URLSearchParams({
+      projectId: filters.projectId || "",
+      status: filters.status || "",
+      vintageYear: filters.vintageYear || "",
+      page: filters.page || 0,
+      size: filters.size || 20,
+    }).toString();
+
+    const res = await apiFetch(`/api/v1/my/credits?${params}`, { method: "GET" });
+    const list = res?.response?.content || [];
+
+    const mapped = list.map((c) => ({
+      id: c.id,
+      creditCode: c.creditCode,
+      status: c.status,
+      projectId: c.projectId,
+      projectTitle: c.projectTitle,
+      companyId: c.companyId,
+      companyName: c.companyName,
+      vintageYear: c.vintageYear,
+      batchCode: c.batchCode,
+      issuedAt: c.issuedAt
+        ? new Date(c.issuedAt).toLocaleString("vi-VN", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            hour12: false,
+          })
+        : "-",
+      expiryDate: c.expiryDate,
+      availableAmount: c.availableAmount,
+      listedAmount: c.listedAmount,
+    }));
+
+    return mapped;
+  } catch (err) {
+    console.error("Failed to fetch credits:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+// === RETIRE CREDIT=== 
+  const retireCredits = async (creditIds = []) => {
+    if (!creditIds.length) return;
+
+    try {
+      setLoading(true);
+
+      const MOCK_ENABLED = true;
+      if (MOCK_ENABLED) {
+        console.log("Mock retire credits:", creditIds);
+        await new Promise((r) => setTimeout(r, 1000));
+        return {
+          message: "Mock: retired successfully",
+          retiredIds: creditIds,
+        };
+      }
+
+      const res = await apiFetch("/api/v1/my/credits/retire", {
+        method: "POST",
+        body: { creditIds },
+      });
+
+      return res?.response || {};
+    } catch (err) {
+      console.error("Failed to retire credits:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH RETIRED CREDITS===
+  const fetchRetiredCredits = async () => {
+    try {
+      setLoading(true);
+      console.log("Mock retired credits (fetchRetiredCredits)");
+      await new Promise((r) => setTimeout(r, 600));
+
+      return [
+        {
+          id: 201,
+          creditCode: "CC-R01",
+          projectTitle: "EV Fleet Offset Program",
+          vintageYear: 2023,
+          status: "RETIRED",
+          issuedAt: "2024-02-12",
+        },
+        {
+          id: 202,
+          creditCode: "CC-R02",
+          projectTitle: "Solar Power Transition",
+          vintageYear: 2024,
+          status: "RETIRED",
+          issuedAt: "2024-05-22",
+        },
+      ];
+    } catch (err) {
+      console.error("Failed to fetch retired credits:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     wallet,
     transactions,
+    issuedCredits,
+    purchasedCredits,
+    summary,
     loading,
+    error,
+    creditDetails,
     setLoading,
     fetchWallet,
     fetchTransactions,
+    fetchIssuedCredits,
+    fetchPurchasedCredits,
+    fetchSummary,
+    fetchCreditBalance,
+    fetchCreditById,
+    fetchMyCredits,
+    fetchAllCredits,
+    retireCredits,
+    fetchRetiredCredits,
   };
 }

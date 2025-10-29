@@ -26,15 +26,19 @@ export default function PurchaseHistory() {
         setLoading(true);
         const res = await apiFetch("/api/v1/orders", { method: "GET" });
         const list = res?.response || [];
-        setOrders(
-          list.map((o) => ({
+
+        //set data+sort mới nhất
+        const formatted = list
+          .map((o) => ({
             id: o.id,
             companyId: o.companyId,
             status: o.status,
             totalAmount: o.totalAmount,
             createdAt: o.createAt,
           }))
-        );
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        setOrders(formatted);
       } catch (err) {
         setError(err.message || "Unable to load orders.");
       } finally {
@@ -46,8 +50,7 @@ export default function PurchaseHistory() {
 
   const handleBack = () => {
     if (from === "wallet") nav("/wallet");
-    else if (from === "order") nav("/marketplace");
-    else nav(-1);
+    else nav("/marketplace");
   };
 
   return (
@@ -112,38 +115,51 @@ export default function PurchaseHistory() {
                   <th>Created At</th>
                 </tr>
               </thead>
-              <PaginatedTable
-                items={orders}
-                itemsPerPage={5}
-                renderRow={(o, index) => (
-                  <tr key={o.id || index}>
-                    <td>{index + 1}</td>
-                    <td>{o.id}</td>
-                    <td>
-                      <span
-                        className={`badge bg-${
-                          o.status === "SUCCESS"
-                            ? "success"
-                            : o.status === "PENDING"
-                            ? "warning"
-                            : "secondary"
-                        }`}
-                      >
-                        {o.status}
-                      </span>
-                    </td>
-                    <td>${o.totalAmount?.toLocaleString() || 0}</td>
-                    <td>
-                      {o.createdAt
-                        ? new Date(o.createdAt).toLocaleString("vi-VN", {
-                            timeZone: "Asia/Ho_Chi_Minh",
-                            hour12: false,
-                          })
-                        : "—"}
-                    </td>
-                  </tr>
-                )}
-              />
+              <tbody>
+                <PaginatedTable
+                  items={orders}
+                  itemsPerPage={5}
+                  renderRow={(o, index) => (
+                    <tr key={o.id || index}>
+                      <td>{index + 1}</td>
+                      <td>{o.id}</td>
+                      <td>
+                        <span
+                          className={`badge bg-${
+                            o.status === "SUCCESS"
+                              ? "success"
+                              : o.status === "PENDING"
+                              ? "warning"
+                              : "secondary"
+                          }`}
+                        >
+                          {o.status}
+                        </span>
+                      </td>
+                      <td>${o.totalAmount?.toLocaleString() || 0}</td>
+                      <td>
+                        {o.createdAt
+                          ? (() => {
+                              const utcDate = new Date(o.createdAt);
+                              const vnDate = new Date(
+                                utcDate.getTime() + 7 * 60 * 60 * 1000
+                              ); // cộng 7 tiếng
+                              return vnDate.toLocaleString("vi-VN", {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: false,
+                              });
+                            })()
+                          : "—"}
+                      </td>
+                    </tr>
+                  )}
+                />
+              </tbody>
             </Table>
           )}
         </Card>

@@ -93,7 +93,19 @@ export default function Manage() {
       setShow(false);
       setEditData(null);
     } catch (err) {
-      showToast("Failed to save vehicle: " + err.message, "danger");
+      // Handle BE logical errors or HTTP errors
+      if (
+        err.code === "409" ||
+        err.message.includes("Vehicle plate already exists")
+      ) {
+        showToast(
+          "This license plate already exists. Please use a unique plate.",
+          "danger"
+        );
+      } else {
+        showToast("Failed to save vehicle: " + err.message, "danger");
+      }
+      console.error("Vehicle save error:", err);
     }
   };
 
@@ -173,7 +185,7 @@ export default function Manage() {
           </tbody>
         </table>
       </div>
-      <ToastContainer position="bottom-end" className="p-3">
+      <ToastContainer position="top-center" className="p-3">
         <Toast
           onClose={() => setToast({ ...toast, show: false })}
           show={toast.show}
