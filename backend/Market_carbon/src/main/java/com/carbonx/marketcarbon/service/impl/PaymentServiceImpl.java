@@ -88,7 +88,7 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(savedPaymentOrder.getAmount()));
 
         String message = "Create deposit with money "  + request.getAmount() + " USD"  ;
-        sseService.sendNotificationToUser(message);
+        sseService.sendNotificationToUser(user.getId(), message);
 
         return PaymentOrderResponse.builder()
                 .userId(user.getId())

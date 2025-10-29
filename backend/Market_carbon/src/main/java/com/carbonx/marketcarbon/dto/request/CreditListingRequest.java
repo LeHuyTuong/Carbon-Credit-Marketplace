@@ -32,7 +32,4 @@ public class CreditListingRequest {
     private BigDecimal pricePerCredit;
 
 
-    @NotNull(message = "Expiration date cannot be null.")
-    @Future(message = "Expiration date must be in the future.")
-    private LocalDateTime expirationDate;
 }

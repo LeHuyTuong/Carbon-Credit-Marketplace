@@ -9,10 +9,16 @@ import { useAuth } from "../context/AuthContext.jsx";
 import Navbar from "../components/Navbar/Navbar.jsx";
 import Home from "../pages/Home/Home.jsx";
 import Login from "../pages/Login/Login.jsx";
-import LoginAdmin from "../pages/loginAdmin/Login.jsx";
-import KYCAdmin from "../pages/KYCAdmin/KYC.jsx";
+import LoginAdmin from "../pages/Login/LoginAdmin.jsx";
+import KYCAdmin from "../pages/Dashboard/Admin/KYCAdmin/KYCAdmin.jsx";
+import LoginCVA from "../pages/Login/LoginCVA.jsx";
+import KYCCVA from "../pages/Dashboard/CVA/KYCCVA/KYCCVA.jsx";
 import Register from "../pages/Register/Register.jsx";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword.jsx";
+import AdminForgotPassword from "../pages/ForgotPassword/ForgotPasswordAdmin.jsx";
+import AdminChangePassword from "../pages/ChangePasswordPage/ChangePasswordAdmin.jsx";
+import CVAForgotPassword from "../pages/ForgotPassword/ForgotPasswordCVA.jsx";
+import CVAChangePassword from "../pages/ChangePasswordPage/ChangePasswordCVA.jsx";
 import ChangePassword from "../pages/ChangePassword/ChangePassword.jsx";
 import ChangePasswordPage from "../pages/ChangePasswordPage/ChangePasswordPage.jsx";
 import Marketplace from "../pages/Dashboard/Company/Marketplace/Marketplace.jsx";
@@ -167,6 +173,13 @@ export default function App() {
 
         <Route path="/admin/login" element={<LoginAdmin />} />
         <Route path="/admin/kyc" element={<KYCAdmin />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+        <Route path="/admin/change-password" element={<AdminChangePassword />} />
+        <Route path="/cva/login" element={<LoginCVA />} />
+        <Route path="/cva/kyc" element={<KYCCVA />} />
+        <Route path="/cva/forgot-password" element={<CVAForgotPassword />} />
+        <Route path="/cva/change-password" element={<CVAChangePassword />} />        
+
         {/*Route riêng cho admin và cva, không Navbar */}
 
         <Route path="/admin/*" element={<AdminApp />} />

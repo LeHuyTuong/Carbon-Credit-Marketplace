@@ -165,7 +165,7 @@ public class DataInitializer {
             }
 
             // --- Initialize an ISSUED Carbon Credit block for the new Company ---
-            String companyCreditCode = "COMP-ISSUED-001";
+            String companyCreditCode = "COMP-ISSUED-1111";
             boolean creditExistsForCompany =
                     carbonCreditRepository.findByCreditCode(companyCreditCode)
                             .stream()
@@ -191,7 +191,7 @@ public class DataInitializer {
             }
 
             // --- Initialize Credits and Listings for Admin Company (Existing Logic) ---
-            String adminIssuedCreditCode1 = "ADMIN-ISSUED-001";
+            String adminIssuedCreditCode1 = "ADMIN-ISSUED-0011";
             CarbonCredit adminListableCredit1 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode1)
                     .stream().findFirst()
                     .orElseGet(() -> {

@@ -173,7 +173,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
 
 
         String message = "Admin issue " +  result.getCreditsCount() + " to your company wallet" ;
-        sseService.sendNotificationToUser(message);
+        sseService.sendNotificationToUser(company.getUser().getId(), message);
 
         String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
 
@@ -292,7 +292,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .project(project)
                 .sourceCredit(sourceCredit)
                 .creditCode(creditCode)
-                .status(CreditStatus.ISSUE)
+                .status(CreditStatus.TRADED)
                 .carbonCredit(quantity)
                 .tCo2e(sourceCredit.getTCo2e())
                 .amount(quantity)
