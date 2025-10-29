@@ -105,7 +105,7 @@ public enum ErrorCode {
     COMPANY_NOT_OWN(400, "Company does not own this carbon credit block.", HttpStatus.BAD_REQUEST),
     CVA_NOT_APPROVED(400, "CVA not approved.", HttpStatus.BAD_REQUEST),
     CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST),
-    CREDIT_BATCH_NOT_FOUND(404, "Creadit not found", HttpStatus.NOT_FOUND),
+    CREDIT_BATCH_NOT_FOUND(404, "Credit batch not found", HttpStatus.NOT_FOUND),
 
     // List-Trade
     TRANSACTION_PROCESSING_ERROR(400,"Error processing financial transaction",HttpStatus.INTERNAL_SERVER_ERROR),

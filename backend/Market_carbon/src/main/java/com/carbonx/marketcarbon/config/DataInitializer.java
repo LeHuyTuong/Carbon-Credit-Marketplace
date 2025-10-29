@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -239,7 +240,7 @@ public class DataInitializer {
                         .soldQuantity(BigDecimal.ZERO)
                         .pricePerCredit(new BigDecimal("25.50"))
                         .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDateTime.now().plusDays(30))
+                        .expiresAt(LocalDate.now().plusDays(30))
                         .build();
                 marketplaceListingRepository.save(listing1);
                 adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing1.getQuantity()));
@@ -254,7 +255,7 @@ public class DataInitializer {
                         .soldQuantity(BigDecimal.ZERO)
                         .pricePerCredit(new BigDecimal("23.50"))
                         .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDateTime.now().plusDays(60))
+                        .expiresAt(LocalDate.now().plusDays(60))
                         .build();
                 marketplaceListingRepository.save(listing2);
                 adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing2.getQuantity()));
@@ -269,7 +270,7 @@ public class DataInitializer {
                         .soldQuantity(BigDecimal.ZERO)
                         .pricePerCredit(new BigDecimal("21.50"))
                         .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDateTime.now().plusDays(25))
+                        .expiresAt(LocalDate.now().plusDays(25))
                         .build();
                 marketplaceListingRepository.save(listing3);
                 adminListableCredit2.setCarbonCredit(adminListableCredit2.getCarbonCredit().subtract(listing3.getQuantity()));

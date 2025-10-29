@@ -9,16 +9,17 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceListing,Long> {
     // Tìm các niêm yết còn hoạt động (chưa hết hạn và còn hàng)
-    List<MarketPlaceListing> findByStatusAndExpiresAtAfter(ListingStatus status, LocalDateTime now);
+    List<MarketPlaceListing> findByStatusAndExpiresAtAfter(ListingStatus status, LocalDate now);
 
     // Tìm các niêm yết đã hết hạn và vẫn đang AVAILABLE
-    List<MarketPlaceListing> findByStatusAndExpiresAtBefore(ListingStatus status, LocalDateTime now);
+    List<MarketPlaceListing> findByStatusAndExpiresAtBefore(ListingStatus status, LocalDate now);
 
     // Tìm một niêm yết và "KHÓA" nó lại để xử lý, tránh 2 người cùng mua một lúc
     @Lock(LockModeType.PESSIMISTIC_WRITE)
