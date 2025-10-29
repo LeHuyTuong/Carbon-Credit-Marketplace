@@ -84,6 +84,9 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .map(Authentication::getName)
                 .orElse("system@carbonx.com");
 
+        LocalDateTime issuedAt = LocalDateTime.now();
+        LocalDate expiresAt = issuedAt.toLocalDate().plusYears(1);
+
         CreditBatch batch = CreditBatch.builder()
                 .report(report)
                 .company(company)
@@ -98,7 +101,8 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .serialTo(range.to())
                 .status("ISSUED")
                 .issuedBy(issuedBy)
-                .issuedAt(LocalDateTime.now())
+                .issuedAt(issuedAt)
+                .expiresAt(expiresAt)
                 .build();
 
         batch = batchRepo.save(batch);

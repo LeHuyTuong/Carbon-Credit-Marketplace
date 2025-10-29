@@ -223,12 +223,9 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         return EmissionReportResponse.from(saved);
     }
     @Override
-    public Page<EmissionReportResponse> listReportsForCva(String status, Pageable pageable) {
-        if (status == null || status.isBlank()) {
-            return reportRepository.findBySourceIgnoreCase("CSV", pageable).map(EmissionReportResponse::from);
-        }
-        EmissionStatus st = EmissionStatus.valueOf(status.toUpperCase());
-        return reportRepository.findBySourceIgnoreCaseAndStatus("CSV", st, pageable).map(EmissionReportResponse::from);
+    public Page<EmissionReportResponse> listReportsForCva(Pageable pageable) {
+        return reportRepository.findBySourceIgnoreCaseAndStatus("CSV", EmissionStatus.SUBMITTED, pageable)
+                .map(EmissionReportResponse::from);
     }
 
     @Override
@@ -306,29 +303,6 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     }
 
     @Override
-    @PreAuthorize("hasRole('COMPANY')")
-    public List<EmissionReportResponse> listReportsForCompany(String status) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-
-        User user = userRepository.findByEmail(email);
-        if (user == null) throw new AppException(ErrorCode.UNAUTHORIZED);
-
-        Company company = companyRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
-
-        List<EmissionReport> reports;
-        if (status == null || status.isBlank()) {
-            reports = reportRepository.findBySeller_Id(company.getId());
-        } else {
-            EmissionStatus st = EmissionStatus.valueOf(status.toUpperCase());
-            reports = reportRepository.findBySeller_IdAndStatus(company.getId(), st);
-        }
-
-        return reports.stream().map(EmissionReportResponse::from).toList();
-    }
-
-    @Override
     public EmissionReportResponse getById(Long reportId) {
         EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
@@ -336,15 +310,20 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     }
 
     @Override
-    @PreAuthorize("hasRole('COMPANY')")
     @Transactional(readOnly = true)
     public Page<EmissionReportDetailResponse> getReportDetails(Long reportId, String plateContains, Pageable pageable) {
         EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
-        Long companyId = currentCompanyId();
-        if (!report.getSeller().getId().equals(companyId)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isCompany = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_COMPANY"));
+        // CVA được phép xem mọi report -> không cần check companyId
+
+        if (isCompany) {
+            Long companyId = currentCompanyId();
+            if (!report.getSeller().getId().equals(companyId)) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
         }
 
         Page<EmissionReportDetail> page = (plateContains != null && !plateContains.isBlank())
@@ -352,11 +331,13 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 : detailRepository.findByReport_Id(reportId, pageable);
 
         if (page.isEmpty()) {
-            throw new AppException(ErrorCode.REPORT_DETAILS_NOT_FOUND);
+            return Page.empty(pageable);
         }
 
         return page.map(EmissionReportDetailResponse::from);
     }
+
+
 
     @Override
     public EmissionReportResponse aiSuggestScore(Long reportId) {

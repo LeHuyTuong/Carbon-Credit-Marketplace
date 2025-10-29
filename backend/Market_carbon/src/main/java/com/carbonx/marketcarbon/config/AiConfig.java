@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit;
 public class AiConfig {
 
     private String apiKey;
-    private String model = "gemini-2.5-flash";
+    private String model = "gemini-1.5-pro-latest";
     private boolean enabled = true;
-    private int timeoutMs = 30000;
+    private int timeoutMs = 60000;
 
     @Bean("geminiWebClient")
     public WebClient geminiWebClient() {
