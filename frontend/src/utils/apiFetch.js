@@ -2,7 +2,16 @@ export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
   // lấy token từ session hoặc localStorage
-  let token;
+  // lấy token từ session hoặc localStorage
+let token;
+
+// 🟩 Ưu tiên token admin trước nếu có
+const adminToken =
+  sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token");
+
+if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
+  token = adminToken;
+} else {
   try {
     const authData =
       JSON.parse(sessionStorage.getItem("auth")) ||
@@ -13,6 +22,8 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!token) token = localStorage.getItem("token");
+}
+
 
   const traceId = crypto.randomUUID();
   const dateTime = new Date().toISOString();
