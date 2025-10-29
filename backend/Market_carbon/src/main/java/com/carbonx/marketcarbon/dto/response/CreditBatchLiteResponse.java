@@ -2,11 +2,10 @@ package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.model.CreditBatch;
 import lombok.Builder;
-import org.springframework.cglib.core.Local;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Builder
 public record CreditBatchLiteResponse(
@@ -19,7 +18,8 @@ public record CreditBatchLiteResponse(
         BigDecimal totalTco2e,
         BigDecimal residualTco2e,
         String status,
-        LocalDateTime issuedAt
+        LocalDateTime issuedAt,
+        LocalDate expiresAt
 ) {
     public static CreditBatchLiteResponse from(CreditBatch b) {
         return CreditBatchLiteResponse.builder()
@@ -33,6 +33,7 @@ public record CreditBatchLiteResponse(
                 .residualTco2e(b.getResidualTco2e())
                 .status(b.getStatus())
                 .issuedAt(b.getIssuedAt())
+                .expiresAt(b.getExpiresAt())
                 .build();
     }
 }

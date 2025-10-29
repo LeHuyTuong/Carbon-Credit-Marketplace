@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.model.EmissionReportDetail;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +15,11 @@ public class EmissionReportDetailResponse {
     private String period;
     private BigDecimal totalEnergy;
     private BigDecimal co2Kg;
+
+    @JsonProperty("vehicleId")
+    public String getVehicleId() {
+        return vehiclePlate;
+    }
 
     public static EmissionReportDetailResponse from(EmissionReportDetail d) {
         return EmissionReportDetailResponse.builder()
