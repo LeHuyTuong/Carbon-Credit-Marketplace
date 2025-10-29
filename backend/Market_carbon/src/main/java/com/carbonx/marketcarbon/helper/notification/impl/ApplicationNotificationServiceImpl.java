@@ -92,11 +92,13 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
     @Override
     public void sendAdminConfirmRequestWithdrawal(
             String userEmail,
+            String userName,
             Long withdrawalId,
             BigDecimal amount,
             LocalDateTime requestedAt
     ) {
         Map<String, Object> vars = new HashMap<>();
+        vars.put("username", userName);
         vars.put("withdrawalId", withdrawalId);
         vars.put("amount", amount.toPlainString()); // Chuyển BigDecimal thành String để hiển thị
         // Định dạng lại thời gian cho dễ đọc trong email
@@ -116,11 +118,13 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
     @Override
     public void sendWithdrawalFailedOrRejected(
             String userEmail,
+            String userName,
             Long withdrawalId,
             BigDecimal amount,
             String reason,
             LocalDateTime processedAt) {
         Map<String, Object> vars = new HashMap<>();
+        vars.put("username", userName);
         vars.put("withdrawalId", withdrawalId);
         vars.put("amount", amount.toPlainString());
         vars.put("reason", reason); // Truyền lý do vào template

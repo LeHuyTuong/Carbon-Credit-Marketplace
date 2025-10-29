@@ -16,6 +16,7 @@ public interface ApplicationNotificationService {
 
     void sendAdminConfirmRequestWithdrawal(
             String userEmail,         // Email người nhận
+            String userName,
             Long withdrawalId,      // ID của yêu cầu rút tiền
             BigDecimal amount,        // Số tiền rút
             LocalDateTime requestedAt // Thời gian xử lý
@@ -23,6 +24,7 @@ public interface ApplicationNotificationService {
 
     void sendWithdrawalFailedOrRejected(
             String userEmail,
+            String userName,
             Long withdrawalId,
             BigDecimal amount,
             String reason, // Thêm lý do
