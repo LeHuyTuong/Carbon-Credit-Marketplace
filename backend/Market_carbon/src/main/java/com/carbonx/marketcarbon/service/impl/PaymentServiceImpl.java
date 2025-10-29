@@ -15,6 +15,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
+import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
@@ -47,6 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletTransactionService walletTransactionService;
     private final UserRepository userRepository;
+    private final SseService sseService;
 
 
     @Value("${stripe.api.key}")
@@ -84,6 +86,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentOrder savedPaymentOrder = paymentOrderRepository.save(paymentOrder);
         BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(savedPaymentOrder.getAmount()));
+
+        String message = "Create deposit with money "  + request.getAmount() + " USD"  ;
+        sseService.sendNotificationToUser(message);
 
         return PaymentOrderResponse.builder()
                 .userId(user.getId())

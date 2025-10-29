@@ -1,10 +1,7 @@
 package com.carbonx.marketcarbon.repository;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
-import com.carbonx.marketcarbon.model.Order;
-import com.carbonx.marketcarbon.model.PaymentOrder;
-import com.carbonx.marketcarbon.model.Wallet;
-import com.carbonx.marketcarbon.model.WalletTransaction;
+import com.carbonx.marketcarbon.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,6 +12,8 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     List<WalletTransaction> findByWalletOrderByCreatedAtDesc(Wallet wallet);
     boolean existsByOrderAndTransactionType(Order order, WalletTransactionType transactionType);
 
+    WalletTransaction findByWalletId(Long id);
+
     boolean existsByOrder(Order order);
 
     boolean existsByPaymentOrder(PaymentOrder paymentOrder);
@@ -24,4 +23,10 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     long countByWallet_Id(Long walletId); // Đếm số giao dịch của một ví cụ thể
     // SỬA TÊN PHƯƠNG THỨC Ở ĐÂY
     long countByWalletUserId(Long userId); // Đếm số giao dịch của một người dùng (thay vì countMyTransactions)
+
+
+    List<WalletTransaction> findByWalletAndCreditBatchOrderByCreatedAtDesc(Wallet wallet, CreditBatch creditBatch);
+
+    List<WalletTransaction> findByWalletAndTransactionTypeOrderByCreatedAtDesc(Wallet wallet, WalletTransactionType transactionType);
+
 }

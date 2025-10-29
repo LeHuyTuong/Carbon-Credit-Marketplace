@@ -83,6 +83,15 @@ public class MyCreditServiceImpl implements MyCreditService {
         Specification<CarbonCredit> spec = (root, cq, cb) -> {
             var predicates = new ArrayList<Predicate>();
 
+
+            var companyJoin = root.join("company", JoinType.LEFT);
+            var ownedCreditsJoin = root.join("carbonCredit", JoinType.LEFT);
+
+            var ownsDirectly = cb.equal(companyJoin.get("id"), companyId);
+            var ownsThroughCredits = cb.equal(ownedCreditsJoin.get("company").get("id"), companyId);
+
+            predicates.add(cb.or(ownsDirectly, ownsThroughCredits));
+
             // Bắt buộc lọc theo công ty
             predicates.add(cb.equal(root.get("company").get("id"), companyId));
 

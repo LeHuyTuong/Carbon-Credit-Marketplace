@@ -107,6 +107,10 @@ public enum ErrorCode {
     CARBON_CREDIT_NOT_PENDING(400, "Carbon credit not pending.", HttpStatus.BAD_REQUEST),
     CREDIT_BATCH_NOT_FOUND(404, "Creadit not found", HttpStatus.NOT_FOUND),
 
+    // List-Trade
+    TRANSACTION_PROCESSING_ERROR(400,"Error processing financial transaction",HttpStatus.INTERNAL_SERVER_ERROR),
+    CREDIT_ALREADY_SOLD(400,  "Carbon credit has already been sold",HttpStatus.BAD_REQUEST),
+
     REPORT_NOT_APPROVED(400, "Emission report must be approved before issuing credits.", HttpStatus.BAD_REQUEST),
     CREDIT_ALREADY_ISSUED(409, "Carbon credits already issued for this report.", HttpStatus.CONFLICT),
     CREDIT_QUANTITY_INVALID(400, "Computed credit quantity is invalid or zero.", HttpStatus.BAD_REQUEST),

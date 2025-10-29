@@ -55,6 +55,10 @@ export default function CreditDetailCard({ credit }) {
                 <div className="fw-semibold">{credit.quantity}</div>
               </Col>
               <Col xs={6} sm={4} className="mb-2">
+                <div className="text-muted">Sold quantity</div>
+                <div className="fw-semibold">{credit.soldQuantity}</div>
+              </Col>
+              <Col xs={6} sm={4} className="mb-2">
                 <div className="text-muted">Expires on</div>
                 <div className="fw-semibold">{credit.expiresAt}</div>
               </Col>

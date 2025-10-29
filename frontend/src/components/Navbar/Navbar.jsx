@@ -42,57 +42,57 @@ export default function Navbar() {
         <div className="collapse navbar-collapse" id="mainNav">
           {/* left group */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            <li className="nav-item">
-              <NavLink end to="/home" className={linkCls}>
-                HOME
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/marketplace" className={linkCls}>
-                MARKETPLACE
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/upload-report" className={linkCls}>
-                REPORT
-              </NavLink>
-            </li>
-
-            {/*ev */}
-            <li className="nav-item">
-              <NavLink to="/managevehicle" className={linkCls}>
-                ELECTRIC VEHICLE
-              </NavLink>
-            </li>
-
-            <li className="nav-item">
-              <NavLink to="/wallet" className={linkCls}>
-                E-WALLET
-              </NavLink>
-            </li>
-
-            {/*credits */}
-            <li className="nav-item dropdown">
-              <a
-                href="#"
-                className={`nav-link dropdown-toggle px-3 ${
-                  isCredits ? "is-active-parent" : ""
-                }`}
-                id="creditsDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                CREDITS
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="creditsDropdown">
-                <li>
-                  <NavLink to="/credits/list" className={ddItemCls}>
-                    Credit list
+            {/*COMPANY NAV*/}
+            {user?.role === "COMPANY" && (
+              <>
+                <li className="nav-item">
+                  <NavLink end to="/home" className={linkCls}>
+                    HOME
                   </NavLink>
                 </li>
-              </ul>
-            </li>
+                <li className="nav-item">
+                  <NavLink to="/marketplace" className={linkCls}>
+                    MARKETPLACE
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/upload-report" className={linkCls}>
+                    REPORT
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/wallet" className={linkCls}>
+                    E-WALLET
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/retire" className={linkCls}>
+                    RETIRE
+                  </NavLink>
+                </li>
+              </>
+            )}
+
+            {/*EV OWNER NAV*/}
+            {user?.role === "EV_OWNER" && (
+              <>
+                <li className="nav-item">
+                  <NavLink end to="/home" className={linkCls}>
+                    HOME
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/managevehicle" className={linkCls}>
+                    VEHICLES
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/wallet" className={linkCls}>
+                    E-WALLET
+                  </NavLink>
+                </li>
+              </>
+            )}
           </ul>
 
           {/*right group */}
@@ -194,8 +194,11 @@ export default function Navbar() {
                           </NavLink>
                         </li>
                         <li>
-                          <NavLink to="/wallet" className="dropdown-item">
-                            Wallet
+                          <NavLink
+                            to="/change-password"
+                            className="dropdown-item"
+                          >
+                            Setting
                           </NavLink>
                         </li>
                         <li>
@@ -208,7 +211,7 @@ export default function Navbar() {
                         </li>
                       </>
                     ) : (
-                      /* Default user */
+                      /* EV owner */
                       <>
                         <li>
                           <NavLink to="/profile" className="dropdown-item">
@@ -216,16 +219,11 @@ export default function Navbar() {
                           </NavLink>
                         </li>
                         <li>
-                          <NavLink to="/wallet" className="dropdown-item">
-                            Wallet
-                          </NavLink>
-                        </li>
-                        <li>
                           <NavLink
-                            to="/managevehicle"
+                            to="/change-password"
                             className="dropdown-item"
                           >
-                            My Vehicles
+                            Setting
                           </NavLink>
                         </li>
                         <li>

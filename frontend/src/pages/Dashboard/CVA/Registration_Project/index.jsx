@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useTheme } from "@mui/material";
@@ -8,24 +7,37 @@ import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiCVA/registrationCVA.js";
 import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
+
+
+
+
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // State
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [rowCount, setRowCount] = useState(0);
 
+  // Fetch API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("📡 Fetching pending CVA applications...");
+        console.log("Fetching pending CVA applications...");
         const response = await getProjectApplications();
 
         console.log(" Raw API response:", response);
 
         let applications = [];
 
+
+
         //  Chuẩn format data theo swagger
+
+
         if (Array.isArray(response?.response)) {
           applications = response.response;
         } else if (Array.isArray(response?.responseData?.response)) {
@@ -37,9 +49,11 @@ const ApplicationList = () => {
         console.log(" Parsed applications:", applications);
 
         setData(applications || []);
+        setRowCount(applications?.length || 0);
       } catch (error) {
         console.error(" Error fetching applications:", error);
         setData([]);
+        setRowCount(0);
       } finally {
         setLoading(false);
       }
@@ -48,6 +62,7 @@ const ApplicationList = () => {
     fetchData();
   }, []);
 
+  // Columns
   const columns = [
     { field: "id", headerName: "ID", flex: 0.3 },
     { field: "projectId", headerName: "Project ID", flex: 0.5 },
@@ -116,7 +131,7 @@ const ApplicationList = () => {
         m="40px 0 0 0"
         height="75vh"
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          "& .MuiDataGrid-root": { border: "none", },
           "& .MuiDataGrid-cell": { borderBottom: "none" },
           "& .name-column--cell": { color: colors.greenAccent[300] },
           "& .MuiDataGrid-columnHeaders": {
@@ -128,23 +143,25 @@ const ApplicationList = () => {
           },
           "& .MuiDataGrid-footerContainer": {
             borderTop: "none",
-            backgroundColor: colors.blueAccent[700],
+            backgroundColor: colors.greenAccent[700],
           },
         }}
       >
         {data.length > 0 ? (
           <CVADataGrid
-          rows={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          page={page}
-          onPageChange={(newPage) => setPage(newPage)}
-          pageSize={pageSize}
-          onPageSizeChange={(newSize) => setPageSize(newSize)}
-          rowCount={rowCount}
-          loading={loading}
-          getRowHeight={() => "auto"}
-        />
+
+            rows={data}
+            columns={columns}
+            getRowId={(r) => r.id}
+            page={page}
+            onPageChange={(newPage) => setPage(newPage)}
+            pageSize={pageSize}
+            onPageSizeChange={(newSize) => setPageSize(newSize)}
+            rowCount={rowCount}
+            loading={loading}
+            getRowHeight={() => "auto"}
+          />
+
         ) : (
           !loading && (
             <Typography color={colors.grey[300]} align="center" mt={5}>

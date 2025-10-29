@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button, Nav } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import PaginatedList from "../../../components/Pagination/PaginatedList";
+import useReveal from "../../../hooks/useReveal";
 
 export default function WalletHistory() {
   const nav = useNavigate();
@@ -11,6 +12,8 @@ export default function WalletHistory() {
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   useEffect(() => {
     if (tab === "transactions") fetchTransactions();
@@ -50,7 +53,10 @@ export default function WalletHistory() {
   };
 
   return (
-    <div className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5">
+    <div
+      ref={sectionRef}
+      className="auth-hero2 wallet-page d-flex flex-column align-items-center py-5 reveal"
+    >
       <Button
         variant="outline-info"
         size="sm"
@@ -101,41 +107,48 @@ export default function WalletHistory() {
             <PaginatedList
               items={transactions}
               itemsPerPage={5}
-              renderItem={(tx) => (
-                <div
-                  key={tx.id}
-                  className="d-flex justify-content-between align-items-center border-bottom py-2"
-                >
-                  <div>
-                    <span
-                      className={`fw-semibold ${
-                        tx.transactionType === "ADD_MONEY"
-                          ? "text-success"
-                          : "text-warning"
-                      }`}
-                    >
-                      {tx.transactionType}
-                    </span>
-                    <div className="small text-light">
-                      {new Date(tx.createdAt).toLocaleString("vi-VN", {
-                        timeZone: "Asia/Ho_Chi_Minh",
-                        hour12: false,
-                      })}
-                    </div>
-                  </div>
-                  <span
-                    className={`fw-bold ${
-                      tx.transactionType === "ADD_MONEY"
-                        ? "text-success"
-                        : "text-danger"
-                    }`}
+              renderItem={(tx) => {
+                const incomeTypes = ["ADD_MONEY", "SELL_CARBON_CREDIT"];
+                const expenseTypes = ["WITHDRAWAL", "BUY_CARBON_CREDIT"];
+                const isIncome = incomeTypes.includes(tx.transactionType);
+                const isExpense = expenseTypes.includes(tx.transactionType);
+                const typeClass = isIncome
+                  ? "text-success"
+                  : isExpense
+                  ? "text-warning"
+                  : "text-info";
+                const amountClass = isIncome
+                  ? "text-success"
+                  : isExpense
+                  ? "text-danger"
+                  : "text-light";
+                const prefix = isIncome ? "+" : isExpense ? "-" : "";
+
+                return (
+                  <div
+                    key={tx.id}
+                    className="d-flex justify-content-between align-items-center border-bottom py-2"
                   >
-                    {tx.transactionType === "ADD_MONEY"
-                      ? `+${tx.amount} USD`
-                      : `-${tx.amount} USD`}
-                  </span>
-                </div>
-              )}
+                    <div>
+                      <span
+                        className={`fw-semibold ${typeClass}`}
+                      >
+                        {tx.transactionType}
+                      </span>
+                      <div className="small text-light">
+                        {new Date(tx.createdAt).toLocaleString("vi-VN", {
+                          timeZone: "Asia/Ho_Chi_Minh",
+                          hour12: false,
+                        })}
+                      </div>
+                    </div>
+                    <span className={`fw-bold ${amountClass}`}>
+                      {`${prefix}${tx.amount} USD`}
+                    </span>
+                  </div>
+                );
+              }}
+
             />
           )
         ) : withdrawals.length === 0 ? (
