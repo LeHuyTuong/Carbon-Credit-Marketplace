@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -166,6 +167,16 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
         Order order = transaction.getOrder();
 
+        LocalDate creditExpiryDate = null;
+
+        if (order != null && order.getCarbonCredit() != null) {
+            creditExpiryDate = order.getCarbonCredit().getExpiryDate();
+        }
+
+        if (creditExpiryDate == null && transaction.getCreditBatch() != null) {
+            creditExpiryDate = transaction.getCreditBatch().getExpiresAt();
+        }
+
         return WalletTransactionResponse.builder()
                 .id(transaction.getId())
                 .orderId(order != null ? order.getId() : null)
@@ -181,6 +192,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .batchCode(transaction.getCreditBatch() != null
                         ? transaction.getCreditBatch().getBatchCode()
                         : null)
+                .creditExpiryDate(creditExpiryDate)
                 .build();
     }
 }
