@@ -25,6 +25,7 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     List<EmissionReport> findBySeller_IdAndStatus(Long sellerId, EmissionStatus status);
     List<EmissionReport> findBySeller_IdAndProject_Id(Long sellerId, Long projectId);
     List<EmissionReport> findBySeller_IdAndProject_IdAndStatus(Long sellerId, Long projectId, EmissionStatus status);
+    int countByProjectIdAndSeller_IdNot(Long projectId, Long sellerId);
 
 
 }
