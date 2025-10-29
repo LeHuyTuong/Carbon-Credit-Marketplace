@@ -29,5 +29,5 @@ public class WalletTransactionResponse {
     private LocalDateTime createdAt;
     private String batchCode;
 
-    private CarbonCredit carbonCredit;
+    private LocalDate creditExpiryDate;
 }
