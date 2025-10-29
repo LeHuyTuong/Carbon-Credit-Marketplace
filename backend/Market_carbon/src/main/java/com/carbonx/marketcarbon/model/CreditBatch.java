@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -69,6 +70,9 @@ public class CreditBatch {
     @Column(name = "issued_by", length = 100)
     private String issuedBy;
 
+    @Column(name = "expires_at")
+    private LocalDate expiresAt;
+
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
@@ -79,6 +83,9 @@ public class CreditBatch {
         createdAt = LocalDateTime.now();
         if (issuedAt == null) issuedAt = createdAt;
         if (status == null) status = "ISSUED";
+        if (expiresAt == null) {
+            expiresAt = issuedAt.toLocalDate().plusYears(1);
+        }
     }
 }
 
