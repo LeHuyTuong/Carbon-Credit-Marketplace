@@ -17,8 +17,9 @@ import java.util.List;
 @Getter
 public class CreditListingRequest {
 
-    @NotNull(message = "Carbon Credit ID cannot be null")
     private Long carbonCreditId;
+
+    private Long batchId;
 
     private List<Long> carbonCreditIds;
 
