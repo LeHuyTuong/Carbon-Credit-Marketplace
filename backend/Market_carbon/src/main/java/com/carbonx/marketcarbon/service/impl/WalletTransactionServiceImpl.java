@@ -4,10 +4,7 @@ import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
-import com.carbonx.marketcarbon.model.Order;
-import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.model.Wallet;
-import com.carbonx.marketcarbon.model.WalletTransaction;
+import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
@@ -167,15 +164,8 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
         Order order = transaction.getOrder();
 
-        LocalDate creditExpiryDate = null;
-
-        if (order != null && order.getCarbonCredit() != null) {
-            creditExpiryDate = order.getCarbonCredit().getExpiryDate();
-        }
-
-        if (creditExpiryDate == null && transaction.getCreditBatch() != null) {
-            creditExpiryDate = transaction.getCreditBatch().getExpiresAt();
-        }
+        CarbonCredit sourceCredit = order.getCarbonCredit();
+        LocalDate creditExpiryDate = sourceCredit.getExpiryDate();
 
         return WalletTransactionResponse.builder()
                 .id(transaction.getId())

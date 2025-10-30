@@ -6,12 +6,9 @@ import { Table } from "react-bootstrap";
 export default function CreditsList({ credits = [] }) {
   const nav = useNavigate();
 
-  if (!credits?.length)
-    return (
-      <div className="credits-table glass-card mt-4 p-3 text-center text-light">
-        No credit batches found
-      </div>
-    );
+  if (!credits) {
+    return <div>Loading...</div>;
+  }
 
   // nếu phần tử có field "unitPrice" -> là Purchased Credits
   const isPurchased = credits[0]?.unitPrice !== undefined;

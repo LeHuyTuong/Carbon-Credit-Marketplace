@@ -290,6 +290,11 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
         String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
 
+        LocalDate expiryDate = sourceCredit.getExpiryDate();
+        if (expiryDate == null && sourceCredit.getBatch() != null) {
+            expiryDate = sourceCredit.getBatch().getExpiresAt();
+        }
+
         CarbonCredit newCredit = CarbonCredit.builder()
                 .batch(sourceCredit.getBatch())
                 .company(buyerCompany)
@@ -305,6 +310,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .vintageYear(sourceCredit.getVintageYear())
                 .issuedAt(OffsetDateTime.now())
                 .issuedBy(issuer)
+                .expiryDate(expiryDate)
                 .build();
 
         return creditRepo.save(newCredit);
