@@ -1,9 +1,7 @@
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/theme";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import EmailIcon from "@mui/icons-material/Email";
 import ElectricCarIcon from "@mui/icons-material/ElectricCar";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PointOfSaleOutlinedIcon from "@mui/icons-material/PointOfSaleOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
@@ -13,17 +11,56 @@ import GeographyChart from "@/components/Chart/GeographyChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
-import { mockTransactions } from "@/data/mockData.js";
+import { useEffect, useState } from "react";
+import { countVehicle, getWithdrawlHistoryByAdmin } from "@/apiAdmin/apiDashboard.js";
+
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  //  State lưu số lượng xe điện
+  const [electricVehicleCount, setElectricVehicleCount] = useState(0);
+
+  //  State lưu lịch sử rút tiền admin
+  const [withdrawHistory, setWithdrawHistory] = useState([]);
+
+  //  Gọi API khi component load
+  useEffect(() => {
+    // Fetch số lượng xe điện
+    const fetchElectricVehicleCount = async () => {
+      try {
+        const res = await countVehicle({
+          requestTrace: "dashboard-electric-vehicle",
+          requestDateTime: new Date().toISOString(),
+        });
+        setElectricVehicleCount(res.response ?? 0);
+      } catch (error) {
+        console.error("Error fetching electric vehicle count:", error);
+      }
+    };
+
+    // Fetch lịch sử rút tiền admin
+    const fetchWithdrawHistory = async () => {
+      try {
+        const res = await getWithdrawlHistoryByAdmin({
+          requestTrace: "admin-withdraw-history",
+          requestDateTime: new Date().toISOString(),
+        });
+        setWithdrawHistory(res.response || []);
+      } catch (error) {
+        console.error("Error fetching withdraw history:", error);
+      }
+    };
+
+    fetchElectricVehicleCount();
+    fetchWithdrawHistory();
+  }, []);
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
-
         <Box>
           <Button
             sx={{
@@ -113,7 +150,7 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,325,134"
+            title={electricVehicleCount.toLocaleString()}
             subtitle="Electric-Vehicles"
             progress="0.80"
             increase="+43%"
@@ -134,7 +171,7 @@ const Dashboard = () => {
           <Box
             mt="25px"
             p="0 30px"
-            display="flex "
+            display="flex"
             justifyContent="space-between"
             alignItems="center"
           >
@@ -166,6 +203,8 @@ const Dashboard = () => {
             <LineChart isDashboard={true} />
           </Box>
         </Box>
+
+        {/* Recent Transactions / Withdrawal History */}
         <Box
           gridColumn="span 4"
           gridRow="span 2"
@@ -184,37 +223,49 @@ const Dashboard = () => {
               Recent Transactions
             </Typography>
           </Box>
-          {mockTransactions.map((transaction, i) => (
-            <Box
-              key={`${transaction.txId}-${i}`}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              borderBottom={`4px solid ${colors.primary[500]}`}
-              p="15px"
-            >
-              <Box>
-                <Typography
-                  color={colors.greenAccent[500]}
-                  variant="h5"
-                  fontWeight="600"
-                >
-                  {transaction.txId}
-                </Typography>
-                <Typography color={colors.grey[100]}>
-                  {transaction.user}
-                </Typography>
-              </Box>
-              <Box color={colors.grey[100]}>{transaction.date}</Box>
-              <Box
-                backgroundColor={colors.greenAccent[500]}
-                p="5px 10px"
-                borderRadius="4px"
-              >
-                ${transaction.cost}
-              </Box>
-            </Box>
-          ))}
+
+         {withdrawHistory.length > 0 ? (
+  withdrawHistory.map((item) => (
+    <Box
+      key={item.id}
+      display="flex"
+      justifyContent="space-between"
+      alignItems="center"
+      borderBottom={`4px solid ${colors.primary[500]}`}
+      p="15px"
+    >
+      <Box>
+        <Typography
+          color={colors.greenAccent[500]}
+          variant="h5"
+          fontWeight="600"
+        >
+          {item.user?.email || "Unknown User"}
+        </Typography>
+        <Typography color={colors.grey[100]}>
+          #{item.id}
+        </Typography>
+      </Box>
+      <Box color={colors.grey[100]}>
+        {item.processedAt
+          ? new Date(item.processedAt).toLocaleString()
+          : "-"}
+      </Box>
+      <Box
+        backgroundColor={colors.greenAccent[500]}
+        p="5px 10px"
+        borderRadius="4px"
+      >
+        ${item.amount?.toLocaleString() || 0}
+      </Box>
+    </Box>
+  ))
+) : (
+  <Typography textAlign="center" p="20px" color={colors.grey[300]}>
+    No withdrawal history found.
+  </Typography>
+)}
+
         </Box>
 
         {/* ROW 3 */}
@@ -241,7 +292,9 @@ const Dashboard = () => {
             >
               Modules are active (Active Features) – 78%
             </Typography>
-            <Typography>Modules are under maintenance / temporarily turned off (Under Maintenance) – 22%</Typography>
+            <Typography>
+              Modules are under maintenance / temporarily turned off (Under Maintenance) – 22%
+            </Typography>
           </Box>
         </Box>
         <Box
