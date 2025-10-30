@@ -245,6 +245,11 @@ public class OrderServiceImpl implements OrderService {
                     ? sourceCredit.getCarbonCredit()
                     : BigDecimal.ZERO;
 
+            LocalDate expiryDate = sourceCredit.getExpiryDate();
+            if (expiryDate == null && sourceCredit.getBatch() != null) {
+                expiryDate = sourceCredit.getBatch().getExpiresAt();
+            }
+
 
             // 4.3 Tổng số sau khi bán  trừ đi số lượng đã bán
             BigDecimal totalAfterSale = directAvailable.add(updatedListedAmount);  // Tổng = Available + Listed
@@ -253,10 +258,11 @@ public class OrderServiceImpl implements OrderService {
             sourceCredit.setListedAmount(updatedListedAmount);
             sourceCredit.setAmount(totalAfterSale);  // Tổng = Available + Listed
             sourceCredit.setCarbonCredit(directAvailable);
+            sourceCredit.setExpiryDate(expiryDate);
 
             // 4.5 Thêm xác thực để đảm bảo tính nhất quán
             if (totalAfterSale.compareTo(BigDecimal.ZERO) <= 0) {
-                // Nếu đã bán hết, đặt trạng thái tín chỉ thành SOLD hoặc TRANSFERRED
+                // Nếu đã bán hết, đặt trạng thái tín chỉ thành TRADED
                 sourceCredit.setStatus(CreditStatus.TRADED);
             }
 

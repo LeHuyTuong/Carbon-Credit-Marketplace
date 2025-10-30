@@ -57,20 +57,20 @@ export default function Deposit({ show, onHide, onSubmit }) {
                 <Form.Group className="d-flex gap-5">
                   <Form.Check
                     type="radio"
-                    id="VNPAY"
-                    name="paymentMethod"
-                    label="VNPAY"
-                    value="VNPAY"
-                    checked={values.paymentMethod === "VNPAY"}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="radio"
                     id="STRIPE"
                     name="paymentMethod"
                     label="STRIPE"
                     value="STRIPE"
                     checked={values.paymentMethod === "STRIPE"}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="PAYPAL"
+                    name="paymentMethod"
+                    label="PAYPAL"
+                    value="PAYPAL"
+                    checked={values.paymentMethod === "PAYPAL"}
                     onChange={handleChange}
                   />
 
