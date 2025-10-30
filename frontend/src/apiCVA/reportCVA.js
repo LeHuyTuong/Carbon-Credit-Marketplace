@@ -69,15 +69,67 @@ export const verifyReportCVA = async (reportId, { approved, comment = "" }) => {
  *  API: GET /api/v1/reports/{id}/details
  *  Trả về mảng [{id, vehicleId, period, totalEnergy, co2Kg}, ...]
  */
-export const getReportDetails = async (reportId) => {
+export const getReportDetails = async (
+  reportId,
+  { page = 0, size = 20, sort = "id,asc", plateContains } = {}
+) => {
   if (!reportId) throw new Error("Missing report ID");
 
-  const res = await apiFetch(`/api/v1/reports/${reportId}/details`, {
+  const qs = new URLSearchParams();
+  qs.append("page", page);
+  qs.append("size", size);
+  if (sort) qs.append("sort", sort);
+  if (plateContains) qs.append("plateContains", plateContains);
+
+  const res = await apiFetch(`/api/v1/reports/${reportId}/details?${qs.toString()}`, {
     method: "GET",
   });
 
-  // TuongCommonResponse thường đặt ở responseData; fallback nếu môi trường khác.
-  return res?.responseData ?? res?.response ?? res ?? [];
-  
-}
-;
+  // --- Chuẩn hóa mọi schema trả về thành Page object ---
+  // TuongCommonResponse: { response: { content: [...] , ... } }
+  if (res?.response?.content) return res.response;
+
+  // CommonResponse: { responseData: { content: [...] , ... } }
+  if (res?.responseData?.content) return res.responseData;
+
+  // Spring Page thuần ở root
+  if (res?.content) return res;
+
+  // Fallback: nếu trả về mảng -> bọc thành Page
+  if (Array.isArray(res)) {
+    return {
+      content: res,
+      totalElements: res.length,
+      number: 0,
+      size: res.length,
+first: true,
+      last: true,
+      totalPages: 1,
+      numberOfElements: res.length,
+      sort: { empty: true, sorted: false, unsorted: true },
+      pageable: {
+        pageNumber: 0,
+        pageSize: res.length,
+        offset: 0,
+        paged: false,
+        unpaged: true,
+        sort: { empty: true, sorted: false, unsorted: true },
+      },
+      empty: res.length === 0,
+    };
+  }
+
+  // Không đoán được schema
+  console.warn("Unexpected details response structure:", res);
+  return {
+    content: [],
+    totalElements: 0,
+    number: 0,
+    size: size,
+    first: true,
+    last: true,
+    totalPages: 0,
+    numberOfElements: 0,
+    empty: true,
+  };
+};

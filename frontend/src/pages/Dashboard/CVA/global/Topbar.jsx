@@ -1,4 +1,4 @@
-import { Box, IconButton, useTheme, InputBase, Paper, Badge, Popper, ClickAwayListener, Tabs, Tab, Typography, Stack, Grid, Tooltip, CardContent, List, ListItem, ListItemText, ListItemAvatar } from "@mui/material";
+import { Box, IconButton, useTheme, InputBase, Paper, Badge, Popper, ClickAwayListener, Tabs, Tab, Typography, Stack, Grid, List, ListItem, ListItemText, ListItemAvatar } from "@mui/material";
 import { useContext, useRef, useState, useEffect } from "react";
 import { ColorModeContext, tokens } from "@/themeCVA";
 import SearchIcon from "@mui/icons-material/Search";
@@ -7,10 +7,9 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import CheckCircleOutlined from "@mui/icons-material/CheckCircleOutlined";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
-import { UserOutlined, SettingOutlined, MessageOutlined, SettingOutlined as SettingIcon } from "@ant-design/icons";
+import { UserOutlined, MessageOutlined } from "@ant-design/icons";
 
 import ProfileTab from "@/components/Popup/ProfileTab.jsx";
-import SettingTab from "@/components/Popup/SettingTab.jsx";
 import MainCard from "@/components/Popup/MainCard.jsx";
 import Transitions from "@/components/Popup/Transitions.jsx";
 import Avatar from "@/components/Popup/Avatar.jsx";
@@ -23,7 +22,7 @@ const Topbar = () => {
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
 
-  // === Profile & Setting ===
+  // === Profile ===
   const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(0);
@@ -55,24 +54,18 @@ const Topbar = () => {
   useEffect(() => {
     const fetchCVAInfo = async () => {
       try {
-        console.log("📡 Fetching CVA info from API...");
         const data = await checkKYCCVA();
 
-        // ✅ Trường hợp API trả object trực tiếp
         if (data?.id) {
-          console.log("👤 CVA Info:", data);
           setUserInfo({
             name: data.name || "Unknown",
-            role: data.positionTitle || "CVA", // Hoặc 'CVA Admin' tùy bạn
+            role: data.positionTitle || "CVA",
             email: data.email || "",
             organization: data.organization || "",
-            avatarUrl: data.avatarUrl || "", // Nếu có field này
+            avatarUrl: data.avatarUrl || "",
           });
-        }
-        // 🩶 Trường hợp API bọc trong `responseData`
-        else if (data?.responseData) {
+        } else if (data?.responseData) {
           const info = data.responseData;
-          console.log("👤 CVA Info:", info);
           setUserInfo({
             name: info.name || "Unknown",
             role: info.positionTitle || "CVA",
@@ -81,14 +74,10 @@ const Topbar = () => {
             avatarUrl: info.avatarUrl || "",
           });
         }
-        else {
-          console.warn("⚠️ Unexpected KYC response format:", data);
-        }
       } catch (error) {
-        console.error("❌ Error fetching CVA info:", error);
+        console.error("Error fetching CVA info:", error);
       }
     };
-
 
     fetchCVAInfo();
   }, []);
@@ -98,7 +87,6 @@ const Topbar = () => {
       ? userInfo.avatar
       : avatar1;
 
-  // === RENDER ===
   return (
     <Box display="flex" justifyContent="space-between" p={2}>
       {/* SEARCH BAR */}
@@ -140,11 +128,9 @@ const Topbar = () => {
                       <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
                         <Typography variant="h6">Notifications</Typography>
                         {unread > 0 && (
-                          <Tooltip title="Mark all as read">
-                            <IconButton size="small" color="success" onClick={() => setUnread(0)}>
-                              <CheckCircleOutlined />
-                            </IconButton>
-                          </Tooltip>
+                          <IconButton size="small" color="success" onClick={() => setUnread(0)}>
+                            <CheckCircleOutlined />
+                          </IconButton>
                         )}
                       </Box>
 
@@ -174,7 +160,7 @@ const Topbar = () => {
           </Popper>
         </Box>
 
-        {/* PROFILE & SETTINGS */}
+        {/* PROFILE */}
         <Box sx={{ flexShrink: 0, ml: 1 }}>
           <IconButton ref={anchorRef} onClick={handleToggle}>
             <PersonOutlinedIcon />
@@ -193,40 +179,38 @@ const Topbar = () => {
               <Transitions type="grow" position="top-right" in={open} {...TransitionProps}>
                 <Paper sx={{ boxShadow: 3, width: 290, maxWidth: 290 }}>
                   <ClickAwayListener onClickAway={handleClose}>
-                    <div>
-                      <MainCard elevation={0} border={false} content={false}>
-                        <CardContent sx={{ px: 2.5, pt: 3 }}>
-                          <Grid container justifyContent="space-between" alignItems="center">
-                            <Grid>
-                              <Stack direction="row" sx={{ gap: 1.25, alignItems: "center" }}>
-                                <Avatar alt="profile user" src={avatarSrc} sx={{ width: 32, height: 32 }} />
-                                <Stack>
-                                  <Typography variant="h6">
-                                    {userInfo.name || `${userInfo.firstName} ${userInfo.lastName}`}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {userInfo.role || "CVA"}
-                                  </Typography>
+                    <MainCard elevation={0} border={false} content={false}>
+                      <Box sx={{ px: 2.5, pt: 3 }}>
+                        <Grid container justifyContent="space-between" alignItems="center">
+                          <Grid>
+                            <Stack direction="row" sx={{ gap: 1.25, alignItems: "center" }}>
+                              <Avatar
+                                sx={{
+                                  width: 32,
+                                  height: 32,
+                                  bgcolor: colors.greenAccent[400],
+                                  fontSize: 16,
+                                  fontWeight: "bold",
+                                  color: colors.grey[900],
+                                }}
+                              >
+                                {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : "?"}
+                              </Avatar>
 
-                                </Stack>
+                              <Stack>
+                                <Typography variant="h6">{userInfo.name || `${userInfo.firstName} ${userInfo.lastName}`}</Typography>
+                                <Typography variant="body2" color="text.secondary">{userInfo.role || "CVA"}</Typography>
                               </Stack>
-                            </Grid>
+                            </Stack>
                           </Grid>
-                        </CardContent>
+                        </Grid>
 
-                        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                          <Tabs variant="fullWidth" value={value} onChange={handleChange}>
-                            <Tab icon={<UserOutlined />} label="Profile" />
-                            <Tab icon={<SettingOutlined />} label="Setting" />
-                          </Tabs>
-                        </Box>
-
+                        {/* PROFILE TAB */}
                         <Box sx={{ p: 1.5 }}>
-                          {value === 0 && <ProfileTab role="cva" onClose={handleClose} />}
-                          {value === 1 && <SettingTab role="cva" onClose={handleClose} />}
+                          <ProfileTab role="cva" onClose={handleClose} />
                         </Box>
-                      </MainCard>
-                    </div>
+                      </Box>
+                    </MainCard>
                   </ClickAwayListener>
                 </Paper>
               </Transitions>

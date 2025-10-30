@@ -173,3 +173,49 @@ export const apiLogout = async () => {
     throw error;
   }
 };
+
+//create user
+export const registerUser = async (data) => {
+  try {
+    const response = await apiFetch("/api/v1/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        roleName: data.roleName,
+      }),
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Register user failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Xác thực OTP sau khi đăng ký
+ */
+export const verifyOtp = async (data) => {
+  try {
+    const response = await apiFetch("/api/v1/auth/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: data.email,
+        otpCode: data.otpCode,
+      }),
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Verify OTP failed:", error);
+    throw error;
+  }
+};

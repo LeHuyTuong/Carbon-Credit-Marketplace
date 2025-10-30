@@ -40,4 +40,25 @@ export const getWithdrawlHistoryByAdmin = async (params = {}) => {
   });
 };
 
+/**
+ * Count all wallet transactions in the system (Admin)
+ * @param {Object} params - { requestTrace: string, requestDateTime: string }
+ * @returns {Promise<number>} - response count
+ */
+export const countWalletTransactions = async (params) => {
+  try {
+    const res = await apiFetch("/api/v1/wallet/transactions/count", {
+      method: "GET",
+      headers: {
+        "X-Request-Trace": params.requestTrace,
+        "X-Request-DateTime": params.requestDateTime,
+      },
+    });
 
+    // API trả về: { response: 123 }
+    return res.response ?? 0;
+  } catch (error) {
+    console.error("Error counting wallet transactions:", error);
+    throw error;
+  }
+};
