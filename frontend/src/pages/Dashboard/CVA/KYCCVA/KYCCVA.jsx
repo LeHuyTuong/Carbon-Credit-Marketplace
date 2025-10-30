@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import { useNavigate } from "react-router-dom";
+import { apiKYCCVA } from "@/apiCVA/apiAuthor.js"; 
 
 const CVAKYC = () => {
   const theme = useTheme();
@@ -19,41 +20,48 @@ const CVAKYC = () => {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    email: "tinbaoblizard567@gmail.com", // autofill
+    email: localStorage.getItem("cva_email") || "",
     phone: "",
     dob: "",
-    role: "CVA", // fixed
+    role: "CVA",
     country: "",
     city: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: "" }); // clear error when retyping
-    }
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" });
   };
 
-  // Custom English validation
   const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
-      if (!value && key !== "email") {
-        newErrors[key] = "Please fill out this field.";
-      }
+      if (!value && key !== "email") newErrors[key] = "Please fill out this field.";
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    console.log(" KYC Data:", form);
-    // TODO: Gửi API lưu KYC
-    navigate("/cva/dashboard");
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+
+      const response = await apiKYCCVA(formData);
+      alert("KYC submitted successfully!");
+      navigate("/cva/dashboard");
+    } catch (error) {
+      alert("KYC submission failed: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,7 +71,7 @@ const CVAKYC = () => {
       justifyContent="center"
       alignItems="center"
       sx={{
-        background: `linear-gradient(135deg, ${colors.primary[400]}, ${colors.blueAccent[700]})`,
+        background: `linear-gradient(135deg, ${colors.primary[400]}, ${colors.greenAccent[700]})`,
       }}
     >
       <Paper
@@ -80,7 +88,7 @@ const CVAKYC = () => {
           fontWeight="bold"
           align="center"
           mb={2}
-          color={colors.blueAccent[400]}
+          color={colors.greenAccent[400]}
         >
           KYC Verification
         </Typography>
@@ -94,9 +102,7 @@ const CVAKYC = () => {
           Please complete your personal and address information.
         </Typography>
 
-        {/*  noValidate disables default browser popup */}
         <form onSubmit={handleSubmit} noValidate>
-          {/* PERSONAL INFO */}
           <Typography
             variant="h6"
             fontWeight="bold"
@@ -107,158 +113,46 @@ const CVAKYC = () => {
           </Typography>
 
           <Grid container spacing={2} mb={2}>
-            <Grid item xs={6}>
-              <TextField
-                label="First Name"
-                name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.firstName}
-                helperText={errors.firstName}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Last Name"
-                name="lastName"
-                value={form.lastName}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.lastName}
-                helperText={errors.lastName}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                label="Email"
-                name="email"
-                value={form.email}
-                fullWidth
-                disabled
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Phone"
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.phone}
-                helperText={errors.phone}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            {/* Date of Birth + Role same row */}
-            <Grid item xs={6}>
-              <TextField
-                label="Date of Birth"
-                name="dob"
-                type="date"
-                value={form.dob}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.dob}
-                helperText={errors.dob}
-                InputLabelProps={{ shrink: true }}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Role"
-                name="role"
-                value={form.role}
-                fullWidth
-                disabled
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-          </Grid>
-
-          {/* ADDRESS */}
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            color={colors.greenAccent[400]}
-            mb={1}
-          >
-            Address
-          </Typography>
-
-          <Grid container spacing={2} mb={2}>
-            <Grid item xs={6}>
-              <TextField
-                label="Country"
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.country}
-                helperText={errors.country}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="City"
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.city}
-                helperText={errors.city}
-                variant="filled"
-                sx={{
-                  backgroundColor: colors.primary[400],
-                  borderRadius: "6px",
-                }}
-              />
-            </Grid>
+            {[
+              { name: "firstName", label: "First Name" },
+              { name: "lastName", label: "Last Name" },
+              { name: "email", label: "Email", disabled: true },
+              { name: "phone", label: "Phone", type: "tel" },
+              { name: "dob", label: "Date of Birth", type: "date" },
+              { name: "role", label: "Role", disabled: true },
+              { name: "country", label: "Country" },
+              { name: "city", label: "City" },
+            ].map((field) => (
+              <Grid
+                item
+                xs={field.name === "email" || field.name === "country" || field.name === "city" ? 12 : 6}
+                key={field.name}
+              >
+                <TextField
+                  label={field.label}
+                  name={field.name}
+                  type={field.type || "text"}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={field.disabled}
+                  error={!!errors[field.name]}
+                  helperText={errors[field.name]}
+                  InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
+                  variant="filled"
+                  sx={{
+                    backgroundColor: colors.primary[400],
+                    borderRadius: "6px",
+                  }}
+                />
+              </Grid>
+            ))}
           </Grid>
 
           <Button
             type="submit"
             fullWidth
+            disabled={loading}
             variant="contained"
             sx={{
               mt: 1,
@@ -266,12 +160,10 @@ const CVAKYC = () => {
               backgroundColor: colors.greenAccent[600],
               color: colors.grey[900],
               fontWeight: "bold",
-              "&:hover": {
-                backgroundColor: colors.greenAccent[700],
-              },
+              "&:hover": { backgroundColor: colors.greenAccent[700] },
             }}
           >
-            SUBMIT KYC
+            {loading ? "Submitting..." : "SUBMIT KYC"}
           </Button>
         </form>
       </Paper>

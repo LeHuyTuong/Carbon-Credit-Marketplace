@@ -1,6 +1,6 @@
 import { apiFetch } from "@/utils/apiFetch";
 
-/**  Admin Login API */
+/**  CVA Login API */
 export const apiLogin = async (email, password) => {
   try {
     const data = await apiFetch("/api/v1/auth/login", {
@@ -25,19 +25,19 @@ export const apiLogin = async (email, password) => {
     const resData = data.responseData || {};
     const token = resData.jwt;
 
-    //  Lưu token & email RIÊNG CHO ADMIN
+    //  Lưu token & email RIÊNG CHO CVA
     if (token) {
-      localStorage.setItem("admin_token", token);
-      sessionStorage.setItem("admin_token", token);
+      localStorage.setItem("cva_token", token);
+      sessionStorage.setItem("cva_token", token);
     }
 
     if (email) {
-      localStorage.setItem("admin_email", email);
-      sessionStorage.setItem("admin_email", email);
+      localStorage.setItem("cva_email", email);
+      sessionStorage.setItem("cva_email", email);
     }
     if (resData.role) {
-      localStorage.setItem("admin_role", resData.role);
-      sessionStorage.setItem("admin_role", resData.role);
+      localStorage.setItem("cva_role", resData.role);
+      sessionStorage.setItem("cva_role", resData.role);
     }
     return resData;
   } catch (error) {
@@ -46,10 +46,10 @@ export const apiLogin = async (email, password) => {
   }
 };
 
-/**  Admin KYC API */
-export const apiKYCAdmin = async (formData) => {
+/**  CVA KYC API */
+export const apiKYCCVA = async (formData) => {
   try {
-    const data = await apiFetch("/api/v1/kyc/admin", {
+    const data = await apiFetch("/api/v1/kyc/cva/create", {
       method: "POST",
       body: formData,
     });
@@ -72,12 +72,12 @@ export const apiKYCAdmin = async (formData) => {
   }
 };
 /** Check Admin KYC API */
-export const checkKYCAdmin = async () => {
+export const checkKYCCVA = async () => {
   try {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("cva_token");
     if (!token) throw new Error("No token found!");
 
-    const data = await apiFetch("/api/v1/kyc/admin", {
+    const data = await apiFetch("/api/v1/kyc/cva", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -101,12 +101,12 @@ export const checkKYCAdmin = async () => {
   }
 };
 
-export const updateKYCAdmin = async (formData) => {
+export const updateKYCCVA = async (formData) => {
   try {
-    const token = localStorage.getItem("admin_token");
+    const token = localStorage.getItem("cva_token");
     if (!token) throw new Error("No token found!");
 
-    const data = await apiFetch("/api/v1/kyc/admin", {
+    const data = await apiFetch("/api/v1/kyc/cva", {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -135,11 +135,10 @@ export const updateKYCAdmin = async (formData) => {
 };
 
 //logout
-
 export const apiLogout = async () => {
   try {
-    const token = localStorage.getItem("admin_token");
-    if (!token) throw new Error("No admin token found!");
+    const token = localStorage.getItem("cva_token");
+    if (!token) throw new Error("No cva token found!");
 
     const data = await apiFetch("/api/v1/auth/logout", {
       method: "POST",
@@ -160,16 +159,16 @@ export const apiLogout = async () => {
       throw new Error(message);
     }
 
-    console.log(" Admin logout successful:", data.responseData);
+    console.log(" CVA logout successful:", data.responseData);
 
     //  Dọn token & thông tin admin sau khi logout
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_role");
-    localStorage.removeItem("admin_id");
+    localStorage.removeItem("cva_token");
+    localStorage.removeItem("cva_role");
+    localStorage.removeItem("cva_id");
 
     return data.responseData.message || "Logout successful";
   } catch (error) {
-    console.error(" Admin logout API Error:", error.message);
+    console.error(" CVA logout API Error:", error.message);
     throw error;
   }
 };

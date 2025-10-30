@@ -40,7 +40,7 @@ public class SseServiceImpl implements SseService {
     @Override
     public SseEmitter subscribe() {
         // Tạo emitter với thời gian timeout dài
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L); // timeout 30 phút
 
         User currentUser = currentUser();
         Long userId = currentUser.getId();
@@ -52,7 +52,6 @@ public class SseServiceImpl implements SseService {
 
 
         // Lưu emitter vào map với key là userId
-
         SseEmitter previous = emitters.put(userId, emitter);
         if (previous != null) {
             previous.complete();

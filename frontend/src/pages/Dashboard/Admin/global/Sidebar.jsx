@@ -21,7 +21,7 @@ import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutl
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-
+import { checkKYCAdmin } from "@/apiAdmin/apiLogin.js"; 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -46,6 +46,45 @@ const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState(location.pathname);
+
+  const [adminInfo, setAdminInfo] = useState({ name: "", role: "" });
+
+
+
+  //  Fetch KYC Info khi component load
+useEffect(() => {
+  const fetchAdminData = async () => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      if (!token) throw new Error("No admin token found!");
+
+      //  Fetch KYC info để lấy name
+      const kycData = await checkKYCAdmin();
+
+      //  Lấy role từ localStorage (đã lưu khi login)
+      const role = localStorage.getItem("admin_role") || "Admin";
+
+      //  Lấy tên admin từ KYC response
+      const name = kycData?.name || "Unknown";
+
+      setAdminInfo({
+        name,
+        role,
+      });
+
+      console.log(" Admin Info:", name, "| Role:", role);
+      console.log(" KYC Data:", kycData);
+    } catch (err) {
+      console.error(" Failed to fetch admin data:", err.message);
+      setAdminInfo({ name: "Unknown", role: "Admin" });
+    }
+  };
+
+  fetchAdminData();
+}, []);
+
+
+
 
   // Cập nhật khi URL đổi (hoặc reload)
   useEffect(() => {
@@ -121,10 +160,10 @@ const Sidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                  Tin Bao
+                  {adminInfo.name || "Loading..."}
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                  Admin
+                  {adminInfo.role || "Admin"}
                 </Typography>
               </Box>
             </Box>

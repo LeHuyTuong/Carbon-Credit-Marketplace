@@ -12,7 +12,8 @@ import {
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
-import { apiLogin } from "@/apiAdmin/apiLogin.js"; //  import API
+import { apiLogin, checkKYCAdmin } from "@/apiAdmin/apiLogin.js";
+
 
 const AdminLogin = () => {
   const theme = useTheme();
@@ -26,14 +27,10 @@ const AdminLogin = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Reset trạng thái lỗi
     setError("");
 
-    // Kiểm tra input cơ bản
     if (!form.email || !form.password) {
       setError("Please fill in all fields!");
       return;
@@ -41,28 +38,30 @@ const AdminLogin = () => {
 
     try {
       setLoading(true);
-
-      // ✅ Gọi API login thật
       const res = await apiLogin(form.email, form.password);
 
-      // ✅ Kiểm tra phản hồi
       if (res?.jwt) {
-        // Lưu JWT (tùy bạn — có thể dùng localStorage, Redux, v.v.)
         localStorage.setItem("token", res.jwt);
         localStorage.setItem("roles", JSON.stringify(res.roles || []));
 
-        // Điều hướng đến trang admin chính (VD: /admin/kyc)
-        navigate("/admin/kyc");
+        // 🔹 Sau khi login, kiểm tra xem admin có KYC chưa
+        const hasKYC = await checkKYCAdmin();
+        console.log(" KYC status from API:", hasKYC);
+        if (hasKYC) {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/admin/kyc");
+        }
       } else {
         setError(res?.message || "Login failed. Please try again.");
       }
     } catch (err) {
-      // ❌ Lỗi mạng hoặc API
       setError(err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleForgotPassword = () => {
     navigate("/admin/forgot-password");
@@ -140,21 +139,7 @@ const AdminLogin = () => {
             }}
           />
 
-          {/* Forgot Password link */}
-          <Box textAlign="right" mb={2}>
-            <Link
-              component="button"
-              onClick={handleForgotPassword}
-              underline="hover"
-              sx={{
-                fontSize: "0.85rem",
-                color: colors.greenAccent[500],
-                "&:hover": { color: colors.greenAccent[400] },
-              }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
+          
 
           {error && (
             <Typography
