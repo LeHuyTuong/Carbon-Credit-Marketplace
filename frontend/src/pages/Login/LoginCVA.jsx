@@ -1,8 +1,18 @@
 import React, { useState } from "react";
-import { Box, Button, TextField, Typography, useTheme, Paper, Link } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  useTheme,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
+import { apiLogin } from "@/apiCVA/apiAuthor.js"; // API login CVA
+import { checkKYCCVA } from "@/apiCVA/apiAuthor.js"; // API check KYC
 
 const CVALogin = () => {
   const theme = useTheme();
@@ -11,24 +21,42 @@ const CVALogin = () => {
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    if (form.email === "tinbaoblizard567@gmail.com" && form.password === "Nguanhoc123456@") {
-      navigate("/cva/kyc");
-    } else {
-      setError("Invalid email or password!");
+    try {
+      // Gọi API login
+      const resData = await apiLogin(form.email, form.password);
+
+      if (resData) {
+        console.log(" Login success:", resData);
+
+        // Sau khi login, check KYC status
+        const kycStatus = await checkKYCCVA();
+        console.log(" KYC check:", kycStatus);
+
+        if (kycStatus) {
+          // Đã có thông tin KYC
+          navigate("/cva/dashboard");
+        } else {
+          // Chưa có → chuyển sang form KYC
+          navigate("/cva/kyc");
+        }
+      }
+    } catch (err) {
+      console.error(" Login Error:", err);
+      setError(err.message || "Login failed. Please try again!");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleForgotPassword = () => {
-    // navigate to forgot password page
-    navigate("/cva/forgot-password");
   };
 
   return (
@@ -38,7 +66,7 @@ const CVALogin = () => {
       justifyContent="center"
       alignItems="center"
       sx={{
-        background: `linear-gradient(135deg, ${colors.primary[400]}, ${colors.blueAccent[700]})`,
+        background: `linear-gradient(135deg, ${colors.primary[400]}, ${colors.greenAccent[700]})`,
       }}
     >
       <Paper
@@ -59,7 +87,11 @@ const CVALogin = () => {
               mb: 1,
             }}
           />
-          <Typography variant="h4" fontWeight="bold" color={colors.blueAccent[400]}>
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            color={colors.greenAccent[400]}
+          >
             CVA Login
           </Typography>
           <Typography variant="body2" color={colors.grey[300]}>
@@ -75,6 +107,7 @@ const CVALogin = () => {
             value={form.email}
             onChange={handleChange}
             fullWidth
+            required
             variant="filled"
             sx={{
               mb: 2,
@@ -89,6 +122,7 @@ const CVALogin = () => {
             value={form.password}
             onChange={handleChange}
             fullWidth
+            required
             variant="filled"
             sx={{
               mb: 2,
@@ -111,6 +145,7 @@ const CVALogin = () => {
             type="submit"
             fullWidth
             variant="contained"
+            disabled={loading}
             sx={{
               mt: 1,
               py: 1.2,
@@ -122,20 +157,8 @@ const CVALogin = () => {
               },
             }}
           >
-            Login
+            {loading ? <CircularProgress size={26} color="inherit" /> : "Login"}
           </Button>
-
-          {/* Forgot Password Link */}
-          <Typography variant="body2" sx={{ mt: 2 }}>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={handleForgotPassword}
-              sx={{ color: colors.blueAccent[400], textDecoration: "underline" }}
-            >
-              Forgot Password?
-            </Link>
-          </Typography>
         </form>
 
         <Typography
