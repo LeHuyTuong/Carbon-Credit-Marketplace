@@ -67,11 +67,11 @@ public class EmissionReportController {
 
     @Operation(
             summary = "List emission reports for CVA review",
-            description = "Retrieves a list of submitted emission reports for CVA to review and verify. Can be filtered by status."
+            description = "Retrieves a paginated list of submitted emission reports for CVA to review and verify. Can be filtered by status."
     )
     @PreAuthorize("hasRole('CVA')")
     @GetMapping("/list-cva-check")
-    public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listForCva(
+    public ResponseEntity<TuongCommonResponse<Page<EmissionReportResponse>>> listForCva(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -81,12 +81,15 @@ public class EmissionReportController {
         String trace = traceOrNew(requestTrace);
         String now = dateOrNow(requestDateTime);
 
-        Page<EmissionReportResponse> p = service.listReportsForCva(status, PageRequest.of(page, size));
-        List<EmissionReportResponse> data = p.getContent();
+        Page<EmissionReportResponse> p = service.listReportsForCva(PageRequest.of(page, size));
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Reports fetched successfully for CVA");
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                "Reports fetched successfully for CVA"
+        );
+        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, p));
     }
+
 
     @Operation(
             summary = "Download original uploaded CSV file",
@@ -215,22 +218,34 @@ public class EmissionReportController {
         return ResponseEntity.ok(ResponseUtil.success(UUID.randomUUID().toString(), data));
     }
 
+    // EmissionReportController.java (method /details)
     @Operation(
             summary = "Get per-vehicle emission details in a report",
-            description = "Retrieves all vehicle-level emission details within a specific report, including total energy and CO2 emissions per vehicle."
+            description = "Always returns 200 with empty content when no rows."
     )
-
     @GetMapping("/{reportId}/details")
-    public ResponseEntity<CommonResponse<Page<EmissionReportDetailResponse>>> getReportDetails(
+    @PreAuthorize("hasAnyRole('CVA','COMPANY')") // thêm 'ADMIN' nếu cần
+    public ResponseEntity<TuongCommonResponse<Page<EmissionReportDetailResponse>>> getReportDetails(
             @PathVariable Long reportId,
             @RequestParam(required = false) String plateContains,
-            Pageable pageable
+            Pageable pageable,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
+        String trace = traceOrNew(requestTrace);
+        String now = dateOrNow(requestDateTime);
+
         Page<EmissionReportDetailResponse> page =
                 service.getReportDetails(reportId, plateContains, pageable);
 
-        return ResponseEntity.ok(ResponseUtil.success(UUID.randomUUID().toString(), page));
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                "Emission report details fetched successfully"
+        );
+        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, page));
     }
+
+
 
     @PostMapping("/{id}/verify")
     @PreAuthorize("hasRole('CVA')")

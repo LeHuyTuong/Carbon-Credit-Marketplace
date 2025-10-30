@@ -1,10 +1,12 @@
 package com.carbonx.marketcarbon.dto.response;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.model.CarbonCredit;
 import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -27,4 +29,5 @@ public class WalletTransactionResponse {
     private LocalDateTime createdAt;
     private String batchCode;
 
+    private LocalDate creditExpiryDate;
 }

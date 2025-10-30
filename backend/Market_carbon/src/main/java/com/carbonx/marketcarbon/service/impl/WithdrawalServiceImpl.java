@@ -13,6 +13,7 @@ import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
+import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
 import jakarta.transaction.Transactional;
@@ -38,6 +39,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final WalletRepository walletRepository;
     private final WalletTransactionService walletTransactionService;
     private final ApplicationNotificationService applicationNotificationService;
+    private final SseService sseService;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -70,6 +72,10 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .requestedAt(LocalDateTime.now(VIETNAM_ZONE))
                     .user(user)
                     .build();
+
+            String message = " deposit with money "  + withdrawalAmount  + " USD"  ;
+            sseService.sendNotificationToUser(user.getId(), message);
+
             return withdrawalRepository.save(withdrawal);
         }else{
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
@@ -105,6 +111,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             try{
                 applicationNotificationService.sendAdminConfirmRequestWithdrawal(
                         user.getEmail(),
+                        user.getEmail(),
                         withdrawalRequest.getId(),
                         amountToWithdraw,
                         withdrawalRequest.getRequestedAt()
@@ -112,6 +119,10 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             }catch (Exception e){
                 log.warn("Failed to send withdrawal confirmation email via notification service for user {}: {}", user.getEmail(), e.getMessage());
             }
+
+            String message = " deposit with money "  + amountToWithdraw  + " USD"  ;
+            sseService.sendNotificationToUser(user.getId(), message);
+
             return savedWithdrawal;
         } else {
             withdrawalRequest.setStatus(Status.REJECTED);
@@ -124,6 +135,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         if (savedWithdrawal.getStatus() == Status.FAILED || savedWithdrawal.getStatus() == Status.REJECTED) {
             try {
                 applicationNotificationService.sendWithdrawalFailedOrRejected(
+                        user.getEmail(),
                         user.getEmail(),
                         savedWithdrawal.getId(),
                         amountToWithdraw,
