@@ -9,11 +9,15 @@ export default function CreditSummaryCard({ summary }) {
 
   const items = [
     {
-      label: "Available (Wallet)",
+      label: "Issued",
       value: summary.available || 0,
       color: "#00ffc8",
     },
-    { label: "Issued", value: summary.issued || 0, color: "#1bb7cfff" },
+    {
+      label: "Available",
+      value: summary.issued || 0,
+      color: "#1bb7cfff",
+    },
     { label: "Retired", value: summary.retired || 0, color: "#c484d4ff" },
     {
       label: "Listed / Sold",
@@ -27,7 +31,7 @@ export default function CreditSummaryCard({ summary }) {
       {items.map((item, i) => (
         <div key={i} className="credit-summary-card glass-card text-center p-3">
           <h3 style={{ color: item.color }}>
-            {item.value} <span style={{ fontSize: "1rem" }}>CC</span>
+            {item.value} <span style={{ fontSize: "1rem" }}>credits</span>
           </h3>
           <p className="text-light small">{item.label}</p>
         </div>

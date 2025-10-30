@@ -245,9 +245,10 @@ public class OrderServiceImpl implements OrderService {
                     ? sourceCredit.getCarbonCredit()
                     : BigDecimal.ZERO;
 
-            LocalDate expiryDate = sourceCredit.getExpiryDate() != null ?
-                    sourceCredit.getExpiryDate()
-                    : LocalDate.now();
+            LocalDate expiryDate = sourceCredit.getExpiryDate();
+            if (expiryDate == null && sourceCredit.getBatch() != null) {
+                expiryDate = sourceCredit.getBatch().getExpiresAt();
+            }
 
 
             // 4.3 Tổng số sau khi bán  trừ đi số lượng đã bán
