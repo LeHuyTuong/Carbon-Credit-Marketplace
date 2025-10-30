@@ -1,5 +1,3 @@
-
-
 services:
   db:
     image: mysql:8.0
@@ -35,7 +33,7 @@ services:
       SPRING_MAIL_PASSWORD: vzzvzqynxjyvouvr
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
-
+      
     ports:
       - "8082:8082"  
     depends_on:
@@ -50,14 +48,14 @@ services:
       dockerfile: Dockerfile
       args:
         # cấu hình biến môi trường khi build để React gọi đúng API
-        REACT_APP_API_BASE_URL: https://carbonx.io.vn/api
+        REACT_APP_API_BASE_URL: http://be:8082/api 
     image: carbonx-fe:latest
     networks:
       - backend
     ports:
-      - "3000:80"  # expose cổng 80 trong container ra cổng 3000 trên host
+      - "3000:80"  
     depends_on:
-      - api
+      - be 
     restart: unless-stopped
 
 networks:

@@ -33,6 +33,7 @@ build/
 .vscode/
 # Ignore local data folder in FE
 frontend/src/data/
+**/application.properties
 
 
 

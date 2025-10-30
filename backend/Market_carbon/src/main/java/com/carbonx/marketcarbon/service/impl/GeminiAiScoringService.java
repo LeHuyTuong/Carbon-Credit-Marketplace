@@ -3,6 +3,8 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.config.AiConfig;
 import com.carbonx.marketcarbon.model.EmissionReport;
 import com.carbonx.marketcarbon.model.EmissionReportDetail;
+import com.carbonx.marketcarbon.repository.EmissionReportDetailRepository;
+import com.carbonx.marketcarbon.repository.EmissionReportRepository;
 import com.carbonx.marketcarbon.service.AiScoringService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,8 @@ public class GeminiAiScoringService implements AiScoringService {
 
     private final AiConfig cfg;
     private final WebClient geminiWebClient;
+    private final EmissionReportRepository reportRepo;
+    private final EmissionReportDetailRepository detailRepo;
 
     @Override
     public AiScoreResult suggestScore(EmissionReport report, List<EmissionReportDetail> details) {
@@ -29,7 +33,7 @@ public class GeminiAiScoringService implements AiScoringService {
             return new AiScoreResult(BigDecimal.ZERO, "AI disabled", "na");
         }
 
-        // ===== Basic stats for prompt =====
+        // ===== Basic Stats =====
         final int count = details.size();
         final long zeroEnergy = details.stream()
                 .filter(d -> d.getTotalEnergy() == null || d.getTotalEnergy().signum() == 0)
@@ -47,32 +51,67 @@ public class GeminiAiScoringService implements AiScoringService {
                 .mapToDouble(BigDecimal::doubleValue)
                 .average().orElse(0.0);
 
-        final double co2Coverage = (double) details.stream().filter(d -> d.getCo2Kg() != null).count()
-                / Math.max(1, count);
+        final double co2Coverage = (double) details.stream()
+                .filter(d -> d.getCo2Kg() != null)
+                .count() / Math.max(1, count);
 
-        // ===== Prompt (English) enforcing JSON & notes format =====
+        // ===== Duplicate / anomaly detection =====
+        int duplicatePlates = 0;
+        int sharedProjectReports = 0;
+        boolean efTooHigh = false;
+        boolean efTooLow = false;
+
+        try {
+            duplicatePlates = detailRepo.countDuplicatePlatesAcrossCompanies(report.getId(), report.getSeller().getId());
+            sharedProjectReports = reportRepo.countByProjectIdAndSeller_IdNot(report.getProject().getId(), report.getSeller().getId());
+            efTooHigh = avgEf > 0.6;
+            efTooLow = avgEf < 0.2;
+        } catch (Exception ex) {
+            log.warn("[AI] Warning: duplicate/anomaly check failed: {}", ex.getMessage());
+        }
+
         String rubric =
-                "You are a system that produces a preliminary score for an emission report. Return ONLY ONE valid JSON:\n" +
+                "You are a system that evaluates carbon emission reports for both data quality and fraud risk.\n" +
+                        "You must return ONLY ONE valid JSON object strictly matching this structure:\n\n" +
                         "{\n" +
-                        "  \"score\": number,          // 0..10 with exactly 1 decimal place\n" +
-                        "  \"version\": \"v1.0\",\n" +
-                        "  \"notes\": string           // a multi-line string using \\n for line breaks\n" +
+                        "  \"score\": number,                // 0..10 with exactly one decimal\n" +
+                        "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
+                        "  \"fraudLikelihood\": number,      // 0.0..1.0 (AI-estimated probability)\n" +
+                        "  \"issues\": [                     // list of detected problems, if any\n" +
+                        "    { \"type\": string, \"message\": string }\n" +
+                        "  ],\n" +
+                        "  \"version\": \"v2.5\",\n" +
+                        "  \"notes\": string                 // detailed multiline explanation using \\n for line breaks\n" +
                         "}\n\n" +
-                        "HARD REQUIREMENTS for 'notes':\n" +
-                        "- Exactly 5 leading lines, each formatted as: [+x.y/a.b] ...\n" +
-                        "- Then one line: \"---------------------------------------------\"\n" +
-                        "- Then one line: \"Total suggested score: {score}/10.0\"\n" +
-                        "- Then a block title: \" Detailed analysis:\" followed by bullets, each line starting with \"• \"\n" +
-                        "- Then a block title: \" Suggestions for CVA:\" followed by bullets, each line starting with \"- \"\n" +
-                        "- Use \\n for line breaks (inside JSON), no markdown, no code fences, output nothing except the JSON.\n\n" +
-                        "Scoring rubric (total 10 points):\n" +
-                        "- Data completeness (2.0)\n" +
-                        "- Consistency of period & project (3.0)\n" +
-                        "- Reasonableness of EF / outliers (2.5)\n" +
-                        "- Anomalies (1.5)\n" +
-                        "- Policy alignment with Project description (1.0)\n";
 
-        // Add project context (null-safe)
+                        "===== SCORING RUBRIC (total 10 points) =====\n" +
+                        "- Data completeness (2.0)\n" +
+                        "- Consistency of period & project (2.0)\n" +
+                        "- Reasonableness of EF & CO2 ratio (2.0)\n" +
+                        "- CO2 coverage & anomalies (2.0)\n" +
+                        "- Policy alignment & reliability (2.0)\n\n" +
+
+                        "===== FORMAT RULES FOR 'notes' =====\n" +
+                        "- The first 5 lines must follow this pattern: [+x.y/a.b] description\n" +
+                        "- Then one line: ---------------------------------------------\n" +
+                        "- Then one line: Total suggested score: {score}/10.0\n" +
+                        "- Then a section titled: Detailed analysis:\n" +
+                        "  Each bullet starts with \"• \"\n" +
+                        "- Then a section titled: Risk summary:\n" +
+                        "  Must include: Risk level, Fraud likelihood, and short reasoning.\n" +
+                        "- Then a section titled: Suggestions for CVA:\n" +
+                        "  Each bullet starts with \"- \"\n" +
+                        "- Use \\n for line breaks, no markdown, no code fences, no extra text.\n\n" +
+
+                        "===== RISK HINTS =====\n" +
+                        "- Duplicate license plates in other companies → HIGH\n" +
+                        "- Shared project across sellers → MEDIUM-HIGH\n" +
+                        "- EF above 0.6 or below 0.2 → MEDIUM-HIGH\n" +
+                        "- Multiple zero-energy rows (>10%) → MEDIUM\n" +
+                        "- Sudden CO2 drop >30% vs last period → HIGH\n" +
+                        "- Missing CO2 column or inconsistent period → MEDIUM\n" +
+                        "- If no anomaly detected → LOW\n";
+
         String projectContext = String.format(
                 "Project context:\n- Commitments: %s\n- MeasurementMethod: %s\n- TechnicalIndicators: %s",
                 safe(report.getProject() != null ? report.getProject().getCommitments() : null),
@@ -81,23 +120,39 @@ public class GeminiAiScoringService implements AiScoringService {
         );
 
         String dataContext = String.format(
-                "Data summary (please use these numbers in 'notes'):\n" +
+                "Report summary:\n" +
+                        "- Company: %s\n" +
+                        "- Project: %s\n" +
+                        "- Period: %s\n" +
                         "- Rows: %d\n" +
                         "- Zero-energy rows: %d\n" +
-                        "- CO2 coverage (%%): %.0f\n" +
-                        "- Average EF (kg/kWh): %.2f\n" +
-                        "- Average CO2 per row (kg): %.1f",
+                        "- CO2 coverage: %.0f%%\n" +
+                        "- Avg EF (kg/kWh): %.3f\n" +
+                        "- Avg CO2 per row (kg): %.1f\n",
+                report.getSeller().getCompanyName(),
+                report.getProject().getTitle(),
+                report.getPeriod(),
                 count, zeroEnergy, co2Coverage * 100, avgEf, avgCo2
         );
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("contents", Collections.singletonList(
-                Collections.singletonMap("parts", Collections.singletonList(
-                        Collections.singletonMap("text", rubric + "\n\n" + projectContext + "\n\n" + dataContext)
-                ))
-        ));
-        body.put("generationConfig", Collections.singletonMap("response_mime_type", "application/json"));
+        String anomalyContext = String.format(
+                "Detected anomalies:\n" +
+                        "- Duplicate plates across companies: %d\n" +
+                        "- Shared project reports: %d\n" +
+                        "- EF too high: %s\n" +
+                        "- EF too low: %s\n",
+                duplicatePlates, sharedProjectReports, efTooHigh, efTooLow
+        );
 
+        String fullPrompt = rubric + "\n\n" + projectContext + "\n\n" + dataContext + "\n\n" + anomalyContext;
+
+        Map<String, Object> body = Map.of(
+                "contents", List.of(Map.of("parts", List.of(Map.of("text", fullPrompt)))),
+                "generationConfig", Map.of("response_mime_type", "application/json")
+        );
+
+
+        // ===== Call Gemini =====
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> raw = geminiWebClient.post()
@@ -113,22 +168,24 @@ public class GeminiAiScoringService implements AiScoringService {
                     .block();
 
             String jsonText = extractText(raw);
+            log.info("[AI] Gemini output: {}", jsonText);
+
             @SuppressWarnings("unchecked")
             Map<String, Object> parsed = new ObjectMapper().readValue(jsonText, Map.class);
 
-            Object scoreObj   = parsed.containsKey("score")   ? parsed.get("score")   : 0;
-            Object notesObj   = parsed.containsKey("notes")   ? parsed.get("notes")   : "";
-            Object versionObj = parsed.containsKey("version") ? parsed.get("version") : "v1.0";
+            double sc = ((Number) parsed.getOrDefault("score", 0)).doubleValue();
+            String version = Objects.toString(parsed.getOrDefault("version", "v2.0"));
+            String notes = Objects.toString(parsed.getOrDefault("notes", ""));
+            String risk = Objects.toString(parsed.getOrDefault("riskLevel", "LOW"));
+            double fraud = ((Number) parsed.getOrDefault("fraudLikelihood", 0)).doubleValue();
 
-            double sc = (scoreObj instanceof Number) ? ((Number) scoreObj).doubleValue() : 0.0;
-            String notes = Objects.toString(notesObj, "");
-            String version = Objects.toString(versionObj, "v1.0");
+            notes += "\n\n--- Risk summary ---\nRisk level: " + risk + "\nFraud likelihood: " + fraud;
 
             BigDecimal score = BigDecimal.valueOf(sc).setScale(1, RoundingMode.HALF_UP);
             return new AiScoreResult(score, notes, version);
 
         } catch (Exception ex) {
-            log.warn("Gemini scoring failed: {}", ex.getMessage());
+            log.error("[AI] Gemini risk analysis failed: {}", ex.getMessage(), ex);
             return new AiScoreResult(BigDecimal.ZERO, "AI error: " + ex.getMessage(), "error");
         }
     }
@@ -138,21 +195,13 @@ public class GeminiAiScoringService implements AiScoringService {
     private static String extractText(Object raw) {
         if (!(raw instanceof Map)) return "{}";
         Map<String, Object> map = (Map<String, Object>) raw;
-
         Object candidatesObj = map.get("candidates");
-        if (!(candidatesObj instanceof List)) return "{}";
-        List<?> candidates = (List<?>) candidatesObj;
-        if (candidates.isEmpty()) return "{}";
-
-        Object contentObj = ((Map<?, ?>) candidates.get(0)).get("content");
+        if (!(candidatesObj instanceof List) || ((List<?>) candidatesObj).isEmpty()) return "{}";
+        Object contentObj = ((Map<?, ?>) ((List<?>) candidatesObj).get(0)).get("content");
         if (!(contentObj instanceof Map)) return "{}";
-
         Object partsObj = ((Map<?, ?>) contentObj).get("parts");
-        if (!(partsObj instanceof List)) return "{}";
-        List<?> parts = (List<?>) partsObj;
-        if (parts.isEmpty()) return "{}";
-
-        Object text = ((Map<?, ?>) parts.get(0)).get("text");
+        if (!(partsObj instanceof List) || ((List<?>) partsObj).isEmpty()) return "{}";
+        Object text = ((Map<?, ?>) ((List<?>) partsObj).get(0)).get("text");
         return text == null ? "{}" : text.toString();
     }
 

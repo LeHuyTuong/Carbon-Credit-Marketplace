@@ -20,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -299,7 +300,7 @@ public class OrderServiceImpl implements OrderService {
 
             if (listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 listing.setStatus(ListingStatus.SOLD);
-                listing.setExpiresAt(LocalDateTime.now(VIETNAM_ZONE)); // Cập nhật thời gian hết hạn khi bán hết
+                listing.setExpiresAt(sourceCredit.getExpiryDate());
             }
             marketplaceListingRepository.save(listing);
 
