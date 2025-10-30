@@ -76,41 +76,51 @@ export default function useWalletData() {
   };
 
   // === FETCH PURCHASED CREDITS ===
-  const fetchPurchasedCredits = async () => {
-    try {
-      setLoading(true);
-      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
-      const walletData = res?.response || {};
+const fetchPurchasedCredits = async () => {
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+    const walletData = res?.response || {};
 
-      // Dữ liệu giao dịch nằm trong walletTransactions
-      const txList = walletData.walletTransactions || [];
+    const txList = walletData.walletTransactions || [];
+    const carbonCredits = walletData.carbonCredits || [];
 
-      // Lọc các giao dịch BUY_CARBON_CREDIT
-      const purchases = txList.filter(
-        (tx) => tx.transactionType === "BUY_CARBON_CREDIT"
+    const purchases = txList
+      .filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT");
+
+    // dữ liệu transaction ra danh sách hiển thị
+    const mapped = purchases.map((tx) => {
+      //tìm credit liên quan nếu cần thông tin thêm
+      const relatedCredit = carbonCredits.find(
+        (c) => c.batchCode === tx.batchCode
       );
 
-      const mapped = purchases.map((tx) => ({
+      return {
         id: tx.id,
         orderId: tx.orderId,
         description: tx.description || "Carbon credit purchase",
         unitPrice: tx.unitPrice || 0,
         amount: tx.amount || 0,
         quantity: tx.carbonCreditQuantity || 0,
+        balanceBefore: tx.balanceBefore || 0,
+        balanceAfter: tx.balanceAfter || 0,
+        creditStatus: relatedCredit?.status || null,
         createdAt: new Date(tx.createdAt).toLocaleString("vi-VN", {
           timeZone: "Asia/Ho_Chi_Minh",
           hour12: false,
         }),
-      }));
+      };
+    });
 
-      setPurchasedCredits(mapped);
-    } catch (err) {
-      console.error("Failed to fetch purchased credits:", err);
-      setPurchasedCredits([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setPurchasedCredits(mapped);
+  } catch (err) {
+    console.error("Failed to fetch purchased credits:", err);
+    setPurchasedCredits([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // === FETCH MY CREDITS (theo batchId) ===
   const fetchMyCredits = async (batchId) => {
