@@ -44,7 +44,7 @@ const Sidebar = () => {
     const fetchKYC = async () => {
       try {
         const data = await checkKYCCVA();
-        console.log("🔥 KYC raw data from API:", data);
+        console.log(" KYC raw data from API:", data);
         if (data) {
           setKycInfo(data);
         }

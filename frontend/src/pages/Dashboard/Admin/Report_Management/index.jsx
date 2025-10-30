@@ -17,33 +17,37 @@ import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
   // Fetch API
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const res = await getAllReportsAdmin({ page: 0, size: 20 });
-        if (res?.response) {
-          // API trả về res.response là mảng report
-          const formatted = res.response.map((item) => ({
-            id: item.id,
-            sellerName: item.sellerName,
-            projectName: item.projectName,
-            period: item.period,
-            totalEnergy: item.totalEnergy,
-            totalCo2: item.totalCo2,
-            vehicleCount: item.vehicleCount,
-            status: item.status,
-            submittedAt: item.submittedAt,
-          }));
-          setData(formatted);
-        }
-      } catch (error) {
-        console.error("Failed to fetch reports:", error);
-      } finally {
-        setLoading(false);
+  const fetchReports = async () => {
+    try {
+      const res = await getAllReportsAdmin({ page: 0, size: 50  });
+      console.log("Raw API response:", res);
+      if (res?.response) {
+        const formatted = res.response.map((item, index) => ({
+          id: item.id ?? `report-${index}`, // fallback id nếu null
+          sellerName: item.sellerName ?? "—",
+          projectName: item.projectName ?? "—",
+          period: item.period ?? "—",
+          totalEnergy: item.totalEnergy ?? 0,
+          totalCo2: item.totalCo2 ?? 0,
+          vehicleCount: item.vehicleCount ?? 0,
+          status: item.status ?? "—",
+          submittedAt: item.submittedAt,
+        }));
+        setData(formatted);
+        console.log("Formatted data:", formatted);
+        console.log("IDs:", formatted.map(d => d.id));
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch reports:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchReports();
-  }, []);
+  fetchReports();
+}, []);
+
+
 
   // Cột hiển thị đúng field của BE
   const columns = [
