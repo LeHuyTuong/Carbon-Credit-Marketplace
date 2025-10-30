@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
-import { Box, IconButton, Typography, useTheme } from "@mui/material";
+import { Box, IconButton, Typography, useTheme, CircularProgress } from "@mui/material";
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/themeCVA";
 import SecurityIcon from "@mui/icons-material/Security";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
-import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-
+import { checkKYCCVA } from "@/apiCVA/apiAuthor.js"; //  Import API check KYC
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -35,6 +34,28 @@ const Sidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+
+  //  Thêm state cho thông tin người dùng từ KYC
+  const [kycInfo, setKycInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  //  Gọi API check KYC khi Sidebar load
+  useEffect(() => {
+    const fetchKYC = async () => {
+      try {
+        const data = await checkKYCCVA();
+        console.log("🔥 KYC raw data from API:", data);
+        if (data) {
+          setKycInfo(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch KYC:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchKYC();
+  }, []);
 
   return (
     <Box
@@ -97,24 +118,32 @@ const Sidebar = () => {
                     padding: "10px",
                   }}
                 />
-
               </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="h2"
-                  color={colors.grey[100]}
-                  fontWeight="bold"
-                  sx={{ m: "10px 0 0 0" }}
-                >
-                  Tin Bao
-                </Typography>
-                <Typography variant="h5" color={colors.greenAccent[500]}>
-                  CVA
-                </Typography>
+
+              <Box textAlign="center" sx={{ mt: 2 }}>
+                {loading ? (
+                  <CircularProgress size={28} color="inherit" />
+                ) : (
+                  <>
+                    <Typography
+                      variant="h2"
+                      color={colors.grey[100]}
+                      fontWeight="bold"
+                      sx={{ m: "10px 0 0 0" }}
+                    >
+                      {kycInfo?.name || "Unknown User"}
+                    </Typography>
+                    <Typography variant="h5" color={colors.greenAccent[500]}>
+                      {kycInfo?.positionTitle || kycInfo?.organization || "CVA"}
+                    </Typography>
+
+                  </>
+                )}
               </Box>
             </Box>
           )}
 
+          {/* MENU ITEMS */}
           <Box paddingLeft={isCollapsed ? undefined : "10%"}>
             <Item
               title="Dashboard"
@@ -138,7 +167,6 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
-            
             <Item
               title="Manage Applications_Projects"
               to="/cva/registration_project_management"

@@ -24,6 +24,7 @@ import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect } from "react";
 import { verifyReportCVA, getReportById, getReportDetails } from "@/apiCVA/reportCVA.js";
 import FormulaImage from "@/assets/z7155603890092_2ed7af1b23662f3986de0fc7dce736af.jpg";
+import { analyzeReportByAI } from "@/apiCVA/aiCVA.js";
 
 const ViewReport = ({ report: initialReport }) => {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ const ViewReport = ({ report: initialReport }) => {
   const [details, setDetails] = useState([]);
 
   const [actionTaken, setActionTaken] = useState(false);
+  // state cho AI Analysis
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
 
   // state mới cho ảnh công thức
   const [showFormula, setShowFormula] = useState(false);
@@ -121,6 +126,32 @@ const ViewReport = ({ report: initialReport }) => {
 
   const handleCloseDetails = () => setDetailsOpen(false);
   const handleCloseSnackbar = () => setOpenSnackbar(false);
+  // Giả lập gọi AI để phân tích báo cáo
+  const handleAnalyzeByAI = async () => {
+  if (!report?.id) return;
+  setAiLoading(true);
+  setSnackbarMsg("AI is analyzing this report...");
+  setSnackbarSeverity("info");
+  setOpenSnackbar(true);
+
+  try {
+    const result = await analyzeReportByAI(report.id);
+    console.log("AI Result:", result);
+    // API trả về có thể là { aiPreScore, aiVersion, aiPreNotes }
+    setAiResult(result);
+    setSnackbarMsg("AI analysis completed!");
+    setSnackbarSeverity("success");
+  } catch (err) {
+    console.error("AI analysis failed:", err);
+    setSnackbarMsg(err.message || "AI analysis failed!");
+    setSnackbarSeverity("error");
+  } finally {
+    setOpenSnackbar(true);
+    setAiLoading(false);
+  }
+};
+
+
 
   if (loading) {
     return (
@@ -254,9 +285,49 @@ const ViewReport = ({ report: initialReport }) => {
                   <Button variant="contained" color="error" onClick={() => handleUpdate(false)}>Reject</Button>
                 </>
               )}
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleAnalyzeByAI}
+                disabled={aiLoading}
+              >
+                {aiLoading ? "Analyzing..." : "Analyze by AI"}
+              </Button>
+
               <Button variant="outlined" color="info" onClick={handleOpenDetails}>View details</Button>
               <Button variant="outlined" color="inherit" onClick={() => navigate(-1)}>Back</Button>
             </Box>
+            {aiResult && (
+              <Paper
+                elevation={3}
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: colors.primary[400],
+                  boxShadow: 2,
+                  position: "relative",
+                }}
+              >
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6" color={colors.grey[100]}>
+                    AI Evaluation
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="error"
+                    onClick={() => setAiResult(null)}
+                  >
+                    Close
+                  </Button>
+                </Box>
+                <Typography mt={1}>Version: {aiResult.aiVersion}</Typography>
+                <Typography>Score: {aiResult.aiPreScore}</Typography>
+                <Typography>Notes: {aiResult.aiPreNotes}</Typography>
+              </Paper>
+            )}
+
           </Paper>
         </Grid>
       </Grid>
