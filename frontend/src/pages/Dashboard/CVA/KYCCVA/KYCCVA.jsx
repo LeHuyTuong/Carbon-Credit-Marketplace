@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import { useNavigate } from "react-router-dom";
-import { apiKYCCVA } from "@/apiCVA/apiAuthor.js"; 
+import { apiKYCCVA } from "@/apiCVA/apiAuthor.js";
 
 const CVAKYC = () => {
   const theme = useTheme();
@@ -18,14 +18,12 @@ const CVAKYC = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: localStorage.getItem("cva_email") || "",
-    phone: "",
-    dob: "",
     role: "CVA",
-    country: "",
-    city: "",
+    organization: "",
+    accreditationNo: "",
+    capacityQuota: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -39,30 +37,48 @@ const CVAKYC = () => {
   const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
-      if (!value && key !== "email") newErrors[key] = "Please fill out this field.";
+      if (!value && key !== "email" && key !== "role") {
+        newErrors[key] = "Please fill out this field.";
+      }
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  e.preventDefault();
+  if (!validate()) return;
 
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+  try {
+    setLoading(true);
 
-      const response = await apiKYCCVA(formData);
-      alert("KYC submitted successfully!");
-      navigate("/cva/dashboard");
-    } catch (error) {
-      alert("KYC submission failed: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Tạo payload đúng format JSON
+    const payload = {
+      requestTrace: crypto.randomUUID(),
+      requestDateTime: new Date().toISOString(),
+      data: {
+        name: form.name,
+        email: form.email,
+        organization: form.organization,
+        positionTitle: form.role, // hoặc có thể thêm field riêng nếu BE yêu cầu
+        accreditationNo: form.accreditationNo,
+        capacityQuota: Number(form.capacityQuota) || 0,
+        notes: "",
+      },
+    };
+
+    await apiKYCCVA(payload);
+
+    alert("KYC submitted successfully!");
+    navigate("/cva/dashboard");
+  } catch (error) {
+    alert("KYC submission failed: " + error.message);
+    console.error("KYC Error:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Box
@@ -93,60 +109,103 @@ const CVAKYC = () => {
           KYC Verification
         </Typography>
 
-        <Typography
-          variant="body2"
-          align="center"
-          mb={4}
-          color={colors.grey[300]}
-        >
-          Please complete your personal and address information.
+        <Typography variant="body2" align="center" mb={4} color={colors.grey[300]}>
+          Please complete your personal and organizational information.
         </Typography>
 
         <form onSubmit={handleSubmit} noValidate>
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            color={colors.greenAccent[400]}
-            mb={1}
-          >
-            Personal Information
-          </Typography>
-
           <Grid container spacing={2} mb={2}>
-            {[
-              { name: "firstName", label: "First Name" },
-              { name: "lastName", label: "Last Name" },
-              { name: "email", label: "Email", disabled: true },
-              { name: "phone", label: "Phone", type: "tel" },
-              { name: "dob", label: "Date of Birth", type: "date" },
-              { name: "role", label: "Role", disabled: true },
-              { name: "country", label: "Country" },
-              { name: "city", label: "City" },
-            ].map((field) => (
-              <Grid
-                item
-                xs={field.name === "email" || field.name === "country" || field.name === "city" ? 12 : 6}
-                key={field.name}
-              >
-                <TextField
-                  label={field.label}
-                  name={field.name}
-                  type={field.type || "text"}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  fullWidth
-                  disabled={field.disabled}
-                  error={!!errors[field.name]}
-                  helperText={errors[field.name]}
-                  InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
-                  variant="filled"
-                  sx={{
-                    backgroundColor: colors.primary[400],
-                    borderRadius: "6px",
-                  }}
-                />
-              </Grid>
-            ))}
+            {/* Left Column */}
+            <Grid item xs={6}>
+              <TextField
+                label="Full Name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                fullWidth
+                error={!!errors.name}
+                helperText={errors.name}
+                variant="filled"
+                sx={{
+                  mb: 2,
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+              <TextField
+                label="Organization"
+                name="organization"
+                value={form.organization}
+                onChange={handleChange}
+                fullWidth
+                error={!!errors.organization}
+                helperText={errors.organization}
+                variant="filled"
+                sx={{
+                  mb: 2,
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+              <TextField
+                label="Accreditation No"
+                name="accreditationNo"
+                value={form.accreditationNo}
+                onChange={handleChange}
+                fullWidth
+                error={!!errors.accreditationNo}
+                helperText={errors.accreditationNo}
+                variant="filled"
+                sx={{
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+            </Grid>
+
+            {/* Right Column */}
+            <Grid item xs={6}>
+              <TextField
+                label="Email"
+                name="email"
+                value={form.email}
+                disabled
+                fullWidth
+                variant="filled"
+                sx={{
+                  mb: 2,
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+              <TextField
+                label="Role"
+                name="role"
+                value={form.role}
+                disabled
+                fullWidth
+                variant="filled"
+                sx={{
+                  mb: 2,
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+              <TextField
+                label="Capacity Quota"
+                name="capacityQuota"
+                value={form.capacityQuota}
+                onChange={handleChange}
+                fullWidth
+                error={!!errors.capacityQuota}
+                helperText={errors.capacityQuota}
+                variant="filled"
+                sx={{
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "6px",
+                }}
+              />
+            </Grid>
           </Grid>
 
           <Button
@@ -164,6 +223,22 @@ const CVAKYC = () => {
             }}
           >
             {loading ? "Submitting..." : "SUBMIT KYC"}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            sx={{
+              mt: 2,
+              py: 1.2,
+              color: colors.greenAccent[400],
+              borderColor: colors.grey[400],
+              fontWeight: "bold",
+              "&:hover": { borderColor: colors.grey[200] },
+            }}
+            onClick={() => navigate("/cva/login")}
+          >
+            BACK
           </Button>
         </form>
       </Paper>
