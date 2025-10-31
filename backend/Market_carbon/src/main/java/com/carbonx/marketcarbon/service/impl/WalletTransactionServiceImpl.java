@@ -163,10 +163,16 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             return null;
         }
         Order order = transaction.getOrder();
+        LocalDate creditExpiryDate = null;
 
-        CarbonCredit sourceCredit = order.getCarbonCredit();
-        LocalDate creditExpiryDate = sourceCredit.getExpiryDate();
+        CarbonCredit orderCredit = (order != null) ? order.getCarbonCredit() : null;
+        if (orderCredit != null) {
+            creditExpiryDate = orderCredit.getExpiryDate();
+        }
 
+        if (creditExpiryDate == null && transaction.getCreditBatch() != null) {
+            creditExpiryDate = transaction.getCreditBatch().getExpiresAt();
+        }
         return WalletTransactionResponse.builder()
                 .id(transaction.getId())
                 .orderId(order != null ? order.getId() : null)
