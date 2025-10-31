@@ -25,6 +25,12 @@ public class SseServiceImpl implements SseService {
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() ||
+                "anonymousUser".equalsIgnoreCase(authentication.getName())) {
+            throw new ResourceNotFoundException("User not authenticated for SSE subscription");
+        }
+
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
         if(user == null){

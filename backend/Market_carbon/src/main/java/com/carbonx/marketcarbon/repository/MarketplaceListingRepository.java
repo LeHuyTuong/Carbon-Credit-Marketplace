@@ -26,6 +26,8 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
     @Query("SELECT m FROM MarketPlaceListing m WHERE m.id = :id")
     Optional<MarketPlaceListing> findByIdWithPessimisticLock(@Param("id") Long id);
 
+    List<MarketPlaceListing> findByCompanyId(Long id);
+
     //listing theo công ty và carbon credit
     List<MarketPlaceListing> findByCompanyIdAndCarbonCreditIdAndStatus(
             Long companyId,

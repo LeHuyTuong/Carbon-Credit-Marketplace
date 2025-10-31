@@ -144,23 +144,39 @@
 /* === Credit Summary === */
 .credit-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
+  margin: 2rem auto;
+  max-width: 1200px;
 }
 
 .credit-summary-card {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.12); /* sáng mờ hơn, nhìn như kính */
+  border-radius: 12px;
+  padding: 1.2rem;
+  border: 1px solid rgba(0, 255, 200, 0.25); /* viền xanh nhẹ */
+  box-shadow: 0 0 20px rgba(0, 255, 200, 0.12); /* glow xanh nhẹ */
+  backdrop-filter: blur(12px) saturate(150%);
+  transition: all 0.3s ease;
 }
 
 .credit-summary-card:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.18); /* sáng thêm khi hover */
+  box-shadow: 0 0 25px rgba(0, 255, 200, 0.3);
+  transform: translateY(-3px);
+}
+
+.credit-summary-card h3 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+.credit-summary-card p {
+  color: #f3f3f3;
+  font-size: 0.9rem;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
 /* === Accent Buttons === */
@@ -280,6 +296,9 @@
     margin-top: 10px;
     justify-content: center;
   }
+  .credit-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -291,5 +310,11 @@
   .credits-table th,
   .credits-table td {
     padding: 8px 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .credit-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -112,18 +112,18 @@ public class DataInitializer {
                 walletRepository.save(newWallet);
             }
 
-            // Initialize a test Project
-            Project testProject = projectRepository.findByTitle("Test Project for Credits")
-                    .orElseGet(() -> {
-                        log.info("Creating a test project...");
-                        Project newProject = Project.builder()
-                                .title("Test Project for Credits")
-                                .description("A sample project for generating carbon credits.")
-                                .logo("https://example.com/default_logo.png")
-                                .status(ProjectStatus.OPEN)
-                                .build();
-                        return projectRepository.save(newProject);
-                    });
+//            // Initialize a test Project
+//            Project testProject = projectRepository.findByTitle("Test Project for Credits")
+//                    .orElseGet(() -> {
+//                        log.info("Creating a test project...");
+//                        Project newProject = Project.builder()
+//                                .title("Test Project for Credits")
+//                                .description("A sample project for generating carbon credits.")
+//                                .logo("https://example.com/default_logo.png")
+//                                .status(ProjectStatus.OPEN)
+//                                .build();
+//                        return projectRepository.save(newProject);
+//                    });
 
             // --- Initialize New Company User ---
             User companyUser = userRepository.findByEmail(COMPANY_USER_EMAIL);
@@ -137,165 +137,165 @@ public class DataInitializer {
                 userRepository.save(companyUser);
                 log.info("Created new Company user: {}", COMPANY_USER_EMAIL);
             }
-
-            // --- Initialize Company Entity and Wallet for the new user ---
-            final User finalCompanyUser = companyUser;
-            Company newRegisteredCompany = companyRepository.findByUserId(finalCompanyUser.getId())
-                    .orElseGet(() -> {
-                        log.info("Creating Company entity for user: {}", finalCompanyUser.getEmail());
-                        Company newCompany = Company.builder()
-                                .user(finalCompanyUser)
-                                .companyName("Example Corp")
-                                .businessLicense("COMP_LIC_111")
-                                .taxCode("COMP_TAX_222")
-                                .address("456 Company Ave")
-                                .build();
-                        return companyRepository.saveAndFlush(newCompany);
-                    });
-
-            // --- Create Wallet Separately ---
-            if (walletRepository.findByUserId(finalCompanyUser.getId()) == null) {
-                log.info("Creating Wallet for company user: {}", finalCompanyUser.getEmail());
-                Wallet companyWallet = Wallet.builder()
-                        .user(finalCompanyUser)
-                        .balance(new BigDecimal("500000.00"))
-                        .carbonCreditBalance(BigDecimal.ZERO)
-                        .company(newRegisteredCompany)
-                        .build();
-                walletRepository.save(companyWallet);
-            }
-
-            // --- Initialize an ISSUED Carbon Credit block for the new Company ---
-            String companyCreditCode = "COMP-ISSUED-1111";
-            boolean creditExistsForCompany =
-                    carbonCreditRepository.findByCreditCode(companyCreditCode)
-                            .stream()
-                            .anyMatch(cc -> cc.getCompany() != null
-                                    && cc.getCompany().getId() != null
-                                    && cc.getCompany().getId().equals(newRegisteredCompany.getId()));
-
-            if (!creditExistsForCompany) {
-                log.info("Creating an ISSUED carbon credit block for company: {}", newRegisteredCompany.getCompanyName());
-                CarbonCredit companyCredit = CarbonCredit.builder()
-                        .creditCode(companyCreditCode)
-                        .carbonCredit(new BigDecimal("2500.00"))
-                        .company(newRegisteredCompany)
-                        .project(testProject)
-                        .status(CreditStatus.ISSUE)
-                        .listedAmount(BigDecimal.ZERO)
-                        .vintageYear(2025)
-                        .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
-                        .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
-                        .build();
-                carbonCreditRepository.save(companyCredit);
-                log.info("Created ISSUED CarbonCredit with code {} for company {}", companyCreditCode, newRegisteredCompany.getCompanyName());
-            }
-
-            // --- Initialize Credits and Listings for Admin Company (Existing Logic) ---
-            String adminIssuedCreditCode1 = "ADMIN-ISSUED-0011";
-            CarbonCredit adminListableCredit1 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode1)
-                    .stream().findFirst()
-                    .orElseGet(() -> {
-                        log.info("Creating ADMIN sample ISSUED carbon credit 1 for listing...");
-                        return carbonCreditRepository.save(CarbonCredit.builder()
-                                .creditCode(adminIssuedCreditCode1)
-                                .carbonCredit(new BigDecimal("5000.00"))
-                                .company(adminCompany)
-                                .project(testProject)
-                                .vintageYear(2025)
-                                .status(CreditStatus.ISSUE)
-                                .listedAmount(BigDecimal.ZERO)
-                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
-                                .name("Admin Sample Listable Credits 1 - 2025")
-                                .build());
-                    });
-
-            String adminIssuedCreditCode2 = "ADMIN-ISSUED-002";
-            CarbonCredit adminListableCredit2 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode2)
-                    .stream().findFirst()
-                    .orElseGet(() -> {
-                        log.info("Creating ADMIN sample ISSUED carbon credit 2 for listing...");
-                        return carbonCreditRepository.save(CarbonCredit.builder()
-                                .creditCode(adminIssuedCreditCode2)
-                                .carbonCredit(new BigDecimal("3000.00"))
-                                .company(adminCompany)
-                                .vintageYear(2025)
-                                .project(testProject)
-                                .status(CreditStatus.ISSUE)
-                                .listedAmount(BigDecimal.ZERO)
-                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
-                                .name("Admin Sample Listable Credits 2 - 2025")
-                                .build());
-                    });
-
-            // Initialize Marketplace Listings for Admin's Company (if none exist)
-            if (marketplaceListingRepository.count() == 0) {
-                log.info("Creating sample marketplace listings for Admin's company...");
-
-                MarketPlaceListing listing1 = MarketPlaceListing.builder()
-                        .company(adminCompany)
-                        .carbonCredit(adminListableCredit1)
-                        .quantity(new BigDecimal("1500.00"))
-                        .originalQuantity(new BigDecimal("1500.00"))
-                        .soldQuantity(BigDecimal.ZERO)
-                        .pricePerCredit(new BigDecimal("25.50"))
-                        .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDate.now().plusDays(30))
-                        .build();
-                marketplaceListingRepository.save(listing1);
-                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing1.getQuantity()));
-                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing1.getQuantity()));
-                carbonCreditRepository.save(adminListableCredit1);
-
-                MarketPlaceListing listing2 = MarketPlaceListing.builder()
-                        .company(adminCompany)
-                        .carbonCredit(adminListableCredit1)
-                        .quantity(new BigDecimal("700.00"))
-                        .originalQuantity(new BigDecimal("700.00"))
-                        .soldQuantity(BigDecimal.ZERO)
-                        .pricePerCredit(new BigDecimal("23.50"))
-                        .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDate.now().plusDays(60))
-                        .build();
-                marketplaceListingRepository.save(listing2);
-                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing2.getQuantity()));
-                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing2.getQuantity()));
-                carbonCreditRepository.save(adminListableCredit1);
-
-                MarketPlaceListing listing3 = MarketPlaceListing.builder()
-                        .company(adminCompany)
-                        .carbonCredit(adminListableCredit2)
-                        .quantity(new BigDecimal("1000.00"))
-                        .originalQuantity(new BigDecimal("1000.00"))
-                        .soldQuantity(BigDecimal.ZERO)
-                        .pricePerCredit(new BigDecimal("21.50"))
-                        .status(ListingStatus.AVAILABLE)
-                        .expiresAt(LocalDate.now().plusDays(25))
-                        .build();
-                marketplaceListingRepository.save(listing3);
-                adminListableCredit2.setCarbonCredit(adminListableCredit2.getCarbonCredit().subtract(listing3.getQuantity()));
-                adminListableCredit2.setListedAmount(adminListableCredit2.getListedAmount().add(listing3.getQuantity()));
-                carbonCreditRepository.save(adminListableCredit2);
-
-                log.info("Sample MarketPlaceListings created.");
-            }
-
-            String adminPendingCreditCode = "ADMIN-PENDING-001";
-            if (carbonCreditRepository.findByCreditCode(adminPendingCreditCode).isEmpty()) {
-                log.info("Creating a sample PENDING carbon credit for the admin's company...");
-                CarbonCredit pendingCredit = CarbonCredit.builder()
-                        .creditCode(adminPendingCreditCode)
-                        .carbonCredit(new BigDecimal("1000.00"))
-                        .company(adminCompany)
-                        .project(testProject)
-                        .vintageYear(2025)
-                        .status(CreditStatus.PENDING)
-                        .name("Admin Sample Pending Credits - 2025")
-                        .build();
-                carbonCreditRepository.save(pendingCredit);
-                log.info("Sample PENDING CarbonCredit created with ID: {}. Admin can approve it.",
-                        pendingCredit.getId());
-            }
+//
+//            // --- Initialize Company Entity and Wallet for the new user ---
+//            final User finalCompanyUser = companyUser;
+//            Company newRegisteredCompany = companyRepository.findByUserId(finalCompanyUser.getId())
+//                    .orElseGet(() -> {
+//                        log.info("Creating Company entity for user: {}", finalCompanyUser.getEmail());
+//                        Company newCompany = Company.builder()
+//                                .user(finalCompanyUser)
+//                                .companyName("Example Corp")
+//                                .businessLicense("COMP_LIC_111")
+//                                .taxCode("COMP_TAX_222")
+//                                .address("456 Company Ave")
+//                                .build();
+//                        return companyRepository.saveAndFlush(newCompany);
+//                    });
+//
+//            // --- Create Wallet Separately ---
+//            if (walletRepository.findByUserId(finalCompanyUser.getId()) == null) {
+//                log.info("Creating Wallet for company user: {}", finalCompanyUser.getEmail());
+//                Wallet companyWallet = Wallet.builder()
+//                        .user(finalCompanyUser)
+//                        .balance(new BigDecimal("500000.00"))
+//                        .carbonCreditBalance(BigDecimal.ZERO)
+//                        .company(newRegisteredCompany)
+//                        .build();
+//                walletRepository.save(companyWallet);
+//            }
+//
+//            // --- Initialize an ISSUED Carbon Credit block for the new Company ---
+//            String companyCreditCode = "COMP-ISSUED-1111";
+//            boolean creditExistsForCompany =
+//                    carbonCreditRepository.findByCreditCode(companyCreditCode)
+//                            .stream()
+//                            .anyMatch(cc -> cc.getCompany() != null
+//                                    && cc.getCompany().getId() != null
+//                                    && cc.getCompany().getId().equals(newRegisteredCompany.getId()));
+//
+//            if (!creditExistsForCompany) {
+//                log.info("Creating an ISSUED carbon credit block for company: {}", newRegisteredCompany.getCompanyName());
+//                CarbonCredit companyCredit = CarbonCredit.builder()
+//                        .creditCode(companyCreditCode)
+//                        .carbonCredit(new BigDecimal("2500.00"))
+//                        .company(newRegisteredCompany)
+//                        .project(testProject)
+//                        .status(CreditStatus.ISSUE)
+//                        .listedAmount(BigDecimal.ZERO)
+//                        .vintageYear(2025)
+//                        .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
+//                        .name("Sample Issued Credits - " + newRegisteredCompany.getCompanyName())
+//                        .build();
+//                carbonCreditRepository.save(companyCredit);
+//                log.info("Created ISSUED CarbonCredit with code {} for company {}", companyCreditCode, newRegisteredCompany.getCompanyName());
+//            }
+//
+//            // --- Initialize Credits and Listings for Admin Company (Existing Logic) ---
+//            String adminIssuedCreditCode1 = "ADMIN-ISSUED-0011";
+//            CarbonCredit adminListableCredit1 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode1)
+//                    .stream().findFirst()
+//                    .orElseGet(() -> {
+//                        log.info("Creating ADMIN sample ISSUED carbon credit 1 for listing...");
+//                        return carbonCreditRepository.save(CarbonCredit.builder()
+//                                .creditCode(adminIssuedCreditCode1)
+//                                .carbonCredit(new BigDecimal("5000.00"))
+//                                .company(adminCompany)
+//                                .project(testProject)
+//                                .vintageYear(2025)
+//                                .status(CreditStatus.ISSUE)
+//                                .listedAmount(BigDecimal.ZERO)
+//                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
+//                                .name("Admin Sample Listable Credits 1 - 2025")
+//                                .build());
+//                    });
+//
+//            String adminIssuedCreditCode2 = "ADMIN-ISSUED-002";
+//            CarbonCredit adminListableCredit2 = carbonCreditRepository.findByCreditCode(adminIssuedCreditCode2)
+//                    .stream().findFirst()
+//                    .orElseGet(() -> {
+//                        log.info("Creating ADMIN sample ISSUED carbon credit 2 for listing...");
+//                        return carbonCreditRepository.save(CarbonCredit.builder()
+//                                .creditCode(adminIssuedCreditCode2)
+//                                .carbonCredit(new BigDecimal("3000.00"))
+//                                .company(adminCompany)
+//                                .vintageYear(2025)
+//                                .project(testProject)
+//                                .status(CreditStatus.ISSUE)
+//                                .listedAmount(BigDecimal.ZERO)
+//                                .issuedAt(OffsetDateTime.now(ZoneOffset.ofHours(7)))
+//                                .name("Admin Sample Listable Credits 2 - 2025")
+//                                .build());
+//                    });
+//
+//            // Initialize Marketplace Listings for Admin's Company (if none exist)
+//            if (marketplaceListingRepository.count() == 0) {
+//                log.info("Creating sample marketplace listings for Admin's company...");
+//
+//                MarketPlaceListing listing1 = MarketPlaceListing.builder()
+//                        .company(adminCompany)
+//                        .carbonCredit(adminListableCredit1)
+//                        .quantity(new BigDecimal("1500.00"))
+//                        .originalQuantity(new BigDecimal("1500.00"))
+//                        .soldQuantity(BigDecimal.ZERO)
+//                        .pricePerCredit(new BigDecimal("25.50"))
+//                        .status(ListingStatus.AVAILABLE)
+//                        .expiresAt(LocalDate.now().plusDays(30))
+//                        .build();
+//                marketplaceListingRepository.save(listing1);
+//                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing1.getQuantity()));
+//                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing1.getQuantity()));
+//                carbonCreditRepository.save(adminListableCredit1);
+//
+//                MarketPlaceListing listing2 = MarketPlaceListing.builder()
+//                        .company(adminCompany)
+//                        .carbonCredit(adminListableCredit1)
+//                        .quantity(new BigDecimal("700.00"))
+//                        .originalQuantity(new BigDecimal("700.00"))
+//                        .soldQuantity(BigDecimal.ZERO)
+//                        .pricePerCredit(new BigDecimal("23.50"))
+//                        .status(ListingStatus.AVAILABLE)
+//                        .expiresAt(LocalDate.now().plusDays(60))
+//                        .build();
+//                marketplaceListingRepository.save(listing2);
+//                adminListableCredit1.setCarbonCredit(adminListableCredit1.getCarbonCredit().subtract(listing2.getQuantity()));
+//                adminListableCredit1.setListedAmount(adminListableCredit1.getListedAmount().add(listing2.getQuantity()));
+//                carbonCreditRepository.save(adminListableCredit1);
+//
+//                MarketPlaceListing listing3 = MarketPlaceListing.builder()
+//                        .company(adminCompany)
+//                        .carbonCredit(adminListableCredit2)
+//                        .quantity(new BigDecimal("1000.00"))
+//                        .originalQuantity(new BigDecimal("1000.00"))
+//                        .soldQuantity(BigDecimal.ZERO)
+//                        .pricePerCredit(new BigDecimal("21.50"))
+//                        .status(ListingStatus.AVAILABLE)
+//                        .expiresAt(LocalDate.now().plusDays(25))
+//                        .build();
+//                marketplaceListingRepository.save(listing3);
+//                adminListableCredit2.setCarbonCredit(adminListableCredit2.getCarbonCredit().subtract(listing3.getQuantity()));
+//                adminListableCredit2.setListedAmount(adminListableCredit2.getListedAmount().add(listing3.getQuantity()));
+//                carbonCreditRepository.save(adminListableCredit2);
+//
+//                log.info("Sample MarketPlaceListings created.");
+//            }
+//
+//            String adminPendingCreditCode = "ADMIN-PENDING-001";
+//            if (carbonCreditRepository.findByCreditCode(adminPendingCreditCode).isEmpty()) {
+//                log.info("Creating a sample PENDING carbon credit for the admin's company...");
+//                CarbonCredit pendingCredit = CarbonCredit.builder()
+//                        .creditCode(adminPendingCreditCode)
+//                        .carbonCredit(new BigDecimal("1000.00"))
+//                        .company(adminCompany)
+//                        .project(testProject)
+//                        .vintageYear(2025)
+//                        .status(CreditStatus.PENDING)
+//                        .name("Admin Sample Pending Credits - 2025")
+//                        .build();
+//                carbonCreditRepository.save(pendingCredit);
+//                log.info("Sample PENDING CarbonCredit created with ID: {}. Admin can approve it.",
+//                        pendingCredit.getId());
+//            }
 
             log.info("Application initialization completed.");
         };
