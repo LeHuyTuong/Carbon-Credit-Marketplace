@@ -41,7 +41,6 @@ public class AppConfig {
             "/api/v1/check-exists-user",
             "/api/v1/projects/all",
             "/api/v1/forgot-password/resend-otp",
-            "/api/v1/notifications"
     };
 
     @Bean
