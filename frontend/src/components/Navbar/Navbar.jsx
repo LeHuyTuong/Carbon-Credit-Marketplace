@@ -7,7 +7,7 @@ import { EventSourcePolyfill } from "event-source-polyfill";
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, token, user, logout } = useAuth();
 
   //active state cho EV
   const isEV =
@@ -19,10 +19,9 @@ export default function Navbar() {
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const token = localStorage.getItem("accessToken");
 
   useEffect(() => {
-    if (!isAuthenticated || token) return;
+    if (!isAuthenticated || !token) return;
 
     const eventSource = new EventSourcePolyfill(
       "http://163.61.111.120:8082/api/v1/notifications",
