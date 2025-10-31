@@ -33,4 +33,6 @@ public class MarketplaceListingResponse {
 
     private String logo;
 
+    private BigDecimal remainingCreditBalance; // Số tín chỉ còn lại sau khi list
+    private BigDecimal totalListedAmount; // Tổng số đã list (tất cả listings)
 }

@@ -110,11 +110,17 @@ public enum ErrorCode {
     // List-Trade
     TRANSACTION_PROCESSING_ERROR(400,"Error processing financial transaction",HttpStatus.INTERNAL_SERVER_ERROR),
     CREDIT_ALREADY_SOLD(400,  "Carbon credit has already been sold",HttpStatus.BAD_REQUEST),
-
+    NO_AVAILABLE_CREDITS(400 , "No enough carbon credits for listing", HttpStatus.BAD_REQUEST),
     REPORT_NOT_APPROVED(400, "Emission report must be approved before issuing credits.", HttpStatus.BAD_REQUEST),
     CREDIT_ALREADY_ISSUED(409, "Carbon credits already issued for this report.", HttpStatus.CONFLICT),
     CREDIT_QUANTITY_INVALID(400, "Computed credit quantity is invalid or zero.", HttpStatus.BAD_REQUEST),
-    SELLER_COMPANY_INVALID(400, "Seller company can not buy their credit listing ", HttpStatus.BAD_REQUEST);
+    SELLER_COMPANY_INVALID(400, "Seller company can not buy their credit listing ", HttpStatus.BAD_REQUEST),
+    DATABASE_ERROR(500, "Cannot access carbon credit data. Please contact support.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    CREDIT_ALREADY_RETIRED(400, "Carbon credit has already been retired.", HttpStatus.BAD_REQUEST),
+    CREDIT_HAS_ACTIVE_LISTING(400, "Carbon credit has quantity listed on marketplace.", HttpStatus.BAD_REQUEST),
+    CREDIT_EXPIRED(400, "Carbon credit has expired and cannot be retired.", HttpStatus.BAD_REQUEST),
+    ;
 
 
     private final int code;
