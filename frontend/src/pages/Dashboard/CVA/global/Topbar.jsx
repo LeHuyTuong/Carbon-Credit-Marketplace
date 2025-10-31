@@ -1,5 +1,5 @@
 import { Box, IconButton, useTheme, InputBase, Paper, Badge, Popper, ClickAwayListener, Tabs, Tab, Typography, Stack, Grid, List, ListItem, ListItemText, ListItemAvatar } from "@mui/material";
-import { useContext, useRef, useState, useEffect } from "react";
+import { useContext, useRef, useState, useEffect, useMemo } from "react";
 import { ColorModeContext, tokens } from "@/themeCVA";
 import SearchIcon from "@mui/icons-material/Search";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
@@ -16,6 +16,7 @@ import Avatar from "@/components/Popup/Avatar.jsx";
 
 import avatar1 from "@/assets/z5596085100291_e9dc9606a1f54262e26d39713314ff3a.jpg";
 import { checkKYCCVA } from "@/apiCVA/apiAuthor.js";
+import useSseNotifications from "@/components/Navbar/useSseNotifications.js";
 
 const Topbar = () => {
   const theme = useTheme();
@@ -36,11 +37,31 @@ const Topbar = () => {
   // === Notifications ===
   const anchorNotif = useRef(null);
   const [openNotif, setOpenNotif] = useState(false);
-  const [unread, setUnread] = useState(2);
-  const handleToggleNotif = () => setOpenNotif((prev) => !prev);
+  const cvaToken = useMemo(() => {
+    const stored =
+      sessionStorage.getItem("cva_token") || localStorage.getItem("cva_token");
+    return stored && stored !== "null" && stored !== "undefined" ? stored : null;
+  }, []);
+
+  const { notifications, unreadCount, markAllAsRead } = useSseNotifications({
+    enabled: !!cvaToken,
+    token: cvaToken,
+  }); const handleToggleNotif = () => setOpenNotif((prev) => !prev);
   const handleCloseNotif = (e) => {
     if (anchorNotif.current && anchorNotif.current.contains(e.target)) return;
     setOpenNotif(false);
+  };
+
+  const formatNotificationTime = (value) => {
+    if (!value) return "";
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+    });
   };
 
   // === CVA User Info ===
@@ -107,7 +128,7 @@ const Topbar = () => {
         {/* NOTIFICATION */}
         <Box sx={{ position: "relative" }}>
           <IconButton ref={anchorNotif} onClick={handleToggleNotif}>
-            <Badge badgeContent={unread} color="primary">
+            <Badge badgeContent={unreadCount} color="primary">
               <NotificationsOutlinedIcon />
             </Badge>
           </IconButton>
@@ -127,30 +148,65 @@ const Topbar = () => {
                     <Box>
                       <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
                         <Typography variant="h6">Notifications</Typography>
-                        {unread > 0 && (
-                          <IconButton size="small" color="success" onClick={() => setUnread(0)}>
+                        {unreadCount > 0 && (
+                          <IconButton size="small" color="success" onClick={markAllAsRead}>
                             <CheckCircleOutlined />
                           </IconButton>
                         )}
                       </Box>
 
                       <List sx={{ p: 0 }}>
-                        <ListItem divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: "success.light", color: "success.dark" }}>
-                              <UserOutlined />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText primary="A new CVA request approved" secondary="2 min ago" />
-                        </ListItem>
-                        <ListItem divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: "primary.light", color: "primary.dark" }}>
-                              <MessageOutlined />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText primary="System update completed" secondary="7 hours ago" />
-                        </ListItem>
+                        {notifications.length === 0 ? (
+                          <ListItem>
+                            <ListItemText
+                              primary="No notifications yet"
+                              primaryTypographyProps={{
+                                variant: "body2",
+                                color: "text.secondary",
+                              }}
+                            />
+                          </ListItem>
+                        ) : (
+                          notifications.map((notif) => (
+                            <ListItem
+                              key={notif.id}
+                              divider
+                              alignItems="flex-start"
+                              sx={{ alignItems: "flex-start" }}
+                            >
+                              <ListItemAvatar>
+                                <Avatar
+                                  size="sm"
+                                  color={notif.isUnread ? "success" : "primary"}
+                                >
+                                  <NotificationsOutlinedIcon fontSize="inherit" />
+                                </Avatar>
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={notif.isUnread ? 600 : 400}
+                                  >
+                                    {notif.title || notif.message}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Stack spacing={0.5}>
+                                    {notif.title && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        {notif.message}
+                                      </Typography>
+                                    )}
+                                    <Typography variant="caption" color="text.disabled">
+                                      {formatNotificationTime(notif.receivedAt)}
+                                    </Typography>
+                                  </Stack>
+                                }
+                              />
+                            </ListItem>
+                          ))
+                        )}
                       </List>
                     </Box>
                   </ClickAwayListener>

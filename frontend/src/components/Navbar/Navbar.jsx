@@ -2,12 +2,12 @@ import React from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import logo from "../../assets/logo.png";
-import { useEffect, useState } from "react";
-import { EventSourcePolyfill } from "event-source-polyfill";
+import useSseNotifications from "@/components/Navbar/useSseNotifications.js";
+
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, token, logout } = useAuth();
 
   //active state cho EV
   const isEV =
@@ -17,37 +17,10 @@ export default function Navbar() {
   const ddItemCls = ({ isActive }) =>
     `dropdown-item ${isActive ? "active" : ""}`;
 
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const token = localStorage.getItem("accessToken");
-
-  useEffect(() => {
-    if (!isAuthenticated || token) return;
-
-    const eventSource = new EventSourcePolyfill(
-      "http://163.61.111.120:8082/api/v1/notifications",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          withCredentials: true,
-        },
-      }
-    );
-
-    eventSource.onmessage = (event) => {
-      const msg = event.data || "New notification";
-      console.log("Notification:", msg);
-
-      setNotifications((prev) => [{ message: msg, time: new Date() }, ...prev]);
-      setUnreadCount((count) => count + 1);
-    };
-
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      eventSource.close();
-    };
-    return () => eventSource.close();
-  }, [isAuthenticated, token]);
+  const { notifications, unreadCount, markAllAsRead } = useSseNotifications({
+    enabled: isAuthenticated && !!user?.id,
+    token,
+  });
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top bg-dark bg-opacity-25 navbar-dark">
@@ -188,14 +161,30 @@ export default function Navbar() {
                         </span>
                       </li>
                     ) : (
-                      notifications.map((n, idx) => (
-                        <li key={idx} className="dropdown-item small">
-                          {n.message}
+                      notifications.map((n) => (
+                        <li
+                          key={n.id}
+                          className={`dropdown-item small ${n.isUnread ? "fw-semibold" : ""
+                            }`}
+                        >
+                          {n.title ? (
+                            <div className="d-flex flex-column">
+                              <span>{n.title}</span>
+                              <span className="fw-normal text-break">
+                                {n.message}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-break">{n.message}</span>
+                          )}
                           <div
                             className="text-muted"
                             style={{ fontSize: "0.7rem" }}
                           >
-                            {n.time.toLocaleTimeString()}
+                            {n.receivedAt?.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </div>
                         </li>
                       ))
@@ -204,7 +193,7 @@ export default function Navbar() {
                       <li>
                         <button
                           className="dropdown-item text-center text-primary small"
-                          onClick={() => setUnreadCount(0)}
+                          onClick={markAllAsRead}
                         >
                           Mark all as read
                         </button>
