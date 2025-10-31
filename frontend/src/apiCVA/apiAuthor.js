@@ -47,11 +47,14 @@ export const apiLogin = async (email, password) => {
 };
 
 /**  CVA KYC API */
-export const apiKYCCVA = async (formData) => {
+export const apiKYCCVA = async (payload) => {
   try {
     const data = await apiFetch("/api/v1/kyc/cva/create", {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
     if (!data || !data.responseStatus) {
@@ -67,11 +70,12 @@ export const apiKYCCVA = async (formData) => {
 
     return data;
   } catch (error) {
-    console.error(" KYC API Error:", error.message);
+    console.error("KYC API Error:", error.message);
     throw error;
   }
 };
-/** Check Admin KYC API */
+
+/** Check CVA KYC API */
 export const checkKYCCVA = async () => {
   try {
     const token = localStorage.getItem("cva_token");
