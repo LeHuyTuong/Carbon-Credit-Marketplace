@@ -1,39 +1,36 @@
 import React from "react";
+import "../wallet.css"; // nhớ import file CSS riêng
 
 export default function CreditSummaryCard({ summary }) {
-  if (!summary) {
+  if (!summary)
     return (
       <div className="text-center text-light mt-4">Loading summary...</div>
     );
-  }
+
+  const listedCount =
+    summary.byStatus?.find((s) => s.status === "LISTED")?.count || 0;
+  const soldCount = summary.sold || 0;
 
   const items = [
-    {
-      label: "Issued",
-      value: summary.available || 0,
-      color: "#00ffc8",
-    },
-    {
-      label: "Available",
-      value: summary.issued || 0,
-      color: "#1bb7cfff",
-    },
-    { label: "Retired", value: summary.retired || 0, color: "#c484d4ff" },
+    { label: "Total", value: summary.total || 0, color: "#20c997" },
+    { label: "Issued", value: summary.issued || 0, color: "#00ffc8" },
+    { label: "Available", value: summary.available || 0, color: "#1bb7cf" },
+    { label: "Retired", value: summary.retired || 0, color: "#c484d4" },
     {
       label: "Listed / Sold",
-      value: `${summary.listed || 0} / ${summary.sold || 0}`,
+      value: `${listedCount} / ${soldCount}`,
       color: "#ffc107",
     },
   ];
 
   return (
-    <div className="credit-summary-grid mt-4 mb-5">
+    <div className="credit-summary-grid">
       {items.map((item, i) => (
-        <div key={i} className="credit-summary-card glass-card text-center p-3">
+        <div key={i} className="credit-summary-card">
           <h3 style={{ color: item.color }}>
-            {item.value} <span style={{ fontSize: "1rem" }}>credits</span>
+            {item.value} <span>credits</span>
           </h3>
-          <p className="text-light small">{item.label}</p>
+          <p>{item.label}</p>
         </div>
       ))}
     </div>

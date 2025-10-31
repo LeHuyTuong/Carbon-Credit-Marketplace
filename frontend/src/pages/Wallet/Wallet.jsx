@@ -9,12 +9,15 @@ import Withdraw from "./Withdraw/Withdraw";
 import useReveal from "../../hooks/useReveal";
 import CreditsList from "./components/CreditsList";
 import CreditSummaryCard from "./components/CreditSummaryCard";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Wallet() {
   const nav = useNavigate();
   const location = useLocation();
   const sectionRef = useRef(null);
   useReveal(sectionRef);
+  const { primaryRole } = useAuth();
+  const isEVOwner = primaryRole === "EV_OWNER";
 
   // dùng hook chính
   const {
@@ -221,7 +224,7 @@ export default function Wallet() {
       <WalletCard
         balance={wallet?.balance}
         currency={wallet?.currency || "USD"}
-        onDeposit={() => setShowDepositModal(true)}
+        onDeposit={!isEVOwner ? () => setShowDepositModal(true) : undefined} //ẩn nút nạp của ev
         onWithdraw={() => setShowWithdrawModal(true)}
         loading={loading}
       />
@@ -236,58 +239,69 @@ export default function Wallet() {
           Transaction History
         </button>
 
-        <button
-          className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
-          onClick={() =>
-            nav("/purchase-history", { state: { from: "wallet" } })
-          }
-        >
-          <i className="bi bi-bag-check"></i>
-          Purchases History
-        </button>
+        {/* chỉ hiển thị nếu không phải EV Owner */}
+        {!isEVOwner && (
+          <button
+            className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
+            onClick={() =>
+              nav("/purchase-history", { state: { from: "wallet" } })
+            }
+          >
+            <i className="bi bi-bag-check"></i>
+            Purchases History
+          </button>
+        )}
       </div>
 
-      {/* Credit Summary */}
-      <CreditSummaryCard summary={summary} />
+      {/*chỉ company thấy credits */}
+      {!isEVOwner && (
+        <>
+          {/* Credit Summary */}
+          <CreditSummaryCard summary={summary} />
 
-      {/* Tabs for Issued / Purchased */}
-      <div className="wallet-credits-tabs mt-0 w-100">
-        <div className="d-flex justify-content-center mb-3">
-          <div className="btn-group">
-            <button
-              className={`btn ${
-                activeTab === "issued" ? "btn-accent" : "btn-outline-accent"
-              }`}
-              onClick={() => setActiveTab("issued")}
-            >
-              Issued Credits
-            </button>
-            <button
-              className={`btn ${
-                activeTab === "purchased" ? "btn-accent" : "btn-outline-accent"
-              }`}
-              onClick={() => setActiveTab("purchased")}
-            >
-              Purchased Credits
-            </button>
+          {/* Tabs for Issued / Purchased */}
+          <div className="wallet-credits-tabs mt-0 w-100">
+            <div className="d-flex justify-content-center mb-3">
+              <div className="btn-group">
+                <button
+                  className={`btn ${
+                    activeTab === "issued" ? "btn-accent" : "btn-outline-accent"
+                  }`}
+                  onClick={() => setActiveTab("issued")}
+                >
+                  Issued Credits
+                </button>
+                <button
+                  className={`btn ${
+                    activeTab === "purchased"
+                      ? "btn-accent"
+                      : "btn-outline-accent"
+                  }`}
+                  onClick={() => setActiveTab("purchased")}
+                >
+                  Purchased Credits
+                </button>
+              </div>
+            </div>
+
+            <div className="tab-content">
+              {activeTab === "issued" ? (
+                <CreditsList credits={issuedCredits} />
+              ) : (
+                <CreditsList credits={purchasedCredits} />
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="tab-content">
-          {activeTab === "issued" ? (
-            <CreditsList credits={issuedCredits} />
-          ) : (
-            <CreditsList credits={purchasedCredits} />
-          )}
-        </div>
-      </div>
-
+        </>
+      )}
       {/* Deposit Modal */}
-      <Deposit
-        show={showDepositModal}
-        onHide={() => setShowDepositModal(false)}
-        onSubmit={handleDepositSubmit}
-      />
+      {!isEVOwner && (
+        <Deposit
+          show={showDepositModal}
+          onHide={() => setShowDepositModal(false)}
+          onSubmit={handleDepositSubmit}
+        />
+      )}
 
       {/* Withdraw Modal */}
       <Withdraw

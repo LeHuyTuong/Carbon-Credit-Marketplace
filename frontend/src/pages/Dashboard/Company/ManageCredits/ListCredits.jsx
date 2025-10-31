@@ -24,7 +24,13 @@ const schema = Yup.object().shape({
     .typeError("Please select a credit"),
   quantity: Yup.number()
     .required("Quantity is required")
-    .positive("Must be greater than 0"),
+    .positive("Must be greater than 0")
+    .when("maxAvailable", (maxAvailable, schema) =>
+      schema.max(
+        maxAvailable || 0,
+        `Quantity cannot exceed available balance (${maxAvailable || 0})`
+      )
+    ),
   pricePerCredit: Yup.number()
     .required("Price is required")
     .positive("Must be greater than 0"),
@@ -269,6 +275,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits }) {
     quantity: "",
     pricePerCredit: "",
     expirationDate: "",
+    maxAvailable: 0,
   };
 
   return (
@@ -281,6 +288,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits }) {
         validationSchema={schema}
         initialValues={initialValues}
         onSubmit={(values) => onSubmit(values)}
+        context={{ userCredits }}
       >
         {({
           handleSubmit,
@@ -311,6 +319,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits }) {
                     );
                     setFieldValue("batchId", null);
                     setFieldValue("creditId", null);
+                    setFieldValue("maxAvailable", selected?.balance ?? 0);
 
                     if (selected?.type === "ISSUED") {
                       setFieldValue("batchId", selected.id);
@@ -324,7 +333,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits }) {
 
                   <optgroup label="Credits Granted (Batch)">
                     {userCredits
-                      .filter((c) => c.type === "ISSUED")
+                      .filter((c) => c.type === "ISSUED" && c.balance > 0)
                       .map((credit) => (
                         <option key={`batch-${credit.id}`} value={credit.id}>
                           {credit.title} (Available: {credit.balance})
@@ -334,7 +343,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits }) {
 
                   <optgroup label="Credits Purchased">
                     {userCredits
-                      .filter((c) => c.type === "WALLET")
+                      .filter((c) => c.type === "WALLET" && c.balance > 0)
                       .map((credit) => (
                         <option key={`wallet-${credit.id}`} value={credit.id}>
                           {credit.title} (Quantity: {credit.balance})
