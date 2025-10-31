@@ -137,16 +137,28 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     @Query("SELECT c FROM CarbonCredit c WHERE c.id = :id")
     Optional<CarbonCredit> findByIdWithPessimisticLock(@Param("id") Long id);
 
+    // khóa pessmistic lại
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM CarbonCredit c WHERE c.id = :id AND c.company.id = :companyId")
+    Optional<CarbonCredit> findByIdAndCompanyIdWithLock(@Param("id") Long id,
+                                                        @Param("companyId") Long companyId);
+
+
+    //  Chỉ lấy các tín chỉ có số lượng > 0
+    @Query("SELECT c FROM CarbonCredit c WHERE c.company.id = :companyId AND c.carbonCredit > 0")
+    List<CarbonCredit> findAvailableCreditsByCompanyId(@Param("companyId") Long companyId);
+
     // Tìm trực tiếp theo ID và companyId
     Optional<CarbonCredit> findByIdAndCompanyId(Long id, Long companyId);
 
-    // Query tối ưu để tìm credit phù hợp
+    //  tìm credit phù hợp
     @Query(nativeQuery = true, value =
-            "SELECT c.* FROM carbon_credit c " +
+            "SELECT c.* FROM carbon_credits c " +
                     "LEFT JOIN credit_batch b ON c.batch_id = b.id " +
                     "WHERE (c.company_id = :companyId) AND " +
-                    "((c.id = :creditId) OR (c.source_credit_id = :creditId) OR (b.id = :creditId)) AND " +
-                    "((c.carbon_credit >= :requiredAmount) OR (:requiredAmount IS NULL)) " +
+                    "((c.id = :creditId) OR (c.source_credit_id = :creditId) OR (b.id = :creditId)) AND " +  // tìm theo credit trên carbon credit
+                    // hoặc là trên credit batch đều được
+                    "((c.carbon_credits >= :requiredAmount) OR (:requiredAmount IS NULL)) " + // lớn hown request
                     "ORDER BY c.carbon_credit DESC LIMIT 1")
     List<CarbonCredit> findCreditsBatchOrChainLinkedToIdWithSufficientAmount(
             @Param("creditId") Long creditId,

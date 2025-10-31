@@ -17,10 +17,21 @@ export default function Features() {
   const ripple = useRipple();
   const nav = useNavigate();
   const [adminProjects, setAdminProjects] = useState([]);
+  const [pendingRedirect, setPendingRedirect] = useState(null);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    variant: "success",
+  });
+
+  const showToast = (message, variant = "success") => {
+    setToast({ show: true, message, variant });
+  };
 
   useReveal(sectionRef1);
   useReveal(sectionRef2);
 
+  // --- fetch project ---
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -34,19 +45,18 @@ export default function Features() {
     fetchProjects();
   }, []);
 
+  // --- chờ Toast tắt rồi redirect ---
+  useEffect(() => {
+    if (!toast.show && pendingRedirect) {
+      nav(pendingRedirect);
+      setPendingRedirect(null); // reset sau khi chuyển hướng
+    }
+  }, [toast.show, pendingRedirect, nav]);
+
   const safeLogo = (logo) => {
     if (typeof logo !== "string" || !logo.trim()) return DEFAULT_LOGO;
     // nếu BE lỡ trả thiếu protocol
     return logo.startsWith("http") ? logo : `https://${logo}`;
-  };
-  const [toast, setToast] = useState({
-    show: false,
-    message: "",
-    variant: "success",
-  });
-
-  const showToast = (message, variant = "success") => {
-    setToast({ show: true, message, variant });
   };
 
   return (
@@ -119,7 +129,7 @@ export default function Features() {
                               "Please log in as Company to register a project",
                               "warning"
                             );
-                            nav("/login");
+                            setPendingRedirect("/login"); // chờ Toast ẩn rồi redirect
                             return;
                           }
                           if (user?.role !== "COMPANY") {
