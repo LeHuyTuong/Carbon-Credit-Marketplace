@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.validator.constraints.URL;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,6 +68,12 @@ public class Project extends BaseEntity {
 
     @Column(name = "leakage_pct", precision = 5, scale = 4)
     BigDecimal leakagePct;
+
+    @Column(name = "start_date")
+    private LocalDate startedDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectApplication> applications = new ArrayList<>();

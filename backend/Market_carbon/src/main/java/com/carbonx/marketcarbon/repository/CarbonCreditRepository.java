@@ -152,4 +152,35 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
             @Param("creditId") Long creditId,
             @Param("companyId") Long companyId,
             @Param("requiredAmount") BigDecimal requiredAmount);
+
+    // AVAILABLE có nguồn gốc "mua qua sàn"
+    @Query("""
+    SELECT COALESCE(SUM(c.amount), 0)
+    FROM CarbonCredit c
+    WHERE c.company.id = :companyId
+      AND c.status = 'AVAILABLE'
+      AND EXISTS (
+          SELECT 1
+          FROM Order o
+          WHERE o.carbonCredit = c
+            AND o.company.id = :companyId
+            AND o.orderType = 'BUY'
+            AND o.orderStatus = 'COMPLETED'
+      )
+""")
+    long sumAvailablePurchased(@Param("companyId") Long companyId);
+
+    // AVAILABLE có nguồn gốc "phát hành nội bộ/nhận nội bộ"
+    @Query("""
+    SELECT COALESCE(SUM(c.amount), 0)
+    FROM CarbonCredit c
+    WHERE c.company.id = :companyId
+      AND c.status = 'AVAILABLE'
+      AND (
+           c.sourceCredit IS NULL
+        OR c.sourceCredit.company.id = :companyId
+      )
+""")
+    long sumAvailableIssued(@Param("companyId") Long companyId);
+
 }

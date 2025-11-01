@@ -1,0 +1,10 @@
+package com.carbonx.marketcarbon.common;
+
+public enum NotificationType {
+    PROJECT_REGISTERED,
+    PROJECT_APPROVED_CVA,
+    PROJECT_APPROVED_ADMIN,
+    WALLET_DEPOSIT_REQUESTED,
+    WALLET_WITHDRAW_REQUESTED,
+    WALLET_WITHDRAW_APPROVED
+}

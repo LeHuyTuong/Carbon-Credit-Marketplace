@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.repository;
 
+import com.carbonx.marketcarbon.model.CreditBatch;
 import com.carbonx.marketcarbon.model.CreditCertificate;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,4 +34,8 @@ public interface CreditCertificateRepository extends JpaRepository<CreditCertifi
             "batch.report.verifiedBy"
     })
     Optional<CreditCertificate> findWithAllByCertificateCode(String certificateCode);
+
+    // repository/CreditCertificateRepository.java
+    Optional<CreditCertificate> findTopByBatchOrderByIdDesc(CreditBatch batch);
+
 }

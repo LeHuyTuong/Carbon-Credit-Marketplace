@@ -279,14 +279,32 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
     @Override
     public EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note) {
+        // Tìm báo cáo bằng ID
         EmissionReport r = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        // Kiểm tra trạng thái hiện tại trước khi thay đổi
+        EmissionStatus currentStatus = r.getStatus();
+
+        // Chỉ cho phép duyệt khi báo cáo có trạng thái là ADMIN_APPROVED, ADMIN_REJECTED, hoặc CVA_APPROVED
+        if (!(currentStatus == EmissionStatus.ADMIN_APPROVED ||
+                currentStatus == EmissionStatus.ADMIN_REJECTED ||
+                currentStatus == EmissionStatus.CVA_APPROVED)) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        // Cập nhật thông tin báo cáo
         r.setApprovedAt(OffsetDateTime.now());
         r.setComment(note);
-        r.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.REJECTED);
+        r.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.ADMIN_REJECTED);
+
+        // Lưu lại báo cáo
         reportRepository.save(r);
+
+        // Trả về response
         return EmissionReportResponse.from(r);
     }
+
 
     @Override
     public Page<EmissionReportResponse> listReportsForAdmin(String status, Pageable pageable) {
