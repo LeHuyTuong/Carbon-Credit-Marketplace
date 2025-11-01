@@ -13,4 +13,6 @@ public interface CreditBatchRepository extends JpaRepository<CreditBatch, Long>,
     Optional<CreditBatch> findByReportId(Long reportId);
     @EntityGraph(attributePaths = {"company","project","report","report.verifiedBy"})
     Optional<CreditBatch> findWithAllById(Long id);
+
+    CreditBatch findByCompanyId(Long companyId);
 }

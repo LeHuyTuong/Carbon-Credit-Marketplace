@@ -27,14 +27,17 @@ export default function WalletCard({
       </p>
 
       <div className="d-flex justify-content-center gap-3 flex-wrap">
-        <button
-          className="wallet-action border-info text-info fw-bold"
-          onClick={onDeposit}
-          disabled={loading}
-        >
-          <i className="bi bi-upload fs-5"></i>
-          <span>{loading ? "Processing..." : "Add Money"}</span>
-        </button>
+        {/* Chỉ hiển thị nếu có hàm onDeposit được truyền từ props */}
+        {onDeposit && (
+          <button
+            className="wallet-action border-info text-info fw-bold"
+            onClick={onDeposit}
+            disabled={loading}
+          >
+            <i className="bi bi-upload fs-5"></i>
+            <span>{loading ? "Processing..." : "Add Money"}</span>
+          </button>
+        )}
         <button
           className="wallet-action border-warning text-warning fw-bold"
           onClick={onWithdraw}

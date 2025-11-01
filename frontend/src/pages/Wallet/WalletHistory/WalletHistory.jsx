@@ -52,6 +52,17 @@ export default function WalletHistory() {
     }
   };
 
+  const parseVNTime = (ts) => {
+    const normalized = ts.endsWith("Z") ? ts : `${ts}Z`; // ép UTC
+    const date = new Date(normalized);
+    return date
+      .toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        hour12: false,
+      })
+      .replace(",", "");
+  };
+
   return (
     <div
       ref={sectionRef}
@@ -108,7 +119,11 @@ export default function WalletHistory() {
               items={transactions}
               itemsPerPage={5}
               renderItem={(tx) => {
-                const incomeTypes = ["ADD_MONEY", "SELL_CARBON_CREDIT"];
+                const incomeTypes = [
+                  "ADD_MONEY",
+                  "SELL_CARBON_CREDIT",
+                  "ISSUE_CREDIT",
+                ];
                 const expenseTypes = ["WITHDRAWAL", "BUY_CARBON_CREDIT"];
                 const isIncome = incomeTypes.includes(tx.transactionType);
                 const isExpense = expenseTypes.includes(tx.transactionType);
@@ -124,31 +139,29 @@ export default function WalletHistory() {
                   : "text-light";
                 const prefix = isIncome ? "+" : isExpense ? "-" : "";
 
+                //nếu là ISSUE_CREDIT thì hiển thị credits thay vì USD
+                const unit =
+                  tx.transactionType === "ISSUE_CREDIT" ? "credits" : "USD";
+
                 return (
                   <div
                     key={tx.id}
                     className="d-flex justify-content-between align-items-center border-bottom py-2"
                   >
                     <div>
-                      <span
-                        className={`fw-semibold ${typeClass}`}
-                      >
+                      <span className={`fw-semibold ${typeClass}`}>
                         {tx.transactionType}
                       </span>
                       <div className="small text-light">
-                        {new Date(tx.createdAt).toLocaleString("vi-VN", {
-                          timeZone: "Asia/Ho_Chi_Minh",
-                          hour12: false,
-                        })}
+                        {parseVNTime(tx.createdAt)}
                       </div>
                     </div>
                     <span className={`fw-bold ${amountClass}`}>
-                      {`${prefix}${tx.amount} USD`}
+                      {`${prefix}${tx.amount} ${unit}`}
                     </span>
                   </div>
                 );
               }}
-
             />
           )
         ) : withdrawals.length === 0 ? (

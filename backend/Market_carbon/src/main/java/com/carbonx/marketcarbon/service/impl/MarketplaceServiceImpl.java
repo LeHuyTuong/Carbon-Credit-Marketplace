@@ -233,6 +233,21 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    public List<MarketplaceListingResponse> getALlCreditListingsByCompanyID() {
+
+        User currentUser = currentUser();
+        Company sellerCompany = currentCompany(currentUser);
+
+        List<MarketPlaceListing> companyListings = marketplaceListingRepository.findByCompanyId(sellerCompany.getId());
+
+        return companyListings.stream()
+                .map(this::buildListingResponse)
+                .collect(Collectors.toList());
+    }
+
+
     @Override
     @Transactional
     public MarketplaceListingResponse updateListCredits(CreditListingUpdateRequest request) {

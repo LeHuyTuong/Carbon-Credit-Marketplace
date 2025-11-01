@@ -66,10 +66,5 @@ public class EVOwner extends BaseEntity{
     @JoinColumn(name = "company_id") // nullable: EV Owner có thể chưa thuộc công ty
     private Company company;
 
-    @OneToMany(mappedBy = "evOwner", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    @Builder.Default
-    private List<CarbonCreditContribution> carbonCreditContributions = new ArrayList<>();
-
 }
 
