@@ -236,7 +236,7 @@ const CVAKYC = () => {
               fontWeight: "bold",
               "&:hover": { borderColor: colors.grey[200] },
             }}
-            onClick={() => navigate("/cva/login")}
+            onClick={() => navigate(-1)}
           >
             BACK
           </Button>
