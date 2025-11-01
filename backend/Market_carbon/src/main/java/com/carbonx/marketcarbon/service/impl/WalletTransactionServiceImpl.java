@@ -109,6 +109,15 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setOrder(request.getOrder());
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
+        // 1. Lấy CarbonCredit từ wallet
+        CarbonCredit carbonCredit = wallet.getCarbonCredit();
+        CreditBatch creditBatch = null; // 2. Mặc định batch là null
+        // 3. Chỉ lấy batch nếu carbonCredit không null
+        if (carbonCredit != null) {
+            creditBatch = carbonCredit.getBatch();
+        }
+        // 4. Gán batch (có thể là null nếu không tìm thấy)
+        transaction.setCreditBatch(creditBatch);
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
