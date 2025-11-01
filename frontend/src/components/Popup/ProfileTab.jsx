@@ -7,36 +7,35 @@ import ListItemText from '@mui/material/ListItemText';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
 import UserOutlined from '@ant-design/icons/UserOutlined';
-import { apiLogout } from '@/apiAdmin/apiLogin.js'; //  import API 
+import { apiLogout } from '@/apiAdmin/apiLogin.js';
 import { useState } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import { useAuth } from '@/context/AuthContext.jsx';
 
 export default function ProfileTab({ role, onClose }) {
+  const { logout } = useAuth(); // 🔹 logout từ context
   const basePath = role === 'admin' ? '/admin' : '/cva';
   const navigate = useNavigate();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  
-  // Hàm xử lý logout
-  const handleLogout = async () => {
-    try {
-      if (role === 'admin') {
-        await apiLogout(); // gọi API logout
-        localStorage.removeItem('admin_token');
-        setSnackbar({ open: true, message: 'Logout successfully!', severity: 'success' });
+ const handleLogout = async () => {
+  try {
+    if (role === 'admin') await apiLogout();
 
-        //  đợi 1.2s rồi điều hướng về trang login admin
-        setTimeout(() => navigate('/admin/login'), 1200);
-      } else {
-        localStorage.removeItem('cva_token');
-        setSnackbar({ open: true, message: 'Logout successfully!', severity: 'success' });
-        setTimeout(() => navigate('/cva/login'), 1200);
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      setSnackbar({ open: true, message: 'Logout failed!', severity: 'error' });
-    }
-  };
+    // Xóa state context & token
+    logout();
+
+    // Navigate ngay lập tức
+    const loginPath = role === 'admin' ? '/admin/carbonX/mkp/login' : '/cva/carbonX/mkp/login';
+    navigate(loginPath, { replace: true });
+
+    // Snackbar vẫn show bình thường
+    setSnackbar({ open: true, message: 'Logout successfully!', severity: 'success' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    setSnackbar({ open: true, message: 'Logout failed!', severity: 'error' });
+  }
+};
 
 
   return (
@@ -58,7 +57,6 @@ export default function ProfileTab({ role, onClose }) {
         </ListItemButton>
       </List>
 
-      {/*  Snackbar thông báo */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2000}

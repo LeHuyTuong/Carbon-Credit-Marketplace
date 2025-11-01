@@ -43,7 +43,7 @@ const AdminKYC = () => {
     }
   };
 
-  // 🔹 Custom English validation
+  //  Custom English validation
   const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
@@ -55,7 +55,7 @@ const AdminKYC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🔹 Handle Submit
+  //  Handle Submit
   const handleSubmit = async (e) => {
   e.preventDefault();
   if (!validate()) return;

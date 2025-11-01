@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
+import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
@@ -28,6 +29,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -42,7 +44,6 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     @Transactional
     public WalletTransactionResponse createTransaction(WalletTransactionRequest request) {
-
         // check wallet
         Wallet wallet;
         if (request.getWallet() != null && request.getWallet().getId() != null) {
@@ -110,6 +111,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setOrder(request.getOrder());
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
+        transaction.setCreditBatch(wallet.getCarbonCredit().getBatch());
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
