@@ -207,6 +207,9 @@ const EditProfileCVA = () => {
             value={cva.positionTitle || ""}
             onChange={handleChange}
             fullWidth
+            InputProps={{
+              readOnly: true,
+            }}
           />
           <TextField
             name="accreditationNo"

@@ -21,32 +21,37 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!isAuthenticated || !token) return;
+  // nếu chưa đăng nhập hoặc không có token thì thoát
+  if (!isAuthenticated || !token) return;
 
-    const eventSource = new EventSourcePolyfill(
-      "http://163.61.111.120:8082/api/v1/notifications",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          withCredentials: true,
-        },
-      }
-    );
+  // nếu là admin thì KHÔNG mở SSE (vì API /notifications chỉ cho user)
+  if (user?.role === "ADMIN") return;
 
-    eventSource.onmessage = (event) => {
-      const msg = event.data || "New notification";
-      console.log("Notification:", msg);
+  const eventSource = new EventSourcePolyfill(
+    "http://163.61.111.120:8082/api/v1/notifications",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        withCredentials: true,
+      },
+    }
+  );
 
-      setNotifications((prev) => [{ message: msg, time: new Date() }, ...prev]);
-      setUnreadCount((count) => count + 1);
-    };
+  eventSource.onmessage = (event) => {
+    const msg = event.data || "New notification";
+    console.log("Notification:", msg);
 
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      eventSource.close();
-    };
-    return () => eventSource.close();
-  }, [isAuthenticated, token]);
+    setNotifications((prev) => [{ message: msg, time: new Date() }, ...prev]);
+    setUnreadCount((count) => count + 1);
+  };
+
+  eventSource.onerror = (err) => {
+    console.error("SSE error:", err);
+    eventSource.close();
+  };
+
+  return () => eventSource.close();
+}, [isAuthenticated, token, user?.role]);
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top bg-dark bg-opacity-25 navbar-dark">
