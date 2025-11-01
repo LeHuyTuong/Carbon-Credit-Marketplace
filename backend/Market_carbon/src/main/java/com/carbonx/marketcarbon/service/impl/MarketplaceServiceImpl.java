@@ -333,7 +333,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             originalQuantity = remainingQuantity.add(soldQuantity);
         }
 
-        Project project = listing.getCarbonCredit().getProject();
+        CarbonCredit carbonCredit = listing.getCarbonCredit();
+        Project project = carbonCredit != null ? carbonCredit.getProject() : null;
+        CreditBatch batch = carbonCredit != null ? carbonCredit.getBatch() : null;
 
         // Lấy thông tin số dư credit hiện tại
         CarbonCredit credit = listing.getCarbonCredit();
@@ -357,6 +359,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 // Thêm thông tin số dư
                 .remainingCreditBalance(remainingBalance)
                 .totalListedAmount(totalListed)
+                .carbonCreditId(carbonCredit != null ? carbonCredit.getId() : null)
+                .batchId(batch != null ? batch.getId() : null)
+                .batchCode(batch != null ? batch.getBatchCode() : null)
                 .build();
     }
 
@@ -385,7 +390,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
         return BigDecimal.ZERO;
     }
-    
+
     private CarbonCredit resolveOwnedCredit(Long creditId, Company company, BigDecimal requiredQuantity) {
         if (creditId == null) {
             throw new ResourceNotFoundException("Carbon credit block not found");
