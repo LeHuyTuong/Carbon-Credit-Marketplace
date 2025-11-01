@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,4 +24,7 @@ public class ProjectResponse {
     private String legalDocsFile;
     private String logo;
     private String createdByName;
+
+    private LocalDate startedDate;
+    private LocalDate endDate;
 }

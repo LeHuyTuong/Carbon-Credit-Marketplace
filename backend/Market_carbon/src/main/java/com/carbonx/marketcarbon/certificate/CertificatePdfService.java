@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.certificate;
 
+import com.carbonx.marketcarbon.service.StorageService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +10,7 @@ import org.thymeleaf.context.Context;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,9 +22,11 @@ public class CertificatePdfService {
 
     private final TemplateEngine templateEngine;
     private final ImageBase64Cache imageCache;
+    private final StorageService storageService;
 
-    public byte[] generatePdf(CertificateData data) {
+    public StorageService.StoredObject generateAndUploadPdf(CertificateData data) {
         try {
+
             Context context = new Context();
             Map<String, Object> vars = new HashMap<>();
 
@@ -48,30 +51,48 @@ public class CertificatePdfService {
             vars.put("verifyUrl", data.getVerifyUrl());
             vars.put("qrCodeUrl", data.getQrCodeUrl());
 
-            // convert image to Base64 for PDF embedding
+            // Convert hình ảnh sang Base64 để nhúng vào PDF
             vars.put("issuerSignatureUrl", imageCache.get(data.getIssuerSignatureUrl()));
-            vars.put("leftLogoUrl",       imageCache.get(data.getLeftLogoUrl()));
-            vars.put("rightLogoUrl",      imageCache.get(data.getRightLogoUrl()));
+            vars.put("leftLogoUrl", imageCache.get(data.getLeftLogoUrl()));
+            vars.put("rightLogoUrl", imageCache.get(data.getRightLogoUrl()));
 
             context.setVariables(vars);
             String htmlContent = templateEngine.process("certificate-retire-green.html", context);
 
-            try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-                 InputStream htmlStream = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
 
+            byte[] pdfBytes;
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
                 PdfRendererBuilder builder = new PdfRendererBuilder();
                 builder.useFastMode();
                 builder.withHtmlContent(htmlContent, new File("src/main/resources/templates/").toURI().toString());
                 builder.toStream(os);
                 builder.run();
+                pdfBytes = os.toByteArray();
+            }
 
-                return os.toByteArray();
+
+            String key = buildFileKey(data);
+            try (InputStream in = new ByteArrayInputStream(pdfBytes)) {
+                StorageService.StoredObject stored = storageService.upload(
+                        key,
+                        "application/pdf",
+                        pdfBytes.length,
+                        in
+                );
+                log.info(" Uploaded certificate PDF to S3:{}", stored.url());
+                return stored;
             }
 
         } catch (Exception e) {
-            log.error(" Error generating PDF certificate: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to generate PDF certificate", e);
+            log.error(" Error generating/uploading PDF certificate: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to generate and upload PDF certificate", e);
         }
+    }
+
+    private String buildFileKey(CertificateData data) {
+        String safeCode = data.getCertificateCode() != null ? data.getCertificateCode() : "unknown";
+        String timestamp = LocalDateTime.now().toString().replace(":", "-");
+        return "certificates/" + safeCode + "-" + timestamp + ".pdf";
     }
 
     private String encodeImageToBase64(String imageUrl) {
@@ -82,7 +103,7 @@ public class CertificatePdfService {
             String type = imageUrl.toLowerCase().endsWith(".png") ? "png" : "jpeg";
             return "data:image/" + type + ";base64," + base64;
         } catch (Exception e) {
-            log.warn(" Cannot load image from URL: {}", imageUrl);
+            log.warn("⚠️ Cannot load image from URL: {}", imageUrl);
             return null;
         }
     }

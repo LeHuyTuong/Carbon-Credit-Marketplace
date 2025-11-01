@@ -6,6 +6,9 @@ public enum CreditStatus {
     ISSUED, // admin cấp phát
     TRADED, // tín chỉ được để lên sàn
     PENDING,
-    EXPIRED
+    EXPIRED,
+    SOLD,
+    RETIRED
+
 
 }

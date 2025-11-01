@@ -63,6 +63,9 @@ public class CreditCertificate {
 
     private LocalDateTime issuedAt;
 
+    @Column(name = "certificate_url", length = 1024)
+    private String certificateUrl;
+
     @PrePersist
     void pre() {
         if (issuedAt == null) issuedAt = LocalDateTime.now();
