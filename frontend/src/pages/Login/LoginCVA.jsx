@@ -1,3 +1,4 @@
+// ===================== CVALogin.jsx =====================
 import React, { useState } from "react";
 import {
   Box,
@@ -11,13 +12,14 @@ import {
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
-import { apiLogin } from "@/apiCVA/apiAuthor.js"; // API login CVA
-import { checkKYCCVA } from "@/apiCVA/apiAuthor.js"; // API check KYC
+import { apiLogin, checkKYCCVA } from "@/apiCVA/apiAuthor.js";
+import { useAuth } from "@/context/AuthContext.jsx";
 
 const CVALogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const { login } = useAuth(); // lấy login từ context
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -30,30 +32,37 @@ const CVALogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+
+    if (!form.email || !form.password) {
+      setError("Please fill in all fields!");
+      return;
+    }
 
     try {
-      // Gọi API login
-      const resData = await apiLogin(form.email, form.password);
+      setLoading(true);
 
-      if (resData) {
-        console.log(" Login success:", resData);
+      // 🟢 Gọi API login
+      const res = await apiLogin(form.email, form.password);
+      if (!res?.jwt) throw new Error("Invalid login response");
 
-        // Sau khi login, check KYC status
-        const kycStatus = await checkKYCCVA();
-        console.log(" KYC check:", kycStatus);
+      // 🟢 Lưu user vào context, ép role = "CVA"
+      login({ ...res.user, role: "CVA" }, res.jwt, true);
 
-        if (kycStatus) {
-          // Đã có thông tin KYC
-          navigate("/cva/dashboard");
-        } else {
-          // Chưa có → chuyển sang form KYC
-          navigate("/cva/kyc");
-        }
+      // 🟢 Kiểm tra KYC
+      const kycRes = await checkKYCCVA();
+      console.log("✅ Full KYC check:", kycRes);
+
+      // 🟢 Điều hướng dựa theo KYC
+      if (kycRes && kycRes.id) {
+        console.log("➡️ KYC found → Go Dashboard");
+        navigate("/cva/dashboard", { replace: true });
+      } else {
+        console.log("➡️ No KYC found → Go to KYC page");
+        navigate("/cva/kyc", { replace: true });
       }
     } catch (err) {
-      console.error(" Login Error:", err);
-      setError(err.message || "Login failed. Please try again!");
+      console.error("❌ Login Error:", err);
+      setError(err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);
     }
@@ -79,13 +88,10 @@ const CVALogin = () => {
           backgroundColor: colors.primary[500],
         }}
       >
+        {/* Header */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
           <SupervisorAccount
-            sx={{
-              fontSize: 48,
-              color: colors.greenAccent[500],
-              mb: 1,
-            }}
+            sx={{ fontSize: 48, color: colors.greenAccent[500], mb: 1 }}
           />
           <Typography
             variant="h4"
@@ -99,6 +105,7 @@ const CVALogin = () => {
           </Typography>
         </Box>
 
+        {/* Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email"
@@ -107,7 +114,6 @@ const CVALogin = () => {
             value={form.email}
             onChange={handleChange}
             fullWidth
-            required
             variant="filled"
             sx={{
               mb: 2,
@@ -122,7 +128,6 @@ const CVALogin = () => {
             value={form.password}
             onChange={handleChange}
             fullWidth
-            required
             variant="filled"
             sx={{
               mb: 2,
@@ -152,12 +157,10 @@ const CVALogin = () => {
               backgroundColor: colors.greenAccent[600],
               color: colors.grey[900],
               fontWeight: "bold",
-              "&:hover": {
-                backgroundColor: colors.greenAccent[700],
-              },
+              "&:hover": { backgroundColor: colors.greenAccent[700] },
             }}
           >
-            {loading ? <CircularProgress size={26} color="inherit" /> : "Login"}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </Button>
         </form>
 
