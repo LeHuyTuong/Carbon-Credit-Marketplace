@@ -7,6 +7,7 @@ public enum CreditStatus {
     TRADED, // tín chỉ được để lên sàn
     PENDING,
     EXPIRED,
-    LISTED
+    LISTED,
+    RETIRED
 
 }

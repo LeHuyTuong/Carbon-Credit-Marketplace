@@ -42,7 +42,6 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     @Transactional
     public WalletTransactionResponse createTransaction(WalletTransactionRequest request) {
-
         // check wallet
         Wallet wallet;
         if (request.getWallet() != null && request.getWallet().getId() != null) {

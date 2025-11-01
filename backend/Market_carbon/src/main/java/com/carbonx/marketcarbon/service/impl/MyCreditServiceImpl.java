@@ -24,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -199,5 +200,115 @@ public class MyCreditServiceImpl implements MyCreditService {
         return credits.stream()
                 .map(CarbonCreditResponse::from)
                 .toList();
+    }
+
+    private BigDecimal getAvailableAmount(CarbonCredit credit) {
+        if (credit == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal available = credit.getCarbonCredit();
+        if (available != null && available.compareTo(BigDecimal.ZERO) > 0) {
+            return available;
+        }
+
+        BigDecimal amount = credit.getAmount();
+        BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
+        if (amount != null) {
+            BigDecimal remaining = amount.subtract(listed);
+            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                return remaining;
+            }
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    @PreAuthorize("hasRole('COMPANY')")
+    public List<CarbonCreditResponse> getMyRetirableCredits() {
+        Long companyId = currentCompanyId();
+        log.info("[DEBUG] getMyRetirableCredits() - companyId={}", companyId);
+
+        // B1 Tìm carbon theo compandy id
+        return creditRepo.findByCompanyId(companyId).stream()
+                .filter(credit -> {
+                    checkAndMarkExpired(credit);
+
+                    // 1.1 lọc những tín chỉ hết han hoặc đã retire
+                    if (credit.getStatus() == CreditStatus.EXPIRED || credit.getStatus() == CreditStatus.RETIRED) {
+                        return false;
+                    }
+
+                    // lọc nhuwnxg thằng nào đã list
+                    BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
+                    // nếu list nhỏ hơn = không và hiện ang có lớn hơn 0 thì return true
+                    return listed.compareTo(BigDecimal.ZERO) <= 0 && getAvailableAmount(credit).compareTo(BigDecimal.ZERO) > 0;
+                })
+                .map(CarbonCreditResponse::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('COMPANY')")
+    public CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity) {
+        Long companyId = currentCompanyId();
+        log.info("[DEBUG] retireCredit() - creditId={}, companyId={}, quantity={}",
+                creditId, companyId, quantity);
+
+        if (creditId == null || creditId.longValue() <= 0) {
+            throw new AppException(ErrorCode.INVALID_INPUT);
+        }
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
+        }
+
+        var creditOpt = creditRepo.findByIdAndCompanyIdWithLock(creditId, companyId);
+        if (creditOpt.isEmpty()) {
+            if (creditRepo.existsById(creditId)) {
+                throw new AppException(ErrorCode.COMPANY_NOT_OWN);
+            }
+            throw new AppException(ErrorCode.CREDIT_NOT_FOUND);
+        }
+        CarbonCredit credit = creditOpt.get();
+
+        checkAndMarkExpired(credit);
+
+        if (credit.getStatus() == CreditStatus.EXPIRED) {
+            throw new AppException(ErrorCode.CREDIT_EXPIRED);
+        }
+        if (credit.getStatus() == CreditStatus.RETIRED) {
+            throw new AppException(ErrorCode.CREDIT_ALREADY_RETIRED);
+        }
+
+        BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
+        if (listed.compareTo(BigDecimal.ZERO) > 0) {
+            throw new AppException(ErrorCode.CREDIT_HAS_ACTIVE_LISTING);
+        }
+
+        BigDecimal available = getAvailableAmount(credit);
+        if (available.compareTo(quantity) < 0) {
+            throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
+        }
+
+        BigDecimal remaining = available.subtract(quantity);
+        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+            remaining = BigDecimal.ZERO;
+        }
+
+        credit.setCarbonCredit(remaining);
+        credit.setAmount(remaining.add(listed));
+
+        if (remaining.compareTo(BigDecimal.ZERO) == 0) {
+            credit.setStatus(CreditStatus.RETIRED);
+            credit.setListedAmount(BigDecimal.ZERO);
+        }
+
+        CarbonCredit saved = creditRepo.save(credit);
+        log.info("[DEBUG] retireCredit() - creditId={} retiredQuantity={}, remaining={}",
+                saved.getId(), quantity, remaining);
+
+        return CarbonCreditResponse.from(saved);
     }
 }
