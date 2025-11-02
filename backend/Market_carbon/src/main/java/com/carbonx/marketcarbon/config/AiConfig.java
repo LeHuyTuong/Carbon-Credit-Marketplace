@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class AiConfig {
 
     private String apiKey;
-    private String model = "gemini-1.5-flash";
+    private String model = "gemini-2.5-pro";
     private boolean enabled = true;
     private int timeoutMs = 60000;
 
@@ -32,12 +32,12 @@ public class AiConfig {
                 .responseTimeout(Duration.ofMillis(timeoutMs));
 
         return WebClient.builder()
-                .baseUrl("https://asia-southeast1-aiplatform.googleapis.com")
+                .baseUrl("https://generativelanguage.googleapis.com")
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader("Content-Type", "application/json")
                 .defaultHeader("Accept", "application/json")
                 .filter((request, next) -> {
-                    System.out.println("[Gemini Vertex Request] " + request.method() + " " + request.url());
+                    System.out.println("[Gemini Request] " + request.method() + " " + request.url());
                     return next.exchange(request);
                 })
                 .build();
