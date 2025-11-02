@@ -1,11 +1,7 @@
 package com.carbonx.marketcarbon.service;
 
-import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.EmissionReportDetailResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
-import com.carbonx.marketcarbon.dto.response.EvidenceFileDto;
-import com.carbonx.marketcarbon.model.EmissionReport;
-import com.carbonx.marketcarbon.model.EvidenceFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
