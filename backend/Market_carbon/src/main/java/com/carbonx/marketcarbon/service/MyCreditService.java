@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public interface MyCreditService {
-    Page<CarbonCreditResponse> listMyCredits(CreditQuery query, Pageable pageable);
+    List<CarbonCreditResponse> listMyCredits(CreditQuery query);
     Page<CreditBatchLiteResponse> listMyBatches(Long projectId, Integer vintageYear, Pageable pageable);
     CarbonCreditResponse getMyCreditById(Long creditId);
     CarbonCreditResponse getMyCreditByCode(String creditCode);
