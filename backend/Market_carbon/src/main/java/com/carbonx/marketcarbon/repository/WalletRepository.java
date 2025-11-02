@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.repository;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.Order;
+import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import io.lettuce.core.dynamic.annotation.Param;
 import jakarta.persistence.LockModeType;
@@ -21,4 +22,6 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM Wallet w WHERE w.user.id = :userId")
     Wallet findByUserIdWithPessimisticLock(@Param("userId") Long userId);
+
+    Optional<Wallet> findByUser(User user);
 }
