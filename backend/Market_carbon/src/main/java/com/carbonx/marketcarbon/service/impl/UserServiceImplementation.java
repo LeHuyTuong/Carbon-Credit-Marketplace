@@ -243,4 +243,9 @@
             emailService.sendEmail(subject, content, List.of(user.getEmail()));
         }
 
+        @Override
+        public long countUsers() {
+            return userRepository.count();
+        }
+
     }
