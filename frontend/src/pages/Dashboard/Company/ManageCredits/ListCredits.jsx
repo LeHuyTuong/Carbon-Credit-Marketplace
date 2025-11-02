@@ -17,19 +17,14 @@ import { apiFetch } from "../../../../utils/apiFetch";
 import "../Marketplace/marketplace.css";
 import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
-//Validation schema
+// === Validation schema ===
 const schema = Yup.object().shape({
-  selectedCredit: Yup.number()
-    .required("Please select a credit")
-    .typeError("Please select a credit"),
+  selectedCredit: Yup.string().required("Please select a credit"),
   quantity: Yup.number()
     .required("Quantity is required")
     .positive("Must be greater than 0")
-    .when("maxAvailable", (maxAvailable, schema) =>
-      schema.max(
-        maxAvailable || 0,
-        `Quantity cannot exceed available balance (${maxAvailable || 0})`
-      )
+    .when("maxAvailable", (max, schema) =>
+      schema.max(max || 0, `Cannot exceed available balance (${max || 0})`)
     ),
   pricePerCredit: Yup.number()
     .required("Price is required")
@@ -52,55 +47,67 @@ export default function ListCredits() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
-  //fetch user credits
+  // === FETCH USER CREDITS (từ ví, group theo batchCode) ===
+  const fetchUserCredits = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+      const wallet = res?.response || {};
+      const credits = wallet.carbonCredits || [];
+
+      // lấy credit còn khả dụng
+      const available = credits.filter(
+        (c) =>
+          (c.status === "AVAILABLE" ||
+            c.status === "TRADED" ||
+            c.status === "LISTED") &&
+          c.availableQuantity > 0
+      );
+
+      // group theo batchCode
+      const grouped = Object.values(
+        available.reduce((acc, c) => {
+          if (!acc[c.batchCode]) {
+            acc[c.batchCode] = {
+              id: c.batchCode,
+              batchCode: c.batchCode,
+              projectTitle: c.originCompanyName || "Unknown Project",
+              balance: 0,
+              expiresAt: c.expirationDate || null,
+              creditIds: [],
+            };
+          }
+
+          acc[c.batchCode].balance +=
+            c.availableQuantity || c.ownedQuantity || 0;
+          acc[c.batchCode].creditIds.push(c.creditId);
+
+          return acc;
+        }, {})
+      );
+
+      const mapped = grouped.map((g) => ({
+        id: g.batchCode,
+        title: `${g.projectTitle} (${g.batchCode})`,
+        balance: g.balance,
+        expiresAt: g.expiresAt,
+        type: "WALLET",
+        creditIds: g.creditIds, // giữ lại creditIds thực
+      }));
+
+      setUserCredits(mapped);
+    } catch (err) {
+      console.error("Failed to fetch wallet credits:", err);
+      setUserCredits([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchUserCredits = async () => {
-      try {
-        const [batchRes, walletRes] = await Promise.all([
-          apiFetch("/api/v1/my/credits/batches", { method: "GET" }),
-          apiFetch("/api/v1/wallet", { method: "GET" }),
-        ]);
-
-        const allBatches = batchRes?.response?.content || [];
-        const wallet = walletRes?.response || {};
-        const walletCredits = wallet.carbonCredits || [];
-
-        // ===credits được cấp (ISSUED) ===
-        const issuedCredits = allBatches
-          .filter((b) => b.status === "ISSUED")
-          .map((b) => ({
-            id: b.id,
-            type: "ISSUED",
-            title: `${b.projectTitle || "Untitled"} (${b.batchCode || "-"})`,
-            balance: Number(b.creditsCount ?? 0),
-            expiresAt: b.expiresAt || null, // từ batch API
-            issuedAt: new Date(b.issuedAt).toLocaleDateString("en-GB"),
-          }));
-
-        // ===credits đã mua (TRADED) ===
-        const tradedCredits = walletCredits
-          .filter((c) => c.status === "TRADED")
-          .map((c) => ({
-            id: c.creditId,
-            type: "WALLET",
-            title: `${c.creditCode || "Carbon Credit"} (From ${
-              c.originCompanyName || "Unknown"
-            })`,
-            balance: Number(c.availableQuantity ?? c.ownedQuantity ?? 0),
-            expiresAt: c.expirationDate || null,
-          }));
-
-        setUserCredits([...issuedCredits, ...tradedCredits]);
-      } catch (err) {
-        console.error("Failed to fetch user credits:", err);
-        setUserCredits([]);
-      }
-    };
-
     fetchUserCredits();
   }, []);
 
-  //fetch list credit(Marketplace)
+  // === FETCH COMPANY’S MARKETPLACE LISTINGS ===
   useEffect(() => {
     fetchCredits();
   }, []);
@@ -119,7 +126,6 @@ export default function ListCredits() {
         quantity: item.quantity,
         seller: item.sellerCompanyName,
         expiresAt: item.expiresAt || null,
-        status: "active",
       }));
       setCredits(mapped);
     } catch (err) {
@@ -130,19 +136,17 @@ export default function ListCredits() {
     }
   };
 
-  //mở modal list credits
+  // === Modal controls ===
   const handleList = () => {
     setEditData(null);
     setShow(true);
   };
 
-  //mở modal update
-  const handleEdit = (credits) => {
-    setEditData(credits);
+  const handleEdit = (credit) => {
+    setEditData(credit);
     setShow(true);
   };
 
-  //xóa list credits
   const handleDeleteClick = (id) => {
     setConfirmDelete({ show: true, id });
   };
@@ -159,25 +163,29 @@ export default function ListCredits() {
     }
   };
 
-  //handle submit( thêm hoặc sửa)
+  // === Handle Submit (list or edit) ===
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+
+      const selectedCreditObj = userCredits.find(
+        (c) => c.id === values.selectedCredit
+      );
+
+      if (!selectedCreditObj) throw new Error("Invalid credit selection");
+      if ((selectedCreditObj?.balance || 0) < values.quantity) {
+        throw new Error("Not enough available credits in this batch.");
+      }
 
       const payload = {
         quantity: Number(values.quantity),
         pricePerCredit: Number(values.pricePerCredit),
       };
 
-      // Nếu là credit được cấp thì dùng batchId
-      if (values.type === "ISSUED") {
-        payload.batchId = Number(values.batchId);
-      }
-      // Nếu là credit mua trong ví thì dùng creditId
-      else if (values.type === "WALLET") {
-        payload.carbonCreditId = Number(values.creditId);
+      if (selectedCreditObj.type === "WALLET") {
+        payload.carbonCreditId = selectedCreditObj.creditIds[0];
       } else {
-        throw new Error("Invalid credit type.");
+        payload.batchId = selectedCreditObj.id; // hoặc batchId từ API wallet trả về
       }
 
       if (editData) {
@@ -195,7 +203,8 @@ export default function ListCredits() {
 
       setShow(false);
       setEditData(null);
-      await fetchCredits();
+      await fetchCredits(); // reload danh sách marketplace
+      await fetchUserCredits(); // reload ví để update số lượng còn lại
     } catch (error) {
       console.error("Submit error:", error);
       showToast(error.message || "Failed to publish credit.", "danger");
@@ -344,6 +353,7 @@ export default function ListCredits() {
     </div>
   );
 }
+
 export const updateListing = async (listingId, data) => {
   return await apiFetch(`/api/v1/marketplace`, {
     method: "PUT",
@@ -362,7 +372,7 @@ export const deleteListing = async (listingId) => {
   });
 };
 
-//modal up credit
+// === Modal ===
 function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
   const initialValues = editData
     ? {
@@ -371,16 +381,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
         pricePerCredit: editData.price || "",
         expirationDate: editData.expiresAt || "",
         maxAvailable: editData.quantity || 0,
-
-        type: userCredits.find((c) => c.id === editData.id)?.type || "ISSUED",
-        batchId:
-          userCredits.find((c) => c.id === editData.id)?.type === "ISSUED"
-            ? editData.id
-            : null,
-        creditId:
-          userCredits.find((c) => c.id === editData.id)?.type === "WALLET"
-            ? editData.id
-            : null,
+        creditIds: editData.creditIds || [],
       }
     : {
         selectedCredit: "",
@@ -388,6 +389,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
         pricePerCredit: "",
         expirationDate: "",
         maxAvailable: 0,
+        creditIds: [],
       };
 
   return (
@@ -402,7 +404,6 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
         validationSchema={schema}
         initialValues={initialValues}
         onSubmit={(values) => onSubmit(values)}
-        context={{ userCredits }}
       >
         {({
           handleSubmit,
@@ -424,47 +425,21 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                     const selected = userCredits.find(
                       (credit) => String(credit.id) === e.target.value
                     );
-
-                    //cập nhật state formik
-                    setFieldValue("type", selected?.type || "");
-                    setFieldValue(
-                      "expirationDate",
-                      selected?.expiresAt || selected?.expirationDate || ""
-                    );
-                    setFieldValue("batchId", null);
-                    setFieldValue("creditId", null);
+                    setFieldValue("creditIds", selected?.creditIds || []);
+                    setFieldValue("expirationDate", selected?.expiresAt || "");
                     setFieldValue("maxAvailable", selected?.balance ?? 0);
-
-                    if (selected?.type === "ISSUED") {
-                      setFieldValue("batchId", selected.id);
-                    } else if (selected?.type === "WALLET") {
-                      setFieldValue("creditId", selected.id);
-                    }
                   }}
                   disabled={!!editData}
                   isInvalid={touched.selectedCredit && !!errors.selectedCredit}
                 >
                   <option value="">-- Select your credit --</option>
-
-                  <optgroup label="Credits Granted (Batch)">
-                    {userCredits
-                      .filter((c) => c.type === "ISSUED" && c.balance > 0)
-                      .map((credit) => (
-                        <option key={`batch-${credit.id}`} value={credit.id}>
-                          {credit.title} (Available: {credit.balance})
-                        </option>
-                      ))}
-                  </optgroup>
-
-                  <optgroup label="Credits Purchased">
-                    {userCredits
-                      .filter((c) => c.type === "WALLET" && c.balance > 0)
-                      .map((credit) => (
-                        <option key={`wallet-${credit.id}`} value={credit.id}>
-                          {credit.title} (Quantity: {credit.balance})
-                        </option>
-                      ))}
-                  </optgroup>
+                  {userCredits
+                    .filter((c) => c.balance > 0)
+                    .map((credit) => (
+                      <option key={credit.id} value={credit.id}>
+                        {credit.title} (Available: {credit.balance})
+                      </option>
+                    ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
                   {errors.selectedCredit}
@@ -513,12 +488,11 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                   type="text"
                   name="expirationDate"
                   value={
-                    values.expirationDate &&
-                    !isNaN(Date.parse(values.expirationDate))
+                    values.expirationDate
                       ? new Date(values.expirationDate).toLocaleDateString(
                           "en-GB"
                         )
-                      : values.expirationDate || "-"
+                      : "-"
                   }
                   readOnly
                   disabled
