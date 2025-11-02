@@ -119,7 +119,7 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
     @Operation(summary = "Update KYC for Company", description = "Update KYC profile for the company of current user")
     @PutMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> updateCompany(
@@ -137,7 +137,7 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
     @Operation(summary = "Get Company KYC", description = "Get KYC profile of the current user's company")
     @GetMapping("/company")
     public ResponseEntity<TuongCommonResponse<KycCompanyResponse>> getKycCompany(

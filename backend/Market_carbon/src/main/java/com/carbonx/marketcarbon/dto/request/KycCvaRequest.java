@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Builder
@@ -16,7 +17,5 @@ public class KycCvaRequest {
     @Email String email;
     String organization;
     String positionTitle;
-    String accreditationNo;
-    Integer capacityQuota;
-    String notes;
+    MultipartFile avatar;
 }
