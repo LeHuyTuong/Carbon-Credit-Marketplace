@@ -17,10 +17,8 @@ public class KycCvaResponse {
     String email;
     String organization;
     String positionTitle;
-    String accreditationNo;
-    Integer capacityQuota;
     USER_STATUS status;
-    String notes;
+    String avatarUrl;
     OffsetDateTime createdAt;
     OffsetDateTime updatedAt;
 }
