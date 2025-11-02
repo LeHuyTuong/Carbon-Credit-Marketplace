@@ -76,41 +76,51 @@ export default function useWalletData() {
   };
 
   // === FETCH PURCHASED CREDITS ===
-  const fetchPurchasedCredits = async () => {
-    try {
-      setLoading(true);
-      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
-      const walletData = res?.response || {};
+const fetchPurchasedCredits = async () => {
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+    const walletData = res?.response || {};
 
-      // Dữ liệu giao dịch nằm trong walletTransactions
-      const txList = walletData.walletTransactions || [];
+    const txList = walletData.walletTransactions || [];
+    const carbonCredits = walletData.carbonCredits || [];
 
-      // Lọc các giao dịch BUY_CARBON_CREDIT
-      const purchases = txList.filter(
-        (tx) => tx.transactionType === "BUY_CARBON_CREDIT"
+    const purchases = txList
+      .filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT");
+
+    // dữ liệu transaction ra danh sách hiển thị
+    const mapped = purchases.map((tx) => {
+      //tìm credit liên quan nếu cần thông tin thêm
+      const relatedCredit = carbonCredits.find(
+        (c) => c.batchCode === tx.batchCode
       );
 
-      const mapped = purchases.map((tx) => ({
+      return {
         id: tx.id,
         orderId: tx.orderId,
         description: tx.description || "Carbon credit purchase",
         unitPrice: tx.unitPrice || 0,
         amount: tx.amount || 0,
         quantity: tx.carbonCreditQuantity || 0,
+        balanceBefore: tx.balanceBefore || 0,
+        balanceAfter: tx.balanceAfter || 0,
+        creditStatus: relatedCredit?.status || null,
         createdAt: new Date(tx.createdAt).toLocaleString("vi-VN", {
           timeZone: "Asia/Ho_Chi_Minh",
           hour12: false,
         }),
-      }));
+      };
+    });
 
-      setPurchasedCredits(mapped);
-    } catch (err) {
-      console.error("Failed to fetch purchased credits:", err);
-      setPurchasedCredits([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setPurchasedCredits(mapped);
+  } catch (err) {
+    console.error("Failed to fetch purchased credits:", err);
+    setPurchasedCredits([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // === FETCH MY CREDITS (theo batchId) ===
   const fetchMyCredits = async (batchId) => {
@@ -215,69 +225,112 @@ const fetchAllCredits = async (filters = {}) => {
   }
 };
 
-// === RETIRE CREDIT=== 
-  const retireCredits = async (creditIds = []) => {
-    if (!creditIds.length) return;
+// === FETCH RETIRABLE CREDITS ===
+const fetchRetirableCredits = async () => {
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/my/credits/retirable", { method: "GET" });
+    const list = res?.response || [];
 
-    try {
-      setLoading(true);
+    // chỉ lấy AVAILABLE
+    const availableList = list.filter(c => c.status === "AVAILABLE");
 
-      const MOCK_ENABLED = true;
-      if (MOCK_ENABLED) {
-        console.log("Mock retire credits:", creditIds);
-        await new Promise((r) => setTimeout(r, 1000));
-        return {
-          message: "Mock: retired successfully",
-          retiredIds: creditIds,
-        };
+    // nhóm theo batchCode
+    const grouped = Object.values(
+      availableList.reduce((acc, c) => {
+        if (!acc[c.batchCode]) {
+          acc[c.batchCode] = {
+            batchCode: c.batchCode,
+            projectTitle: c.projectTitle,
+            vintageYear: c.vintageYear,
+            projectId: c.projectId,
+            availableAmount: 0,
+            expiryDate: c.expiryDate,
+            issuedAt: c.issuedAt,
+            creditIds: [],
+          };
+        }
+        acc[c.batchCode].availableAmount += c.availableAmount || 0;
+        acc[c.batchCode].creditIds.push(c.id);
+        return acc;
+      }, {})
+    );
+
+    return grouped;
+  } catch (err) {
+    console.error("Failed to fetch retirable credits:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+// === RETIRE CREDIT (theo từng creditId) ===
+const retireCredits = async (retireList = []) => {
+  if (!retireList.length) throw new Error("No credits selected to retire.");
+
+  try {
+    setLoading(true);
+    const results = [];
+
+    for (const item of retireList) {
+      const { creditIds = [], quantity } = item;
+
+      // Chỉ lấy đúng số lượng cần retire
+      const idsToRetire = creditIds.slice(0, quantity);
+
+      if (!idsToRetire.length) continue;
+
+      for (const id of idsToRetire) {
+        console.log(`➡ Retiring creditId: ${id}`);
+        const res = await apiFetch(`/api/v1/my/credits/${id}/retire`, {
+          method: "POST",
+          body: { creditId: id, quantity: 1 },
+        });
+        results.push(res?.response);
       }
-
-      const res = await apiFetch("/api/v1/my/credits/retire", {
-        method: "POST",
-        body: { creditIds },
-      });
-
-      return res?.response || {};
-    } catch (err) {
-      console.error("Failed to retire credits:", err);
-      throw err;
-    } finally {
-      setLoading(false);
     }
-  };
+
+    return results;
+  } catch (err) {
+    console.error("Failed to retire credits:", err);
+    throw new Error(err.message || "Retire credits failed.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   // === FETCH RETIRED CREDITS===
   const fetchRetiredCredits = async () => {
-    try {
-      setLoading(true);
-      console.log("Mock retired credits (fetchRetiredCredits)");
-      await new Promise((r) => setTimeout(r, 600));
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/my/credits", { method: "GET" });
+    const list = res?.response?.content || res?.response || [];
 
-      return [
-        {
-          id: 201,
-          creditCode: "CC-R01",
-          projectTitle: "EV Fleet Offset Program",
-          vintageYear: 2023,
-          status: "RETIRED",
-          issuedAt: "2024-02-12",
-        },
-        {
-          id: 202,
-          creditCode: "CC-R02",
-          projectTitle: "Solar Power Transition",
-          vintageYear: 2024,
-          status: "RETIRED",
-          issuedAt: "2024-05-22",
-        },
-      ];
-    } catch (err) {
-      console.error("Failed to fetch retired credits:", err);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+    // lọc những cái đã retire
+    return list
+      .filter((c) => c.status === "RETIRED")
+      .map((c) => ({
+        id: c.id,
+        creditCode: c.creditCode || "-",
+        projectTitle: c.projectTitle || "-",
+        vintageYear: c.vintageYear || "-",
+        status: c.status || "-",
+        issuedAt: c.issuedAt
+          ? new Date(c.issuedAt).toLocaleDateString("en-GB")
+          : "-",
+      }));
+  } catch (err) {
+    console.error("Failed to fetch retired credits:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
 
   return {
     wallet,
@@ -298,6 +351,7 @@ const fetchAllCredits = async (filters = {}) => {
     fetchCreditById,
     fetchMyCredits,
     fetchAllCredits,
+    fetchRetirableCredits,
     retireCredits,
     fetchRetiredCredits,
   };

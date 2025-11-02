@@ -1,9 +1,7 @@
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/theme";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import EmailIcon from "@mui/icons-material/Email";
 import ElectricCarIcon from "@mui/icons-material/ElectricCar";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PointOfSaleOutlinedIcon from "@mui/icons-material/PointOfSaleOutlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
@@ -13,17 +11,68 @@ import GeographyChart from "@/components/Chart/GeographyChart.jsx";
 import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
-import { mockTransactions } from "@/data/mockData.js";
+import { useEffect, useState } from "react";
+import { countVehicle, getWithdrawlHistoryByAdmin, countWalletTransactions } from "@/apiAdmin/apiDashboard.js";
+
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  // States
+  const [electricVehicleCount, setElectricVehicleCount] = useState(0);
+  const [walletTransactionCount, setWalletTransactionCount] = useState(0);
+  const [withdrawHistory, setWithdrawHistory] = useState([]);
+
+  useEffect(() => {
+    // Fetch electric vehicles
+    const fetchElectricVehicleCount = async () => {
+      try {
+        const res = await countVehicle({
+          requestTrace: "dashboard-electric-vehicle",
+          requestDateTime: new Date().toISOString(),
+        });
+        setElectricVehicleCount(res.response ?? 0);
+      } catch (error) {
+        console.error("Error fetching electric vehicle count:", error);
+      }
+    };
+
+    // Fetch wallet transactions
+    const fetchWalletTransactionCount = async () => {
+      try {
+        const res = await countWalletTransactions({
+          requestTrace: "dashboard-wallet-transactions",
+          requestDateTime: new Date().toISOString(),
+        });
+        setWalletTransactionCount(res.response ?? 0);
+      } catch (error) {
+        console.error("Error fetching wallet transaction count:", error);
+      }
+    };
+
+    // Fetch withdrawal history
+    const fetchWithdrawHistory = async () => {
+      try {
+        const res = await getWithdrawlHistoryByAdmin({
+          requestTrace: "admin-withdraw-history",
+          requestDateTime: new Date().toISOString(),
+        });
+        setWithdrawHistory(res.response || []);
+      } catch (error) {
+        console.error("Error fetching withdraw history:", error);
+      }
+    };
+
+    fetchElectricVehicleCount();
+    fetchWalletTransactionCount();
+    fetchWithdrawHistory();
+  }, []);
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
-
         <Box>
           <Button
             sx={{
@@ -47,7 +96,7 @@ const Dashboard = () => {
         gridAutoRows="140px"
         gap="20px"
       >
-        {/* ROW 1 */}
+        {/* ROW 1 - Overview Cards */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -60,13 +109,10 @@ const Dashboard = () => {
             subtitle="Reports"
             progress="0.75"
             increase="+14%"
-            icon={
-              <AssessmentOutlinedIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
+            icon={<AssessmentOutlinedIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -75,17 +121,14 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="5,732"
-            subtitle="Transactions"
-            progress="0.50"
-            increase="+21%"
-            icon={
-              <PointOfSaleOutlinedIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
+            title={walletTransactionCount.toLocaleString()}
+            subtitle="Wallet Transactions"
+            progress="0.65"
+            increase="+12%"
+            icon={<PointOfSaleOutlinedIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -98,13 +141,10 @@ const Dashboard = () => {
             subtitle="Users"
             progress="0.30"
             increase="+5%"
-            icon={
-              <PersonAddIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
+            icon={<PersonAddIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
+
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -113,15 +153,11 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,325,134"
+            title={electricVehicleCount.toLocaleString()}
             subtitle="Electric-Vehicles"
             progress="0.80"
             increase="+43%"
-            icon={
-              <ElectricCarIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
+            icon={<ElectricCarIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
 
@@ -134,31 +170,21 @@ const Dashboard = () => {
           <Box
             mt="25px"
             p="0 30px"
-            display="flex "
+            display="flex"
             justifyContent="space-between"
             alignItems="center"
           >
             <Box>
-              <Typography
-                variant="h5"
-                fontWeight="600"
-                color={colors.grey[100]}
-              >
+              <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
                 Report Status
               </Typography>
-              <Typography
-                variant="h3"
-                fontWeight="bold"
-                color={colors.greenAccent[500]}
-              >
+              <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
                 9,345
               </Typography>
             </Box>
             <Box>
               <IconButton>
-                <DownloadOutlinedIcon
-                  sx={{ fontSize: "26px", color: colors.greenAccent[500] }}
-                />
+                <DownloadOutlinedIcon sx={{ fontSize: "26px", color: colors.greenAccent[500] }} />
               </IconButton>
             </Box>
           </Box>
@@ -166,6 +192,8 @@ const Dashboard = () => {
             <LineChart isDashboard={true} />
           </Box>
         </Box>
+
+        {/* Recent Transactions / Withdrawal History */}
         <Box
           gridColumn="span 4"
           gridRow="span 2"
@@ -184,37 +212,40 @@ const Dashboard = () => {
               Recent Transactions
             </Typography>
           </Box>
-          {mockTransactions.map((transaction, i) => (
-            <Box
-              key={`${transaction.txId}-${i}`}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              borderBottom={`4px solid ${colors.primary[500]}`}
-              p="15px"
-            >
-              <Box>
-                <Typography
-                  color={colors.greenAccent[500]}
-                  variant="h5"
-                  fontWeight="600"
-                >
-                  {transaction.txId}
-                </Typography>
-                <Typography color={colors.grey[100]}>
-                  {transaction.user}
-                </Typography>
-              </Box>
-              <Box color={colors.grey[100]}>{transaction.date}</Box>
+
+          {withdrawHistory.length > 0 ? (
+            withdrawHistory.map((item) => (
               <Box
-                backgroundColor={colors.greenAccent[500]}
-                p="5px 10px"
-                borderRadius="4px"
+                key={item.id}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                borderBottom={`4px solid ${colors.primary[500]}`}
+                p="15px"
               >
-                ${transaction.cost}
+                <Box>
+                  <Typography color={colors.greenAccent[500]} variant="h5" fontWeight="600">
+                    {item.user?.email || "Unknown User"}
+                  </Typography>
+                  <Typography color={colors.grey[100]}>#{item.id}</Typography>
+                </Box>
+                <Box color={colors.grey[100]}>
+                  {item.processedAt ? new Date(item.processedAt).toLocaleString() : "-"}
+                </Box>
+                <Box
+                  backgroundColor={colors.greenAccent[500]}
+                  p="5px 10px"
+                  borderRadius="4px"
+                >
+                  ${item.amount?.toLocaleString() || 0}
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))
+          ) : (
+            <Typography textAlign="center" p="20px" color={colors.grey[300]}>
+              No withdrawal history found.
+            </Typography>
+          )}
         </Box>
 
         {/* ROW 3 */}
@@ -227,50 +258,37 @@ const Dashboard = () => {
           <Typography variant="h5" fontWeight="600">
             Setting
           </Typography>
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            mt="25px"
-          >
+          <Box display="flex" flexDirection="column" alignItems="center" mt="25px">
             <ProgressCircle size="125" />
-            <Typography
-              variant="h5"
-              color={colors.greenAccent[500]}
-              sx={{ mt: "15px" }}
-            >
+            <Typography variant="h5" color={colors.greenAccent[500]} sx={{ mt: "15px" }}>
               Modules are active (Active Features) – 78%
             </Typography>
-            <Typography>Modules are under maintenance / temporarily turned off (Under Maintenance) – 22%</Typography>
+            <Typography>
+              Modules are under maintenance / temporarily turned off (Under Maintenance) – 22%
+            </Typography>
           </Box>
         </Box>
+
         <Box
           gridColumn="span 4"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
         >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ padding: "30px 30px 0 30px" }}
-          >
+          <Typography variant="h5" fontWeight="600" sx={{ padding: "30px 30px 0 30px" }}>
             Credit Status
           </Typography>
           <Box height="250px" mt="-20px">
             <BarChart isDashboard={true} />
           </Box>
         </Box>
+
         <Box
           gridColumn="span 4"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
           padding="30px"
         >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ marginBottom: "15px" }}
-          >
+          <Typography variant="h5" fontWeight="600" sx={{ marginBottom: "15px" }}>
             Geography Based Carbon Credit
           </Typography>
           <Box height="200px">

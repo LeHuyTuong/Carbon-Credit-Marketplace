@@ -17,8 +17,9 @@ import java.util.List;
 @Getter
 public class CreditListingRequest {
 
-    @NotNull(message = "Carbon Credit ID cannot be null")
     private Long carbonCreditId;
+
+    private Long batchId;
 
     private List<Long> carbonCreditIds;
 
@@ -32,7 +33,4 @@ public class CreditListingRequest {
     private BigDecimal pricePerCredit;
 
 
-    @NotNull(message = "Expiration date cannot be null.")
-    @Future(message = "Expiration date must be in the future.")
-    private LocalDateTime expirationDate;
 }

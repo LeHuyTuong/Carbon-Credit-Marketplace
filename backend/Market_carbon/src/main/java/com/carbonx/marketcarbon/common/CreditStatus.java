@@ -8,7 +8,7 @@ public enum CreditStatus {
     PENDING,
     EXPIRED,
     SOLD,
+    LISTED,
     RETIRED
-
 
 }

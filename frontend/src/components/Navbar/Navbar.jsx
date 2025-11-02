@@ -2,19 +2,56 @@ import React from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import logo from "../../assets/logo.png";
+import { useEffect, useState } from "react";
+import { EventSourcePolyfill } from "event-source-polyfill";
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, token, user, logout } = useAuth();
 
   //active state cho EV
   const isEV =
     pathname.startsWith("/ev") || pathname.startsWith("/managevehicle");
-  const isCredits = pathname.startsWith("/credits");
   const linkCls = ({ isActive }) =>
     `nav-link px-3 ${isActive ? "is-active" : ""}`;
   const ddItemCls = ({ isActive }) =>
     `dropdown-item ${isActive ? "active" : ""}`;
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+  // nếu chưa đăng nhập hoặc không có token thì thoát
+  if (!isAuthenticated || !token) return;
+
+  // nếu là admin thì KHÔNG mở SSE (vì API /notifications chỉ cho user)
+  if (user?.role === "ADMIN") return;
+
+  const eventSource = new EventSourcePolyfill(
+    "http://163.61.111.120:8082/api/v1/notifications",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        withCredentials: true,
+      },
+    }
+  );
+
+  eventSource.onmessage = (event) => {
+    const msg = event.data || "New notification";
+    console.log("Notification:", msg);
+
+    setNotifications((prev) => [{ message: msg, time: new Date() }, ...prev]);
+    setUnreadCount((count) => count + 1);
+  };
+
+  eventSource.onerror = (err) => {
+    console.error("SSE error:", err);
+    eventSource.close();
+  };
+
+  return () => eventSource.close();
+}, [isAuthenticated, token, user?.role]);
 
   return (
     <nav className="navbar navbar-expand-lg fixed-top bg-dark bg-opacity-25 navbar-dark">
@@ -126,19 +163,57 @@ export default function Navbar() {
                     aria-expanded="false"
                     aria-label="Notifications"
                   >
-                    <span className="icon-btn">
+                    <span className="icon-btn position-relative">
                       <i className="bi bi-bell"></i>
+                      {unreadCount > 0 && (
+                        <span
+                          className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          style={{ fontSize: "0.7rem" }}
+                        >
+                          {unreadCount}
+                        </span>
+                      )}
                     </span>
                   </a>
+
                   <ul
                     className="dropdown-menu dropdown-menu-end"
                     aria-labelledby="notifDropdown"
+                    style={{
+                      minWidth: "250px",
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                    }}
                   >
-                    <li>
-                      <span className="dropdown-item-text">
-                        No new notifications
-                      </span>
-                    </li>
+                    {notifications.length === 0 ? (
+                      <li>
+                        <span className="dropdown-item-text text-muted small">
+                          No new notifications
+                        </span>
+                      </li>
+                    ) : (
+                      notifications.map((n, idx) => (
+                        <li key={idx} className="dropdown-item small">
+                          {n.message}
+                          <div
+                            className="text-muted"
+                            style={{ fontSize: "0.7rem" }}
+                          >
+                            {n.time.toLocaleTimeString()}
+                          </div>
+                        </li>
+                      ))
+                    )}
+                    {notifications.length > 0 && (
+                      <li>
+                        <button
+                          className="dropdown-item text-center text-primary small"
+                          onClick={() => setUnreadCount(0)}
+                        >
+                          Mark all as read
+                        </button>
+                      </li>
+                    )}
                   </ul>
                 </li>
 

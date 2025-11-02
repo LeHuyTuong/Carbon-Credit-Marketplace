@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import useWalletData from "../Wallet/components/useWalletData";
+import useWalletData from "../../../Wallet/components/useWalletData";
 
 export default function RetiredHistory() {
   const { fetchRetiredCredits, loading } = useWalletData();
