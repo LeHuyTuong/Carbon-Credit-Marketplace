@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import { useNavigate } from "react-router-dom";
-import { apiKYCAdmin } from "@/apiAdmin/apiLogin.js"; // 🟩 Gọi API KYC
+import { apiKYCAdmin } from "@/apiAdmin/apiLogin.js"; //  Gọi API KYC
 
 const AdminKYC = () => {
   const theme = useTheme();
@@ -24,7 +24,7 @@ const AdminKYC = () => {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    email: savedEmail, // ✅ tự động điền từ login
+    email: savedEmail, // tự động điền từ login
     phone: "",
     dob: "",
     role: "Admin",
@@ -43,7 +43,7 @@ const AdminKYC = () => {
     }
   };
 
-  // 🔹 Custom English validation
+  //  Custom English validation
   const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
@@ -55,37 +55,43 @@ const AdminKYC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🔹 Handle Submit
+  //  Handle Submit
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  e.preventDefault();
+  if (!validate()) return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // 🟢 Tạo formData đúng format gửi lên server
-      const formData = new FormData();
+    const formData = new FormData();
+    formData.append("name", `${form.firstName} ${form.lastName}`.trim());
 
-      // 🟩 Thêm full name để backend không lỗi
-      formData.append("name", `${form.firstName} ${form.lastName}`.trim());
+    Object.entries(form).forEach(([key, value]) => {
+      if (key !== "name") formData.append(key, value);
+    });
 
-      Object.entries(form).forEach(([key, value]) => {
-        if (key !== "name") formData.append(key, value);
-      });
+    const res = await apiKYCAdmin(formData);
+    console.log(" Full KYC response:", res);
 
-
-      const res = await apiKYCAdmin(formData);
-      console.log("✅ KYC Success:", res);
-
-      alert("KYC submitted successfully!");
-      navigate("/admin/dashboard");
-    } catch (err) {
-      console.error("❌ KYC Error:", err.message);
-      alert(`KYC submission failed: ${err.message}`);
-    } finally {
-      setLoading(false);
+    //  Kiểm tra mã phản hồi thành công từ backend
+    if (
+      res?.responseStatus?.responseCode === "00000000" ||
+      res?.responseStatus?.responseMessage?.toLowerCase().includes("success")
+    ) {
+      alert(" KYC submitted successfully!");
+      navigate("/admin/dashboard"); //  chuyển hướng sau khi KYC thành công
+    } else {
+      console.error(" KYC failed:", res?.responseStatus?.responseMessage);
+      alert(`KYC failed: ${res?.responseStatus?.responseMessage}`);
     }
-  };
+  } catch (err) {
+    console.error(" KYC Error:", err.message);
+    alert(`KYC submission failed: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Box

@@ -20,13 +20,12 @@ import {
 } from "@/apiAdmin/transactionAdmin.js";
 
 const ViewTransaction = () => {
-  const { id } = useParams(); // lấy id từ URL
+  const { id } = useParams();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
   const [trx, setTrx] = useState(null);
-  const [payment, setPayment] = useState(null); //  lưu thông tin payment riêng
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({
     open: false,
@@ -34,39 +33,32 @@ const ViewTransaction = () => {
     text: "",
   });
 
- useEffect(() => {
-  const fetchTransaction = async () => {
-    try {
-      const list = await getWithdrawalsAdmin();
-      const transaction = list.find((t) => t.id.toString() === id);
+  useEffect(() => {
+    const fetchTransaction = async () => {
+      try {
+        const list = await getWithdrawalsAdmin();
+        const transaction = list.find((t) => t.id.toString() === id);
 
-      // Lấy payment detail của current user
-      const paymentRes = await getPaymentDetails();
-      console.log(" Payment detail:", paymentRes);
-
-      // Gắn luôn payment detail (vì API là của current user)
-      if (transaction) {
-        transaction.paymentDetails = paymentRes;
-        setTrx(transaction);
-      } else {
-        setTrx(null);
+        if (transaction) {
+          const paymentRes = await getPaymentDetails();
+          transaction.paymentDetails = paymentRes;
+          setTrx(transaction);
+        } else {
+          setTrx(null);
+        }
+      } catch (error) {
+        console.error(error);
+        setAlert({
+          open: true,
+          type: "error",
+          text: "Failed to load transaction data.",
+        });
+      } finally {
+        setLoading(false);
       }
-
-    } catch (error) {
-      console.error(error);
-      setAlert({
-        open: true,
-        type: "error",
-        text: "Failed to load transaction data.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchTransaction();
-}, [id]);
-
-
+    };
+    fetchTransaction();
+  }, [id]);
 
   const handleProcess = async (accept) => {
     try {
@@ -126,7 +118,7 @@ const ViewTransaction = () => {
   };
 
   const user = trx.user || {};
-  const paymentInfo = payment || trx.paymentDetails || {}; // Ưu tiên data mới nhất
+  const paymentInfo = trx.paymentDetails || {};
 
   return (
     <Box m="20px">
@@ -164,9 +156,9 @@ const ViewTransaction = () => {
 
           <Typography>
             <b>Amount:</b>{" "}
-            <Typography component="span" color={colors.greenAccent[400]}>
+            <Box component="span" color={colors.greenAccent[400]}>
               ${trx.amount}
-            </Typography>
+            </Box>
           </Typography>
 
           <Typography>

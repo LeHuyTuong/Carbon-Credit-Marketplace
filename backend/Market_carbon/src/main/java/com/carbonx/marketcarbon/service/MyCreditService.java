@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface MyCreditService {
@@ -13,5 +14,8 @@ public interface MyCreditService {
     CarbonCreditResponse getMyCreditById(Long creditId);
     CarbonCreditResponse getMyCreditByCode(String creditCode);
     List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId);
+
+    List<CarbonCreditResponse> getMyRetirableCredits();
+    CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity);
 
 }

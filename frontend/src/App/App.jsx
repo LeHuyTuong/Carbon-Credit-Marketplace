@@ -48,16 +48,16 @@ import ChooseProjectToUpload from "../pages/Dashboard/Company/Report/ChooseProje
 import DetailReport from "../pages/Dashboard/Company/Report/DetailReport.jsx";
 import CreditDetail from "../pages/Dashboard/Company/ManageCredits/CreditDetail.jsx";
 import CreditBatchDetail from "../pages/Wallet/components/CreditBatchDetail.jsx";
-import RetireCredits from "../pages/RetireCredits/RetireCredits.jsx";
-import RetiredHistory from "../pages/RetireCredits/RetiredHistory.jsx";
+import RetireCredits from "../pages/Dashboard/Company/RetireCredits/RetireCredits.jsx";
+import RetiredHistory from "../pages/Dashboard/Company/RetireCredits/RetiredHistory.jsx";
 import AIChatWidget from "../components/AI/AIChatWidget.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 //  import AdminApp
-import AdminApp from "../AdminApp.jsx";
+import AdminApp from "./AdminApp.jsx";
 //  import AdminApp
-import CVAApp from "../CVAApp.jsx";
+import CVAApp from "./CVAApp.jsx";
 
 function Layout() {
   return (
@@ -169,21 +169,59 @@ export default function App() {
           path="/view-registered-project/:id"
           element={<ViewRegisteredProject />}
         />
-        {/*Route riêng cho admin, không Navbar */}
+        {/*Route riêng cho admin và cva authorization, không Navbar */}
 
-        <Route path="/admin/login" element={<LoginAdmin />} />
-        <Route path="/admin/kyc" element={<KYCAdmin />} />
-        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
-        <Route path="/admin/change-password" element={<AdminChangePassword />} />
-        <Route path="/cva/login" element={<LoginCVA />} />
-        <Route path="/cva/kyc" element={<KYCCVA />} />
+        <Route path="/admin/carbonX/mkp/login" element={<LoginAdmin />} />
+        <Route
+          path="/admin/kyc"
+          element={
+            <RoleRoute allowedRoles={["Admin"]}>
+              <KYCAdmin />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/forgot-password"
+          element={<AdminForgotPassword />}
+        />
+        <Route
+          path="/admin/change-password"
+          element={<AdminChangePassword />}
+        />
+        <Route path="/cva/carbonX/mkp/login" element={<LoginCVA />} />
+        <Route
+          path="/cva/kyc"
+          element={
+            <RoleRoute allowedRoles={["CVA"]}>
+              <KYCCVA />
+            </RoleRoute>
+          }
+        />
         <Route path="/cva/forgot-password" element={<CVAForgotPassword />} />
-        <Route path="/cva/change-password" element={<CVAChangePassword />} />        
+        <Route path="/cva/change-password" element={<CVAChangePassword />} />
 
-        {/*Route riêng cho admin và cva, không Navbar */}
+        {/*Route riêng cho admin và cva, Navbar riêng */}
 
-        <Route path="/admin/*" element={<AdminApp />} />
-        <Route path="/cva/*" element={<CVAApp />} />
+        {/* ADMIN ROUTES */}
+        <Route
+          path="/admin/*"
+          element={
+            <RoleRoute allowedRoles={["Admin"]}>
+              <AdminApp />
+            </RoleRoute>
+          }
+        />
+
+        {/* CVA ROUTES */}
+        <Route
+          path="/cva/*"
+          element={
+            <RoleRoute allowedRoles={["CVA"]}>
+              <CVAApp />
+            </RoleRoute>
+          }
+        />
+
         {/*fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

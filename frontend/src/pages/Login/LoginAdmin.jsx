@@ -1,3 +1,4 @@
+// ===================== AdminLogin.jsx =====================
 import React, { useState } from "react";
 import {
   Box,
@@ -6,22 +7,23 @@ import {
   Typography,
   useTheme,
   Paper,
-  Link,
   CircularProgress,
 } from "@mui/material";
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
-import { apiLogin } from "@/apiAdmin/apiLogin.js"; //  import API
+import { apiLogin, checkKYCAdmin } from "@/apiAdmin/apiLogin.js";
+import { useAuth } from "@/context/AuthContext.jsx";
 
 const AdminLogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); //  loading state
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,11 +31,8 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Reset trạng thái lỗi
     setError("");
 
-    // Kiểm tra input cơ bản
     if (!form.email || !form.password) {
       setError("Please fill in all fields!");
       return;
@@ -42,30 +41,35 @@ const AdminLogin = () => {
     try {
       setLoading(true);
 
-      // ✅ Gọi API login thật
+      //  Gọi API login
       const res = await apiLogin(form.email, form.password);
 
-      // ✅ Kiểm tra phản hồi
       if (res?.jwt) {
-        // Lưu JWT (tùy bạn — có thể dùng localStorage, Redux, v.v.)
-        localStorage.setItem("token", res.jwt);
-        localStorage.setItem("roles", JSON.stringify(res.roles || []));
+        //  Cập nhật AuthContext (ép role = Admin)
+        login({ ...res.user, role: "Admin" }, res.jwt, true);
 
-        // Điều hướng đến trang admin chính (VD: /admin/kyc)
-        navigate("/admin/kyc");
+        //  Kiểm tra KYC
+        const kycRes = await checkKYCAdmin();
+        console.log(" Full KYC check:", kycRes);
+
+        //  Điều hướng dựa theo KYC có hay chưa
+        if (kycRes && kycRes.id) {
+          console.log(" KYC found → Go Dashboard");
+          setTimeout(() => navigate("/admin/dashboard", { replace: true }), 0);
+        } else {
+          console.log(" No KYC found → Go to KYC page");
+          setTimeout(() => navigate("/admin/kyc", { replace: true }), 0);
+        }
+
       } else {
         setError(res?.message || "Login failed. Please try again.");
       }
     } catch (err) {
-      // ❌ Lỗi mạng hoặc API
+      console.error(" Login error:", err);
       setError(err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleForgotPassword = () => {
-    navigate("/admin/forgot-password");
   };
 
   return (
@@ -88,14 +92,10 @@ const AdminLogin = () => {
           backgroundColor: colors.primary[500],
         }}
       >
-        {/* Icon + title */}
+        {/*  Header */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
           <SupervisorAccount
-            sx={{
-              fontSize: 48,
-              color: colors.greenAccent[500],
-              mb: 1,
-            }}
+            sx={{ fontSize: 48, color: colors.greenAccent[500], mb: 1 }}
           />
           <Typography
             variant="h4"
@@ -109,7 +109,7 @@ const AdminLogin = () => {
           </Typography>
         </Box>
 
-        {/* Form login */}
+        {/*  Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email"
@@ -139,22 +139,6 @@ const AdminLogin = () => {
               borderRadius: "6px",
             }}
           />
-
-          {/* Forgot Password link */}
-          <Box textAlign="right" mb={2}>
-            <Link
-              component="button"
-              onClick={handleForgotPassword}
-              underline="hover"
-              sx={{
-                fontSize: "0.85rem",
-                color: colors.greenAccent[500],
-                "&:hover": { color: colors.greenAccent[400] },
-              }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
 
           {error && (
             <Typography
