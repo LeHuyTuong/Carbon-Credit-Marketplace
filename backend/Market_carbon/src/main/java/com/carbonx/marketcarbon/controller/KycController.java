@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -118,6 +119,7 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
     @Operation(summary = "Update KYC for Company", description = "Update KYC profile for the company of current user")
     @PutMapping("/company")
     public ResponseEntity<TuongCommonResponse<Long>> updateCompany(
@@ -135,6 +137,7 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
     @Operation(summary = "Get Company KYC", description = "Get KYC profile of the current user's company")
     @GetMapping("/company")
     public ResponseEntity<TuongCommonResponse<KycCompanyResponse>> getKycCompany(

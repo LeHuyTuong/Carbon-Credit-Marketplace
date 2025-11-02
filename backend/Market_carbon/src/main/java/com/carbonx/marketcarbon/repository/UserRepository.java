@@ -35,5 +35,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByRoleNameAndStatus(@Param("roleName") String roleName,
                                        @Param("status") USER_STATUS status,
                                        Pageable pageable);
-
+    long count();
 }

@@ -77,7 +77,7 @@ public class MyCreditServiceImpl implements MyCreditService {
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")
-    public Page<CarbonCreditResponse> listMyCredits(CreditQuery q, Pageable pageable) {
+    public List<CarbonCreditResponse> listMyCredits(CreditQuery q) {
         Long companyId = currentCompanyId();
         log.info("[DEBUG] listMyCredits() - companyId={}, q={}", companyId, q);
 
@@ -88,7 +88,7 @@ public class MyCreditServiceImpl implements MyCreditService {
 
             // JOIN hợp lệ
             var companyJoin = root.join("company", JoinType.LEFT);
-            var sourceJoin  = root.join("sourceCredit", JoinType.LEFT); // <-- thay vì "carbonCredit"
+            var sourceJoin  = root.join("sourceCredit", JoinType.LEFT);
 
             // Quyền sở hữu: trực tiếp hoặc thông qua sourceCredit
             Predicate ownsDirectly  = cb.equal(companyJoin.get("id"), companyId);
@@ -102,8 +102,6 @@ public class MyCreditServiceImpl implements MyCreditService {
                 }
                 if (q.vintageYear() != null) {
                     predicates.add(cb.equal(root.join("batch", JoinType.LEFT).get("vintageYear"), q.vintageYear()));
-                    // hoặc nếu bạn muốn theo field ngay trên CarbonCredit:
-                    // predicates.add(cb.equal(root.get("vintageYear"), q.vintageYear()));
                 }
                 if (q.status() != null) {
                     predicates.add(cb.equal(root.get("status"), q.status()));
@@ -113,12 +111,16 @@ public class MyCreditServiceImpl implements MyCreditService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        Page<CarbonCredit> credits = creditRepo.findAll(spec, pageable);
-        log.info("[DEBUG] Credits found = {}", credits.getTotalElements());
+        // 🔹 Lấy toàn bộ danh sách (không phân trang)
+        List<CarbonCredit> credits = creditRepo.findAll(spec);
+        log.info("[DEBUG] Credits found = {}", credits.size());
 
-        credits.getContent().forEach(this::checkAndMarkExpired);
-        return credits.map(CarbonCreditResponse::from);
+        credits.forEach(this::checkAndMarkExpired);
+        return credits.stream()
+                .map(CarbonCreditResponse::from)
+                .toList();
     }
+
 
 
     @Override

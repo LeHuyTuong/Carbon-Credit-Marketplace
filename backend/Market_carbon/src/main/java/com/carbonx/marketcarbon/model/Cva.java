@@ -25,14 +25,11 @@ public class Cva {
     @Column(nullable = false) String email;
     String organization;
     @Column(name="position_title") String positionTitle;
-    @Column(name="accreditation_no") String accreditationNo;
-
-    Integer capacityQuota;
 
     @Enumerated(EnumType.STRING) @Column(nullable = false)
     USER_STATUS status;
 
-    @Column(columnDefinition="text") String notes;
+    String avatarUrl;
 
     OffsetDateTime createdAt; OffsetDateTime updatedAt;
     @PrePersist void preP(){
