@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { Card, Spinner, Table, Button, Form } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import useWalletData from "../../../Wallet/components/useWalletData";
+import useReveal from "../../../../hooks/useReveal";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
+import { FaArrowLeft } from "react-icons/fa";
 
 export default function RetiredHistory() {
   const { fetchRetiredCredits, loading } = useWalletData();
   const [credits, setCredits] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
+  const nav = useNavigate();
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   useEffect(() => {
     loadRetired();
@@ -13,11 +21,10 @@ export default function RetiredHistory() {
 
   const loadRetired = async () => {
     const data = await fetchRetiredCredits();
-    setCredits(data);
-    setFiltered(data);
+    setCredits(data || []);
+    setFiltered(data || []);
   };
 
-  //lọc nhanh theo mã tín chỉ hoặc tên dự án
   const handleSearch = (e) => {
     const val = e.target.value.toLowerCase();
     setSearch(val);
@@ -31,51 +38,104 @@ export default function RetiredHistory() {
   };
 
   return (
-    <div className="auth-hero2 py-5 d-flex flex-column align-items-center">
-      <div className="glass-card p-4 w-75">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h4 className="text-accent fw-bold mb-0">Retired Credits</h4>
-          <input
-            type="text"
-            className="form-control form-control-sm w-25"
-            placeholder="Search..."
-            value={search}
-            onChange={handleSearch}
-          />
+    <div
+      ref={sectionRef}
+      className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
+    >
+      <Button
+        variant="outline-info"
+        size="sm"
+        className="position-fixed top-0 start-0 m-3 px-3 py-2 d-flex align-items-center gap-2 fw-semibold shadow-sm"
+        style={{
+          borderRadius: "10px",
+          background: "rgba(255, 255, 255, 0.85)",
+          backdropFilter: "blur(6px)",
+          zIndex: 20,
+        }}
+        onClick={() => nav("/retire")}
+      >
+        <FaArrowLeft /> Back
+      </Button>
+
+      <div
+        className="container"
+        style={{ maxWidth: "1100px", marginTop: "4rem" }}
+      >
+        {/* --- Header --- */}
+        <div className="d-flex justify-content-between align-items-center mb-5">
+          <h2 className="fw-bold text-white mb-0 text-shadow">
+            My Retired Carbon Credits
+          </h2>
+          <div className="d-flex gap-3 align-items-center">
+            <Form.Control
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={handleSearch}
+              className="form-control-sm shadow-sm"
+              style={{ width: "220px", borderRadius: "8px" }}
+            />
+          </div>
         </div>
 
-        {loading ? (
-          <div className="text-light text-center">Loading...</div>
-        ) : !filtered.length ? (
-          <div className="text-light text-center">
-            No retired credits found.
-          </div>
-        ) : (
-          <table className="table table-dark table-hover align-middle mb-0">
-            <thead>
-              <tr className="text-accent text-uppercase small">
-                <th>Credit Code</th>
-                <th>Project</th>
-                <th>Vintage Year</th>
-                <th>Status</th>
-                <th>Issued At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.creditCode}</td>
-                  <td>{c.projectTitle}</td>
-                  <td>{c.vintageYear}</td>
-                  <td>
-                    <span className="badge bg-secondary">{c.status}</span>
-                  </td>
-                  <td>{c.issuedAt}</td>
+        {/* --- Table Section --- */}
+        <Card
+          className="shadow-lg border-0 p-3"
+          style={{
+            borderRadius: "15px",
+            background: "rgba(255,255,255,0.9)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          {loading ? (
+            <div className="d-flex justify-content-center align-items-center py-5">
+              <Spinner animation="border" />
+            </div>
+          ) : !filtered.length ? (
+            <div className="text-center py-5">
+              <h5>No retired credits found.</h5>
+              <p className="text-muted mb-0">
+                Once you retire credits, they’ll appear here.
+              </p>
+            </div>
+          ) : (
+            <Table hover responsive className="align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Credit Code</th>
+                  <th>Project</th>
+                  <th>Vintage Year</th>
+                  <th>Status</th>
+                  <th>Issued At</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+
+              <PaginatedTable
+                items={filtered}
+                itemsPerPage={6}
+                renderRow={(c) => (
+                  <tr key={c.id}>
+                    <td>{c.creditCode}</td>
+                    <td>{c.projectTitle}</td>
+                    <td>{c.vintageYear}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          c.status === "RETIRED"
+                            ? "bg-secondary"
+                            : "bg-light text-dark"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </td>
+                    <td>{c.issuedAt}</td>
+                  </tr>
+                )}
+              />
+            </Table>
+          )}
+        </Card>
       </div>
     </div>
   );

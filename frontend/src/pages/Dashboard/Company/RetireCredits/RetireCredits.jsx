@@ -40,7 +40,9 @@ export default function RetireCredits() {
   const handleQuantityChange = (batchCode, value) => {
     setSelectedList((prev) =>
       prev.map((x) =>
-        x.batchCode === batchCode ? { ...x, quantity: Number(value) } : x
+        x.batchCode === batchCode
+          ? { ...x, quantity: value === "" ? "" : Number(value) }
+          : x
       )
     );
   };
@@ -79,8 +81,10 @@ export default function RetireCredits() {
 
   const isSelected = (batchCode) =>
     selectedList.some((x) => x.batchCode === batchCode);
-  const getQuantity = (batchCode) =>
-    selectedList.find((x) => x.batchCode === batchCode)?.quantity || 1;
+  const getQuantity = (batchCode) => {
+    const found = selectedList.find((x) => x.batchCode === batchCode);
+    return found?.quantity ?? "";
+  };
 
   return (
     <div
@@ -95,21 +99,19 @@ export default function RetireCredits() {
           <h2 className="fw-bold text-white mb-0 text-shadow">
             Retire My Carbon Credits
           </h2>
-          <select
-            className="form-select form-select-sm w-auto fw-semibold shadow-sm"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+          <Button
+            variant="outline-info"
+            className="fw-semibold shadow-sm rounded-3"
+            onClick={() => nav("/retired-history")}
             style={{
-              borderRadius: "8px",
-              border: "none",
+              borderRadius: "10px",
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(6px)",
+              zIndex: 20,
             }}
           >
-            <option value="">All</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="ISSUED">Issued</option>
-            <option value="SOLD">Sold</option>
-            <option value="RETIRED">Retired</option>
-          </select>
+            View Retired History
+          </Button>
         </div>
 
         <Card
