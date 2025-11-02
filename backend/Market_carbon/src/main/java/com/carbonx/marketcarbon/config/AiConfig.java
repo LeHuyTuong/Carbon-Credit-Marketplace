@@ -13,11 +13,11 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "ai.gemini") // chỉ giữ dòng này, bỏ EnableConfigurationProperties
+@ConfigurationProperties(prefix = "ai.gemini")
 public class AiConfig {
 
     private String apiKey;
-    private String model = "gemini-1.5-pro-latest";
+    private String model = "gemini-1.5-flash";
     private boolean enabled = true;
     private int timeoutMs = 60000;
 
@@ -32,12 +32,12 @@ public class AiConfig {
                 .responseTimeout(Duration.ofMillis(timeoutMs));
 
         return WebClient.builder()
-                .baseUrl("https://generativelanguage.googleapis.com")
+                .baseUrl("https://asia-southeast1-aiplatform.googleapis.com")
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader("Content-Type", "application/json")
                 .defaultHeader("Accept", "application/json")
                 .filter((request, next) -> {
-                    System.out.println("[Gemini Request] " + request.method() + " " + request.url());
+                    System.out.println("[Gemini Vertex Request] " + request.method() + " " + request.url());
                     return next.exchange(request);
                 })
                 .build();
