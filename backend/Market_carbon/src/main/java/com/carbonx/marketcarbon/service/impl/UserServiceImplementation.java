@@ -8,9 +8,7 @@
     import com.carbonx.marketcarbon.exception.AppException;
     import com.carbonx.marketcarbon.exception.ErrorCode;
 
-    import com.carbonx.marketcarbon.model.PasswordResetToken;
     import com.carbonx.marketcarbon.model.User;
-    import com.carbonx.marketcarbon.repository.PasswordResetTokenRepository;
     import com.carbonx.marketcarbon.repository.RoleRepository;
     import com.carbonx.marketcarbon.repository.UserRepository;
     import com.carbonx.marketcarbon.service.EmailService;
@@ -39,12 +37,10 @@
         private final UserRepository userRepository;
         private final JwtProvider jwtProvider;
         private final PasswordEncoder passwordEncoder;
-        private final PasswordResetTokenRepository passwordResetTokenRepository;
         private final JavaMailSender javaMailSender;
         private final EmailService emailService;
         private final OtpService otpService;
         private final RoleRepository roleRepository;
-//        private final UserMapper userMapper;
 
 
         @Override
