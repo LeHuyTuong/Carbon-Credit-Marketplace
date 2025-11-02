@@ -233,7 +233,7 @@ const fetchRetirableCredits = async () => {
     const list = res?.response || [];
 
     // chỉ lấy AVAILABLE
-    const availableList = list.filter(c => c.status === "AVAILABLE");
+    const availableList = list.filter(c => c.status === "AVAILABLE" || c.status === "TRADED");
 
     // nhóm theo batchCode
     const grouped = Object.values(
@@ -284,7 +284,7 @@ const retireCredits = async (retireList = []) => {
       if (!idsToRetire.length) continue;
 
       for (const id of idsToRetire) {
-        console.log(`➡ Retiring creditId: ${id}`);
+        console.log(`Retiring creditId: ${id}`);
         const res = await apiFetch(`/api/v1/my/credits/${id}/retire`, {
           method: "POST",
           body: { creditId: id, quantity: 1 },
@@ -301,8 +301,6 @@ const retireCredits = async (retireList = []) => {
     setLoading(false);
   }
 };
-
-
 
   // === FETCH RETIRED CREDITS===
   const fetchRetiredCredits = async () => {
