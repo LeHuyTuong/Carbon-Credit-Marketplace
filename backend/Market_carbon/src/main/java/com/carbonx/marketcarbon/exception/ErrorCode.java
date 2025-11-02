@@ -55,6 +55,7 @@ public enum ErrorCode {
     // ==== VALIDATION & STATE ====
     INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),
     INVALID_STATUS_TRANSITION(400, "Invalid status transition.", HttpStatus.BAD_REQUEST),
+    INVALID_STATUS_TRANSITION1(400, "Cannot approve report with status ", HttpStatus.BAD_REQUEST),
     VEHICLE_PLATE_EXISTS(409, "Vehicle plate already exists.", HttpStatus.CONFLICT),
     REPORT_NOT_FOUND(404, "Report not found.", HttpStatus.NOT_FOUND),
     REPORT_INVALID_STATE(409, "Report is already closed.", HttpStatus.CONFLICT),
@@ -81,7 +82,7 @@ public enum ErrorCode {
 
     // 4091xx: xung đột
     REPORT_DUPLICATE_PERIOD(409101, "Report already exists for this seller/project/period.", HttpStatus.CONFLICT),
-
+    INVALID_DATE_RANGE(400, "End date must not be before start date.", HttpStatus.BAD_REQUEST),
     CSV_MISSING_FIELD(400301, "CSV is missing a required field.", HttpStatus.BAD_REQUEST),
     CSV_INVALID_FILE_FORMAT(400302, "Invalid CSV file format.", HttpStatus.BAD_REQUEST), // có thể dùng 415 nếu muốn
     CSV_INVALID_NUMBER_FORMAT(400303, "Invalid number format in CSV.", HttpStatus.BAD_REQUEST),

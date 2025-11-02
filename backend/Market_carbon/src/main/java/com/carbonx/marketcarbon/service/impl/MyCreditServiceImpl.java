@@ -82,27 +82,28 @@ public class MyCreditServiceImpl implements MyCreditService {
         log.info("[DEBUG] listMyCredits() - companyId={}, q={}", companyId, q);
 
         Specification<CarbonCredit> spec = (root, cq, cb) -> {
+            cq.distinct(true); // tránh nhân bản bản ghi do JOIN
+
             var predicates = new ArrayList<Predicate>();
 
-
+            // JOIN hợp lệ
             var companyJoin = root.join("company", JoinType.LEFT);
-            var ownedCreditsJoin = root.join("carbonCredit", JoinType.LEFT);
+            var sourceJoin  = root.join("sourceCredit", JoinType.LEFT); // <-- thay vì "carbonCredit"
 
-            var ownsDirectly = cb.equal(companyJoin.get("id"), companyId);
-            var ownsThroughCredits = cb.equal(ownedCreditsJoin.get("company").get("id"), companyId);
+            // Quyền sở hữu: trực tiếp hoặc thông qua sourceCredit
+            Predicate ownsDirectly  = cb.equal(companyJoin.get("id"), companyId);
+            Predicate ownsViaSource = cb.equal(sourceJoin.get("company").get("id"), companyId);
+            predicates.add(cb.or(ownsDirectly, ownsViaSource));
 
-            predicates.add(cb.or(ownsDirectly, ownsThroughCredits));
-
-            // Bắt buộc lọc theo công ty
-            predicates.add(cb.equal(root.get("company").get("id"), companyId));
-
-            // Các điều kiện lọc tùy chọn
+            // --- Bộ lọc tùy chọn ---
             if (q != null) {
                 if (q.projectId() != null) {
                     predicates.add(cb.equal(root.get("project").get("id"), q.projectId()));
                 }
                 if (q.vintageYear() != null) {
                     predicates.add(cb.equal(root.join("batch", JoinType.LEFT).get("vintageYear"), q.vintageYear()));
+                    // hoặc nếu bạn muốn theo field ngay trên CarbonCredit:
+                    // predicates.add(cb.equal(root.get("vintageYear"), q.vintageYear()));
                 }
                 if (q.status() != null) {
                     predicates.add(cb.equal(root.get("status"), q.status()));
@@ -118,6 +119,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         credits.getContent().forEach(this::checkAndMarkExpired);
         return credits.map(CarbonCreditResponse::from);
     }
+
 
     @Override
     @PreAuthorize("hasRole('COMPANY')")

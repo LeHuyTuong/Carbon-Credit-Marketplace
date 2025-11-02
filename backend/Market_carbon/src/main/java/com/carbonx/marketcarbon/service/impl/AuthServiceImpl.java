@@ -11,14 +11,12 @@ import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
-import com.carbonx.marketcarbon.model.PasswordResetToken;
 import com.carbonx.marketcarbon.model.Role;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.RoleRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.AuthService;
 import com.carbonx.marketcarbon.service.EmailService;
-import com.carbonx.marketcarbon.service.PasswordResetTokenService;
 import com.carbonx.marketcarbon.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +38,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
-    private final PasswordResetTokenService passwordResetTokenService;
     private final EmailService emailService;
     private final RoleRepository roleRepository;
 
@@ -119,12 +116,10 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.OTP_EXPIRED);
         }
 
-        // 🔹 Nếu OTP không khớp
         if (user.getOtpCode() == null || !user.getOtpCode().equals(req.getOtpCode())) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
 
-        // 🔹 Nếu OTP dùng cho quên mật khẩu
         if (user.getOtpPurpose() == OtpPurpose.FORGOT_PASSWORD) {
             user.setOtpCode(null);
             user.setOtpExpiryDate(null);
@@ -138,8 +133,6 @@ public class AuthServiceImpl implements AuthService {
             log.info(" OTP verified for password reset [{}]", req.getEmail());
             return response;
         }
-
-        // 🔹 Nếu OTP dùng cho đăng ký / đăng nhập
         user.setOtpCode(null);
         user.setOtpExpiryDate(null);
         user.setStatus(USER_STATUS.ACTIVE);
@@ -188,7 +181,5 @@ public class AuthServiceImpl implements AuthService {
         }
         return new MessageResponse("logout successful");
     }
-
-
 
 }

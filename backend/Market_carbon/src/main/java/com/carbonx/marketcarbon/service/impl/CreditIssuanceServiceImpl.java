@@ -13,6 +13,7 @@ import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CreditIssuanceService;
 import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.SseService;
+import com.carbonx.marketcarbon.service.StorageService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService.SerialRange;
 import com.carbonx.marketcarbon.service.credit.formula.CreditFormula;
@@ -20,12 +21,16 @@ import com.carbonx.marketcarbon.utils.CodeGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;               // <— THÊM IMPORT NÀY
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,6 +56,9 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final SseService sseService;
+
+    @Value("${app.frontendBaseUrl:https://your-frontend.com}")   // <— THÊM BIẾN CẤU HÌNH
+    private String frontendBaseUrl;
 
     @Transactional
     @Override
@@ -175,10 +183,10 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         log.info("Issued {} credits for company {} (project {})",
                 result.getCreditsCount(), company.getCompanyName(), project.getTitle());
 
-
         String message = "Admin issue " +  result.getCreditsCount() + " to your company wallet" ;
         sseService.sendNotificationToUser(company.getUser().getId(), message);
 
+        // ------------------ CERTIFICATE ------------------
         String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
 
         CreditCertificate cert = CreditCertificate.builder()
@@ -194,7 +202,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .standard("ISO 14064-2 aligned")
                 .methodology("EV Charging Emission Reduction Methodology v1.0")
                 .build();
-        certificateRepo.save(cert);
+        cert = certificateRepo.save(cert);
 
         String validatedBy = "CVA Organization";
         if (report.getVerifiedAt() != null && report.getVerifiedByCva() != null)
@@ -227,19 +235,38 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .verifyUrl(cert.getVerifyUrl())
                 .build();
 
-        byte[] pdf = certificatePdfService.generatePdf(data);
+        StorageService.StoredObject stored = certificatePdfService.generateAndUploadPdf(data);
+        String pdfUrl = stored.url(); // URL S3 public/presigned
+
+        // LƯU URL S3 vào certificate
+        cert.setCertificateUrl(pdfUrl);
+        certificateRepo.save(cert);
+
+        // Tải bytes để đính kèm email
+        byte[] pdf;
+        try (InputStream in = new java.net.URL(pdfUrl).openStream()) {
+            pdf = in.readAllBytes();
+        } catch (IOException ioEx) {
+            throw new UncheckedIOException("Cannot download PDF from " + pdfUrl, ioEx);
+        }
 
         try {
             String subject = "Your Carbon Credit Certificate is Ready!";
             String htmlBody = """
-                    <div style='font-family:Arial,sans-serif;color:#333;'>
-                      <h2 style='color:#16a34a;'>Congratulations, %s!</h2>
-                      <p>Your company has been issued <b>%d Carbon Credits</b> for project <b>%s</b>.</p>
-                      <p>Certificate Code: <b>%s</b></p>
-                      <p>Best regards,<br><b>CarbonX Marketplace</b></p>
-                    </div>
-                    """.formatted(company.getCompanyName(), batch.getCreditsCount(),
-                    project.getTitle(), certificateCode);
+            <div style='font-family:Arial,sans-serif;color:#333;'>
+              <h2 style='color:#16a34a;'>Congratulations, %s!</h2>
+              <p>Your company has been issued <b>%d Carbon Credits</b> for project <b>%s</b>.</p>
+              <p>Certificate Code: <b>%s</b></p>
+              <p>You can <a href="%s" target="_blank">view/download the certificate here</a>.</p>
+              <p>Best regards,<br><b>CarbonX Marketplace</b></p>
+            </div>
+            """.formatted(
+                    company.getCompanyName(),
+                    batch.getCreditsCount(),
+                    project.getTitle(),
+                    certificateCode,
+                    pdfUrl
+            );
 
             emailService.sendEmailWithAttachment(
                     company.getUser().getEmail(),
@@ -249,10 +276,10 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     "CarbonX_Certificate.pdf"
             );
         } catch (Exception e) {
-            log.error("Failed to send certificate email: {}", e.getMessage());
+            log.error("Failed to send certificate email: {}", e.getMessage(), e);
         }
 
-        return CreditBatchResponse.from(batch);
+        return toResponse(batch, cert);
     }
 
     @Override
@@ -314,5 +341,31 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .build();
 
         return creditRepo.save(newCredit);
+    }
+
+    private CreditBatchResponse toResponse(CreditBatch b, CreditCertificate cert) {
+        String viewUrl = (frontendBaseUrl != null)
+                ? (frontendBaseUrl.endsWith("/") ? frontendBaseUrl + "credits/" + b.getId()
+                : frontendBaseUrl + "/credits/" + b.getId())
+                : null;
+
+        // Yêu cầu: CreditBatchResponse có @Builder và các field sau
+        return CreditBatchResponse.builder()
+                .id(b.getId())
+                .batchCode(b.getBatchCode())
+                .vintageYear(b.getVintageYear())
+                .creditsCount(b.getCreditsCount())
+                .totalTco2e(b.getTotalTco2e())
+                .residualTco2e(b.getResidualTco2e())
+                .serialFrom(b.getSerialFrom())
+                .serialTo(b.getSerialTo())
+                .companyName(b.getCompany().getCompanyName())
+                .projectTitle(b.getProject().getTitle())
+                .status(b.getStatus())
+                .issuedAt(b.getIssuedAt())
+                // Links cho FE
+                .certificateUrl(cert != null ? cert.getCertificateUrl() : null)
+                .build();
+
     }
 }
