@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Valid
 @Getter
@@ -27,6 +28,7 @@ public class WalletCarbonCreditResponse {
     String originCreditCode;
     Long originCompanyId;
     String originCompanyName;
+    LocalDate expirationDate;
 
     // Thông tin Batch giúp xác định rõ tín chỉ thuộc về công ty nào
     Long batchId;

@@ -20,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -244,6 +245,11 @@ public class OrderServiceImpl implements OrderService {
                     ? sourceCredit.getCarbonCredit()
                     : BigDecimal.ZERO;
 
+            LocalDate expiryDate = sourceCredit.getExpiryDate();
+            if (expiryDate == null && sourceCredit.getBatch() != null) {
+                expiryDate = sourceCredit.getBatch().getExpiresAt();
+            }
+
 
             // 4.3 Tổng số sau khi bán  trừ đi số lượng đã bán
             BigDecimal totalAfterSale = directAvailable.add(updatedListedAmount);  // Tổng = Available + Listed
@@ -252,10 +258,11 @@ public class OrderServiceImpl implements OrderService {
             sourceCredit.setListedAmount(updatedListedAmount);
             sourceCredit.setAmount(totalAfterSale);  // Tổng = Available + Listed
             sourceCredit.setCarbonCredit(directAvailable);
+            sourceCredit.setExpiryDate(expiryDate);
 
             // 4.5 Thêm xác thực để đảm bảo tính nhất quán
             if (totalAfterSale.compareTo(BigDecimal.ZERO) <= 0) {
-                // Nếu đã bán hết, đặt trạng thái tín chỉ thành SOLD hoặc TRANSFERRED
+                // Nếu đã bán hết, đặt trạng thái tín chỉ thành TRADED
                 sourceCredit.setStatus(CreditStatus.TRADED);
             }
 
@@ -299,7 +306,7 @@ public class OrderServiceImpl implements OrderService {
 
             if (listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 listing.setStatus(ListingStatus.SOLD);
-                listing.setExpiresAt(LocalDateTime.now(VIETNAM_ZONE)); // Cập nhật thời gian hết hạn khi bán hết
+                listing.setExpiresAt(sourceCredit.getExpiryDate());
             }
             marketplaceListingRepository.save(listing);
 

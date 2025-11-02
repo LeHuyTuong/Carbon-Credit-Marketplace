@@ -5,6 +5,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public interface SseService {
 
     SseEmitter subscribe();
-    void sendNotificationToUser(String message);
+    void sendNotificationToUser(Long userId, String message);
     void sendNotificationToAll(String message);
 }

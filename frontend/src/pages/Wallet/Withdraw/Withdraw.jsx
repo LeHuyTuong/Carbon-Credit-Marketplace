@@ -144,6 +144,18 @@ export default function Withdraw({ show, onHide, onSubmit, wallet }) {
                           </div>
                         </div>
                       </div>
+
+                      {/* Nút Edit nằm ở góc phải */}
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => {
+                          onHide(); // đóng modal rút tiền
+                          nav("/payment-detail"); // chuyển sang trang cập nhật
+                        }}
+                      >
+                        <i className="bi bi-pencil-square"></i> Edit
+                      </Button>
                     </Card.Body>
                   </Card>
                 ) : (

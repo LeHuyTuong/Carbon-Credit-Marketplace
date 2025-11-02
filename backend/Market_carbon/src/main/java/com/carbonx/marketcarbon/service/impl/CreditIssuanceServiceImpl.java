@@ -184,7 +184,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 result.getCreditsCount(), company.getCompanyName(), project.getTitle());
 
         String message = "Admin issue " +  result.getCreditsCount() + " to your company wallet" ;
-        sseService.sendNotificationToUser(message);
+        sseService.sendNotificationToUser(company.getUser().getId(), message);
 
         // ------------------ CERTIFICATE ------------------
         String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
@@ -317,13 +317,18 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
         String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
 
+        LocalDate expiryDate = sourceCredit.getExpiryDate();
+        if (expiryDate == null && sourceCredit.getBatch() != null) {
+            expiryDate = sourceCredit.getBatch().getExpiresAt();
+        }
+
         CarbonCredit newCredit = CarbonCredit.builder()
                 .batch(sourceCredit.getBatch())
                 .company(buyerCompany)
                 .project(project)
                 .sourceCredit(sourceCredit)
                 .creditCode(creditCode)
-                .status(CreditStatus.ISSUE)
+                .status(CreditStatus.TRADED)
                 .carbonCredit(quantity)
                 .tCo2e(sourceCredit.getTCo2e())
                 .amount(quantity)
@@ -332,6 +337,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .vintageYear(sourceCredit.getVintageYear())
                 .issuedAt(OffsetDateTime.now())
                 .issuedBy(issuer)
+                .expiryDate(expiryDate)
                 .build();
 
         return creditRepo.save(newCredit);

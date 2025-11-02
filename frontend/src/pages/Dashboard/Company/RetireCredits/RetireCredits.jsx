@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Button, Card, Spinner, Table } from "react-bootstrap";
-import { FaArrowLeft } from "react-icons/fa";
-import useWalletData from "../Wallet/components/useWalletData";
+import { Button, Card, Spinner, Table, Form } from "react-bootstrap";
+import useWalletData from "../../../Wallet/components/useWalletData";
 import { useNavigate } from "react-router-dom";
-import useReveal from "../../hooks/useReveal";
-import PaginatedTable from "../../components/Pagination/PaginatedTable";
+import useReveal from "../../../../hooks/useReveal";
+import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function RetireCredits() {
-  const { fetchAllCredits, retireCredits, loading } = useWalletData();
+  const { fetchRetirableCredits, retireCredits, loading } = useWalletData();
   const [credits, setCredits] = useState([]);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedList, setSelectedList] = useState([]); // [{id, quantity}]
   const [toast, setToast] = useState({ show: false, msg: "", type: "" });
   const [statusFilter, setStatusFilter] = useState("");
   const nav = useNavigate();
@@ -17,7 +16,7 @@ export default function RetireCredits() {
   useReveal(sectionRef);
 
   const loadCredits = async () => {
-    const data = await fetchAllCredits(
+    const data = await fetchRetirableCredits(
       statusFilter ? { status: statusFilter } : {}
     );
     setCredits(data || []);
@@ -27,21 +26,47 @@ export default function RetireCredits() {
     loadCredits();
   }, [statusFilter]);
 
-  const handleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+  const handleSelect = (batchCode, creditIds) => {
+    setSelectedList((prev) => {
+      const exists = prev.find((x) => x.batchCode === batchCode);
+      if (exists) {
+        return prev.filter((x) => x.batchCode !== batchCode);
+      } else {
+        return [...prev, { batchCode, creditIds, quantity: 1 }];
+      }
+    });
+  };
+
+  const handleQuantityChange = (batchCode, value) => {
+    setSelectedList((prev) =>
+      prev.map((x) =>
+        x.batchCode === batchCode ? { ...x, quantity: Number(value) } : x
+      )
     );
   };
 
   const handleRetire = async () => {
     try {
-      await retireCredits(selectedIds);
+      if (!selectedList.length) return;
+
+      // validate quantity > 0
+      const invalid = selectedList.some((x) => !x.quantity || x.quantity <= 0);
+      if (invalid) {
+        setToast({
+          show: true,
+          msg: "Please enter valid quantity for all selected credits.",
+          type: "danger",
+        });
+        return;
+      }
+
+      await retireCredits(selectedList);
       setToast({
         show: true,
         msg: "Credits retired successfully!",
         type: "success",
       });
-      setSelectedIds([]);
+      setSelectedList([]);
       loadCredits();
     } catch (err) {
       setToast({
@@ -52,6 +77,11 @@ export default function RetireCredits() {
     }
   };
 
+  const isSelected = (batchCode) =>
+    selectedList.some((x) => x.batchCode === batchCode);
+  const getQuantity = (batchCode) =>
+    selectedList.find((x) => x.batchCode === batchCode)?.quantity || 1;
+
   return (
     <div
       ref={sectionRef}
@@ -59,10 +89,7 @@ export default function RetireCredits() {
     >
       <div
         className="container"
-        style={{
-          maxWidth: "1100px",
-          marginTop: "4rem",
-        }}
+        style={{ maxWidth: "1100px", marginTop: "4rem" }}
       >
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h2 className="fw-bold text-white mb-0 text-shadow">
@@ -110,44 +137,44 @@ export default function RetireCredits() {
                 <thead className="table-light">
                   <tr>
                     <th></th>
-                    <th>Credit Code</th>
+                    <th>Batch Code</th>
                     <th>Project</th>
                     <th>Vintage Year</th>
-                    <th>Status</th>
-                    <th>Issued At</th>
+                    <th>Available</th>
+                    <th>Quantity to Retire</th>
                   </tr>
                 </thead>
 
                 <PaginatedTable
                   items={credits}
                   itemsPerPage={5}
-                  renderRow={(c, index) => (
-                    <tr key={c.id}>
+                  renderRow={(b) => (
+                    <tr key={b.batchCode}>
                       <td>
                         <input
                           type="checkbox"
-                          checked={selectedIds.includes(c.id)}
-                          onChange={() => handleSelect(c.id)}
+                          checked={isSelected(b.batchCode)}
+                          onChange={() =>
+                            handleSelect(b.batchCode, b.creditIds)
+                          }
                         />
                       </td>
-                      <td className="fw-semibold">{c.creditCode}</td>
-                      <td>{c.projectTitle}</td>
-                      <td>{c.vintageYear}</td>
+                      <td>{b.batchCode}</td>
+                      <td>{b.projectTitle}</td>
+                      <td>{b.vintageYear}</td>
+                      <td>{b.availableAmount}</td>
                       <td>
-                        <span
-                          className={`badge text-light px-3 py-2 ${
-                            c.status === "AVAILABLE"
-                              ? "bg-success"
-                              : c.status === "RETIRED"
-                              ? "bg-secondary"
-                              : "bg-warning text-dark"
-                          }`}
-                          style={{ fontSize: "0.8rem" }}
-                        >
-                          {c.status}
-                        </span>
+                        <Form.Control
+                          type="number"
+                          min="1"
+                          disabled={!isSelected(b.batchCode)}
+                          value={getQuantity(b.batchCode)}
+                          onChange={(e) =>
+                            handleQuantityChange(b.batchCode, e.target.value)
+                          }
+                          style={{ width: "90px" }}
+                        />
                       </td>
-                      <td className="text-muted">{c.issuedAt}</td>
                     </tr>
                   )}
                 />
@@ -157,10 +184,10 @@ export default function RetireCredits() {
                 <Button
                   variant="success"
                   className="fw-semibold px-4 rounded-3"
-                  disabled={!selectedIds.length || loading}
+                  disabled={!selectedList.length || loading}
                   onClick={handleRetire}
                 >
-                  Retire Selected ({selectedIds.length})
+                  Retire Selected ({selectedList.length})
                 </Button>
               </div>
             </>

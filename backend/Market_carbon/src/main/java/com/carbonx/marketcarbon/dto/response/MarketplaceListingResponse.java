@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -28,8 +29,16 @@ public class MarketplaceListingResponse {
 
     private String projectTitle;
 
-    private LocalDateTime expiresAt;
+    private LocalDate expiresAt;
 
     private String logo;
 
+    private BigDecimal remainingCreditBalance; // Số tín chỉ còn lại sau khi list
+    private BigDecimal totalListedAmount; // Tổng số đã list (tất cả listings)
+
+    private Long carbonCreditId;
+
+    private Long batchId;
+
+    private String batchCode;
 }

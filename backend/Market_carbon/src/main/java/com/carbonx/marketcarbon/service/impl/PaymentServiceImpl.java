@@ -1,10 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.common.OrderStatus;
 import com.carbonx.marketcarbon.common.Status;
-import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
-import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.PaymentOrder;
@@ -16,7 +13,6 @@ import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
 import com.carbonx.marketcarbon.service.SseService;
-import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
@@ -88,7 +84,7 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal amountInVnd = CurrencyConverter.usdToVnd(BigDecimal.valueOf(savedPaymentOrder.getAmount()));
 
         String message = "Create deposit with money "  + request.getAmount() + " USD"  ;
-        sseService.sendNotificationToUser(message);
+        sseService.sendNotificationToUser(user.getId(), message);
 
         return PaymentOrderResponse.builder()
                 .userId(user.getId())

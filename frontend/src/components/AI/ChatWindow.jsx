@@ -41,8 +41,19 @@ export default function ChatWindow() {
     <div className="d-flex flex-column" style={{ height: "380px" }}>
       <div ref={chatRef} className="flex-grow-1 overflow-auto mb-2 chat-window">
         {messages.map((m, i) => (
-          <div key={i} className={`chat-bubble ${m.sender}`}>
-            {m.text}
+          <div key={i} className={`chat-row ${m.sender}`}>
+            {m.sender === "ai" && (
+              //   <img
+              //     src="/src/assets/logo.png"
+              //     alt="AI"
+              //     className="chat-avatar"
+              //   />
+              <i className="bi bi-robot chat-avatar text-info fs-4"></i>
+            )}
+            <div className={`chat-bubble ${m.sender}`}>{m.text}</div>
+            {m.sender === "user" && (
+              <i className="bi bi-person-circle chat-avatar text-success fs-4"></i>
+            )}
           </div>
         ))}
 

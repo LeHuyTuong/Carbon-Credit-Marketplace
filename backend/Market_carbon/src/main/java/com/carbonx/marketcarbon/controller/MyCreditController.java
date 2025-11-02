@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.request.RetireCreditRequest;
 import com.carbonx.marketcarbon.dto.response.CreditInventorySummaryResponse;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
@@ -13,6 +14,7 @@ import com.carbonx.marketcarbon.service.MyCreditInventoryService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -135,7 +137,7 @@ public class MyCreditController {
         return ResponseEntity.ok(response);
     }
 
-    // 🔹 5. Available Balance
+    //  5. Available Balance
     @Operation(summary = "[COMPANY] Get Available Credit Balance",
             description = "Returns total available credits (SUM of amount with status AVAILABLE).")
     @GetMapping("/balance")
@@ -178,5 +180,50 @@ public class MyCreditController {
         );
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "[COMPANY] Get credits eligible for retirement",
+            description = "Returns credits owned by company that are not expired, retired, or listed.")
+    @GetMapping("/retirable")
+    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> listRetirableCredits(
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
+    ) {
+        String traceId = trace != null ? trace : UUID.randomUUID().toString();
+        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        List<CarbonCreditResponse> data = creditService.getMyRetirableCredits();
+        var response = new TuongCommonResponse<>(
+                traceId,
+                now,
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable credits successfully"),
+                data
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "[COMPANY] Retire a carbon credit block",
+            description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
+    @PostMapping("/{id}/retire")
+    public ResponseEntity<TuongCommonResponse<CarbonCreditResponse>> retireCredit(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody RetireCreditRequest request,
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
+    ) {
+        String traceId = trace != null ? trace : UUID.randomUUID().toString();
+        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        CarbonCreditResponse data = creditService.retireCredit(id, request.getQuantity());
+
+        var response = new TuongCommonResponse<>(
+                traceId,
+                now,
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Retire carbon credit successfully"),
+                data
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }

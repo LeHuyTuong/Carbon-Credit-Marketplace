@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Modal, Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
@@ -6,6 +6,7 @@ import * as Yup from "yup";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../utils/apiFetch";
+import useReveal from "../../hooks/useReveal";
 
 export default function PaymentDetail() {
   const { token } = useAuth();
@@ -19,6 +20,8 @@ export default function PaymentDetail() {
   const params = new URLSearchParams(location.search);
   const isCreateMode = params.get("create") === "true";
   const isConfirmMode = params.get("confirm") === "true";
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
 
   //lấy dữ liệu Payment Detail khi load trang
   useEffect(() => {
@@ -54,7 +57,10 @@ export default function PaymentDetail() {
   // UI xử lý các trạng thái
   if (loading)
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
+      <div
+        ref={sectionRef}
+        className="d-flex justify-content-center align-items-center vh-100 reveal"
+      >
         <div className="spinner-border text-primary" />
       </div>
     );
@@ -92,20 +98,26 @@ export default function PaymentDetail() {
   return (
     <div className="auth-hero d-flex flex-column align-items-center min-vh-100 bg-light py-4">
       {/* nút back về wallet */}
-      <div className="w-100 text-start mb-3" style={{ paddingLeft: "20px" }}>
+      <div className="w-100 text-start mb-5 px-4">
         <Button
           variant="outline-info"
-          size="lg"
-          className="d-flex align-items-center gap-2"
+          size="sm"
+          className="position-fixed top-0 start-0 m-3 px-3 py-2 d-flex align-items-center gap-2 fw-semibold shadow-sm"
+          style={{
+            borderRadius: "10px",
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(6px)",
+            zIndex: 20,
+          }}
           onClick={() => nav("/wallet")}
         >
-          <FaArrowLeft /> Back to wallet
+          <FaArrowLeft /> Back to Wallet
         </Button>
       </div>
 
       {/*card detail */}
       <div
-        className="card shadow-lg border-0 rounded-4 p-4"
+        className="card shadow-lg border-0 rounded-4 p-4 mb-5"
         style={{ maxWidth: "800px", margin: "0 auto" }}
       >
         <h3 className="text-center mb-4 fw-bold">Payment Details</h3>
@@ -137,8 +149,8 @@ export default function PaymentDetail() {
           {isConfirmMode && (
             <Button
               variant="primary"
-              size="lg"
-              onClick={() => nav("/withdraw")}
+              className="fw-bold"
+              onClick={() => nav("/wallet")}
             >
               Confirm & Proceed to Withdraw
             </Button>
@@ -182,12 +194,14 @@ function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
         },
       };
 
+      const method = isCreating ? "POST" : "PUT";
+
       const res = await apiFetch("/api/v1/paymentDetails", {
-        method: "POST",
+        method,
         body: payload,
       });
 
-      const result = res.response || res.createdData;
+      const result = res.response || res.createdData || res.updatedData;
       if (result) onSuccess(result);
     } catch (err) {
       console.error("Error submitting form:", err);
@@ -294,7 +308,9 @@ function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
                   Close
                 </Button>
                 <Button type="submit" variant="primary">
-                  {isCreating ? "Create" : "Save Changes"}
+                  {isCreating
+                    ? "Create Payment Method"
+                    : "Update Payment Method"}
                 </Button>
               </Modal.Footer>
             </Form>
