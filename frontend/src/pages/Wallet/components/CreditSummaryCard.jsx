@@ -1,5 +1,5 @@
 import React from "react";
-import "../wallet.css"; // nhớ import file CSS riêng
+import "../wallet.css";
 
 export default function CreditSummaryCard({ summary }) {
   if (!summary)
@@ -12,7 +12,7 @@ export default function CreditSummaryCard({ summary }) {
   const soldCount = summary.sold || 0;
 
   const items = [
-    { label: "Total", value: summary.total || 0, color: "#20c997" },
+    { label: "Total", value: summary.total || 0, color: "#ffb1b1ff" },
     { label: "Issued", value: summary.issued || 0, color: "#00ffc8" },
     { label: "Available", value: summary.available || 0, color: "#1bb7cf" },
     { label: "Retired", value: summary.retired || 0, color: "#c484d4" },

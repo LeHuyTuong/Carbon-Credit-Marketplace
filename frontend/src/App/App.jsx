@@ -48,8 +48,8 @@ import ChooseProjectToUpload from "../pages/Dashboard/Company/Report/ChooseProje
 import DetailReport from "../pages/Dashboard/Company/Report/DetailReport.jsx";
 import CreditDetail from "../pages/Dashboard/Company/ManageCredits/CreditDetail.jsx";
 import CreditBatchDetail from "../pages/Wallet/components/CreditBatchDetail.jsx";
-import RetireCredits from "../pages/RetireCredits/RetireCredits.jsx";
-import RetiredHistory from "../pages/RetireCredits/RetiredHistory.jsx";
+import RetireCredits from "../pages/Dashboard/Company/RetireCredits/RetireCredits.jsx";
+import RetiredHistory from "../pages/Dashboard/Company/RetireCredits/RetiredHistory.jsx";
 import AIChatWidget from "../components/AI/AIChatWidget.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -180,9 +180,14 @@ export default function App() {
             </RoleRoute>
           }
         />
-
-        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
-        <Route path="/admin/change-password" element={<AdminChangePassword />} />
+        <Route
+          path="/admin/forgot-password"
+          element={<AdminForgotPassword />}
+        />
+        <Route
+          path="/admin/change-password"
+          element={<AdminChangePassword />}
+        />
         <Route path="/cva/carbonX/mkp/login" element={<LoginCVA />} />
         <Route
           path="/cva/kyc"
