@@ -71,6 +71,7 @@ export default function ListCredits() {
             acc[c.batchCode] = {
               id: c.batchCode,
               batchCode: c.batchCode,
+              batchId: c.batchId,
               projectTitle: c.originCompanyName || "Unknown Project",
               balance: 0,
               expiresAt: c.expirationDate || null,
@@ -86,14 +87,25 @@ export default function ListCredits() {
         }, {})
       );
 
-      const mapped = grouped.map((g) => ({
-        id: g.batchCode,
-        title: `${g.projectTitle} (${g.batchCode})`,
-        balance: g.balance,
-        expiresAt: g.expiresAt,
-        type: "WALLET",
-        creditIds: g.creditIds, // giữ lại creditIds thực
-      }));
+      const mapped = grouped.map((g) => {
+        const sample = credits.find((c) => c.batchCode === g.batchCode) || {};
+        const batchCredits = credits.filter((c) => c.batchCode === g.batchCode);
+        const hasAvailable = batchCredits.some((c) => c.status === "AVAILABLE");
+        const batchStatus = hasAvailable ? "AVAILABLE" : "TRADED";
+        return {
+          id: g.batchCode,
+          batchCode: g.batchCode,
+          batchId: g.batchId,
+          title: `${g.projectTitle} (${g.batchCode})`,
+          balance: g.balance,
+          expiresAt: g.expiresAt,
+          type: "WALLET",
+          creditIds: g.creditIds,
+          originCompanyId: sample.originCompanyId,
+          sellerCompanyId: sample.sellerCompanyId,
+          status: sample.batchStatus,
+        };
+      });
 
       setUserCredits(mapped);
     } catch (err) {
@@ -177,17 +189,37 @@ export default function ListCredits() {
         throw new Error("Not enough available credits in this batch.");
       }
 
+      // --- Tạo payload động ---
       const payload = {
         quantity: Number(values.quantity),
         pricePerCredit: Number(values.pricePerCredit),
       };
 
+      // Nếu là credit trong ví
       if (selectedCreditObj.type === "WALLET") {
-        payload.carbonCreditId = selectedCreditObj.creditIds[0];
-      } else {
-        payload.batchId = selectedCreditObj.id; // hoặc batchId từ API wallet trả về
-      }
+        // Credit mua về: status === "TRADED" hoặc có sellerCompanyId khác null
+        const isPurchased =
+          selectedCreditObj.status === "TRADED" ||
+          selectedCreditObj.sellerCompanyId !== null;
 
+        if (isPurchased) {
+          // credit mua: list theo carbonCreditId (1 credit duy nhất)
+          payload.carbonCreditId = selectedCreditObj.creditIds[0];
+        } else {
+          // credit được cấp: list theo batchId (cho phép nhiều)
+          payload.batchId = selectedCreditObj.batchId;
+          // Thêm danh sách các creditIds tương ứng với quantity
+          const selectedIds = selectedCreditObj.creditIds.slice(
+            0,
+            Number(values.quantity)
+          );
+
+          payload.carbonCreditIds = selectedIds;
+        }
+      }
+      console.log("selectedCreditObj", selectedCreditObj);
+
+      // --- Gửi lên backend ---
       if (editData) {
         await updateListing(editData.id, {
           pricePerCredit: payload.pricePerCredit,
@@ -196,15 +228,15 @@ export default function ListCredits() {
       } else {
         await apiFetch("/api/v1/marketplace", {
           method: "POST",
-          body: { data: payload },
+          body: { data: payload }, //gửi đúng payload, không ép batchId
         });
         showToast("Credit listed successfully!");
       }
 
       setShow(false);
       setEditData(null);
-      await fetchCredits(); // reload danh sách marketplace
-      await fetchUserCredits(); // reload ví để update số lượng còn lại
+      await fetchCredits();
+      await fetchUserCredits();
     } catch (error) {
       console.error("Submit error:", error);
       showToast(error.message || "Failed to publish credit.", "danger");
@@ -376,7 +408,7 @@ export const deleteListing = async (listingId) => {
 function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
   const initialValues = editData
     ? {
-        selectedCredit: editData.id,
+        selectedCredit: userCredits[0]?.id || "",
         quantity: editData.quantity || "",
         pricePerCredit: editData.price || "",
         expirationDate: editData.expiresAt || "",
