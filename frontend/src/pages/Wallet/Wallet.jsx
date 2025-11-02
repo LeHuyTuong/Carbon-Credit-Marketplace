@@ -204,6 +204,29 @@ export default function Wallet() {
     }
   };
 
+  const handleProfitDistribution = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/api/v1/profit/distribute", {
+        method: "POST",
+      });
+      setToast({
+        show: true,
+        msg: res?.message || "Profit distributed successfully!",
+        type: "success",
+      });
+      fetchWallet(); // cập nhật lại số dư ví công ty
+    } catch (err) {
+      setToast({
+        show: true,
+        msg: err.message || "Failed to distribute profit.",
+        type: "danger",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       ref={sectionRef}
@@ -230,25 +253,39 @@ export default function Wallet() {
       />
 
       {/* Buttons */}
-      <div className="wallet-history-btn m-3 d-flex flex-wrap justify-content-end gap-2">
-        <button
-          className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
-          onClick={() => nav("/transaction-history")}
-        >
-          <i className="bi bi-clock-history"></i>
-          Transaction History
-        </button>
+      <div className="wallet-history-btn my-3 d-flex flex-column align-items-center gap-2">
+        {/* Hàng đầu: 2 nút lịch sử */}
+        <div className="d-flex flex-wrap justify-content-center gap-2">
+          <button
+            className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+            onClick={() => nav("/transaction-history")}
+          >
+            <i className="bi bi-clock-history"></i>
+            Transaction History
+          </button>
 
-        {/* chỉ hiển thị nếu không phải EV Owner */}
+          {!isEVOwner && (
+            <button
+              className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
+              onClick={() =>
+                nav("/purchase-history", { state: { from: "wallet" } })
+              }
+            >
+              <i className="bi bi-bag-check"></i>
+              Purchases History
+            </button>
+          )}
+        </div>
+
+        {/*nút chia lợi nhuận*/}
         {!isEVOwner && (
           <button
-            className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
-            onClick={() =>
-              nav("/purchase-history", { state: { from: "wallet" } })
-            }
+            className="btn btn-success d-flex align-items-center gap-2 mt-2"
+            onClick={handleProfitDistribution}
+            disabled={loading}
           >
-            <i className="bi bi-bag-check"></i>
-            Purchases History
+            <i className="bi bi-cash-coin"></i>
+            Distribute Profit to EV Owners
           </button>
         )}
       </div>
