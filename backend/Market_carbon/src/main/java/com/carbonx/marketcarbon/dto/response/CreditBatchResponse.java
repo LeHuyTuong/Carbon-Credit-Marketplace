@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreditBatchResponse {
-
     Long id;
     String batchCode;
     Integer vintageYear;
@@ -26,6 +25,9 @@ public class CreditBatchResponse {
     String projectTitle;
     String status;
     LocalDateTime issuedAt;
+
+    String certificateUrl;
+
 
     public static CreditBatchResponse from(CreditBatch entity) {
         return CreditBatchResponse.builder()

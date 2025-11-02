@@ -44,28 +44,26 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public CreditInventorySummaryResponse getMyInventorySummary() {
         Long companyId = currentCompanyId();
 
-        // Lấy dữ liệu thật từ DB
         var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED);
         var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED);
         var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED);
 
-        // Giả sử muốn tính trong 7 ngày gần nhất
-        OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(7);
+        // Chỉ số phụ (không cộng vào total)
+        OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(30);
         long issuedVirtual = creditRepo.sumRecentlyIssued(companyId, cutoffDate);
 
-        long total = 0, available = 0, reserved = 0, sold = 0, retired = 0;
+        long available = 0, reserved = 0, sold = 0, retired = 0;
         List<StatusCount> byStatus = new ArrayList<>();
 
         for (Object[] row : byStatusRaw) {
             String status = String.valueOf(row[0]);
             long sum = ((Number) row[1]).longValue();
-            total += sum;
 
             switch (status) {
                 case "AVAILABLE" -> available = sum;
-                case "RESERVED" -> reserved = sum;
-                case "SOLD" -> sold = sum;
-                case "RETIRED" -> retired = sum;
+                case "RESERVED"  -> reserved  = sum;
+                case "SOLD"      -> sold      = sum;
+                case "RETIRED"   -> retired   = sum;
             }
 
             byStatus.add(StatusCount.builder()
@@ -74,7 +72,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
-        // Thêm trạng thái ISSUED ảo vào danh sách
+        // Thêm "ISSUED" (30 ngày gần nhất) như CHỈ SỐ PHỤ (không cộng vào total)
         if (issuedVirtual > 0) {
             byStatus.add(StatusCount.builder()
                     .status("ISSUED")
@@ -82,8 +80,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
-        // Tổng = tổng hiện có + số phát hành ảo
-        total += issuedVirtual;
+        long total = available;
 
         List<ProjectCount> byProject = new ArrayList<>();
         for (Object[] row : byProjectRaw) {
@@ -98,7 +95,6 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
         for (Object[] row : byVintageRaw) {
             Integer vintageYear = row[0] != null ? ((Number) row[0]).intValue() : null;
             long sum = ((Number) row[1]).longValue();
-
             byVintage.add(VintageCount.builder()
                     .vintageYear(vintageYear)
                     .count(sum)
@@ -107,7 +103,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
 
         return CreditInventorySummaryResponse.builder()
                 .total(total)
-                .issued(issuedVirtual)
+                .issued(issuedVirtual)     // chỉ số phụ
                 .available(available)
                 .reserved(reserved)
                 .sold(sold)
@@ -118,10 +114,10 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                 .build();
     }
 
-
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public long getMyAvailableBalance() {
-        return creditRepo.sumAmountByCompany_IdAndStatusNot(currentCompanyId(), CreditStatus.EXPIRED);
+        return creditRepo.sumAmountByCompany_IdAndStatus(currentCompanyId(), CreditStatus.AVAILABLE);
     }
+
 }
