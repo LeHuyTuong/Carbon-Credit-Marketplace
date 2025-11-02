@@ -10,7 +10,7 @@ const AdminDataGrid = ({ rows, columns, getRowId }) => {
       checkboxSelection
       pagination
       initialState={{
-        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+        pagination: { paginationModel: { pageSize:  10, page: 0 } },
       }}
       pageSizeOptions={[10, 20, 50]}
       sx={{

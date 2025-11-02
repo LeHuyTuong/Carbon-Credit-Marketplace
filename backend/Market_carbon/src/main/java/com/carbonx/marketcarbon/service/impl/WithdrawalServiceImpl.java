@@ -73,8 +73,10 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .user(user)
                     .build();
 
+            log.info("Withdrawal with id {} has been sent with money ",  withdrawal.getId());
+
             String message = " deposit with money "  + withdrawalAmount  + " USD"  ;
-            sseService.sendNotificationToUser( message);
+            sseService.sendNotificationToUser(user.getId(), message);
 
             return withdrawalRepository.save(withdrawal);
         }else{
@@ -120,11 +122,14 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                 log.warn("Failed to send withdrawal confirmation email via notification service for user {}: {}", user.getEmail(), e.getMessage());
             }
 
+
+            log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
             String message = " deposit with money "  + amountToWithdraw  + " USD"  ;
-            sseService.sendNotificationToUser(message);
+            sseService.sendNotificationToUser(user.getId(), message);
 
             return savedWithdrawal;
         } else {
+            log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
             withdrawalRequest.setStatus(Status.REJECTED);
             reason = "Withdrawal request rejected by administrator."; // Lý do bị từ chối
         }
@@ -134,6 +139,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         //  Gửi email thất bại/từ chối (chỉ khi FAILED hoặc REJECTED)
         if (savedWithdrawal.getStatus() == Status.FAILED || savedWithdrawal.getStatus() == Status.REJECTED) {
             try {
+                log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
                 applicationNotificationService.sendWithdrawalFailedOrRejected(
                         user.getEmail(),
                         user.getEmail(),

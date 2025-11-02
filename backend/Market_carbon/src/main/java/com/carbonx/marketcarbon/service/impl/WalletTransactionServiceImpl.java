@@ -4,10 +4,7 @@ import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
-import com.carbonx.marketcarbon.model.Order;
-import com.carbonx.marketcarbon.model.User;
-import com.carbonx.marketcarbon.model.Wallet;
-import com.carbonx.marketcarbon.model.WalletTransaction;
+import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
@@ -19,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,7 +42,6 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     @Transactional
     public WalletTransactionResponse createTransaction(WalletTransactionRequest request) {
-
         // check wallet
         Wallet wallet;
         if (request.getWallet() != null && request.getWallet().getId() != null) {
@@ -112,6 +109,15 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setOrder(request.getOrder());
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
+        // 1. Lấy CarbonCredit từ wallet
+        CarbonCredit carbonCredit = wallet.getCarbonCredit();
+        CreditBatch creditBatch = null; // 2. Mặc định batch là null
+        // 3. Chỉ lấy batch nếu carbonCredit không null
+        if (carbonCredit != null) {
+            creditBatch = carbonCredit.getBatch();
+        }
+        // 4. Gán batch (có thể là null nếu không tìm thấy)
+        transaction.setCreditBatch(creditBatch);
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
@@ -166,6 +172,17 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
         Order order = transaction.getOrder();
 
+        LocalDate creditExpiryDate = null;
+
+        CarbonCredit orderCredit = (order != null) ? order.getCarbonCredit() : null;
+        if (orderCredit != null) {
+            creditExpiryDate = orderCredit.getExpiryDate();
+        }
+
+        if (creditExpiryDate == null && transaction.getCreditBatch() != null) {
+            creditExpiryDate = transaction.getCreditBatch().getExpiresAt();
+        }
+
         return WalletTransactionResponse.builder()
                 .id(transaction.getId())
                 .orderId(order != null ? order.getId() : null)
@@ -181,6 +198,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .batchCode(transaction.getCreditBatch() != null
                         ? transaction.getCreditBatch().getBatchCode()
                         : null)
+                .creditExpiryDate(creditExpiryDate)
                 .build();
     }
 }

@@ -5,11 +5,15 @@ export async function apiFetch(path, options = {}) {
   // lấy token từ session hoặc localStorage
 let token;
 
-// 🟩 Ưu tiên token admin trước nếu có
+
+//  Ưu tiên token admin trước nếu có
 const adminToken =
   sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token");
 
-if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
+  //  Chỉ dùng adminToken khi đang ở trang /admin
+const isAdminPage = window.location.pathname.startsWith("/admin");
+
+if (isAdminPage && adminToken && adminToken !== "null" && adminToken !== "undefined") {
   token = adminToken;
 } else {
   try {
@@ -23,6 +27,29 @@ if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
 
   if (!token) token = localStorage.getItem("token");
 }
+
+//  Ưu tiên token cva trước nếu có
+const cvaToken =
+  sessionStorage.getItem("cva_token") || localStorage.getItem("cva_token");
+
+  //  Chỉ dùng cvaToken khi đang ở trang /cva
+const isCvaPage = window.location.pathname.startsWith("/cva");
+
+if (isCvaPage && cvaToken && cvaToken !== "null" && cvaToken !== "undefined") {
+  token = cvaToken;
+} else {
+  try {
+    const authData =
+      JSON.parse(sessionStorage.getItem("auth")) ||
+      JSON.parse(localStorage.getItem("auth"));
+    token = authData?.token;
+  } catch {
+    token = null;
+  }
+
+  if (!token) token = localStorage.getItem("token");
+}
+
 
 
   const traceId = crypto.randomUUID();

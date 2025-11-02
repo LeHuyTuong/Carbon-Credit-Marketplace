@@ -26,6 +26,8 @@ export function AuthProvider({ children }) {
   }));
 
   const login = (nextUser, nextToken, remember = false) => {
+
+    
     const payload = {
       user: nextUser,
       token: nextToken,

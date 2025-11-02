@@ -10,7 +10,7 @@ import java.util.List;
 public interface MarketplaceService {
     MarketplaceListingResponse listCreditsForSale(CreditListingRequest request);
     List<MarketplaceListingResponse> getActiveListing();
-
+    List<MarketplaceListingResponse> getALlCreditListingsByCompanyID();
     MarketplaceListingResponse updateListCredits(CreditListingUpdateRequest request);
     MarketplaceListingResponse deleteListCredits(Long creditListingId);
 }

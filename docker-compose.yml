@@ -48,7 +48,7 @@ services:
       dockerfile: Dockerfile
       args:
         # cấu hình biến môi trường khi build để React gọi đúng API
-        REACT_APP_API_BASE_URL: http://localhost:8082/api 
+        REACT_APP_API_BASE_URL: http://be:8082/api 
     image: carbonx-fe:latest
     networks:
       - backend

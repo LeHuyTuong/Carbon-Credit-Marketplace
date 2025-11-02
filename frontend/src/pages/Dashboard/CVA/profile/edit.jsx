@@ -1,50 +1,133 @@
-import React, { useState } from "react";
-import {Box,TextField,Button,Paper,Typography,Avatar,useTheme,} from "@mui/material";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  TextField,
+  Button,
+  Paper,
+  Typography,
+  Avatar,
+  useTheme,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import { tokens } from "@/themeCVA";
-import { adminData } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
 import { useNavigate } from "react-router-dom";
+import { updateKYCCVA, checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 
-const EditProfile = () => {
+const EditProfileCVA = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
-  //  Ưu tiên đọc dữ liệu đã lưu trong localStorage (nếu có)
-  const storedData = JSON.parse(localStorage.getItem("adminData"));
-  const [admin, setAdmin] = useState(storedData || adminData[0]);
+  const [cva, setCva] = useState({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
-  // Xử lý thay đổi text field
+  // ===== Fetch data from API when page loads =====
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await checkKYCCVA();
+        console.log("Fetched KYC data:", res);
+
+        if (res && Object.keys(res).length > 0) {
+          setCva(res);
+          localStorage.setItem("cvaData", JSON.stringify(res));
+          console.log("Saved data to localStorage:", res);
+        } else {
+          console.warn("API returned empty or invalid data:", res);
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSnackbarClose = () =>
+    setSnackbar((prev) => ({ ...prev, open: false }));
+
+  // ===== Handle input changes =====
   const handleChange = (e) => {
-    setAdmin({ ...admin, [e.target.name]: e.target.value });
+    setCva({ ...cva, [e.target.name]: e.target.value });
   };
 
-  //  Xử lý upload ảnh
+  // ===== Upload new avatar =====
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAdmin((prev) => ({ ...prev, avatar: reader.result }));
+        setCva((prev) => ({ ...prev, avatar: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  //  Khi bấm Save
-  const handleSave = () => {
-    console.log("Saved admin info:", admin);
-    // Giả lập lưu vào localStorage (tạm thời)
-    localStorage.setItem("adminData", JSON.stringify(admin));
+  // ===== Save profile information =====
+  const handleSave = async () => {
+    try {
+      const payload = {
+        name: cva.name || "CVA User",
+        email: cva.email || "",
+        organization: cva.organization || "CVA_VN",
+        positionTitle: cva.positionTitle || "CVA",
+        accreditationNo: cva.accreditationNo || "",
+        notes: cva.notes || "Updated via frontend",
+        capacityQuota: cva.capacityQuota || 1111,
+        avatar: cva.avatar || null,
+      };
 
-    // TODO: Gọi API thật nếu có backend ở đây
+      const requestBody = { data: payload };
 
-    navigate("/admin/view_profile_admin"); // quay lại trang view
+      console.log("Sending to API:", requestBody);
+
+      const response = await updateKYCCVA(requestBody);
+      console.log("KYC update successful:", response);
+
+      localStorage.setItem("cvaData", JSON.stringify(payload));
+
+      setSnackbar({
+        open: true,
+        message: "Profile updated successfully!",
+        severity: "success",
+      });
+
+      setTimeout(() => navigate("/cva/view_profile_cva"), 1000);
+    } catch (error) {
+      console.error("KYC update failed:", error);
+      setSnackbar({
+        open: true,
+        message: `Update failed: ${error.message}`,
+        severity: "error",
+      });
+    }
   };
 
+  // ===== UI =====
   return (
     <Box m="20px">
-      <Header title="EDIT PROFILE" subtitle="Update Administrator Information" />
+      <Header title="EDIT PROFILE" subtitle="Update CVA Information" />
+
+      {/* ===== Snackbar moved to TOP ===== */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={handleSnackbarClose}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <Paper
         sx={{
@@ -62,7 +145,7 @@ const EditProfile = () => {
           Edit Information
         </Typography>
 
-        {/* ===== Avatar Upload Section ===== */}
+        {/* ===== Avatar ===== */}
         <Box
           display="flex"
           flexDirection="column"
@@ -71,8 +154,8 @@ const EditProfile = () => {
           gap={1.5}
         >
           <Avatar
-            src={admin.avatar}
-            alt="Admin Avatar"
+            src={cva.avatar}
+            alt="CVA Avatar"
             sx={{
               width: 120,
               height: 120,
@@ -83,10 +166,7 @@ const EditProfile = () => {
             variant="outlined"
             component="label"
             color="secondary"
-            sx={{
-              fontSize: "0.85rem",
-              textTransform: "none",
-            }}
+            sx={{ fontSize: "0.85rem", textTransform: "none" }}
           >
             Upload New Avatar
             <input
@@ -98,51 +178,71 @@ const EditProfile = () => {
           </Button>
         </Box>
 
-        {/* ===== Text Fields ===== */}
+        {/* ===== Form ===== */}
         <Box display="grid" gap={2}>
           <TextField
-            name="firstName"
-            label="First Name"
-            value={admin.firstName}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="lastName"
-            label="Last Name"
-            value={admin.lastName}
+            name="name"
+            label="Full Name"
+            value={cva.name || ""}
             onChange={handleChange}
             fullWidth
           />
           <TextField
             name="email"
             label="Email"
-            value={admin.email}
+            value={cva.email || ""}
             onChange={handleChange}
             fullWidth
           />
           <TextField
-            name="contact"
-            label="Phone Number"
-            value={admin.contact}
+            name="organization"
+            label="Organization"
+            value={cva.organization || ""}
             onChange={handleChange}
             fullWidth
           />
           <TextField
-            name="address"
-            label="Address"
-            value={admin.address}
+            name="positionTitle"
+            label="Position Title"
+            value={cva.positionTitle || ""}
+            onChange={handleChange}
+            fullWidth
+            InputProps={{
+              readOnly: true,
+            }}
+          />
+          <TextField
+            name="accreditationNo"
+            label="Accreditation No."
+            value={cva.accreditationNo || ""}
+            onChange={handleChange}
+            fullWidth
+          />
+          <TextField
+            name="capacityQuota"
+            label="Capacity Quota"
+            type="number"
+            value={cva.capacityQuota || ""}
+            onChange={handleChange}
+            fullWidth
+          />
+          <TextField
+            name="notes"
+            label="Notes"
+            multiline
+            rows={3}
+            value={cva.notes || ""}
             onChange={handleChange}
             fullWidth
           />
         </Box>
 
-        {/* ===== Action Buttons ===== */}
+        {/* ===== Buttons ===== */}
         <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
           <Button
             variant="outlined"
             color="secondary"
-            onClick={() => navigate("/admin/view_profile_admin")}
+            onClick={() => navigate("/cva/view_profile_cva")}
           >
             Cancel
           </Button>
@@ -155,4 +255,4 @@ const EditProfile = () => {
   );
 };
 
-export default EditProfile;
+export default EditProfileCVA;
