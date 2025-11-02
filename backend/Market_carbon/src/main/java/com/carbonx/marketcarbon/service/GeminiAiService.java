@@ -102,7 +102,7 @@ public class GeminiAiService {
     }
 
     private String callGemini(String prompt) throws IOException {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/"
+        String url = "https://generativelanguage.googleapis.com/v1/models/"
                 + model + ":generateContent?key=" + apiKey;
 
         JSONObject req = new JSONObject();

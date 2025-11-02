@@ -13,11 +13,11 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "ai.gemini") // chỉ giữ dòng này, bỏ EnableConfigurationProperties
+@ConfigurationProperties(prefix = "ai.gemini")
 public class AiConfig {
 
     private String apiKey;
-    private String model = "gemini-1.5-pro-latest";
+    private String model = "gemini-2.5-pro";
     private boolean enabled = true;
     private int timeoutMs = 60000;
 

@@ -221,16 +221,19 @@ public class KycServiceImpl implements KycService {
             throw new ResourceNotFoundException("KYC for CVA already exists for user " + user.getEmail());
         }
 
+        String avatarUrl = null;
+        if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
+            avatarUrl = s3Service.uploadFile(req.getAvatar());
+        }
+
         Cva cva = Cva.builder()
                 .user(user)
                 .name(req.getName())
                 .email(user.getEmail())
                 .organization(req.getOrganization())
                 .positionTitle(req.getPositionTitle())
-                .accreditationNo(req.getAccreditationNo())
-                .capacityQuota(req.getCapacityQuota())
-                .notes(req.getNotes())
-                .status(USER_STATUS.PENDING)
+                .avatarUrl(avatarUrl)
+                .status(USER_STATUS.ACTIVE)
                 .build();
 
         cvaRepository.save(cva);
@@ -247,9 +250,12 @@ public class KycServiceImpl implements KycService {
         cva.setName(req.getName());
         cva.setOrganization(req.getOrganization());
         cva.setPositionTitle(req.getPositionTitle());
-        cva.setAccreditationNo(req.getAccreditationNo());
-        cva.setCapacityQuota(req.getCapacityQuota());
-        cva.setNotes(req.getNotes());
+
+        if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
+            String avatarUrl = s3Service.uploadFile(req.getAvatar());
+            cva.setAvatarUrl(avatarUrl);
+        }
+
         cvaRepository.save(cva);
 
         log.info("Updated KYC for CVA user {}", user.getEmail());
@@ -268,10 +274,8 @@ public class KycServiceImpl implements KycService {
                 .email(cva.getEmail())
                 .organization(cva.getOrganization())
                 .positionTitle(cva.getPositionTitle())
-                .accreditationNo(cva.getAccreditationNo())
-                .capacityQuota(cva.getCapacityQuota())
                 .status(cva.getStatus())
-                .notes(cva.getNotes())
+                .avatarUrl(cva.getAvatarUrl())
                 .createdAt(cva.getCreatedAt())
                 .updatedAt(cva.getUpdatedAt())
                 .build();
@@ -286,10 +290,8 @@ public class KycServiceImpl implements KycService {
                         .email(cva.getEmail())
                         .organization(cva.getOrganization())
                         .positionTitle(cva.getPositionTitle())
-                        .accreditationNo(cva.getAccreditationNo())
-                        .capacityQuota(cva.getCapacityQuota())
                         .status(cva.getStatus())
-                        .notes(cva.getNotes())
+                        .avatarUrl(cva.getAvatarUrl())
                         .createdAt(cva.getCreatedAt())
                         .updatedAt(cva.getUpdatedAt())
                         .build())
@@ -297,84 +299,84 @@ public class KycServiceImpl implements KycService {
     }
 
     // create
-    @Override
-    public Long createAdmin(KycAdminRequest req) {
-        User user = currentUser();
+        @Override
+        public Long createAdmin(KycAdminRequest req) {
+            User user = currentUser();
 
-        if (adminRepository.findByUserId(user.getId()).isPresent()) {
-            throw new ResourceNotFoundException("Admin KYC already exists for user: " + user.getEmail());
+            if (adminRepository.findByUserId(user.getId()).isPresent()) {
+                throw new ResourceNotFoundException("Admin KYC already exists for user: " + user.getEmail());
+            }
+
+            String avatarUrl = null;
+            if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
+                avatarUrl = s3Service.uploadFile(req.getAvatar());
+            }
+
+            Admin admin = Admin.builder()
+                    .user(user)
+                    .name(req.getName())
+                    .phone(req.getPhone())
+                    .firstName(req.getFirstName())
+                    .lastName(req.getLastName())
+                    .country(req.getCountry())
+                    .city(req.getCity())
+                    .birthday(req.getBirthday())
+                    .avatarUrl(avatarUrl)
+                    .build();
+
+            adminRepository.save(admin);
+            return admin.getId();
         }
 
-        String avatarUrl = null;
-        if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
-            avatarUrl = s3Service.uploadFile(req.getAvatar());
+        // update
+        @Override
+        public Long updateAdmin(KycAdminRequest req) {
+            User user = currentUser();
+
+            Admin admin = adminRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Admin profile not found"));
+
+            admin.setName(req.getName());
+            admin.setPhone(req.getPhone());
+            admin.setFirstName(req.getFirstName());
+            admin.setLastName(req.getLastName());
+            admin.setCountry(req.getCountry());
+            admin.setCity(req.getCity());
+            admin.setBirthday(req.getBirthday());
+
+            if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
+                String avatarUrl = s3Service.uploadFile(req.getAvatar());
+                admin.setAvatarUrl(avatarUrl);
+            }
+
+            adminRepository.save(admin);
+            log.info("Admin KYC updated for {}", user.getEmail());
+
+            return admin.getId();
         }
 
-        Admin admin = Admin.builder()
-                .user(user)
-                .name(req.getName())
-                .phone(req.getPhone())
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .country(req.getCountry())
-                .city(req.getCity())
-                .birthday(req.getBirthday())
-                .avatarUrl(avatarUrl)
-                .build();
+        // get profile
+        @Override
+        public KycAdminResponse getAdminProfile() {
+            User user = currentUser();
 
-        adminRepository.save(admin);
-        return admin.getId();
-    }
+            Admin admin = adminRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Admin KYC not found"));
 
-    // update
-    @Override
-    public Long updateAdmin(KycAdminRequest req) {
-        User user = currentUser();
-
-        Admin admin = adminRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Admin profile not found"));
-
-        admin.setName(req.getName());
-        admin.setPhone(req.getPhone());
-        admin.setFirstName(req.getFirstName());
-        admin.setLastName(req.getLastName());
-        admin.setCountry(req.getCountry());
-        admin.setCity(req.getCity());
-        admin.setBirthday(req.getBirthday());
-
-        if (req.getAvatar() != null && !req.getAvatar().isEmpty()) {
-            String avatarUrl = s3Service.uploadFile(req.getAvatar());
-            admin.setAvatarUrl(avatarUrl);
+            return KycAdminResponse.builder()
+                    .id(admin.getId())
+                    .name(admin.getName())
+                    .email(admin.getUser().getEmail())
+                    .phone(admin.getPhone())
+                    .firstName(admin.getFirstName())
+                    .lastName(admin.getLastName())
+                    .country(admin.getCountry())
+                    .city(admin.getCity())
+                    .birthday(admin.getBirthday())
+                    .avatarUrl(admin.getAvatarUrl())
+                    .updatedAt(admin.getUpdatedAt())
+                    .build();
         }
-
-        adminRepository.save(admin);
-        log.info("Admin KYC updated for {}", user.getEmail());
-
-        return admin.getId();
-    }
-
-    // get profile
-    @Override
-    public KycAdminResponse getAdminProfile() {
-        User user = currentUser();
-
-        Admin admin = adminRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Admin KYC not found"));
-
-        return KycAdminResponse.builder()
-                .id(admin.getId())
-                .name(admin.getName())
-                .email(admin.getUser().getEmail())
-                .phone(admin.getPhone())
-                .firstName(admin.getFirstName())
-                .lastName(admin.getLastName())
-                .country(admin.getCountry())
-                .city(admin.getCity())
-                .birthday(admin.getBirthday())
-                .avatarUrl(admin.getAvatarUrl())
-                .updatedAt(admin.getUpdatedAt())
-                .build();
-    }
 
     @Override
     public Long createKycEVOwner(KycEvOwnerRequest req) {

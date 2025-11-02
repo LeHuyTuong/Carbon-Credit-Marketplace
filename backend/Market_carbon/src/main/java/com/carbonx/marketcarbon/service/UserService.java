@@ -24,5 +24,6 @@ public interface UserService {
     void resendOtpForgotPassword(EmailRequest request)
             throws MessagingException, UnsupportedEncodingException;
 
+    long countUsers();
 
 }

@@ -63,54 +63,35 @@ public class GeminiAiScoringService implements AiScoringService {
 
         try {
             duplicatePlates = detailRepo.countDuplicatePlatesAcrossCompanies(report.getId(), report.getSeller().getId());
-            sharedProjectReports = reportRepo.countByProjectIdAndSeller_IdNot(report.getProject().getId(), report.getSeller().getId());
+            sharedProjectReports = reportRepo.countByProjectIdAndSeller_IdNot(
+                    report.getProject().getId(),
+                    report.getSeller().getId()
+            );
             efTooHigh = avgEf > 0.6;
             efTooLow = avgEf < 0.2;
         } catch (Exception ex) {
-            log.warn("[AI] Warning: duplicate/anomaly check failed: {}", ex.getMessage());
+            log.warn("[AI] Warning: anomaly check failed: {}", ex.getMessage());
         }
 
+        // ===== Prompt =====
         String rubric =
                 "You are a system that evaluates carbon emission reports for both data quality and fraud risk.\n" +
-                        "You must return ONLY ONE valid JSON object strictly matching this structure:\n\n" +
+                        "Return ONLY ONE valid JSON matching this exact schema:\n" +
                         "{\n" +
                         "  \"score\": number,                // 0..10 with exactly one decimal\n" +
                         "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
-                        "  \"fraudLikelihood\": number,      // 0.0..1.0 (AI-estimated probability)\n" +
-                        "  \"issues\": [                     // list of detected problems, if any\n" +
-                        "    { \"type\": string, \"message\": string }\n" +
-                        "  ],\n" +
+                        "  \"fraudLikelihood\": number,      // 0.0..1.0\n" +
+                        "  \"issues\": [ { \"type\": string, \"message\": string } ],\n" +
                         "  \"version\": \"v2.5\",\n" +
-                        "  \"notes\": string                 // detailed multiline explanation using \\n for line breaks\n" +
+                        "  \"notes\": string\n" +
                         "}\n\n" +
-
-                        "===== SCORING RUBRIC (total 10 points) =====\n" +
+                        "===== SCORING RUBRIC =====\n" +
                         "- Data completeness (2.0)\n" +
-                        "- Consistency of period & project (2.0)\n" +
-                        "- Reasonableness of EF & CO2 ratio (2.0)\n" +
-                        "- CO2 coverage & anomalies (2.0)\n" +
-                        "- Policy alignment & reliability (2.0)\n\n" +
-
-                        "===== FORMAT RULES FOR 'notes' =====\n" +
-                        "- The first 5 lines must follow this pattern: [+x.y/a.b] description\n" +
-                        "- Then one line: ---------------------------------------------\n" +
-                        "- Then one line: Total suggested score: {score}/10.0\n" +
-                        "- Then a section titled: Detailed analysis:\n" +
-                        "  Each bullet starts with \"• \"\n" +
-                        "- Then a section titled: Risk summary:\n" +
-                        "  Must include: Risk level, Fraud likelihood, and short reasoning.\n" +
-                        "- Then a section titled: Suggestions for CVA:\n" +
-                        "  Each bullet starts with \"- \"\n" +
-                        "- Use \\n for line breaks, no markdown, no code fences, no extra text.\n\n" +
-
-                        "===== RISK HINTS =====\n" +
-                        "- Duplicate license plates in other companies → HIGH\n" +
-                        "- Shared project across sellers → MEDIUM-HIGH\n" +
-                        "- EF above 0.6 or below 0.2 → MEDIUM-HIGH\n" +
-                        "- Multiple zero-energy rows (>10%) → MEDIUM\n" +
-                        "- Sudden CO2 drop >30% vs last period → HIGH\n" +
-                        "- Missing CO2 column or inconsistent period → MEDIUM\n" +
-                        "- If no anomaly detected → LOW\n";
+                        "- Consistency (2.0)\n" +
+                        "- Reasonableness of EF (2.0)\n" +
+                        "- CO2 coverage (2.0)\n" +
+                        "- Reliability (2.0)\n" +
+                        "Return plain JSON only. No code fences, no markdown, no extra text.";
 
         String projectContext = String.format(
                 "Project context:\n- Commitments: %s\n- MeasurementMethod: %s\n- TechnicalIndicators: %s",
@@ -146,17 +127,24 @@ public class GeminiAiScoringService implements AiScoringService {
 
         String fullPrompt = rubric + "\n\n" + projectContext + "\n\n" + dataContext + "\n\n" + anomalyContext;
 
+        // ===== Request body (ép trả JSON sạch) =====
         Map<String, Object> body = Map.of(
-                "contents", List.of(Map.of("parts", List.of(Map.of("text", fullPrompt)))),
-                "generationConfig", Map.of("response_mime_type", "application/json")
+                "generationConfig", Map.of(
+                        "response_mime_type", "application/json",
+                        "temperature", 0
+                ),
+                "contents", List.of(Map.of(
+                        "role", "user",
+                        "parts", List.of(Map.of("text", fullPrompt))
+                ))
         );
 
-
-        // ===== Call Gemini =====
+        // ===== Call Generative Language API =====
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> raw = geminiWebClient.post()
                     .uri(uriBuilder -> uriBuilder
+                            // LƯU Ý: v1beta models/{model}:generateContent — model lấy từ cfg.getModel()
                             .path("/v1beta/models/{model}:generateContent")
                             .queryParam("key", cfg.getApiKey())
                             .build(cfg.getModel()))
@@ -167,8 +155,9 @@ public class GeminiAiScoringService implements AiScoringService {
                     .bodyToMono(Map.class)
                     .block();
 
-            String jsonText = extractText(raw);
-            log.info("[AI] Gemini output: {}", jsonText);
+            String jsonTextRaw = extractText(raw);
+            String jsonText = normalizeJsonFromLlm(jsonTextRaw);
+            log.info("[AI] Gemini output (normalized): {}", jsonText);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> parsed = new ObjectMapper().readValue(jsonText, Map.class);
@@ -185,7 +174,7 @@ public class GeminiAiScoringService implements AiScoringService {
             return new AiScoreResult(score, notes, version);
 
         } catch (Exception ex) {
-            log.error("[AI] Gemini risk analysis failed: {}", ex.getMessage(), ex);
+            log.error("[AI] Gemini analysis failed: {}", ex.getMessage(), ex);
             return new AiScoreResult(BigDecimal.ZERO, "AI error: " + ex.getMessage(), "error");
         }
     }
@@ -195,14 +184,38 @@ public class GeminiAiScoringService implements AiScoringService {
     private static String extractText(Object raw) {
         if (!(raw instanceof Map)) return "{}";
         Map<String, Object> map = (Map<String, Object>) raw;
+
         Object candidatesObj = map.get("candidates");
         if (!(candidatesObj instanceof List) || ((List<?>) candidatesObj).isEmpty()) return "{}";
+
         Object contentObj = ((Map<?, ?>) ((List<?>) candidatesObj).get(0)).get("content");
         if (!(contentObj instanceof Map)) return "{}";
+
         Object partsObj = ((Map<?, ?>) contentObj).get("parts");
         if (!(partsObj instanceof List) || ((List<?>) partsObj).isEmpty()) return "{}";
+
         Object text = ((Map<?, ?>) ((List<?>) partsObj).get(0)).get("text");
         return text == null ? "{}" : text.toString();
+    }
+
+    /** Fallback an toàn: loại bỏ ```json ... ``` và chỉ giữ JSON object ngoài cùng */
+    private static String normalizeJsonFromLlm(String s) {
+        if (s == null) return "{}";
+        String t = s.trim();
+
+        // strip triple backticks ```json ... ```
+        if (t.startsWith("```")) {
+            t = t.replaceFirst("^```[a-zA-Z0-9]*\\s*", ""); // remove "```json" hoặc "```"
+            if (t.endsWith("```")) t = t.substring(0, t.length() - 3);
+        }
+
+        // keep only the outermost JSON object
+        int start = t.indexOf('{');
+        int end   = t.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            t = t.substring(start, end + 1);
+        }
+        return t.trim();
     }
 
     private static String safe(String s) {

@@ -185,6 +185,12 @@ public class UserController {
                 )
         );
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users/count")
+    public ResponseEntity<Long> getUserCount() {
+        long count = userService.countUsers();
+        return ResponseEntity.ok(count);
+    }
 
 
 }
