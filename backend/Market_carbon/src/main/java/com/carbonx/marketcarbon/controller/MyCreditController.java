@@ -39,11 +39,10 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get My Carbon Credits",
             description = "Returns paginated list of carbon credits owned by current company, optionally filtered by project or status.")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<Page<CarbonCreditResponse>>> listMyCredits(
+    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> listMyCredits(
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) Integer vintageYear,
             @RequestParam(required = false) String status,
-            Pageable pageable,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -60,7 +59,8 @@ public class MyCreditController {
         }
 
         var query = new CreditQuery(projectId, vintageYear, creditStatus);
-        Page<CarbonCreditResponse> result = creditService.listMyCredits(query, pageable);
+
+        List<CarbonCreditResponse> result = creditService.listMyCredits(query);
 
         var response = new TuongCommonResponse<>(
                 traceId,
@@ -68,8 +68,10 @@ public class MyCreditController {
                 new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get my credits successfully"),
                 result
         );
+
         return ResponseEntity.ok(response);
     }
+
 
     @Operation(summary = "[COMPANY] Get Credit by ID",
             description = "Retrieve details of a specific carbon credit owned by the current company.")
