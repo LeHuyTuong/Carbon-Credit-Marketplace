@@ -74,7 +74,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
 
-        // B2 Nếu request có batchId, xử lý theo batch
+        // B2 Nếu request có batchId, xử lý theo batch (TRỪ availableQuantity trên toàn bộ credits trong batch)
         if (request.getBatchId() != null) {
             CreditBatch batch = creditBatchRepository.findById(request.getBatchId())
                     .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
@@ -83,27 +83,64 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 throw new AppException(ErrorCode.COMPANY_NOT_OWN);
             }
 
-            // 2.1 Lấy danh sách tín chỉ khả dụng trong batch
-            List<CarbonCredit> availableCredits = batch.getCarbonCredit().stream()
-                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE || c.getAmount().compareTo(BigDecimal.ZERO) <= 0)
-                    .limit(request.getQuantity().intValue())
+            // 2.1 Lấy các credit còn AVAILABLE và còn available > 0
+            List<CarbonCredit> credits = batch.getCarbonCredit().stream()
+                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                    .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                     .toList();
 
-            if (availableCredits.isEmpty()) {
+            if (credits.isEmpty()) {
                 throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
             }
 
-            // 2.2 Đánh dấu các tín chỉ này là LISTED
-            availableCredits.forEach(c -> c.setStatus(CreditStatus.LISTED));
-            carbonCreditRepository.saveAll(availableCredits);
+            // 2.2 Check tổng available trong batch có đủ không (tính theo availableOf)
+            BigDecimal totalAvailable = credits.stream()
+                    .map(this::availableOf)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // 2.3 Tạo 1 listing tổng hợp cho batch
+            if (totalAvailable.compareTo(request.getQuantity()) < 0) {
+                throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
+            }
+
+            // 2.3 Trừ dần available trên từng credit, đồng thời cộng vào listedAmount
+            BigDecimal remaining = request.getQuantity();
+
+            for (CarbonCredit c : credits) {
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+
+                BigDecimal availBefore = availableOf(c);
+                if (availBefore.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+                BigDecimal deduct = availBefore.min(remaining);
+
+                // update listed
+                BigDecimal listed = safe(c.getListedAmount());
+                BigDecimal availAfter = availBefore.subtract(deduct);
+                c.setListedAmount(listed.add(deduct));
+
+                // quy ước: carbonCredit = availableQuantity
+                c.setCarbonCredit(availAfter);
+
+                // giữ total nhất quán: amount = available + listed
+                c.setAmount(availAfter.add(c.getListedAmount()));
+
+                // hết available => coi như đã list hết credit này
+                if (availAfter.compareTo(BigDecimal.ZERO) == 0) {
+                    c.setStatus(CreditStatus.LISTED);
+                }
+
+                remaining = remaining.subtract(deduct);
+            }
+
+            carbonCreditRepository.saveAll(credits);
+
+            // 2.4 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
             MarketPlaceListing listing = MarketPlaceListing.builder()
                     .company(sellerCompany)
-                    .carbonCredit(availableCredits.get(0)) // chọn đại 1 để link
-                    .quantity(BigDecimal.valueOf(availableCredits.size()))
+                    .carbonCredit(credits.get(0)) // link đại diện theo schema hiện tại
+                    .quantity(request.getQuantity())
                     .pricePerCredit(request.getPricePerCredit())
-                    .originalQuantity(BigDecimal.valueOf(availableCredits.size()))
+                    .originalQuantity(request.getQuantity())
                     .soldQuantity(BigDecimal.ZERO)
                     .status(ListingStatus.AVAILABLE)
                     .createdAt(LocalDateTime.now(VIETNAM_ZONE))
@@ -111,7 +148,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     .build();
 
             MarketPlaceListing saved = marketplaceListingRepository.save(listing);
-            log.info("Listed {} credits from batch {} on marketplace", availableCredits.size(), batch.getBatchCode());
+            log.info("Listed {} credits across {} CarbonCredit rows in batch {}",
+                    request.getQuantity(), credits.size(), batch.getBatchCode());
             return buildListingResponse(saved);
         }
 
@@ -144,10 +182,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     : BigDecimal.ZERO;
 
             BigDecimal updatedAvailableQuantity = availableQuantity.subtract(request.getQuantity());
-
             if (updatedAvailableQuantity.compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
             }
+
             // B5.2 Cập nhập số lượng tín chỉ thêm mới
             BigDecimal updatedListedAmount = currentListedAmount.add(request.getQuantity());
             creditToSell.setCarbonCredit(updatedAvailableQuantity);
@@ -178,7 +216,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             return buildListingResponse(updatedListing);
 
         }
-
 
         // Nếu không tìm thấy listing hiện có, tạo mới
         // B6 : Cập nhật số lượng tín chỉ niêm yết và số lượng còn lại (giữ nguyên code cũ)
@@ -221,6 +258,24 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         return buildListingResponse(savedListing);
 
     }
+
+    private BigDecimal safe(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
+    /**
+     * availableOf ưu tiên field carbonCredit (được dùng như availableQuantity).
+     * Nếu carbonCredit không có giá trị dương, fallback = amount - listedAmount.
+     */
+    private BigDecimal availableOf(CarbonCredit c) {
+        BigDecimal direct = safe(c.getCarbonCredit());
+        if (direct.compareTo(BigDecimal.ZERO) > 0) return direct;
+
+        return safe(c.getAmount())
+                .subtract(safe(c.getListedAmount()))
+                .max(BigDecimal.ZERO);
+    }
+
 
     @Override
     public List<MarketplaceListingResponse> getActiveListing() {
