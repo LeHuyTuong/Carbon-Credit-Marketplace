@@ -17,9 +17,14 @@ import java.util.concurrent.TimeUnit;
 public class AiConfig {
 
     private String apiKey;
+
     private String model = "gemini-2.5-pro";
+
     private boolean enabled = true;
+
     private int timeoutMs = 60000;
+
+    private String apiVersion = "v1";
 
     @Bean("geminiWebClient")
     public WebClient geminiWebClient() {
