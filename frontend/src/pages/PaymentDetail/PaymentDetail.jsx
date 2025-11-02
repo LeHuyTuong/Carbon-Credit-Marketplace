@@ -149,8 +149,8 @@ export default function PaymentDetail() {
           {isConfirmMode && (
             <Button
               variant="primary"
-              size="lg"
-              onClick={() => nav("/withdraw")}
+              className="fw-bold"
+              onClick={() => nav("/wallet")}
             >
               Confirm & Proceed to Withdraw
             </Button>

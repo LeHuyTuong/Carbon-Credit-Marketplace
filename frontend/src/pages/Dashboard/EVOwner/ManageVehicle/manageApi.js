@@ -20,12 +20,6 @@ export const getApprovedCompanies = async () => {
     id: c.companyId,
     name: c.companyName,
   }));
-
-  // //fallback tạm cho test
-  // if (companies.length === 0) {
-  //   companies = [{ id: 1, name: "Admin Test Corp (Seed Data)" }];
-  // }
-
   return companies;
 };
 
