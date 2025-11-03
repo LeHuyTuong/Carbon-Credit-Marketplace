@@ -55,6 +55,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .legalDocsFile(legalDocsUrl)
                 .startedDate(req.getStartedDate())
                 .endDate(req.getEndDate())
+                .emissionFactorKgPerKwh(req.getEmissionFactorKgPerKwh())
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -95,6 +96,10 @@ public class ProjectServiceImpl implements ProjectService {
         // Ngày bắt đầu/kết thúc
         if (req.getStartedDate() != null) project.setStartedDate(req.getStartedDate());
         if (req.getEndDate() != null) project.setEndDate(req.getEndDate());
+
+        if (req.getEmissionFactorKgPerKwh() != null) {
+            project.setEmissionFactorKgPerKwh(req.getEmissionFactorKgPerKwh());
+        }
 
 
         // Upload files nếu có
@@ -164,6 +169,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .legalDocsFile(p.getLegalDocsFile())
                 .startedDate(p.getStartedDate())
                 .endDate(p.getEndDate())
+                .emissionFactorKgPerKwh(p.getEmissionFactorKgPerKwh())
                 .build();
     }
 }
