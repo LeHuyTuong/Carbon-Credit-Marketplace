@@ -7,19 +7,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function UploadReport() {
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState([]); // danh sách báo cáo đã upload
   const [show, setShow] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState({
+    // hiển thị toast message
     show: false,
     message: "",
     variant: "success",
   });
-  const sectionRef = useRef(null);
+  const sectionRef = useRef(null); // ref cho hiệu ứng reveal
   useReveal(sectionRef);
-  const { projectId } = useParams();
+  const { projectId } = useParams(); // lấy projectId từ URL
   const nav = useNavigate();
 
+  // nếu không có projectId → quay lại trang chọn project
   useEffect(() => {
     if (!projectId) {
       nav("/company/upload-report"); // nếu không có ID → quay lại trang chọn project
@@ -41,6 +43,7 @@ export default function UploadReport() {
       //lọc theo projectId
       const filtered = data.filter((r) => r.projectId === Number(projectId));
 
+      // chuẩn hóa dữ liệu trước khi render
       const mapped = filtered.map((r) => ({
         id: r.id,
         projectName: r.projectName,
@@ -51,6 +54,7 @@ export default function UploadReport() {
       }));
 
       setReports(mapped);
+      // nếu có report đã được duyệt → trigger refresh credit
       const approvedReports = data.filter((r) => r.status === "ADMIN_APPROVED");
       if (approvedReports.length > 0) {
         sessionStorage.setItem("refreshCredits", "true");
@@ -63,6 +67,7 @@ export default function UploadReport() {
     }
   };
 
+  // tự động fetch khi có projectId
   useEffect(() => {
     if (projectId) fetchReports();
   }, [projectId]);
@@ -72,24 +77,28 @@ export default function UploadReport() {
     e.preventDefault();
     console.log("projectId from params:", projectId);
 
+    // lấy file từ input
     const file = e.target.file?.files[0];
     if (!file) return showToast("Please select a file first.", "warning");
 
+    // tạo formData để gửi file và projectId lên server
     const formData = new FormData();
     formData.append("file", file);
     formData.append("projectId", projectId);
     console.log("Uploading with projectId:", projectId);
 
     try {
-      setUploading(true);
+      setUploading(true); // bật trạng thái đang upload
       const res = await apiFetch("/api/v1/reports/upload", {
         method: "POST",
-        body: formData,
+        body: formData, // gửi dữ liệu file dưới dạng multipart/form-data
       });
 
+      // lấy mã phản hồi từ backend
       const code =
         res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
 
+      // nếu upload thành công → reload danh sách và đóng modal
       showToast("Report uploaded successfully.");
       fetchReports();
       setShow(false);
@@ -100,12 +109,14 @@ export default function UploadReport() {
       const backendCode =
         err?.response?.responseStatus?.responseCode || err?.code || err?.status;
 
+      // lấy mã lỗi trả về từ backend
       if (backendCode === "409101") {
         showToast(
           "A report for this project and period already exists. Please check your previous uploads.",
           "warning"
         );
       } else {
+        // trường hợp report đã tồn tại
         showToast(
           "Upload failed: " + (err.message || "Unexpected error."),
           "danger"
@@ -116,11 +127,13 @@ export default function UploadReport() {
     }
   };
 
+  // hiển thị toast message
   const showToast = (message, variant = "success") =>
     setToast({ show: true, message, variant });
 
   return (
     <div ref={sectionRef} className="reveal">
+      {/* tiêu đề và nút hành động */}
       <div className="vehicle-search-section2">
         <h1 className="title fw-bold">Your Reports</h1>
         <div className="d-flex justify-content-center gap-3 mt-2">
@@ -132,6 +145,12 @@ export default function UploadReport() {
           <Button
             variant="outline-info"
             className="mb-3"
+            style={{
+              borderRadius: "8px",
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(6px)",
+              zIndex: 20,
+            }}
             onClick={() => window.open("/sample-report.csv", "_blank")}
           >
             View CSV Template
@@ -169,6 +188,7 @@ export default function UploadReport() {
         </Form>
       </Modal>
 
+      {/* bảng danh sách report */}
       <div className="table-wrapper">
         <table className="vehicle-table">
           <thead>
@@ -181,6 +201,7 @@ export default function UploadReport() {
               <th>Actions</th>
             </tr>
           </thead>
+          {/* dùng component phân trang */}
           <PaginatedTable
             items={reports}
             itemsPerPage={5}
@@ -223,6 +244,7 @@ export default function UploadReport() {
         </table>
       </div>
 
+      {/* toast hiển thị thông báo */}
       <ToastContainer position="bottom-end" className="p-3">
         <Toast
           onClose={() => setToast({ ...toast, show: false })}
