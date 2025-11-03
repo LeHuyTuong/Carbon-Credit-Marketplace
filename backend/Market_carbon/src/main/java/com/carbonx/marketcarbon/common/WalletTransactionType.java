@@ -8,5 +8,6 @@ public enum WalletTransactionType {
     SELL_CARBON_CREDIT_SHARE,
     EV_OWNER_PAYOUT,
     EV_OWNER_PAYOUT_RECEIVE,
-    ISSUE_CREDIT
+    ISSUE_CREDIT,
+    PROFIT_SHARING
 }

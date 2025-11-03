@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import useWalletData from "./components/useWalletData";
@@ -10,6 +10,7 @@ import useReveal from "../../hooks/useReveal";
 import CreditsList from "./components/CreditsList";
 import CreditSummaryCard from "./components/CreditSummaryCard";
 import { useAuth } from "../../context/AuthContext";
+import ChooseReportModal from "./components/ChooseReportModal";
 
 export default function Wallet() {
   const nav = useNavigate();
@@ -27,12 +28,14 @@ export default function Wallet() {
     purchasedCredits,
     summary,
     loading,
+    shareProfit,
     setLoading,
     fetchWallet,
     fetchTransactions,
     fetchIssuedCredits,
     fetchPurchasedCredits,
     fetchSummary,
+    fetchApprovedReports,
   } = useWalletData();
 
   const [toast, setToast] = React.useState({
@@ -44,6 +47,8 @@ export default function Wallet() {
   const [showWithdrawModal, setShowWithdrawModal] = React.useState(false);
   const [showPaymentToast, setShowPaymentToast] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("issued");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [approvedReports, setApprovedReports] = useState([]);
 
   //khi trở lại từ Order.jsx với state.refreshCredits
   useEffect(() => {
@@ -204,6 +209,12 @@ export default function Wallet() {
     }
   };
 
+  const openShareModal = async () => {
+    const list = await fetchApprovedReports(); // lấy report đã duyệt
+    setApprovedReports(list);
+    setShowShareModal(true);
+  };
+
   return (
     <div
       ref={sectionRef}
@@ -230,25 +241,39 @@ export default function Wallet() {
       />
 
       {/* Buttons */}
-      <div className="wallet-history-btn m-3 d-flex flex-wrap justify-content-end gap-2">
-        <button
-          className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
-          onClick={() => nav("/transaction-history")}
-        >
-          <i className="bi bi-clock-history"></i>
-          Transaction History
-        </button>
+      <div className="wallet-history-btn my-3 d-flex flex-column align-items-center gap-2">
+        {/* Hàng đầu: 2 nút lịch sử */}
+        <div className="d-flex flex-wrap justify-content-center gap-2">
+          <button
+            className="btn btn-outline-light btn-sm d-flex align-items-center gap-2"
+            onClick={() => nav("/transaction-history")}
+          >
+            <i className="bi bi-clock-history"></i>
+            Transaction History
+          </button>
 
-        {/* chỉ hiển thị nếu không phải EV Owner */}
+          {!isEVOwner && (
+            <button
+              className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
+              onClick={() =>
+                nav("/purchase-history", { state: { from: "wallet" } })
+              }
+            >
+              <i className="bi bi-bag-check"></i>
+              Purchases History
+            </button>
+          )}
+        </div>
+
+        {/*nút chia lợi nhuận*/}
         {!isEVOwner && (
           <button
-            className="btn btn-outline-info btn-sm d-flex align-items-center gap-2"
-            onClick={() =>
-              nav("/purchase-history", { state: { from: "wallet" } })
-            }
+            className="btn btn-success d-flex align-items-center gap-2 mt-2"
+            onClick={openShareModal}
+            disabled={loading}
           >
-            <i className="bi bi-bag-check"></i>
-            Purchases History
+            <i className="bi bi-cash-coin"></i>
+            Distribute Profit to EV Owners
           </button>
         )}
       </div>
@@ -318,6 +343,31 @@ export default function Wallet() {
         showPaymentToast={showPaymentToast}
         setShowPaymentToast={setShowPaymentToast}
         nav={nav}
+      />
+      <ChooseReportModal
+        show={showShareModal}
+        onHide={() => setShowShareModal(false)}
+        onConfirm={async (data) => {
+          try {
+            const res = await shareProfit({
+              ...data,
+              description: "Profit sharing initiated by company",
+            });
+            setToast({
+              show: true,
+              msg: res?.responseMessage || "Profit shared successfully!",
+              type: "success",
+            });
+            await fetchWallet();
+            setShowShareModal(false);
+          } catch (err) {
+            setToast({
+              show: true,
+              msg: err.message || "Profit sharing failed.",
+              type: "danger",
+            });
+          }
+        }}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 package com.carbonx.marketcarbon.model;
 
 import com.carbonx.marketcarbon.common.EmissionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -108,4 +111,19 @@ public class EmissionReport {
     void preUpdate() {
         if (source != null) source = source.toUpperCase();
     }
+
+    /**
+     * Quan hệ Một-Nhiều (One-to-Many) tới các dòng chi tiết.
+     * Đây là "inverse side" (phía không sở hữu) của quan hệ.
+     */
+    @OneToMany(
+            mappedBy = "report", // "report" là tên trường @ManyToOne trong EmissionReportDetail
+            cascade = CascadeType.ALL, // Tự động lưu/xóa 'details' khi 'report' được lưu/xóa
+            orphanRemoval = true, // Tự động xóa 'details' khỏi DB nếu chúng bị gỡ khỏi list này
+            fetch = FetchType.LAZY // Chỉ load danh sách này khi gọi .getDetails()
+    )
+    @JsonIgnore // Ngăn lỗi lặp vô hạn (infinite loop) khi serialize JSON
+    @Builder.Default
+    private List<EmissionReportDetail> details = new ArrayList<>();
+
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
@@ -32,5 +33,20 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     long countByEvOwner_Id(Long evOwnerId);
 
     long countByCompany_Id(Long companyId);
+
+    /**
+     * Lấy ra một Set (HashSet) chứa tất cả các biển số xe (plateNumber)
+     * đã được đăng ký và có liên kết với một EVOwner.
+     * @return Set<String> các biển số xe hợp lệ.
+     */
+    @Query("SELECT v.plateNumber FROM Vehicle v WHERE v.evOwner IS NOT NULL")
+    Set<String> findAllRegisteredPlateNumbers();
+
+    /**
+     * Tìm Vehicle bằng plateNumber và fetch EAGER EVOwner và User
+     * để tránh N+1 query khi xử lý.
+     */
+    @Query("SELECT v FROM Vehicle v JOIN FETCH v.evOwner e JOIN FETCH e.user u WHERE v.plateNumber = :plateNumber")
+    Optional<Vehicle> findByPlateNumberWithDetails(String plateNumber);
 
 }
