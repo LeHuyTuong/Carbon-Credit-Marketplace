@@ -15,6 +15,7 @@ import com.carbonx.marketcarbon.service.WalletTransactionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,8 @@ public class OrderServiceImpl implements OrderService {
     private final CarbonCreditRepository carbonCreditRepository;
     private final CreditIssuanceService creditIssuanceService;
 
+    @Value("${trading_fee}")
+    private BigDecimal tradingFee;
 
     // Định nghĩa múi giờ Việt Nam
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -103,7 +106,7 @@ public class OrderServiceImpl implements OrderService {
                 .quantity(request.getQuantity())
                 .unitPrice(unitPrice)
                 .totalPrice(totalPrice)
-                .platformFee(BigDecimal.ZERO) // tinhs sau
+                .platformFee(tradingFee)
                 .sellerPayout(totalPrice)
                 .createdAt(LocalDateTime.now(VIETNAM_ZONE))
                 .build();
