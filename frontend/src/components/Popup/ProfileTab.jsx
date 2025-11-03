@@ -13,7 +13,7 @@ import { Snackbar, Alert } from '@mui/material';
 import { useAuth } from '@/context/AuthContext.jsx';
 
 export default function ProfileTab({ role, onClose }) {
-  const { logout } = useAuth(); // 🔹 logout từ context
+  const { logout } = useAuth(); //  logout từ context
   const basePath = role === 'admin' ? '/admin' : '/cva';
   const navigate = useNavigate();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });

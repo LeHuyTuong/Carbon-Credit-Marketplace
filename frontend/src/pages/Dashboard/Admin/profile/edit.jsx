@@ -201,6 +201,9 @@ const EditProfile = ({ onAvatarUpdated }) => {
             value={admin.email}
             onChange={handleChange}
             fullWidth
+            InputProps={{
+              readOnly: true,
+            }}
           />
           <TextField
             name="phone"

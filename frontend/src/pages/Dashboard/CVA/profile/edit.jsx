@@ -27,19 +27,14 @@ const EditProfileCVA = () => {
     severity: "success",
   });
 
-  // ===== Fetch data from API when page loads =====
+  // ===== Fetch data when component mounts =====
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await checkKYCCVA();
-        console.log("Fetched KYC data:", res);
-
         if (res && Object.keys(res).length > 0) {
           setCva(res);
           localStorage.setItem("cvaData", JSON.stringify(res));
-          console.log("Saved data to localStorage:", res);
-        } else {
-          console.warn("API returned empty or invalid data:", res);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -60,60 +55,35 @@ const EditProfileCVA = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCva((prev) => ({ ...prev, avatar: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      setCva((prev) => ({ ...prev, avatar: file }));
     }
   };
 
-  // ===== Save profile information =====
+  // ===== Save profile =====
   const handleSave = async () => {
-    try {
-      const payload = {
-        name: cva.name || "CVA User",
-        email: cva.email || "",
-        organization: cva.organization || "CVA_VN",
-        positionTitle: cva.positionTitle || "CVA",
-        accreditationNo: cva.accreditationNo || "",
-        notes: cva.notes || "Updated via frontend",
-        capacityQuota: cva.capacityQuota || 1111,
-        avatar: cva.avatar || null,
-      };
+  try {
+    const formData = new FormData();
+    formData.append("name", cva.name);
+    formData.append("email", cva.email);
+    formData.append("organization", cva.organization);
+    formData.append("positionTitle", cva.positionTitle);
+    if (cva.avatar instanceof File) formData.append("avatar", cva.avatar);
 
-      const requestBody = { data: payload };
+    const updated = await updateKYCCVA(formData);
+    console.log("Updated CVA:", updated);
+    setSnackbar({ open: true, message: "Profile updated!", severity: "success" });
+    setTimeout(() => navigate("/cva/view_profile_cva"), 1000);
+  } catch (err) {
+    setSnackbar({ open: true, message: err.message, severity: "error" });
+  }
+};
 
-      console.log("Sending to API:", requestBody);
 
-      const response = await updateKYCCVA(requestBody);
-      console.log("KYC update successful:", response);
-
-      localStorage.setItem("cvaData", JSON.stringify(payload));
-
-      setSnackbar({
-        open: true,
-        message: "Profile updated successfully!",
-        severity: "success",
-      });
-
-      setTimeout(() => navigate("/cva/view_profile_cva"), 1000);
-    } catch (error) {
-      console.error("KYC update failed:", error);
-      setSnackbar({
-        open: true,
-        message: `Update failed: ${error.message}`,
-        severity: "error",
-      });
-    }
-  };
-
-  // ===== UI =====
+  // ===== Render UI =====
   return (
     <Box m="20px">
       <Header title="EDIT PROFILE" subtitle="Update CVA Information" />
 
-      {/* ===== Snackbar moved to TOP ===== */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -145,22 +115,16 @@ const EditProfileCVA = () => {
           Edit Information
         </Typography>
 
-        {/* ===== Avatar ===== */}
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          mb={3}
-          gap={1.5}
-        >
+        {/* Avatar */}
+        <Box display="flex" flexDirection="column" alignItems="center" mb={3} gap={1.5}>
           <Avatar
-            src={cva.avatar}
+            src={
+              cva.avatar instanceof File
+                ? URL.createObjectURL(cva.avatar)
+                : cva.avatar
+            }
             alt="CVA Avatar"
-            sx={{
-              width: 120,
-              height: 120,
-              border: `3px solid ${colors.greenAccent[400]}`,
-            }}
+            sx={{ width: 120, height: 120, border: `3px solid ${colors.greenAccent[400]}` }}
           />
           <Button
             variant="outlined"
@@ -169,81 +133,21 @@ const EditProfileCVA = () => {
             sx={{ fontSize: "0.85rem", textTransform: "none" }}
           >
             Upload New Avatar
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
+            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
           </Button>
         </Box>
 
-        {/* ===== Form ===== */}
+        {/* Form */}
         <Box display="grid" gap={2}>
-          <TextField
-            name="name"
-            label="Full Name"
-            value={cva.name || ""}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="email"
-            label="Email"
-            value={cva.email || ""}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="organization"
-            label="Organization"
-            value={cva.organization || ""}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="positionTitle"
-            label="Position Title"
-            value={cva.positionTitle || ""}
-            onChange={handleChange}
-            fullWidth
-            InputProps={{
-              readOnly: true,
-            }}
-          />
-          <TextField
-            name="accreditationNo"
-            label="Accreditation No."
-            value={cva.accreditationNo || ""}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="capacityQuota"
-            label="Capacity Quota"
-            type="number"
-            value={cva.capacityQuota || ""}
-            onChange={handleChange}
-            fullWidth
-          />
-          <TextField
-            name="notes"
-            label="Notes"
-            multiline
-            rows={3}
-            value={cva.notes || ""}
-            onChange={handleChange}
-            fullWidth
-          />
+          <TextField name="name" label="Full Name" value={cva.name || ""} onChange={handleChange} fullWidth />
+          <TextField name="email" label="Email" value={cva.email || ""} onChange={handleChange} fullWidth InputProps={{ readOnly: true }} />
+          <TextField name="organization" label="Organization" value={cva.organization || ""} onChange={handleChange} fullWidth />
+          <TextField name="positionTitle" label="Position Title" value={cva.positionTitle || ""} onChange={handleChange} fullWidth InputProps={{ readOnly: true }} />
         </Box>
 
-        {/* ===== Buttons ===== */}
+        {/* Buttons */}
         <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={() => navigate("/cva/view_profile_cva")}
-          >
+          <Button variant="outlined" color="secondary" onClick={() => navigate("/cva/view_profile_cva")}>
             Cancel
           </Button>
           <Button variant="contained" color="success" onClick={handleSave}>

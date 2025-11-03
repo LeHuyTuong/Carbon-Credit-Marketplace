@@ -146,6 +146,12 @@
   animation-delay: 0.4s;
 }
 
+/* canh user ở bên phải, avatar nằm ngoài cùng phải */
+.chat-row.user {
+  justify-content: flex-start;
+  flex-direction: row-reverse; /* avatar nằm bên phải bubble */
+}
+
 @keyframes blink {
   0%, 80%, 100% {
     opacity: 0.2;
