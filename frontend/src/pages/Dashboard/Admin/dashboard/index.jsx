@@ -12,7 +12,7 @@ import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
 import { useEffect, useState } from "react";
-import { countVehicle, getWithdrawlHistoryByAdmin, countWalletTransactions } from "@/apiAdmin/apiDashboard.js";
+import { countVehicle, getWithdrawlHistoryByAdmin, countWalletTransactions,countUsers } from "@/apiAdmin/apiDashboard.js";
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [electricVehicleCount, setElectricVehicleCount] = useState(0);
   const [walletTransactionCount, setWalletTransactionCount] = useState(0);
   const [withdrawHistory, setWithdrawHistory] = useState([]);
+  const [userCount, setUserCount] = useState(0);
 
   useEffect(() => {
     // Fetch electric vehicles
@@ -39,16 +40,17 @@ const Dashboard = () => {
 
     // Fetch wallet transactions
     const fetchWalletTransactionCount = async () => {
-      try {
-        const res = await countWalletTransactions({
-          requestTrace: "dashboard-wallet-transactions",
-          requestDateTime: new Date().toISOString(),
-        });
-        setWalletTransactionCount(res.response ?? 0);
-      } catch (error) {
-        console.error("Error fetching wallet transaction count:", error);
-      }
-    };
+  try {
+    const count = await countWalletTransactions({
+      requestTrace: "dashboard-wallet-transactions",
+      requestDateTime: new Date().toISOString(),
+    });
+    setWalletTransactionCount(Number(count) || 0);
+  } catch (error) {
+    console.error("Error fetching wallet transaction count:", error);
+  }
+};
+
 
     // Fetch withdrawal history
     const fetchWithdrawHistory = async () => {
@@ -63,9 +65,23 @@ const Dashboard = () => {
       }
     };
 
+    //  Fetch user count
+    const fetchUserCount = async () => {
+      try {
+        const res = await countUsers({
+          requestTrace: "dashboard-user-count",
+          requestDateTime: new Date().toISOString(),
+        });
+        setUserCount(res);
+      } catch (error) {
+        console.error("Error fetching user count:", error);
+      }
+    }
+
     fetchElectricVehicleCount();
     fetchWalletTransactionCount();
     fetchWithdrawHistory();
+    fetchUserCount();
   }, []);
 
   return (
@@ -73,20 +89,6 @@ const Dashboard = () => {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
-        <Box>
-          <Button
-            sx={{
-              backgroundColor: colors.blueAccent[700],
-              color: colors.grey[100],
-              fontSize: "14px",
-              fontWeight: "bold",
-              padding: "10px 20px",
-            }}
-          >
-            <DownloadOutlinedIcon sx={{ mr: "10px" }} />
-            Download Reports
-          </Button>
-        </Box>
       </Box>
 
       {/* GRID & CHARTS */}
@@ -97,6 +99,7 @@ const Dashboard = () => {
         gap="20px"
       >
         {/* ROW 1 - Overview Cards */}
+        {/* Reports card with live data */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -107,12 +110,11 @@ const Dashboard = () => {
           <StatBox
             title="1,254"
             subtitle="Reports"
-            progress="0.75"
-            increase="+14%"
             icon={<AssessmentOutlinedIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
-
+        
+        {/* Withdrawal transactions card with live data */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -121,14 +123,13 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title={walletTransactionCount.toLocaleString()}
+            title={Number(walletTransactionCount || 0).toLocaleString()}
             subtitle="Wallet Transactions"
-            progress="0.65"
-            increase="+12%"
             icon={<PointOfSaleOutlinedIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
 
+        {/* Users card with live data */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -137,10 +138,8 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="32,441"
+            title={userCount.toLocaleString()}
             subtitle="Users"
-            progress="0.30"
-            increase="+5%"
             icon={<PersonAddIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
@@ -155,8 +154,6 @@ const Dashboard = () => {
           <StatBox
             title={electricVehicleCount.toLocaleString()}
             subtitle="Electric-Vehicles"
-            progress="0.80"
-            increase="+43%"
             icon={<ElectricCarIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
@@ -181,11 +178,6 @@ const Dashboard = () => {
               <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
                 9,345
               </Typography>
-            </Box>
-            <Box>
-              <IconButton>
-                <DownloadOutlinedIcon sx={{ fontSize: "26px", color: colors.greenAccent[500] }} />
-              </IconButton>
             </Box>
           </Box>
           <Box height="250px" m="-20px 0 0 0">

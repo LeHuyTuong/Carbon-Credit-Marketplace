@@ -169,7 +169,7 @@ const CVALogin = () => {
           display="block"
           sx={{ mt: 3, color: colors.grey[400] }}
         >
-          © 2025 EV-Carbon Credit System
+          © 2025 EV-CarbonX System
         </Typography>
       </Paper>
     </Box>

@@ -1,39 +1,48 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.config.AiConfig;
+import com.carbonx.marketcarbon.config.AiVertexConfig;
 import com.carbonx.marketcarbon.model.EmissionReport;
 import com.carbonx.marketcarbon.model.EmissionReportDetail;
 import com.carbonx.marketcarbon.repository.EmissionReportDetailRepository;
 import com.carbonx.marketcarbon.repository.EmissionReportRepository;
 import com.carbonx.marketcarbon.service.AiScoringService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GeminiAiScoringService implements AiScoringService {
 
-    private final AiConfig cfg;
-    private final WebClient geminiWebClient;
+    private final AiVertexConfig cfg;
+    private final WebClient vertexWebClient;
     private final EmissionReportRepository reportRepo;
     private final EmissionReportDetailRepository detailRepo;
 
+    private static final Pattern JSON_BLOCK = Pattern.compile("\\{[\\s\\S]*\\}");
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Transactional
     @Override
     public AiScoreResult suggestScore(EmissionReport report, List<EmissionReportDetail> details) {
-        if (!cfg.isEnabled() || cfg.getApiKey() == null || cfg.getApiKey().isBlank()) {
+        if (!cfg.isEnabled()) {
             return new AiScoreResult(BigDecimal.ZERO, "AI disabled", "na");
         }
 
-        // ===== Basic Stats =====
+        // ===== Basic stats =====
         final int count = details.size();
         final long zeroEnergy = details.stream()
                 .filter(d -> d.getTotalEnergy() == null || d.getTotalEnergy().signum() == 0)
@@ -55,18 +64,14 @@ public class GeminiAiScoringService implements AiScoringService {
                 .filter(d -> d.getCo2Kg() != null)
                 .count() / Math.max(1, count);
 
-        // ===== Duplicate / anomaly detection =====
+        // ===== Anomalies =====
         int duplicatePlates = 0;
         int sharedProjectReports = 0;
         boolean efTooHigh = false;
         boolean efTooLow = false;
-
         try {
             duplicatePlates = detailRepo.countDuplicatePlatesAcrossCompanies(report.getId(), report.getSeller().getId());
-            sharedProjectReports = reportRepo.countByProjectIdAndSeller_IdNot(
-                    report.getProject().getId(),
-                    report.getSeller().getId()
-            );
+            sharedProjectReports = reportRepo.countByProjectIdAndSeller_IdNot(report.getProject().getId(), report.getSeller().getId());
             efTooHigh = avgEf > 0.6;
             efTooLow = avgEf < 0.2;
         } catch (Exception ex) {
@@ -74,25 +79,6 @@ public class GeminiAiScoringService implements AiScoringService {
         }
 
         // ===== Prompt =====
-        String rubric =
-                "You are a system that evaluates carbon emission reports for both data quality and fraud risk.\n" +
-                        "Return ONLY ONE valid JSON matching this exact schema:\n" +
-                        "{\n" +
-                        "  \"score\": number,                // 0..10 with exactly one decimal\n" +
-                        "  \"riskLevel\": \"LOW|MEDIUM|HIGH\",\n" +
-                        "  \"fraudLikelihood\": number,      // 0.0..1.0\n" +
-                        "  \"issues\": [ { \"type\": string, \"message\": string } ],\n" +
-                        "  \"version\": \"v2.5\",\n" +
-                        "  \"notes\": string\n" +
-                        "}\n\n" +
-                        "===== SCORING RUBRIC =====\n" +
-                        "- Data completeness (2.0)\n" +
-                        "- Consistency (2.0)\n" +
-                        "- Reasonableness of EF (2.0)\n" +
-                        "- CO2 coverage (2.0)\n" +
-                        "- Reliability (2.0)\n" +
-                        "Return plain JSON only. No code fences, no markdown, no extra text.";
-
         String projectContext = String.format(
                 "Project context:\n- Commitments: %s\n- MeasurementMethod: %s\n- TechnicalIndicators: %s",
                 safe(report.getProject() != null ? report.getProject().getCommitments() : null),
@@ -125,97 +111,159 @@ public class GeminiAiScoringService implements AiScoringService {
                 duplicatePlates, sharedProjectReports, efTooHigh, efTooLow
         );
 
-        String fullPrompt = rubric + "\n\n" + projectContext + "\n\n" + dataContext + "\n\n" + anomalyContext;
+        String userPrompt = ("""
+You are an auditor of carbon-emission reports.
+Return ONE JSON object only. No markdown. No prose outside JSON. No code fences.
 
-        // ===== Request body (ép trả JSON sạch) =====
+Strict schema:
+{
+  "score": number,                // 0..10
+  "riskLevel": "LOW|MEDIUM|HIGH",
+  "fraudLikelihood": number,      // 0.0..1.0
+  "issues": [{ "type": string, "message": string }],
+  "version": "v2.5",
+  "notes": string
+}
+
+Be conservative when uncertain.
+
+%s
+
+%s
+
+%s
+""").formatted(projectContext, dataContext, anomalyContext).trim();
+
+        // ===== Request =====
         Map<String, Object> body = Map.of(
-                "generationConfig", Map.of(
-                        "response_mime_type", "application/json",
-                        "temperature", 0
-                ),
                 "contents", List.of(Map.of(
                         "role", "user",
-                        "parts", List.of(Map.of("text", fullPrompt))
-                ))
+                        "parts", List.of(Map.of("text", userPrompt))
+                )),
+                "generationConfig", Map.of(
+                        "temperature", 0.1,
+                        "maxOutputTokens", 512
+                )
         );
 
-        // ===== Call Generative Language API =====
+        String path = String.format(
+                "/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
+                cfg.getProjectId(), cfg.getLocation(), cfg.getModel()
+        );
+
         try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> raw = geminiWebClient.post()
-                    .uri(uriBuilder -> uriBuilder
-                            // LƯU Ý: v1beta models/{model}:generateContent — model lấy từ cfg.getModel()
-                            .path("/v1beta/models/{model}:generateContent")
-                            .queryParam("key", cfg.getApiKey())
-                            .build(cfg.getModel()))
+            Map<String, Object> raw = vertexWebClient.post()
+                    .uri(path)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
+                    .onStatus(HttpStatusCode::isError, resp ->
+                            resp.bodyToMono(String.class).flatMap(b -> {
+                                log.error("[Vertex Gemini] {} body:\n{}", resp.statusCode(), b);
+                                return Mono.error(new RuntimeException("Vertex " + resp.statusCode() + ": " + b));
+                            })
+                    )
                     .bodyToMono(Map.class)
                     .block();
 
-            String jsonTextRaw = extractText(raw);
-            String jsonText = normalizeJsonFromLlm(jsonTextRaw);
-            log.info("[AI] Gemini output (normalized): {}", jsonText);
+            // === Extract raw text
+            String rawText = extractText(raw);
+            log.info("[AI] Vertex Gemini output raw text:\n{}", rawText);
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> parsed = new ObjectMapper().readValue(jsonText, Map.class);
-
+            // === Parse safely
+            Map<String, Object> parsed = tryParseJson(rawText);
             double sc = ((Number) parsed.getOrDefault("score", 0)).doubleValue();
             String version = Objects.toString(parsed.getOrDefault("version", "v2.0"));
             String notes = Objects.toString(parsed.getOrDefault("notes", ""));
             String risk = Objects.toString(parsed.getOrDefault("riskLevel", "LOW"));
             double fraud = ((Number) parsed.getOrDefault("fraudLikelihood", 0)).doubleValue();
 
+            //  Fallback sinh ghi chú chi tiết nếu thiếu
+            if (notes.isBlank()) {
+                notes = String.format(
+                        "AI review summary:\n" +
+                                "- Overall evaluation: %.1f/10\n" +
+                                "- Risk level: %s\n" +
+                                "- Fraud likelihood: %.2f\n" +
+                                "- Data quality: %s coverage, avg EF = %.3f.\n" +
+                                "- No critical anomalies detected.\n",
+                        sc,
+                        risk,
+                        fraud,
+                        co2Coverage > 0.9 ? "high" : (co2Coverage > 0.7 ? "moderate" : "low"),
+                        avgEf
+                );
+            }
+
             notes += "\n\n--- Risk summary ---\nRisk level: " + risk + "\nFraud likelihood: " + fraud;
 
             BigDecimal score = BigDecimal.valueOf(sc).setScale(1, RoundingMode.HALF_UP);
+
+            report.setAiPreScore(score);
+            report.setAiPreNotes(notes);
+            report.setAiVersion(version);
+            reportRepo.save(report);
+
+            log.info("[AI]  Updated EmissionReport#{} with AI results (score={}, risk={}, fraud={})",
+                    report.getId(), score, risk, fraud);
+
             return new AiScoreResult(score, notes, version);
 
         } catch (Exception ex) {
-            log.error("[AI] Gemini analysis failed: {}", ex.getMessage(), ex);
+            log.error("[AI]  Vertex Gemini analysis failed: {}", ex.getMessage(), ex);
             return new AiScoreResult(BigDecimal.ZERO, "AI error: " + ex.getMessage(), "error");
         }
     }
 
     // ===== Helpers =====
+
     @SuppressWarnings("unchecked")
     private static String extractText(Object raw) {
         if (!(raw instanceof Map)) return "{}";
         Map<String, Object> map = (Map<String, Object>) raw;
-
         Object candidatesObj = map.get("candidates");
         if (!(candidatesObj instanceof List) || ((List<?>) candidatesObj).isEmpty()) return "{}";
-
         Object contentObj = ((Map<?, ?>) ((List<?>) candidatesObj).get(0)).get("content");
         if (!(contentObj instanceof Map)) return "{}";
-
         Object partsObj = ((Map<?, ?>) contentObj).get("parts");
         if (!(partsObj instanceof List) || ((List<?>) partsObj).isEmpty()) return "{}";
-
         Object text = ((Map<?, ?>) ((List<?>) partsObj).get(0)).get("text");
-        return text == null ? "{}" : text.toString();
+        if (text == null) return "{}";
+
+        String s = text.toString().trim();
+        s = s.replaceAll("(?i)```json", "")
+                .replaceAll("```", "")
+                .replaceAll("^json", "")
+                .trim();
+        return s;
     }
 
-    /** Fallback an toàn: loại bỏ ```json ... ``` và chỉ giữ JSON object ngoài cùng */
-    private static String normalizeJsonFromLlm(String s) {
-        if (s == null) return "{}";
-        String t = s.trim();
+    //  Parse lenient + fallback thủ công
+    private static Map<String, Object> tryParseJson(String text) {
+        if (text == null || text.isBlank()) return Map.of();
 
-        // strip triple backticks ```json ... ```
-        if (t.startsWith("```")) {
-            t = t.replaceFirst("^```[a-zA-Z0-9]*\\s*", ""); // remove "```json" hoặc "```"
-            if (t.endsWith("```")) t = t.substring(0, t.length() - 3);
-        }
+        Matcher m = JSON_BLOCK.matcher(text);
+        String sub = m.find() ? m.group() : text;
 
-        // keep only the outermost JSON object
-        int start = t.indexOf('{');
-        int end   = t.lastIndexOf('}');
-        if (start >= 0 && end > start) {
-            t = t.substring(start, end + 1);
+        long open = sub.chars().filter(ch -> ch == '{').count();
+        long close = sub.chars().filter(ch -> ch == '}').count();
+        if (open > close) sub += "}".repeat((int) (open - close));
+
+        try {
+            return MAPPER.readValue(sub, Map.class);
+        } catch (Exception e) {
+            Map<String, Object> fallback = new HashMap<>();
+            try {
+                Matcher scoreM = Pattern.compile("\"score\"\\s*:\\s*([0-9.]+)").matcher(sub);
+                if (scoreM.find()) fallback.put("score", Double.parseDouble(scoreM.group(1)));
+                Matcher riskM = Pattern.compile("\"riskLevel\"\\s*:\\s*\"(\\w+)\"").matcher(sub);
+                if (riskM.find()) fallback.put("riskLevel", riskM.group(1));
+            } catch (Exception ignored) {}
+            log.warn("[AI] ⚠️ Fallback used for incomplete JSON:\n{}", sub);
+            return fallback;
         }
-        return t.trim();
     }
 
     private static String safe(String s) {

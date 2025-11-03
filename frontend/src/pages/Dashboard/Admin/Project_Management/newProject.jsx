@@ -14,61 +14,55 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Chart/Header.jsx";
 import { createProject } from "@/apiAdmin/projectAdmin.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const NewProjectForm = () => {
   const isNonMobile = useMediaQuery("(min-width:800px)");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
   const [loading, setLoading] = useState(false);
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
 
   //  preview trước khi gửi & URL thật sau khi BE trả về
   const [previewUrl, setPreviewUrl] = useState(null);
   const [s3Url, setS3Url] = useState(null);
 
   const handleFormSubmit = async (values, { resetForm }) => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const formDataToSend = new FormData();
-      formDataToSend.append("requestTrace", `trace_${Date.now()}`);
-      formDataToSend.append("requestDateTime", new Date().toISOString());
-      formDataToSend.append("title", values.title);
-      formDataToSend.append("description", values.description);
-      formDataToSend.append("commitments", values.commitments);
-      formDataToSend.append("technicalIndicators", values.technicalIndicators);
-      formDataToSend.append("measurementMethod", values.measurementMethod);
+    const formDataToSend = new FormData();
+    formDataToSend.append("requestTrace", `trace_${Date.now()}`);
+    formDataToSend.append("requestDateTime", new Date().toISOString());
+    formDataToSend.append("title", values.title);
+    formDataToSend.append("description", values.description);
+    formDataToSend.append("commitments", values.commitments);
+    formDataToSend.append("technicalIndicators", values.technicalIndicators);
+    formDataToSend.append("measurementMethod", values.measurementMethod);
 
-      if (values.logo) formDataToSend.append("logo", values.logo);
-      if (values.legalDocsUrl) formDataToSend.append("legalDocsUrl", values.legalDocsUrl);
+    if (values.logo) formDataToSend.append("logo", values.logo);
+    if (values.legalDocsUrl) formDataToSend.append("legalDocsUrl", values.legalDocsUrl);
 
-      const response = await createProject(formDataToSend);
-      console.log("Create Project Response:", response);
+    const response = await createProject(formDataToSend);
+    console.log("Create Project Response:", response);
 
-      if (response?.responseStatus?.responseCode === "00000000") {
-        const logoUrl = response?.response?.logo || null;
-        setS3Url(logoUrl);
-        setPreviewUrl(null);
+    if (response?.responseStatus?.responseCode === "00000000") {
+      const logoUrl = response?.response?.logo || null;
+      setS3Url(logoUrl);
+      setPreviewUrl(null);
 
-        setSnackbarMessage("Project created successfully!");
-        setSnackbarSeverity("success");
-        setOpenSnackbar(true);
+      showSnackbar("success", "Project created successfully!");
 
-        setTimeout(() => {
-          resetForm();
-        }, 600);
-      } else {
-        throw new Error(response?.responseStatus?.responseMessage || "Failed to create project");
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
-      setSnackbarMessage(error.message || "Failed to create project. Please try again.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-    } finally {
-      setLoading(false);
+      setTimeout(() => resetForm(), 600);
+    } else {
+      throw new Error(response?.responseStatus?.responseMessage || "Failed to create project");
     }
-  };
+  } catch (error) {
+    console.error("Error creating project:", error);
+    showSnackbar("error", error.message || "Failed to create project. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Box m="20px">
@@ -248,21 +242,7 @@ borderRadius: 2,
         </Formik>
       </Paper>
 
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={4000}
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };
@@ -278,11 +258,11 @@ const checkoutSchema = yup.object().shape({
 const initialValues = {
   title: "",
   description: "",
-  logo: null,          // 👈 để null thay vì ""
+  logo: null,          //  để null thay vì ""
   commitments: "",
   technicalIndicators: "",
   measurementMethod: "",
-  legalDocsUrl: null,  // 👈 để null thay vì ""
+  legalDocsUrl: null,  //  để null thay vì ""
 };
 
 export default NewProjectForm;
