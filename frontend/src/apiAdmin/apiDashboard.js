@@ -22,11 +22,7 @@ export const countVehicle = async (params = {}) => {
 
 
 /**
- * Lấy lịch sử rút tiền (withdrawal history) dành cho admin
- * @param {Object} params - Tham số truyền vào (nếu có)
- * @param {string} [params.requestTrace] - Header X-Request-Trace (tùy chọn)
- * @param {string} [params.requestDateTime] - Header X-Request-DateTime (tùy chọn)
- * @returns {Promise<Object>} Dữ liệu lịch sử rút tiền
+  Lấy lịch sử rút tiền (withdrawal history) dành cho admin
  */
 export const getWithdrawlHistoryByAdmin = async (params = {}) => {
   const { requestTrace, requestDateTime } = params;
@@ -45,20 +41,55 @@ export const getWithdrawlHistoryByAdmin = async (params = {}) => {
  * @param {Object} params - { requestTrace: string, requestDateTime: string }
  * @returns {Promise<number>} - response count
  */
-export const countWalletTransactions = async (params) => {
+export const countWalletTransactions = async (params = {}) => {
+  const { requestTrace, requestDateTime } = params;
+
   try {
     const res = await apiFetch("/api/v1/wallet/transactions/count", {
       method: "GET",
       headers: {
-        "X-Request-Trace": params.requestTrace,
-        "X-Request-DateTime": params.requestDateTime,
+        "X-Request-Trace": requestTrace || "wallet-transaction-count",
+        "X-Request-DateTime": requestDateTime || new Date().toISOString(),
       },
     });
 
-    // API trả về: { response: 123 }
-    return res.response ?? 0;
+    console.log("countWalletTransactions() full API response:", res);
+
+    const count = res.response ?? res?.response?.response ?? 0;
+    console.log("countWalletTransactions() normalized count:", count);
+
+    return count;
   } catch (error) {
     console.error("Error counting wallet transactions:", error);
     throw error;
   }
 };
+
+
+
+
+/*
+  Đếm tổng số người dùng trong hệ thống (Admin)
+ */
+export const countUsers = async (params = {}) => {
+  try {
+    const res = await apiFetch("/api/v1/users/count", {
+      method: "GET",
+      params,
+    });
+
+    // Chuẩn hóa dữ liệu trả về
+    const count = res?.response ?? res?.data ?? res ?? 0;
+    console.log("countUsers() API response:", res);
+    console.log("countUsers() normalized count:", count);
+    return count;
+  } catch (error) {
+    console.error("Error in countUsers():", error);
+    return 0;
+  }
+};
+
+
+
+
+

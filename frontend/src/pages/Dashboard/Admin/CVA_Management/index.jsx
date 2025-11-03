@@ -48,8 +48,7 @@ const CvaTeam = () => {
     { field: "email", headerName: "Email", flex: 1.2 },
     { field: "organization", headerName: "Organization", flex: 1 },
     { field: "positionTitle", headerName: "Position Title", flex: 1 },
-    { field: "accreditationNo", headerName: "Accreditation No", flex: 1 },
-    { field: "capacityQuota", headerName: "Capacity Quota", flex: 0.8 },
+
     {
       field: "status",
       headerName: "Status",
@@ -73,7 +72,7 @@ const CvaTeam = () => {
         </Box>
       ),
     },
-    { field: "notes", headerName: "Notes", flex: 1 },
+
     { field: "createdAt", headerName: "Created At", flex: 1 },
     { field: "updatedAt", headerName: "Updated At", flex: 1 },
     {

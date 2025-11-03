@@ -6,8 +6,6 @@ import {
   Button,
   Divider,
   useTheme,
-  Snackbar,
-  Alert,
   Grid
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
@@ -19,6 +17,7 @@ import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { approveReportByAdmin, getReportByIdAdmin } from "@/apiAdmin/reportAdmin.js";
 import { issueCredits } from "@/apiAdmin/creditAdmin.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const ViewReport = () => {
   const theme = useTheme();
@@ -29,91 +28,88 @@ const ViewReport = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+
 
   //  State điều khiển hiển thị nút
   const [approved, setApproved] = useState(false);
   const [issued, setIssued] = useState(false);
 
   useEffect(() => {
-  const fetchReport = async () => {
-    try {
-      const res = await getReportByIdAdmin(id);
-      const data = res.response || res.responseData || res;
-      setReport(data);
+    const fetchReport = async () => {
+      try {
+        const res = await getReportByIdAdmin(id);
+        const data = res.response || res.responseData || res;
+        setReport(data);
 
-      // ✅ Chuẩn hóa status
-      const status = data.status?.trim().toUpperCase();
-      console.log("Report status:", status);
+        //  Chuẩn hóa status
+        const status = data.status?.trim().toUpperCase();
+        console.log("Report status:", status);
 
-      // ✅ Xử lý theo API thực tế
-      if (status === "ADMIN_APPROVED") setApproved(true);
-      if (status === "ISSUED") {
-        setApproved(true); // vì issued chỉ xảy ra sau khi approved
-        setIssued(true);
+        //  Xử lý theo API thực tế
+        if (status === "ADMIN_APPROVED") setApproved(true);
+        if (status === "ISSUED") {
+          setApproved(true); // vì issued chỉ xảy ra sau khi approved
+          setIssued(true);
+        }
+        if (status === "REJECTED") {
+          setApproved(false);
+          setIssued(false);
+        }
+      } catch (err) {
+        console.error("Error fetching report:", err);
+      } finally {
+        setLoading(false);
       }
-      if (status === "REJECTED") {
-        setApproved(false);
-        setIssued(false);
-      }
-    } catch (err) {
-      console.error("Error fetching report:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchReport();
-}, [id]);
+    };
+    fetchReport();
+  }, [id]);
 
 
 
   const handleApproval = async (isApproved) => {
     try {
       const res = await approveReportByAdmin(id, isApproved, note);
-
       setReport((prev) => ({
         ...prev,
         ...res.response,
         status: isApproved ? "Approved" : "Rejected",
       }));
 
-      setSnackbarSeverity("success");
-      setSnackbarMessage(
+      showSnackbar(
+        "success",
         isApproved
           ? "Report approved successfully!"
           : "Report rejected successfully!"
       );
-      setOpenSnackbar(true);
 
-      if (isApproved) {
-        setApproved(true); // ✅ Khi approved thì hiện Issue Credit
-      }
+      if (isApproved) setApproved(true);
     } catch (err) {
       console.error(err);
-      setSnackbarSeverity("error");
-      setSnackbarMessage("Failed to update report status!");
-      setOpenSnackbar(true);
+      showSnackbar("error", "Failed to update report status!");
     }
   };
 
+  const [issuing, setIssuing] = useState(false); // trạng thái đang cấp credit
+
   const handleIssueCredit = async () => {
     try {
+      setIssuing(true); // disable nút
+      showSnackbar("info", "Issuing credits... please wait (about 8 seconds)");
       await issueCredits(id);
-      setSnackbarSeverity("success");
-      setSnackbarMessage("Credits issued successfully!");
-      setOpenSnackbar(true);
-      setIssued(true); // ✅ ẩn nút ngay sau khi ấn
+      showSnackbar("success", "Credits issued successfully!");
+      setIssued(true); // ẩn nút vĩnh viễn sau khi cấp thành công
 
+      // Chuyển trang nhẹ sau 1s
       setTimeout(() => {
         navigate("/admin/credit_management");
       }, 1000);
     } catch (err) {
       console.error(err);
-      setSnackbarSeverity("error");
-      setSnackbarMessage("Failed to issue credits!");
-      setOpenSnackbar(true);
+      showSnackbar("error", "Failed to issue credits!");
+    } finally {
+      // Không reset issuing nếu đã issued (để nút biến mất)
+      if (!issued) setIssuing(false);
     }
   };
 
@@ -243,7 +239,7 @@ const ViewReport = () => {
                   onClick={() => handleApproval(true)}
                   sx={{ textTransform: "none" }}
                 >
-                  Approve
+                  Approved
                 </Button>
                 <Button
                   variant="contained"
@@ -252,7 +248,7 @@ const ViewReport = () => {
                   onClick={() => handleApproval(false)}
                   sx={{ textTransform: "none" }}
                 >
-                  Reject
+                  Rejected
                 </Button>
               </>
             )}
@@ -263,31 +259,19 @@ const ViewReport = () => {
                 variant="contained"
                 color="primary"
                 onClick={handleIssueCredit}
+                disabled={issuing}
                 sx={{ textTransform: "none" }}
               >
-                Issue Credit
+                {issuing ? "Processing..." : "Issue Credit"}
               </Button>
             )}
+
           </Box>
         </Box>
       </Paper>
 
       {/* Snackbar */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };
