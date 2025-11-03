@@ -9,17 +9,21 @@ import { apiFetch } from "../../utils/apiFetch";
 import useReveal from "../../hooks/useReveal";
 
 export default function PaymentDetail() {
+  // lấy token từ context auth
   const { token } = useAuth();
+  // state quản lý dữ liệu payment và các trạng thái phụ
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  // hook điều hướng và lấy query params
   const nav = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const isCreateMode = params.get("create") === "true";
   const isConfirmMode = params.get("confirm") === "true";
+  // hiệu ứng reveal khi xuất hiện
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
@@ -65,6 +69,7 @@ export default function PaymentDetail() {
       </div>
     );
 
+  // hiển thị lỗi nếu có
   if (error)
     return (
       <div className="text-center mt-5 text-danger">
@@ -135,6 +140,8 @@ export default function PaymentDetail() {
             <span className="fw-semibold">{paymentData.bankCode}</span>
           </div>
         </div>
+
+        {/* hành động cập nhật hoặc confirm */}
         <div className="d-flex justify-content-between align-items-center mt-4">
           <Button
             variant="success"
@@ -145,7 +152,7 @@ export default function PaymentDetail() {
           >
             Update Details
           </Button>
-          {/* nếu ở chế độ tạo mới */}
+          {/* nếu đang ở chế độ confirm sau khi tạo mới */}
           {isConfirmMode && (
             <Button
               variant="primary"
@@ -157,6 +164,8 @@ export default function PaymentDetail() {
           )}
         </div>
       </div>
+
+      {/* modal cập nhật/thêm mới thông tin */}
       <UpdateModal
         show={showModal}
         onHide={() => setShowModal(false)}
@@ -171,6 +180,8 @@ export default function PaymentDetail() {
     </div>
   );
 }
+
+// schema validate form
 const schema = Yup.object().shape({
   accountHolderName: Yup.string().required("Account holder name is required"),
   accountNumber: Yup.string().required("Account number is required"),
@@ -181,6 +192,7 @@ const schema = Yup.object().shape({
 });
 // Modal tạo/sửa
 function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
+  // xử lý submit form
   const handleSubmitForm = async (values) => {
     try {
       const payload = {
@@ -223,6 +235,7 @@ function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
           </Modal.Title>
         </Modal.Header>
 
+        {/* formik quản lý form nhập liệu và validate */}
         <Formik
           enableReinitialize
           validationSchema={schema}
