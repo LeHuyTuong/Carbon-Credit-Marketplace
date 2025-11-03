@@ -85,6 +85,7 @@ export const checkKYCAdmin = async () => {
     });
 
     console.log(" Full KYC check response:", data);
+    
 
     if (
       data?.responseStatus?.responseCode === "00000000" &&

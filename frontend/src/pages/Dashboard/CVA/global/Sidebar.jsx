@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme, CircularProgress } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/themeCVA";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -9,18 +9,18 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { checkKYCCVA } from "@/apiCVA/apiAuthor.js"; //  Import API check KYC
+import { checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 
+// Component menu item
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
   return (
     <MenuItem
-      active={selected === title}
-      style={{
-        color: colors.grey[100],
-      }}
-      onClick={() => setSelected(title)}
+      active={selected === to} //so sánh theo đường dẫn
+      style={{ color: colors.grey[100] }}
+      onClick={() => setSelected(to)}
       icon={icon}
     >
       <Typography>{title}</Typography>
@@ -32,22 +32,25 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 const Sidebar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selected, setSelected] = useState("Dashboard");
+  const location = useLocation();
 
-  //  Thêm state cho thông tin người dùng từ KYC
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selected, setSelected] = useState(location.pathname); // lưu trực tiếp đường dẫn
+
+  // Khi đổi route (ví dụ reload/hoặc chuyển trang) cập nhật selected
+  useEffect(() => {
+    setSelected(location.pathname);
+  }, [location.pathname]);
+
+  // KYC API
   const [kycInfo, setKycInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  //  Gọi API check KYC khi Sidebar load
   useEffect(() => {
     const fetchKYC = async () => {
       try {
         const data = await checkKYCCVA();
-        console.log(" KYC raw data from API:", data);
-        if (data) {
-          setKycInfo(data);
-        }
+        if (data) setKycInfo(data);
       } catch (err) {
         console.error("Failed to fetch KYC:", err);
       } finally {
@@ -56,6 +59,14 @@ const Sidebar = () => {
     };
     fetchKYC();
   }, []);
+
+  // Định nghĩa danh sách menu 1 chỗ
+  const menuItems = [
+    { title: "Dashboard", to: "/cva/dashboard", icon: <HomeOutlinedIcon /> },
+    { section: "Data" },
+    { title: "Manage Reports", to: "/cva/report_management", icon: <PeopleOutlinedIcon /> },
+    { title: "Manage Applications_Projects", to: "/cva/registration_project_management", icon: <ReceiptOutlinedIcon /> },
+  ];
 
   return (
     <Box
@@ -79,7 +90,7 @@ const Sidebar = () => {
     >
       <ProSidebar collapsed={isCollapsed}>
         <Menu iconShape="square">
-          {/* LOGO AND MENU ICON */}
+          {/* Header */}
           <MenuItem
             onClick={() => setIsCollapsed(!isCollapsed)}
             icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
@@ -89,12 +100,7 @@ const Sidebar = () => {
             }}
           >
             {!isCollapsed && (
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                ml="15px"
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center" ml="15px">
                 <Typography variant="h3" color={colors.grey[100]}>
                   Verification
                 </Typography>
@@ -105,6 +111,7 @@ const Sidebar = () => {
             )}
           </MenuItem>
 
+          {/* Avatar */}
           {!isCollapsed && (
             <Box mb="25px">
               <Box display="flex" justifyContent="center" alignItems="center">
@@ -136,44 +143,35 @@ const Sidebar = () => {
                     <Typography variant="h5" color={colors.greenAccent[500]}>
                       {kycInfo?.positionTitle || kycInfo?.organization || "CVA"}
                     </Typography>
-
                   </>
                 )}
               </Box>
             </Box>
           )}
 
-          {/* MENU ITEMS */}
+          {/* Menu items */}
           <Box paddingLeft={isCollapsed ? undefined : "10%"}>
-            <Item
-              title="Dashboard"
-              to="/cva/dashboard"
-              icon={<HomeOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-
-            <Typography
-              variant="h6"
-              color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
-            >
-              Data
-            </Typography>
-            <Item
-              title="Manage Reports"
-              to="/cva/report_management"
-              icon={<PeopleOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            <Item
-              title="Manage Applications_Projects"
-              to="/cva/registration_project_management"
-              icon={<ReceiptOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
+            {menuItems.map((item, idx) =>
+              item.section ? (
+                <Typography
+                  key={`section-${idx}`}
+                  variant="h6"
+                  color={colors.grey[300]}
+                  sx={{ m: "15px 0 5px 20px" }}
+                >
+                  {item.section}
+                </Typography>
+              ) : (
+                <Item
+                  key={item.to}
+                  title={item.title}
+                  to={item.to}
+                  icon={item.icon}
+                  selected={selected}
+                  setSelected={setSelected}
+                />
+              )
+            )}
           </Box>
         </Menu>
       </ProSidebar>

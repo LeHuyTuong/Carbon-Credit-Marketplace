@@ -58,7 +58,7 @@ const EVList = () => {
 
   // table columns
   const columns = [
-    { field: "id", headerName: "ID", width: 90 },
+    { field: "id", headerName: "", width: 90 },
     { field: "plateNumber", headerName: "Number Plate", flex: 1 },
     { field: "brand", headerName: "Brand", flex: 1 },
     { field: "model", headerName: "Model", flex: 1 },

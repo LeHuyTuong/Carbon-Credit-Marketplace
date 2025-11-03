@@ -19,9 +19,9 @@ const AdminProfile = ({ onClose }) => {
     email: "",
     phone: "",
     role: "Admin",
-    country: "Viet Nam",
-    city: "Ho Chi Minh",
-    birthday: "Not provided",
+    country: "",
+    city: "",
+    birthday: "",
     avatarUrl: null,
   });
 

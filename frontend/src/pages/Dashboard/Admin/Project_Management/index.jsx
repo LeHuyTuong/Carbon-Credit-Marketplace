@@ -56,31 +56,56 @@ const ListProjects = () => {
       field: "projectname",
       headerName: "Project Name",
       flex: 1.2,
-      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
+      renderCell: (params) => (
+        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+          {params.value}
+        </Box>
+      ),
+
     },
     {
       field: "shortdescription",
       headerName: "Description",
       flex: 1,
-      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
+      renderCell: (params) => (
+        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+          {params.value}
+        </Box>
+      ),
+
     },
     {
       field: "commitments",
       headerName: "Commitments",
       flex: 1.2,
-      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
+      renderCell: (params) => (
+        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+          {params.value}
+        </Box>
+      ),
+
     },
     {
       field: "measurementmethod",
       headerName: "Measurement Method",
       flex: 1.2,
-      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
+      renderCell: (params) => (
+        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+          {params.value}
+        </Box>
+      ),
+
     },
     {
       field: "totalexpectedcredits",
       headerName: "Technical Indicators",
       flex: 1.2,
-      renderCell: (params) => <Typography sx={textCellStyle}>{params.value}</Typography>,
+      renderCell: (params) => (
+        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+          {params.value}
+        </Box>
+      ),
+
     },
     {
       field: "status",

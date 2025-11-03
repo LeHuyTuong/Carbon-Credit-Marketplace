@@ -15,6 +15,7 @@ import {
   getProjectApplicationByIdForCVA,
 } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const ApplicationEdit = () => {
   const { id } = useParams();
@@ -22,13 +23,9 @@ const ApplicationEdit = () => {
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [finalReviewNote, setFinalReviewNote] = useState("");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
 
-  // 🔹 Fetch chi tiết application
+  //  Fetch chi tiết application
   useEffect(() => {
     const fetchApplication = async () => {
       try {
@@ -41,21 +38,17 @@ const ApplicationEdit = () => {
           throw new Error("Application not found");
         }
       } catch (error) {
-        console.error("❌ Error fetching application:", error);
-        setSnackbar({
-          open: true,
-          message: "Failed to fetch application.",
-          severity: "error",
-        });
+        console.error(" Error fetching application:", error);
+        showSnackbar("error", "Failed to fetch application.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchApplication();
-  }, [id]);
+  }, [id, showSnackbar]);
 
-  // 🔹 Submit quyết định Approve / Reject
+  //  Submit quyết định Approve / Reject
   const handleDecision = async (approved) => {
     try {
       const payload = {
@@ -70,11 +63,7 @@ const ApplicationEdit = () => {
       const msg = result?.responseStatus?.responseMessage;
 
       if (code === "00000000" || code === "200") {
-        setSnackbar({
-          open: true,
-          message: approved ? " Application approved!" : " Application rejected!",
-          severity: "success",
-        });
+        showSnackbar("success", approved ? "Application approved!" : "Application rejected!");
 
         //  Quay về đúng trang list (dưới nhánh /cva)
         setTimeout(() => {
@@ -85,15 +74,11 @@ const ApplicationEdit = () => {
       }
     } catch (error) {
       console.error(" Decision failed:", error);
-      setSnackbar({
-        open: true,
-        message: "Decision failed!",
-        severity: "error",
-      });
+      showSnackbar("error", error.message || "Decision failed!");
     }
   };
 
-  // 🔸 Loading
+  //  Loading
   if (loading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
@@ -101,7 +86,7 @@ const ApplicationEdit = () => {
       </Box>
     );
 
-  // 🔸 Không có dữ liệu
+  //  Không có dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -128,7 +113,7 @@ const ApplicationEdit = () => {
       />
 
       <Paper sx={{ p: 3, mt: 2 }}>
-        {/* 🔸 Thông tin chỉ đọc */}
+        {/* Thông tin chỉ đọc */}
         <TextField
           label="Project Title"
           value={application.projectTitle || ""}
@@ -162,7 +147,7 @@ const ApplicationEdit = () => {
           sx={{ mt: 2 }}
         />
 
-        {/* 🔹 Chỉ hiển thị nút duyệt khi đang UNDER_REVIEW */}
+        {/* Chỉ hiển thị nút duyệt khi đang UNDER_REVIEW */}
         {status === "UNDER_REVIEW" ? (
           <Box mt={3} display="flex" gap={2}>
             <Button variant="contained" color="success" onClick={() => handleDecision(true)}>
@@ -187,16 +172,7 @@ const ApplicationEdit = () => {
       </Paper>
 
       {/*  Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity={snackbar.severity} variant="filled">
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };

@@ -6,7 +6,9 @@ import useReveal from "../../../../hooks/useReveal";
 import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function RetireCredits() {
+  //hook chứa các hàm thao tác với wallet & credits
   const { fetchRetirableCredits, retireCredits, loading } = useWalletData();
+  //state quản lý danh sách credit, lựa chọn, toast message
   const [credits, setCredits] = useState([]);
   const [selectedList, setSelectedList] = useState([]); // [{id, quantity}]
   const [toast, setToast] = useState({ show: false, msg: "", type: "" });
@@ -15,6 +17,7 @@ export default function RetireCredits() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  // gọi API lấy danh sách credits đủ điều kiện retire
   const loadCredits = async () => {
     const data = await fetchRetirableCredits(
       statusFilter ? { status: statusFilter } : {}
@@ -22,21 +25,26 @@ export default function RetireCredits() {
     setCredits(data || []);
   };
 
+  //mỗi khi filter đổi, load lại danh sách
   useEffect(() => {
     loadCredits();
   }, [statusFilter]);
 
+  //chọn/ bỏ chọn credit theo batch
   const handleSelect = (batchCode, creditIds) => {
     setSelectedList((prev) => {
       const exists = prev.find((x) => x.batchCode === batchCode);
       if (exists) {
+        // nếu đã chọn, bỏ chọn
         return prev.filter((x) => x.batchCode !== batchCode);
       } else {
+        // nếu chưa có, thêm vào danh sách chọn
         return [...prev, { batchCode, creditIds, quantity: 1 }];
       }
     });
   };
 
+  //số lượng retire
   const handleQuantityChange = (batchCode, value) => {
     setSelectedList((prev) =>
       prev.map((x) =>
@@ -47,6 +55,7 @@ export default function RetireCredits() {
     );
   };
 
+  //gửi yêu cầu retire
   const handleRetire = async () => {
     try {
       if (!selectedList.length) return;
@@ -62,12 +71,15 @@ export default function RetireCredits() {
         return;
       }
 
+      //gọi API retire từng credit
       await retireCredits(selectedList);
+      //thông báo thành công
       setToast({
         show: true,
         msg: "Credits retired successfully!",
         type: "success",
       });
+      //reset lựa chọn và reload list
       setSelectedList([]);
       loadCredits();
     } catch (err) {
@@ -79,8 +91,10 @@ export default function RetireCredits() {
     }
   };
 
+  //kiểm tra credit đang chọn
   const isSelected = (batchCode) =>
     selectedList.some((x) => x.batchCode === batchCode);
+  // lấy quantity đã nhập theo batch
   const getQuantity = (batchCode) => {
     const found = selectedList.find((x) => x.batchCode === batchCode);
     return found?.quantity ?? "";
@@ -91,6 +105,7 @@ export default function RetireCredits() {
       ref={sectionRef}
       className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
     >
+      {/* header + nút xem lịch sử */}
       <div
         className="container"
         style={{ maxWidth: "1100px", marginTop: "4rem" }}
@@ -114,6 +129,7 @@ export default function RetireCredits() {
           </Button>
         </div>
 
+        {/* thẻ hiển thị bảng credits */}
         <Card
           className="shadow-lg border-0 p-3"
           style={{
@@ -122,11 +138,13 @@ export default function RetireCredits() {
             backdropFilter: "blur(10px)",
           }}
         >
+          {/* đang loading */}
           {loading ? (
             <div className="d-flex justify-content-center align-items-center py-5">
               <Spinner animation="border" />
             </div>
           ) : credits.length === 0 ? (
+            // không có credits nào khả dụng
             <div className="text-center py-5">
               <h5>No available credits to retire.</h5>
               <p className="text-muted mb-0">
@@ -134,6 +152,7 @@ export default function RetireCredits() {
               </p>
             </div>
           ) : (
+            // render bảng credits
             <>
               <Table hover responsive className="align-middle mb-3">
                 <thead className="table-light">
@@ -182,6 +201,7 @@ export default function RetireCredits() {
                 />
               </Table>
 
+              {/* nút retire */}
               <div className="text-end">
                 <Button
                   variant="success"
