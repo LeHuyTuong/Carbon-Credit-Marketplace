@@ -50,9 +50,6 @@ public class Project extends BaseEntity {
     @Column(length = 512)
     private String logo;
 
-    @Column(length = 512)
-    private String getEmissionFactorKgPerKwh;
-
 
     @Column(name = "emission_factor_kg_per_kwh", precision = 10, scale = 4)
     BigDecimal emissionFactorKgPerKwh;

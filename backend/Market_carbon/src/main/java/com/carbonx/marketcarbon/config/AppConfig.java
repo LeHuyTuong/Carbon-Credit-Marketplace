@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -45,7 +46,8 @@ public class AppConfig {
     };
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,  CustomOAuth2UserService customOAuth2UserService,
+                                            HttpCookieOAuth2AuthorizationRequestRepository cookieRepo) throws Exception {
 
         http
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -59,8 +61,17 @@ public class AppConfig {
                 .addFilterBefore(jwtTokenValidator, UsernamePasswordAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(Customizer.withDefaults())
 
+                 .oauth2Login(oauth -> oauth
+                .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
+                .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                .successHandler((req, res, auth) -> {
+                    var user = (OAuth2UserWithToken) auth.getPrincipal();
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
+                })
+        );
         return http.build();
     }
 
