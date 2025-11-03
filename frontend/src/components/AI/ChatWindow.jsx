@@ -11,23 +11,36 @@ export default function ChatWindow() {
   const [typing, setTyping] = useState(false);
   const chatRef = useRef(null);
 
-  const handleSend = (msg) => {
+  const handleSend = async (msg) => {
     if (!msg.trim()) return;
 
     setMessages((prev) => [...prev, { sender: "user", text: msg }]);
     setTyping(true);
 
-    // giả lập AI phản hồi
-    setTimeout(() => {
-      setTyping(false);
+    try {
+      const response = await fetch("/api/v1/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: msg }),
+      });
+
+      if (!response.ok) throw new Error("API request failed");
+
+      const data = await response.json();
+      const aiText = data.reply || "No response from AI.";
+
+      setMessages((prev) => [...prev, { sender: "ai", text: aiText }]);
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
-        {
-          sender: "ai",
-          text: `I've analyzed your input: “${msg}”. Estimated CO₂ deviation: +2.4%.`,
-        },
+        { sender: "ai", text: "Error: Unable to reach AI service." },
       ]);
-    }, 1200);
+      console.log(err);
+    } finally {
+      setTyping(false);
+    }
   };
 
   // auto scroll xuống cuối khi có tin mới

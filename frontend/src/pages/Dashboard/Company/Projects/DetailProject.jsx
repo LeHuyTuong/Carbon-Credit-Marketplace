@@ -17,16 +17,17 @@ import { FaArrowLeft } from "react-icons/fa";
 import useReveal from "../../../../hooks/useReveal";
 
 export default function ProjectDetailsPage() {
-  const { id } = useParams();
+  const { id } = useParams(); //lấy id project từ URL
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const nav = useNavigate();
+  const nav = useNavigate(); // ref cho hiệu ứng reveal
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  // gọi API lấy thông tin project theo id
   useEffect(() => {
-    if (!id) return;
+    if (!id) return; // nếu không có id thì bỏ qua
     const fetchProjectById = async () => {
       setLoading(true);
       try {
@@ -38,6 +39,7 @@ export default function ProjectDetailsPage() {
         const code =
           res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
 
+        // nếu không phải mã thành công thì ném lỗi
         if (code !== "SUCCESS" && code !== "00000000") {
           throw new Error(
             res?.responseStatus?.responseMessage || "Fetch failed"
@@ -56,6 +58,7 @@ export default function ProjectDetailsPage() {
     fetchProjectById();
   }, [id]);
 
+  // khi đang tải dữ liệu
   if (loading)
     return (
       <div
@@ -66,6 +69,7 @@ export default function ProjectDetailsPage() {
       </div>
     );
 
+  // khi có lỗi xảy ra
   if (error)
     return (
       <Container className="mt-5">
@@ -73,6 +77,7 @@ export default function ProjectDetailsPage() {
       </Container>
     );
 
+  // khi không tìm thấy project
   if (!project)
     return (
       <Container className="mt-5">
@@ -96,6 +101,7 @@ export default function ProjectDetailsPage() {
 
   return (
     <div>
+      {/* nút quay lại trang Home */}
       <Button
         variant="outline-info"
         size="sm"
@@ -110,6 +116,8 @@ export default function ProjectDetailsPage() {
       >
         <FaArrowLeft /> Back to Home
       </Button>
+
+      {/* hiển thị nội dung chính */}
       <div
         className="py-5"
         style={{
@@ -121,9 +129,10 @@ export default function ProjectDetailsPage() {
 
         <Container>
           <Row className="g-4 align-items-start">
-            {/* LEFT: Project Info */}
+            {/* Cột bên trái: thông tin chi tiết project */}
             <Col lg={8}>
               <Card className="border-0 shadow-lg rounded-4 overflow-hidden mb-4">
+                {/* ảnh banner của project */}
                 {project.bannerUrl ? (
                   <Card.Img
                     variant="top"
@@ -132,6 +141,7 @@ export default function ProjectDetailsPage() {
                     style={{ height: "200px", objectFit: "cover" }}
                   />
                 ) : (
+                  // nếu không có banner thì hiển thị màu nền mặc định
                   <div
                     style={{
                       background:
@@ -142,6 +152,7 @@ export default function ProjectDetailsPage() {
                 )}
 
                 <Card.Body className="p-4">
+                  {/* phần logo, tiêu đề và trạng thái */}
                   <div className="d-flex align-items-center mb-3">
                     {project.logo && (
                       <Image
@@ -163,11 +174,12 @@ export default function ProjectDetailsPage() {
                     </div>
                   </div>
 
+                  {/* mô tả project */}
                   <p className="text-muted">{project.description}</p>
                 </Card.Body>
               </Card>
 
-              {/* Info Cards */}
+              {/* các thẻ hiển thị thông tin chi tiết */}
               <Row xs={1} md={2} className="g-3">
                 <Col>
                   <Card className="shadow-sm border-0 rounded-4 h-100">
@@ -208,6 +220,7 @@ export default function ProjectDetailsPage() {
                   </Card>
                 </Col>
 
+                {/* hiển thị link tài liệu pháp lý nếu có */}
                 {project.legalDocsFile && (
                   <Col>
                     <Card className="shadow-sm border-0 rounded-4 h-100">
@@ -227,31 +240,9 @@ export default function ProjectDetailsPage() {
                   </Col>
                 )}
               </Row>
-
-              <Card className="shadow-sm border-0 rounded-4 mt-4">
-                <Card.Header className="fw-semibold bg-light border-0">
-                  Reviewer Info
-                </Card.Header>
-                <Card.Body>
-                  <p>
-                    <strong>Reviewer:</strong> {project.reviewer || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Review Note:</strong> {project.reviewNote || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Final Reviewer:</strong>{" "}
-                    {project.finalReviewer || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Created At:</strong>{" "}
-                    {new Date(project.createdAt).toLocaleString()}
-                  </p>
-                </Card.Body>
-              </Card>
             </Col>
 
-            {/* RIGHT: Register Form */}
+            {/* Cột bên phải: form đăng ký project */}
             <Col lg={4}>
               <div
                 className="p-3 rounded-4 shadow-lg border-0"
