@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import com.carbonx.marketcarbon.common.USER_ROLE;
 import com.carbonx.marketcarbon.model.Role;
 import com.carbonx.marketcarbon.model.User;
 import io.jsonwebtoken.Claims;
@@ -54,6 +55,16 @@ public class JwtProvider {
                 .setExpiration(new Date(System.currentTimeMillis() + expireMs))
                 .claim("email", user.getEmail())
                 .claim("purpose", "RESET_PASSWORD") // giúp backend phân biệt loại token
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateToken(String email, USER_ROLE role) {
+        return Jwts.builder()
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 ngày
+                .claim("email", email)
+                .claim("roles", java.util.List.of(role.name())) // EV_OWNER từ enum
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
