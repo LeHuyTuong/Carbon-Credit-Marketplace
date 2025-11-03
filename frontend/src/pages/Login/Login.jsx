@@ -184,7 +184,14 @@ export default function Login() {
             </Formik>
 
             <div className="text-center text-muted my-3">— or —</div>
-            <button type="button" className="btn btn-outline-secondary w-100">
+            <button
+              type="button"
+              className="btn btn-outline-secondary w-100"
+              onClick={() => {
+                window.location.href =
+                  "http://localhost:8082/api/v1/auth/oauth2/authorize/google";
+              }}
+            >
               Login with Google
             </button>
 

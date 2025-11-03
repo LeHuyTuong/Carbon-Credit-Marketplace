@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Row, Col } from "react-bootstrap";
 
 export default function CreditDetailCard({ credit }) {
+  // nếu không có dữ liệu credit → không render gì
   if (!credit) return null;
 
   return (

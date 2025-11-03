@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import "./aipanel.css";
 
 export default function AIInsightPanel() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false); // mở/thu gọn panel
   const [messages, setMessages] = useState([
     {
       from: "ai",
@@ -13,6 +13,7 @@ export default function AIInsightPanel() {
   const [typing, setTyping] = useState(false);
   const chatRef = useRef(null);
 
+  // gửi tin nhắn và phản hồi mô phỏng từ AI
   const handleSend = () => {
     if (!input.trim()) return;
 
@@ -21,7 +22,6 @@ export default function AIInsightPanel() {
     setInput("");
     setTyping(true);
 
-    // mô phỏng phản hồi AI
     setTimeout(() => {
       const aiResponse = {
         from: "ai",
@@ -32,7 +32,7 @@ export default function AIInsightPanel() {
     }, 1200);
   };
 
-  // tự động scroll xuống cuối khi có tin nhắn mới
+  // cuộn xuống khi có tin nhắn mới
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -45,6 +45,7 @@ export default function AIInsightPanel() {
         expanded ? "expanded" : "collapsed"
       }`}
     >
+      {/* header panel */}
       <div className="panel-header" onClick={() => setExpanded(!expanded)}>
         {expanded ? (
           <>
@@ -61,28 +62,48 @@ export default function AIInsightPanel() {
         )}
       </div>
 
+      {/* phần nội dung */}
       {expanded && (
         <div className="ai-body">
           <h6>Quick Analysis</h6>
 
+          {/* cửa sổ chat */}
           <div className="chat-window" ref={chatRef}>
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`chat-bubble ${msg.from === "ai" ? "ai" : "user"}`}
+                className={`chat-row ${msg.from === "ai" ? "ai" : "user"}`}
               >
-                {msg.text}
+                {/* avatar AI hoặc user */}
+                <div className="chat-avatar">
+                  {msg.from === "ai" ? (
+                    <i className="bi bi-robot fs-5 text-success"></i>
+                  ) : (
+                    <i className="bi bi-person-circle fs-5 text-primary"></i>
+                  )}
+                </div>
+
+                {/* bong bóng chat */}
+                <div className={`chat-bubble ${msg.from}`}>{msg.text}</div>
               </div>
             ))}
+
+            {/* hiệu ứng AI đang gõ */}
             {typing && (
-              <div className="chat-bubble ai typing">
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
+              <div className="chat-row ai">
+                <div className="chat-avatar">
+                  <i className="bi bi-robot fs-5 text-success"></i>
+                </div>
+                <div className="chat-bubble ai typing">
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                </div>
               </div>
             )}
           </div>
 
+          {/* ô nhập chat */}
           <div className="chat-section">
             <input
               className="chat-input"

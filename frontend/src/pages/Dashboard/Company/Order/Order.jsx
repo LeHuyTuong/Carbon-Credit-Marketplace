@@ -24,7 +24,7 @@ export default function Order() {
   const { user } = useAuth();
   const credit = state?.credit;
   const [showConfirm, setShowConfirm] = useState(false);
-  const [walletBalance, setWalletBalance] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(null); // số dư ví hiện tại
   const [loadingBalance, setLoadingBalance] = useState(false);
   const sectionRef = useRef(null);
   useReveal(sectionRef);
@@ -54,7 +54,7 @@ export default function Order() {
         setWalletBalance(balance);
       } catch (err) {
         console.error("Failed to load wallet:", err);
-        setWalletBalance(0);
+        setWalletBalance(0); // nếu lỗi → gán mặc định 0
       } finally {
         setLoadingBalance(false);
       }
@@ -63,20 +63,23 @@ export default function Order() {
     fetchWalletBalance();
   }, []);
 
-  const pricePerTonne = credit.price;
-  const availableTonnes = credit.quantity;
-  const [formData, setFormData] = useState({ quantity: "" });
+  const pricePerTonne = credit.price; // giá mỗi tấn CO2
+  const availableTonnes = credit.quantity; // số lượng khả dụng
+  const [formData, setFormData] = useState({ quantity: "" }); // số lượng người dùng nhập
 
+  // tính tổng tiền theo số lượng
   const totalPrice =
     formData.quantity && formData.quantity > 0
       ? (formData.quantity * pricePerTonne).toFixed(2)
       : "0.00";
 
+  // cập nhật giá trị nhập form
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // khi nhấn “Purchase” → mở modal xác nhận
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowConfirm(true);
@@ -124,8 +127,10 @@ export default function Order() {
 
       //navigate về purchase history
       setTimeout(() => {
-        nav("/purchase-history", { state: { refreshCredits: true } });
-      }, 2000);
+        nav("/purchase-history", {
+          state: { refreshCredits: true, from: "order" },
+        });
+      }, 1500);
     } catch (err) {
       console.error("Order create error:", err);
       toast.error(err.message || "Unable to create order.");
@@ -157,7 +162,7 @@ export default function Order() {
         <CreditDetailCard credit={credit} />
 
         <Row>
-          {/* LEFT FORM */}
+          {/* CỘT TRÁI - FORM MUA CREDIT */}
           <Col lg={8}>
             <Card
               className="shadow-sm border-0 mb-4 overflow-hidden"
@@ -171,6 +176,7 @@ export default function Order() {
                   Finalize your purchase for <strong>{credit.title}</strong>.
                 </p>
 
+                {/* form nhập số lượng mua */}
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">
@@ -237,7 +243,7 @@ export default function Order() {
             </Accordion>
           </Col>
 
-          {/* RIGHT SUMMARY */}
+          {/* CỘT PHẢI - TÓM TẮT GIAO DỊCH */}
           <Col lg={4}>
             <ProjectSummary
               totalPrice={totalPrice}
@@ -277,6 +283,7 @@ export default function Order() {
   );
 }
 
+// hiển thị tóm tắt giao dịch
 function ProjectSummary({
   totalPrice,
   quantity,
@@ -293,6 +300,7 @@ function ProjectSummary({
       >
         <Card.Body>
           <Card.Title>{title || "Carbon Credit"}</Card.Title>
+          {/* hiển thị số lượng và giá */}
           <Row className="mt-3">
             <Col xs={6} className="text-muted">
               Quantity
@@ -310,6 +318,8 @@ function ProjectSummary({
             </Col>
           </Row>
           <hr />
+
+          {/* tổng tiền */}
           <Row>
             <Col xs={6} className="text-muted">
               Total
@@ -319,6 +329,8 @@ function ProjectSummary({
             </Col>
           </Row>
           <hr />
+
+          {/* hiển thị số dư ví */}
           <Row>
             <Col xs={6} className="text-muted">
               Your Wallet Balance

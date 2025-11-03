@@ -51,6 +51,7 @@ import CreditBatchDetail from "../pages/Wallet/components/CreditBatchDetail.jsx"
 import RetireCredits from "../pages/Dashboard/Company/RetireCredits/RetireCredits.jsx";
 import RetiredHistory from "../pages/Dashboard/Company/RetireCredits/RetiredHistory.jsx";
 import AIChatWidget from "../components/AI/AIChatWidget.jsx";
+import OAuth2Success from "../pages/Login/OAuth2Success.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/upload-report" element={<ChooseProjectToUpload />} />
           <Route path="/upload-report/:projectId" element={<UploadReport />} />
           <Route path="/retire" element={<RetireCredits />} />
+          <Route path="/oauth2/success" element={<OAuth2Success />} />
 
           <Route
             path="/kyc"
