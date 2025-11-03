@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.controller;
 
+import com.carbonx.marketcarbon.config.OAuth2UserWithToken;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
 import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
@@ -12,7 +13,11 @@ import com.carbonx.marketcarbon.utils.ResponseUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
@@ -41,6 +46,16 @@ public class AuthController {
     public ResponseEntity<CommonResponse<MessageResponse>> logout(
             @RequestHeader(name = "Authorization", required = false) String bearer) {
         return ResponseEntity.ok(ResponseUtil.success("trace-logout", authService.logout(bearer)));
+    }
+
+    @GetMapping("/oauth2/success")
+    public Map<String, Object> oauth2Success(@AuthenticationPrincipal OAuth2UserWithToken user) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Login success");
+        response.put("token", user.getToken());
+        response.put("email", user.getAttributes().get("email"));
+        response.put("role", "EV_OWNER");
+        return response;
     }
 
 }

@@ -9,6 +9,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 
@@ -37,6 +38,9 @@ import java.time.LocalDate;
 
         @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
         private MultipartFile  legalDocsFile;
+
+        @NotBlank(message = "emissionFactorKgPerKwh must not be blank")
+        private BigDecimal emissionFactorKgPerKwh;
 
          private ProjectStatus status;
 
