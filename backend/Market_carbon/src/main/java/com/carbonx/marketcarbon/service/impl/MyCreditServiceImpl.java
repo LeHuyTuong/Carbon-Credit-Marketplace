@@ -321,12 +321,12 @@ public class MyCreditServiceImpl implements MyCreditService {
         // B6 cập nhật lại credit
         credit.setCarbonCredit(remaining);
         credit.setAmount(remaining.add(listed));
-        credit.setStatus(CreditStatus.RETIRED);
 
-        // nếu hết thì set lại
         if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             credit.setStatus(CreditStatus.RETIRED);
             credit.setListedAmount(BigDecimal.ZERO);
+        } else {
+            credit.setStatus(CreditStatus.AVAILABLE);
         }
 
         CarbonCredit saved = creditRepo.save(credit);

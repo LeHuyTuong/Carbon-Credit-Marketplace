@@ -43,7 +43,7 @@ public enum ErrorCode {
     KYC_EXISTED(409, "KYC already exists.", HttpStatus.CONFLICT),
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
-
+    PAYMENT_DETAILS_NOT_FOUND(404, "Payment details not found.", HttpStatus.NOT_FOUND),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_PROCESSING(202, "Application is being processed.", HttpStatus.PROCESSING),
     APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),

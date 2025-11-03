@@ -105,8 +105,17 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     @Override
     public void shareCompanyProfit(ProfitSharingRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
         String email = authentication.getName();
+        if (email == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
         User companyUser = userRepository.findByEmail(email);
+        if (companyUser == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
         // 1. Tạo và lưu sự kiện chia lợi nhuận
