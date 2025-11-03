@@ -330,6 +330,94 @@ const retireCredits = async (retireList = []) => {
   }
 };
 
+  // === FETCH APPROVED PROJECTS (for profit sharing) ===
+const fetchApprovedProjects = async () => {
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/project-applications/my", {
+      method: "GET",
+    });
+
+    const data = res?.response || [];
+    const approved = data.filter((p) => p.status === "ADMIN_APPROVED");
+
+    return approved.map((p) => ({
+      id: p.id,
+      projectId: p.projectId,
+      projectTitle: p.projectTitle,
+      status: p.status,
+      submittedAt: p.submittedAt,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch approved projects:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // === FETCH APPROVED REPORTS (for profit sharing) ===
+const fetchApprovedReports = async (projectId) => {
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/reports/my-reports", { method: "GET" });
+    const data = res?.response || [];
+
+    // lọc theo project + status đã duyệt
+    const approved = data.filter(
+      (r) =>
+        (!projectId || r.projectId === Number(projectId)) &&
+        r.status === "CREDIT_ISSUED"
+    );
+
+    return approved.map((r) => ({
+      id: r.id,
+      projectId: r.projectId,
+      projectName: r.projectName,
+      fileName: r.uploadOriginalFilename,
+      submittedAt: r.submittedAt,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch approved reports:", err);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+// === DISTRIBUTE PROFIT SHARING (with report selection) ===
+const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, description }) => {
+  if (!projectId || !emissionReportId || !totalMoneyToDistribute)
+    throw new Error("Missing required fields for profit sharing.");
+
+  try {
+    setLoading(true);
+    const res = await apiFetch("/api/v1/profit-sharing/share", {
+      method: "POST",
+      body: {
+        data: {
+          projectId,
+          emissionReportId,
+          totalMoneyToDistribute,
+          description: description || "Profit sharing based on emission report",
+        },
+      },
+    });
+
+    return res?.responseStatus || {
+      responseCode: "200",
+      responseMessage: "Profit shared successfully",
+    };
+  } catch (err) {
+    console.error("Failed to share profit:", err);
+    throw new Error(err.message || "Profit sharing failed.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   return {
     wallet,
     transactions,
@@ -352,5 +440,8 @@ const retireCredits = async (retireList = []) => {
     fetchRetirableCredits,
     retireCredits,
     fetchRetiredCredits,
+    fetchApprovedProjects,
+    fetchApprovedReports,
+    shareProfit,
   };
 }
