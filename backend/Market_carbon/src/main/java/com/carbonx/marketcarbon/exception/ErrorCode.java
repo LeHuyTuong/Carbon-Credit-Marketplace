@@ -121,6 +121,10 @@ public enum ErrorCode {
     CREDIT_ALREADY_RETIRED(400, "Carbon credit has already been retired.", HttpStatus.BAD_REQUEST),
     CREDIT_HAS_ACTIVE_LISTING(400, "Carbon credit has quantity listed on marketplace.", HttpStatus.BAD_REQUEST),
     CREDIT_EXPIRED(400, "Carbon credit has expired and cannot be retired.", HttpStatus.BAD_REQUEST),
+    WALLET_INSUFFICIENT_FUNDS(400, "Not enough moeny to share profit",  HttpStatus.BAD_REQUEST),
+    EMISSION_REPORT_NOT_APPROVED(400, "Emission Report not approved", HttpStatus.BAD_REQUEST),
+    MONEY_MUST_POSITIVE(400, "Money must be positive", HttpStatus.BAD_REQUEST),
+    WALLET_NOT_FOUND(400, "Wallet not found.", HttpStatus.NOT_FOUND),
     ;
 
 
