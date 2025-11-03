@@ -46,6 +46,11 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserRepository userRepository;
     private final SseService sseService;
 
+    @Value("${payment_success_url}")
+    private String successUrl;
+
+    @Value("${payment_cancel_url}")
+    private String cancelUrl;
 
     @Value("${stripe.api.key}")
     private String stripeKey;
@@ -146,8 +151,8 @@ public class PaymentServiceImpl implements PaymentService {
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:5173/wallet?order_id=" + orderId)
-                .setCancelUrl("http://localhost:5173/payment/cancal")
+                .setSuccessUrl(successUrl + orderId)
+                .setCancelUrl(cancelUrl)
                 .addLineItem(
                         SessionCreateParams.LineItem.builder()
                                 .setQuantity(1L)
@@ -178,7 +183,7 @@ public class PaymentServiceImpl implements PaymentService {
         // Create amount details
         Amount paymentAmount = new Amount();
         paymentAmount.setCurrency("USD"); // Change to the appropriate currency
-        paymentAmount.setTotal(String.format("%.2f", paymentOrder.getAmount() / 100.0));
+        paymentAmount.setTotal(String.format("%.2f", paymentOrder.getAmount() * 1.0));
 
         // Create transaction details
         Transaction transaction = new Transaction();
@@ -195,8 +200,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Create redirect URLs
         RedirectUrls redirectUrls = new RedirectUrls();
-        redirectUrls.setCancelUrl("http://localhost:5173/wallet/cancel");
-        redirectUrls.setReturnUrl("http://localhost:5173/wallet/" + orderId);
+        redirectUrls.setCancelUrl(cancelUrl);
+        redirectUrls.setReturnUrl(successUrl + orderId);
 
         // Create payment details
         com.paypal.api.payments.Payment payment = new com.paypal.api.payments.Payment();
