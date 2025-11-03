@@ -362,12 +362,23 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             BigDecimal creditBalance = carbonCredit.getCarbonCredit() != null ? carbonCredit.getCarbonCredit() : BigDecimal.ZERO;
             BigDecimal listedAmount = carbonCredit.getListedAmount() != null ? carbonCredit.getListedAmount() : BigDecimal.ZERO;
 
-            carbonCredit.setCarbonCredit(creditBalance.add(remainingQuantity));
+            BigDecimal updatedAvailable = creditBalance.add(remainingQuantity);
+            carbonCredit.setCarbonCredit(updatedAvailable);
+
             BigDecimal updatedListed = listedAmount.subtract(remainingQuantity);
             if (updatedListed.compareTo(BigDecimal.ZERO) < 0) {
                 updatedListed = BigDecimal.ZERO;
             }
             carbonCredit.setListedAmount(updatedListed);
+            carbonCredit.setAmount(updatedAvailable.add(updatedListed));
+
+            if (updatedListed.compareTo(BigDecimal.ZERO) > 0) {
+                carbonCredit.setStatus(CreditStatus.LISTED);
+            } else if (updatedAvailable.compareTo(BigDecimal.ZERO) > 0) {
+                carbonCredit.setStatus(CreditStatus.AVAILABLE);
+            } else {
+                carbonCredit.setStatus(CreditStatus.RETIRED);
+            }
             carbonCreditRepository.save(carbonCredit);
         }
 

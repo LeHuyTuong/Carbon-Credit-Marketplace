@@ -63,8 +63,10 @@ public class AppConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(Customizer.withDefaults())
 
-                 .oauth2Login(oauth -> oauth
-                .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
                 .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
                 .successHandler((req, res, auth) -> {
                     var user = (OAuth2UserWithToken) auth.getPrincipal();
