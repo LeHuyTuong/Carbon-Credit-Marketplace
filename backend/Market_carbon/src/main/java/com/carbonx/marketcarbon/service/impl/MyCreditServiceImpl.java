@@ -303,6 +303,7 @@ public class MyCreditServiceImpl implements MyCreditService {
 
         credit.setCarbonCredit(remaining);
         credit.setAmount(remaining.add(listed));
+        credit.setStatus(CreditStatus.RETIRED);
 
         if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             credit.setStatus(CreditStatus.RETIRED);
