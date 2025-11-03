@@ -5,8 +5,6 @@ import {
   Button,
   Grid,
   Paper,
-  Snackbar,
-  Alert,
   TextField,
   CircularProgress,
   Dialog,
@@ -31,19 +29,19 @@ import {
 } from "@/apiCVA/reportCVA.js";
 import FormulaImage from "@/assets/z7155603890092_2ed7af1b23662f3986de0fc7dce736af.jpg";
 import { analyzeReportByAI } from "@/apiCVA/aiCVA.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
+
 
 const ViewReport = ({ report: initialReport }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
-
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
   const [loading, setLoading] = useState(!initialReport);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
 
   // Details dialog + pagination state
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -86,15 +84,11 @@ const ViewReport = ({ report: initialReport }) => {
             }
           } else {
             console.error("Unexpected getReportById response:", data);
-            setSnackbarSeverity("error");
-            setSnackbarMsg("Failed to load report data!");
-            setOpenSnackbar(true);
+            showSnackbar("error", "Failed to load report data!");
           }
         } catch (err) {
           console.error("Failed to fetch report:", err);
-          setSnackbarSeverity("error");
-          setSnackbarMsg(err.message || "Failed to load report data!");
-          setOpenSnackbar(true);
+          showSnackbar("error", err.message || "Failed to load report data!");
         } finally {
           setLoading(false);
         }
@@ -113,15 +107,12 @@ const ViewReport = ({ report: initialReport }) => {
     try {
       await verifyReportCVA(report.id, { approved, comment: approved ? "" : note });
       setReport((prev) => ({ ...prev, status: approved ? "CVA_APPROVED" : "REJECTED" }));
-      setSnackbarSeverity("success");
-      setSnackbarMsg("Status updated successfully!");
-      setActionTaken(true);
+      showSnackbar("success", "Status updated successfully!");
+
     } catch (err) {
       console.error("Update failed:", err);
-      setSnackbarSeverity("error");
-      setSnackbarMsg(err.message || "Failed to update status!");
+      showSnackbar("error", err.message || "Failed to update status!");
     } finally {
-      setOpenSnackbar(true);
       setLoading(false);
     }
   };
@@ -159,9 +150,7 @@ const ViewReport = ({ report: initialReport }) => {
         console.error("Load details failed:", e);
         setDetails([]);
         setDetailsTotal(0);
-        setSnackbarSeverity("error");
-        setSnackbarMsg(e.message || "Failed to load details!");
-        setOpenSnackbar(true);
+        showSnackbar("error", e.message || "Failed to load details!");
       } finally {
         setDetailsLoading(false);
       }
@@ -186,28 +175,23 @@ const ViewReport = ({ report: initialReport }) => {
 
   // ===== AI analyze =====
   const handleAnalyzeByAI = async () => {
-    if (!report?.id) return;
-    setAiLoading(true);
-    setSnackbarMsg("AI is analyzing this report...");
-    setSnackbarSeverity("info");
-    setOpenSnackbar(true);
+  if (!report?.id) return;
+  setAiLoading(true);
+  showSnackbar("info", "Analyzing report with AI... please wait");
 
-    try {
-      const result = await analyzeReportByAI(report.id);
-      setAiResult(result);
-      setSnackbarMsg("AI analysis completed!");
-      setSnackbarSeverity("success");
-    } catch (err) {
-      console.error("AI analysis failed:", err);
-      setSnackbarMsg(err.message || "AI analysis failed!");
-      setSnackbarSeverity("error");
-    } finally {
-      setOpenSnackbar(true);
-      setAiLoading(false);
-    }
-  };
+  try {
+    const result = await analyzeReportByAI(report.id);
+    setAiResult(result);
+    showSnackbar("success", "AI analysis completed!");
+  } catch (err) {
+    console.error("AI analysis failed:", err);
+    showSnackbar("error", err.message || "AI analysis failed!");
+  } finally {
+    setAiLoading(false);
+  }
+};
 
-  const handleCloseSnackbar = () => setOpenSnackbar(false);
+
 
   if (loading) {
     return (
@@ -365,10 +349,10 @@ const ViewReport = ({ report: initialReport }) => {
               {!actionTaken && (
                 <>
                   <Button variant="contained" color="success" onClick={() => handleUpdate(true)}>
-                    Approve
+                    Approved
                   </Button>
                   <Button variant="contained" color="error" onClick={() => handleUpdate(false)}>
-                    Reject
+                    Rejected
                   </Button>
                 </>
               )}
@@ -661,16 +645,8 @@ const ViewReport = ({ report: initialReport }) => {
       </Dialog>
 
       {/* Snackbar */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: "100%" }}>
-          {snackbarMsg}
-        </Alert>
-      </Snackbar>
+    {SnackbarComponent}
+
     </Box>
   );
 };

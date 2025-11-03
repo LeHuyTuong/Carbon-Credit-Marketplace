@@ -26,24 +26,46 @@ export default function Manage() {
   const [vehicles, setVehicles] = useState([]);
   const [show, setShow] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // chứa vehicle muốn xóa
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  //state hiển thị thông báo (Toast)
   const [toast, setToast] = useState({
     show: false,
     message: "",
     variant: "success",
   });
+  //ref để áp dụng hiệu ứng xuất hiện
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
-  //lấy danh sách xe
+  //lấy danh sách xe và gắn tên công ty tương ứng
   const fetchVehicles = async () => {
     try {
-      const res = await getVehicles();
-      setVehicles(res.response || []);
+      //lấy song song danh sách xe và danh sách công ty được duyệt
+      const [vehicleRes, companies] = await Promise.all([
+        getVehicles(),
+        getApprovedCompanies(),
+      ]);
+
+      const vehiclesData = vehicleRes.response || [];
+
+      //map companyId của mỗi xe sang tên công ty
+      const mappedVehicles = vehiclesData.map((v) => {
+        const company = companies.find((c) => c.id === v.companyId);
+        return {
+          ...v,
+          companyName: company ? company.name : "Unknown",
+        };
+      });
+
+      setVehicles(mappedVehicles);
     } catch (err) {
-      console.error("Lỗi khi tải danh sách xe:", err.message);
+      console.error("Error loading list vehicles:", err.message);
     }
   };
 
+  //lấy danh sách xe khi component được render lần đầu
   useEffect(() => {
     fetchVehicles();
   }, []);
@@ -60,21 +82,31 @@ export default function Manage() {
     setShow(true);
   };
 
-  //xóa xe
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure to delete this vehicle?")) return;
+  //xác nhận xóa xe trong modal
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteVehicle(id);
+      await deleteVehicle(deleteTarget.id);
       await fetchVehicles();
       showToast("Vehicle deleted successfully");
     } catch (err) {
       showToast("Cannot delete vehicle: " + err.message, "danger");
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
     }
+  };
+
+  //mở modal xác nhận xóa
+  const handleDelete = (vehicle) => {
+    setDeleteTarget(vehicle);
+    setShowDeleteModal(true);
   };
 
   //submit (thêm hoặc sửa)
   const handleSubmit = async (values) => {
     try {
+      //chuẩn hóa dữ liệu trước khi gửi lên API
       const payload = {
         plateNumber: values.plate,
         model: values.model,
@@ -82,18 +114,20 @@ export default function Manage() {
         companyId: Number(values.company), //đổi từ string sang số
       };
 
+      //nếu có editData -> cập nhật, ngược lại -> tạo mới
       if (editData) {
         await updateVehicle(editData.id, payload);
       } else {
         await createVehicle(payload);
       }
 
+      //cập nhật lại danh sách xe
       await fetchVehicles();
       showToast("Vehicle saved successfully");
       setShow(false);
       setEditData(null);
     } catch (err) {
-      // Handle BE logical errors or HTTP errors
+      //xử lý lỗi
       if (
         err.code === "409" ||
         err.message.includes("Vehicle plate already exists")
@@ -109,11 +143,13 @@ export default function Manage() {
     }
   };
 
+  //dóng modal thêm/sửa
   const handleClose = () => {
     setShow(false);
     setEditData(null);
   };
 
+  //hiển thị thông báo
   const showToast = (message, variant = "success") => {
     setToast({ show: true, message, variant });
   };
@@ -135,6 +171,7 @@ export default function Manage() {
         data={editData}
       />
 
+      {/*bảng hiển thị danh sách xe */}
       <div className="table-wrapper">
         <table className="vehicle-table">
           <thead>
@@ -143,7 +180,7 @@ export default function Manage() {
               <th>License Plate</th>
               <th>Brand</th>
               <th>Model</th>
-              <th>Company ID</th>
+              <th>Company</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -157,7 +194,7 @@ export default function Manage() {
                   <td>{row.plateNumber}</td>
                   <td>{row.brand}</td>
                   <td>{row.model}</td>
-                  <td>{row.companyId}</td>
+                  <td>{row.companyName}</td>
                   <td className="action-buttons">
                     <button
                       className="action-btn edit"
@@ -167,7 +204,7 @@ export default function Manage() {
                     </button>
                     <button
                       className="action-btn delete"
-                      onClick={() => handleDelete(row.id)}
+                      onClick={() => handleDelete(row)}
                     >
                       <i className="bi bi-trash"></i>
                     </button>
@@ -185,6 +222,27 @@ export default function Manage() {
           </tbody>
         </table>
       </div>
+
+      {/*modal xác nhận xóa xe */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete vehicle{" "}
+          <strong>{deleteTarget?.plateNumber}</strong>?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* thông báo popup */}
       <ToastContainer position="top-center" className="p-3">
         <Toast
           onClose={() => setToast({ ...toast, show: false })}
@@ -204,6 +262,7 @@ export default function Manage() {
 function VehicleModal({ show, onHide, data, onSubmit }) {
   const [companies, setCompanies] = useState([]);
 
+  //giá trị khởi tạo cho form
   const initialValues = {
     plate: data?.plateNumber ?? "",
     brand: data?.brand ?? "",
@@ -211,6 +270,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     company: data?.companyId ?? "",
   };
 
+  //lấy danh sách công ty được duyệt khi mở modal
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -231,6 +291,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
         </Modal.Title>
       </Modal.Header>
 
+      {/*formik quản lý form và validation */}
       <Formik
         enableReinitialize
         validationSchema={schema}
@@ -262,6 +323,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                 </Form.Control.Feedback>
               </Form.Group>
 
+              {/*trường nhập hãng xe */}
               <Form.Group className="mb-3" controlId="formBrand">
                 <Form.Label>Brand</Form.Label>
                 <Form.Control
@@ -277,6 +339,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                 </Form.Control.Feedback>
               </Form.Group>
 
+              {/* trường nhập model xe */}
               <Form.Group className="mb-3" controlId="formModel">
                 <Form.Label>Model</Form.Label>
                 <Form.Control
@@ -292,8 +355,9 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                 </Form.Control.Feedback>
               </Form.Group>
 
+              {/* trường chọn công ty */}
               <Form.Group className="mb-3" controlId="formCompany">
-                <Form.Label>Company ID</Form.Label>
+                <Form.Label>Company</Form.Label>
                 <Form.Select
                   name="company"
                   value={values.company}
@@ -320,6 +384,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
               </Form.Group>
             </Modal.Body>
 
+            {/* nút hành động */}
             <Modal.Footer>
               <Button variant="secondary" onClick={onHide}>
                 Close

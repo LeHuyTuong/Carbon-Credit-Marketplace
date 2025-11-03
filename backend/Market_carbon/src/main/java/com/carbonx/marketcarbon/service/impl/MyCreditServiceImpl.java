@@ -257,10 +257,12 @@ public class MyCreditServiceImpl implements MyCreditService {
     @Transactional
     @PreAuthorize("hasRole('COMPANY')")
     public CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity) {
+        //B1 tìm công ty hiện tại
         Long companyId = currentCompanyId();
         log.info("[DEBUG] retireCredit() - creditId={}, companyId={}, quantity={}",
                 creditId, companyId, quantity);
 
+        //B2 check id credit hợp lệ không
         if (creditId == null || creditId.longValue() <= 0) {
             throw new AppException(ErrorCode.INVALID_INPUT);
         }
@@ -268,29 +270,44 @@ public class MyCreditServiceImpl implements MyCreditService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
 
+        //Var cho phép trình biên dịch tự suy luận kiểu dữ liệu dựa trên giá trị được gán. java 10 >. đoán
+        //Compile-time (chỉ trong lúc biên dịch)
+        // optional Runtime (trong khi chương trình chạy)
+
+        //B3 Tìm credit của công ty hiện tại
         var creditOpt = creditRepo.findByIdAndCompanyIdWithLock(creditId, companyId);
+
+        //B4 check credit
         if (creditOpt.isEmpty()) {
-            if (creditRepo.existsById(creditId)) {
+            if (creditRepo.existsById(creditId)) {  // tồn tại nhưng ko trong công ty
                 throw new AppException(ErrorCode.COMPANY_NOT_OWN);
             }
+            // không tồn lại
             throw new AppException(ErrorCode.CREDIT_NOT_FOUND);
         }
+
+        //B5 Lấy ra credit từ optional
         CarbonCredit credit = creditOpt.get();
 
         checkAndMarkExpired(credit);
 
+        // 5.1 nếu mà credit hết hạn thì lỗi
         if (credit.getStatus() == CreditStatus.EXPIRED) {
             throw new AppException(ErrorCode.CREDIT_EXPIRED);
         }
-        if (credit.getStatus() == CreditStatus.RETIRED) {
+
+        // 5.2 nếu mà credit retired hoặc là số lượng nhỏ hơn bằng 0 thì lỗi
+        if (credit.getStatus() == CreditStatus.RETIRED && credit.getCarbonCredit().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.CREDIT_ALREADY_RETIRED);
         }
 
+        //  5.3 Kiểm tra xem có đang niêm yết không
         BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
         if (listed.compareTo(BigDecimal.ZERO) > 0) {
             throw new AppException(ErrorCode.CREDIT_HAS_ACTIVE_LISTING);
         }
 
+        // 5.4 kiểm tra phần khả dụng vaf trừ số lượng retire
         BigDecimal available = getAvailableAmount(credit);
         if (available.compareTo(quantity) < 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
@@ -301,10 +318,12 @@ public class MyCreditServiceImpl implements MyCreditService {
             remaining = BigDecimal.ZERO;
         }
 
+        // B6 cập nhật lại credit
         credit.setCarbonCredit(remaining);
         credit.setAmount(remaining.add(listed));
         credit.setStatus(CreditStatus.RETIRED);
 
+        // nếu hết thì set lại
         if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             credit.setStatus(CreditStatus.RETIRED);
             credit.setListedAmount(BigDecimal.ZERO);

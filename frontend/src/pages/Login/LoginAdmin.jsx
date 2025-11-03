@@ -1,4 +1,3 @@
-// ===================== AdminLogin.jsx =====================
 import React, { useState } from "react";
 import {
   Box,
@@ -175,7 +174,7 @@ const AdminLogin = () => {
           display="block"
           sx={{ mt: 3, color: colors.grey[400] }}
         >
-          © 2025 EV-Carbon Credit System
+          © 2025 EV-CarbonX System
         </Typography>
       </Paper>
     </Box>
