@@ -39,7 +39,6 @@ import java.time.LocalDate;
         @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
         private MultipartFile  legalDocsFile;
 
-        @NotBlank(message = "emissionFactorKgPerKwh must not be blank")
         private BigDecimal emissionFactorKgPerKwh;
 
          private ProjectStatus status;
