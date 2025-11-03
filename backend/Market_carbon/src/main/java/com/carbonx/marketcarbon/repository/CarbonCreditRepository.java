@@ -144,7 +144,7 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
      * Tìm CarbonCredit theo ID và Company ID đồng thời khóa PESSIMISTIC_WRITE.
      * Phương thức này dùng cho các hoạt động cần cập nhật an toàn (như retire, list).
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE) // tránh race condition khi có 2 giao dịch cùng “retire” 1 credit.
     @Query("SELECT c FROM CarbonCredit c WHERE c.id = :id AND c.company.id = :companyId")
     Optional<CarbonCredit> findByIdAndCompanyIdWithLock(@Param("id") Long id, @Param("companyId") Long companyId);
 
