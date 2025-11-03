@@ -18,7 +18,7 @@ import java.util.Map;
 public class ChatAiController {
 
     private final GeminiAiService aiService;
-
+    @PreAuthorize("hasRole('COMPANY')")
     @PostMapping("/chat")
     public ResponseEntity<?> chat(@RequestBody Map<String, String> body) {
         String question = body.get("message");
