@@ -1,11 +1,22 @@
-import { Box, IconButton, useTheme, InputBase, Badge, Paper, Popper, ClickAwayListener, Typography, Stack, Grid, Avatar, Box as MuiBox } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  useTheme,
+  Badge,
+  Paper,
+  Popper,
+  ClickAwayListener,
+  Typography,
+  Stack,
+  Grid,
+  Avatar,
+  Box as MuiBox
+} from "@mui/material";
 import { useContext, useEffect, useState, useRef } from "react";
 import { ColorModeContext, tokens } from "@/theme";
-import SearchIcon from "@mui/icons-material/Search";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
-import { UserOutlined } from "@ant-design/icons";
 import Transitions from "@/components/Popup/Transitions.jsx";
 import MainCard from "@/components/Popup/MainCard.jsx";
 import ProfileTab from "@/components/Popup/ProfileTab.jsx";
@@ -29,6 +40,7 @@ const Topbar = () => {
   const [openNotif, setOpenNotif] = useState(false);
   const [unread, setUnread] = useState(2);
   const [avatarVersion, setAvatarVersion] = useState(0);
+
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
@@ -42,22 +54,19 @@ const Topbar = () => {
 
         setAdmin({ firstName, lastName, role, avatarUrl });
       } catch (err) {
-        console.error(" Failed to fetch KYC Admin:", err.message);
+        console.error("Failed to fetch KYC Admin:", err.message);
       }
     };
     fetchAdminData();
   }, [avatarVersion]);
+
   useEffect(() => {
-  const handleAvatarUpdated = () => {
-    setAvatarVersion((v) => v + 1);
-  };
-
-  window.addEventListener("avatar_updated", handleAvatarUpdated);
-
-  return () => window.removeEventListener("avatar_updated", handleAvatarUpdated);
-}, []);
-
-
+    const handleAvatarUpdated = () => {
+      setAvatarVersion((v) => v + 1);
+    };
+    window.addEventListener("avatar_updated", handleAvatarUpdated);
+    return () => window.removeEventListener("avatar_updated", handleAvatarUpdated);
+  }, []);
 
   const handleToggle = () => setOpen((prev) => !prev);
   const handleClose = (event) => {
@@ -72,19 +81,16 @@ const Topbar = () => {
   };
 
   return (
-    <Box display="flex" justifyContent="space-between" p={2}>
-      {/* SEARCH BAR */}
-      <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-        <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
-        <IconButton type="button" sx={{ p: 1 }}>
-          <SearchIcon />
-        </IconButton>
-      </Box>
-
+    <Box display="flex" justifyContent="flex-end" p={2}>
       {/* ICONS */}
       <Box display="flex" alignItems="center">
+        {/* Dark/Light mode toggle */}
         <IconButton onClick={colorMode.toggleColorMode}>
-          {theme.palette.mode === "dark" ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
+          {theme.palette.mode === "dark" ? (
+            <DarkModeOutlinedIcon />
+          ) : (
+            <LightModeOutlinedIcon />
+          )}
         </IconButton>
 
         {/* Notification */}
@@ -154,9 +160,13 @@ const Topbar = () => {
                           </Grid>
                         </MuiBox>
 
-                        {/* 🔹 Chỉ còn Profile tab */}
+                        {/* Profile tab */}
                         <MuiBox sx={{ p: 1.5 }}>
-                          <ProfileTab role="admin" onClose={handleClose} onAvatarUpdated={() => setAvatarVersion(v => v + 1)} />
+                          <ProfileTab
+                            role="admin"
+                            onClose={handleClose}
+                            onAvatarUpdated={() => setAvatarVersion((v) => v + 1)}
+                          />
                         </MuiBox>
                       </MainCard>
                     </div>
