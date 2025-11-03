@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -27,4 +28,5 @@ public class ProjectResponse {
 
     private LocalDate startedDate;
     private LocalDate endDate;
+    private BigDecimal emissionFactorKgPerKwh;
 }

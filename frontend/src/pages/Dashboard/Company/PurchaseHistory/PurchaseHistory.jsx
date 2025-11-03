@@ -2,13 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { Button, Table, Spinner, Card } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../../../context/AuthContext";
 import { apiFetch } from "../../../../utils/apiFetch";
 import useReveal from "../../../../hooks/useReveal";
 import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 
 export default function PurchaseHistory() {
-  const { user } = useAuth();
   const nav = useNavigate();
   const sectionRef = useRef(null);
   const { state } = useLocation();
@@ -20,6 +18,7 @@ export default function PurchaseHistory() {
 
   useReveal(sectionRef);
 
+  // gọi API lấy danh sách đơn hàng của người dùng
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -40,6 +39,7 @@ export default function PurchaseHistory() {
 
         setOrders(formatted);
       } catch (err) {
+        // khi API lỗi → hiển thị thông báo
         setError(err.message || "Unable to load orders.");
       } finally {
         setLoading(false);
@@ -48,9 +48,13 @@ export default function PurchaseHistory() {
     fetchOrders();
   }, []);
 
+  // xử lý nút Back → điều hướng về trang trước tùy theo context
   const handleBack = () => {
-    if (from === "wallet") nav("/wallet");
-    else nav("/marketplace");
+    if (from === "wallet") {
+      nav("/wallet");
+    } else if (from === "order") {
+      nav("/marketplace");
+    } else nav("/home");
   };
 
   return (
@@ -58,6 +62,7 @@ export default function PurchaseHistory() {
       ref={sectionRef}
       className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
     >
+      {/* nút quay lại trang trước */}
       <Button
         variant="outline-info"
         size="sm"
@@ -73,6 +78,7 @@ export default function PurchaseHistory() {
         <FaArrowLeft /> Back
       </Button>
 
+      {/* container hiển thị bảng lịch sử giao dịch */}
       <div
         className="container"
         style={{ maxWidth: "1100px", marginTop: "4rem" }}
@@ -83,6 +89,7 @@ export default function PurchaseHistory() {
           </h2>
         </div>
 
+        {/* thẻ chứa bảng hiển thị */}
         <Card
           className="shadow-lg border-0 p-3"
           style={{
@@ -91,20 +98,24 @@ export default function PurchaseHistory() {
             backdropFilter: "blur(10px)",
           }}
         >
+          {/* trạng thái đang tải dữ liệu */}
           {loading ? (
             <div className="d-flex justify-content-center align-items-center py-5">
               <Spinner animation="border" />
             </div>
           ) : error ? (
+            // khi lỗi API
             <div className="text-center py-5 text-danger">
               <h5>{error}</h5>
             </div>
           ) : orders.length === 0 ? (
+            // khi không có dữ liệu đơn hàng
             <div className="text-center py-5">
               <h5>No purchases history found</h5>
               <p className="text-muted mb-0">Buy credits in Marketplace.</p>
             </div>
           ) : (
+            // hiển thị bảng danh sách đơn hàng
             <Table hover responsive className="align-middle mb-0">
               <thead className="table-light">
                 <tr>
@@ -116,6 +127,7 @@ export default function PurchaseHistory() {
                 </tr>
               </thead>
               <tbody>
+                {/* dùng component phân trang*/}
                 <PaginatedTable
                   items={orders}
                   itemsPerPage={5}
@@ -124,6 +136,7 @@ export default function PurchaseHistory() {
                       <td>{index + 1}</td>
                       <td>{o.id}</td>
                       <td>
+                        {/* hiển thị trạng thái đơn hàng bằng badge màu */}
                         <span
                           className={`badge bg-${
                             o.status === "SUCCESS"
@@ -136,7 +149,9 @@ export default function PurchaseHistory() {
                           {o.status}
                         </span>
                       </td>
+                      {/* tổng số tiền đơn hàng, format có dấu phẩy */}
                       <td>${o.totalAmount?.toLocaleString() || 0}</td>
+                      {/* thời gian tạo đơn, convert sang múi giờ VN */}
                       <td>
                         {o.createdAt
                           ? (() => {

@@ -6,8 +6,6 @@ import {
   Divider,
   Chip,
   Button,
-  Snackbar,
-  Alert,
   CircularProgress,
   useTheme,
 } from "@mui/material";
@@ -18,20 +16,19 @@ import {
   getWithdrawalsAdmin,
   getPaymentDetails,
 } from "@/apiAdmin/transactionAdmin.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const ViewTransaction = () => {
   const { id } = useParams();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+
 
   const [trx, setTrx] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState({
-    open: false,
-    type: "info",
-    text: "",
-  });
+
 
   useEffect(() => {
     const fetchTransaction = async () => {
@@ -48,11 +45,7 @@ const ViewTransaction = () => {
         }
       } catch (error) {
         console.error(error);
-        setAlert({
-          open: true,
-          type: "error",
-          text: "Failed to load transaction data.",
-        });
+        showSnackbar("error", "Failed to load transaction data.");
       } finally {
         setLoading(false);
       }
@@ -62,27 +55,18 @@ const ViewTransaction = () => {
 
   const handleProcess = async (accept) => {
     try {
-      setAlert({
-        open: true,
-        type: "info",
-        text: "Processing transaction...",
-      });
+      showSnackbar("info", "Processing transaction...");
       const res = await processWithdrawal(trx.id, accept);
       if (res) setTrx(res);
-      setAlert({
-        open: true,
-        type: accept ? "success" : "error",
-        text: accept
+      showSnackbar(
+        accept ? "success" : "error",
+        accept
           ? "Withdrawal approved successfully!"
-          : "Withdrawal rejected successfully!",
-      });
+          : "Withdrawal rejected successfully!"
+      );
     } catch (error) {
       console.error(error);
-      setAlert({
-        open: true,
-        type: "error",
-        text: "Failed to process transaction.",
-      });
+      showSnackbar("error", "Failed to process transaction.");
     }
   };
 
@@ -238,40 +222,7 @@ const ViewTransaction = () => {
       </Box>
 
       {/* Snackbar thông báo */}
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={5000}
-        onClose={() => setAlert({ ...alert, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        sx={{
-          mt: 2,
-          "& .MuiPaper-root": {
-            minWidth: "400px",
-            maxWidth: "80vw",
-          },
-        }}
-      >
-        <Alert
-          onClose={() => setAlert({ ...alert, open: false })}
-          severity={alert.type}
-          variant="filled"
-          sx={{
-            width: "100%",
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-            py: 1.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: 4,
-          }}
-          iconMapping={{
-            info: <CircularProgress size={20} color="inherit" />,
-          }}
-        >
-          {alert.text}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };

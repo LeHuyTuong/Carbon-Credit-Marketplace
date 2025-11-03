@@ -171,33 +171,34 @@ public class KycController {
 
 
     @Operation(summary = "Create KYC for CVA", description = "Create KYC profile for CVA (current user)")
-    @PostMapping("/cva/create")
+    @PostMapping(value = "/cva/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> createCva(
-            @Valid @RequestBody TuongCommonRequest<@Valid KycCvaRequest> req,
+            @Valid @ModelAttribute KycCvaRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        Long id = kycService.createCva(req.getData());
+        Long id = kycService.createCva(req);
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
+
     @Operation(summary = "Update KYC for CVA", description = "Update KYC profile for CVA (current user)")
-    @PutMapping("/cva")
+    @PutMapping(value = "/cva", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> updateCva(
-            @Valid @RequestBody TuongCommonRequest<@Valid KycCvaRequest> req,
+            @Valid @ModelAttribute KycCvaRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        Long id = kycService.updateCva(req.getData());
+        Long id = kycService.updateCva(req);
 
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
         TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);

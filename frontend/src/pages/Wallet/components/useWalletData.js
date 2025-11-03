@@ -232,7 +232,7 @@ const fetchRetirableCredits = async () => {
     const res = await apiFetch("/api/v1/my/credits/retirable", { method: "GET" });
     const list = res?.response || [];
 
-    // chỉ lấy AVAILABLE
+    // chỉ lấy AVAILABLE Va TRADED
     const availableList = list.filter(c => c.status === "AVAILABLE" || c.status === "TRADED");
 
     // nhóm theo batchCode

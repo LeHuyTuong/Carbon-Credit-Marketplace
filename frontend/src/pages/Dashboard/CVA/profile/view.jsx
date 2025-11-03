@@ -107,9 +107,6 @@ const CVAProfile = ({ onClose }) => {
           <InfoItem label="Email" value={cvaData.email} />
           <InfoItem label="Organization" value={cvaData.organization} />
           <InfoItem label="Position Title" value={cvaData.positionTitle} />
-          <InfoItem label="Accreditation No." value={cvaData.accreditationNo} />
-          <InfoItem label="Capacity Quota" value={cvaData.capacityQuota} />
-          <InfoItem label="Notes" value={cvaData.notes} />
           <InfoItem label="KYC Status" value={cvaData.status} />
           <InfoItem label="Created At" value={new Date(cvaData.createdAt).toLocaleString()} />
           <InfoItem label="Updated At" value={new Date(cvaData.updatedAt).toLocaleString()} />
