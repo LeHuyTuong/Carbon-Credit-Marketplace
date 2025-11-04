@@ -85,7 +85,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
             // 2.1 Lấy các credit còn AVAILABLE và còn available > 0
             List<CarbonCredit> credits = batch.getCarbonCredit().stream()
-                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                    .filter( c -> c.getStatus() == CreditStatus.AVAILABLE)
                     .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                     .toList();
 

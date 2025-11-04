@@ -191,4 +191,16 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 """)
     long sumAvailableIssued(@Param("companyId") Long companyId);
 
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+  select c from CarbonCredit c
+  where c.batch.id = :batchId and c.company.id = :companyId
+    and c.status not in ('EXPIRED','RETIRED')
+    and coalesce(c.listedAmount,0) = 0
+    and coalesce(c.carbonCredit,0) > 0
+  order by c.expiryDate asc, c.id asc
+""")
+    List<CarbonCredit> findRetirableByBatchIdForUpdateOrdered(Long batchId, Long companyId);
+
 }

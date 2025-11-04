@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
 import com.carbonx.marketcarbon.exception.AppException;
@@ -73,6 +74,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         return company.getId();
     }
 
+    // hàm này giúp hệ thống check xem credit này đã hết hạn chưa
     private void checkAndMarkExpired(CarbonCredit credit) {
         if (credit.getExpiryDate() != null &&
                 credit.getExpiryDate().isBefore(LocalDate.now()) &&
@@ -238,6 +240,15 @@ public class MyCreditServiceImpl implements MyCreditService {
         return BigDecimal.ZERO;
     }
 
+    /**
+     * [COMPANY] Lấy danh sách tín chỉ có thể retire.
+     * Điều kiện lọc:
+     * - Không EXPIRED, không RETIRED
+     * - Không đang niêm yết (listedAmount == 0)
+     * - available (getAvailableAmount(credit)) > 0
+     *
+     * Invariant: amount = carbonCredit(available) + listedAmount.
+     */
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public List<CarbonCreditResponse> getMyRetirableCredits() {
@@ -247,6 +258,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         // B1 Tìm carbon theo compandy id
         return creditRepo.findByCompanyId(companyId).stream()
                 .filter(credit -> {
+                    // luôn phải cập nhật xem credit đã hết hạn chưa
                     checkAndMarkExpired(credit);
 
                     // 1.1 lọc những tín chỉ hết han hoặc đã retire
@@ -263,6 +275,18 @@ public class MyCreditServiceImpl implements MyCreditService {
                 .toList();
     }
 
+    /**
+     * [COMPANY] Retire một phần/hoặc toàn bộ quantity của credit theo id.
+     *
+     * - Không cho retire tín chỉ EXPIRED (CREDIT_EXPIRED)
+     * - Không cho retire tín chỉ đang niêm yết (listedAmount > 0) (CREDIT_HAS_ACTIVE_LISTING)
+     * - Không cho retire vượt quá available (AMOUNT_IS_NOT_ENOUGH)
+     * - Khi remaining == 0, set status = RETIRED và listedAmount = 0 để đóng credit
+     * - Ngược lại, giữ status = AVAILABLE (không chạm tới listedAmount)
+     *
+     * đồng bộ: dùng findByIdAndCompanyIdWithLock để khóa hàng, tránh race-condition khi nhiều request tới cùng credit.
+     * Invariant: amount = carbonCredit(available) + listedAmount.
+     */
     @Override
     @Transactional
     @PreAuthorize("hasRole('COMPANY')")
@@ -286,7 +310,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         //Compile-time (chỉ trong lúc biên dịch)
         // optional Runtime (trong khi chương trình chạy)
 
-        //B3 Tìm credit của công ty hiện tại
+        //B3 Tìm credit của công ty hiện tại (kèm lock ghi để đảm bảo tính nhất quán khi trừ số lượng)
         var creditOpt = creditRepo.findByIdAndCompanyIdWithLock(creditId, companyId);
 
         //B4 check credit
@@ -298,9 +322,8 @@ public class MyCreditServiceImpl implements MyCreditService {
             throw new AppException(ErrorCode.CREDIT_NOT_FOUND);
         }
 
-        //B5 Lấy ra credit từ optional
+        //B5 Lấy ra credit từ optional và check ngày hết hạn
         CarbonCredit credit = creditOpt.get();
-
         checkAndMarkExpired(credit);
 
         // 5.1 nếu mà credit hết hạn thì lỗi
@@ -325,14 +348,15 @@ public class MyCreditServiceImpl implements MyCreditService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
+        // 5.5 tính xem phần còn lại sau khi đã retire
         BigDecimal remaining = available.subtract(quantity);
         if (remaining.compareTo(BigDecimal.ZERO) < 0) {
             remaining = BigDecimal.ZERO;
         }
 
         // B6 cập nhật lại credit
-        credit.setCarbonCredit(remaining);
-        credit.setAmount(remaining.add(listed));
+        credit.setCarbonCredit(remaining); // còn lại mới
+        credit.setAmount(remaining.add(listed)); // tổng mới
 
         if (remaining.compareTo(BigDecimal.ZERO) == 0) {
             credit.setStatus(CreditStatus.RETIRED);
@@ -352,8 +376,20 @@ public class MyCreditServiceImpl implements MyCreditService {
         return CarbonCreditResponse.from(saved);
     }
 
-    // Xử lý các tác vụ hậu kỳ khi retire: thông báo, chứng chỉ, email
-    private void handleRetirementSuccess(CarbonCredit credit, Company company, BigDecimal retiredQuantity) {
+    @Override
+    public List<CarbonCreditResponse> retireCreditsFromBatch(RetireBatchRequest request) {
+        return List.of();
+    }
+
+    /**
+     * Hậu xử lý sau khi retire thành công:
+     * - Gửi SSE thông báo tới user công ty (vẫn đang lỗi)
+     * - Đảm bảo/tạo certificate cho batch tương ứng
+     * - Render PDF certificate + upload, lưu URL
+     * - Gửi email xác nhận kèm file PDF
+     *
+     * không roll back giao dịch chính nếu email/PDF fail
+     */    private void handleRetirementSuccess(CarbonCredit credit, Company company, BigDecimal retiredQuantity) {
         if (credit == null || retiredQuantity == null) {
             return;
         }
@@ -548,4 +584,6 @@ public class MyCreditServiceImpl implements MyCreditService {
             throw new UncheckedIOException("Cannot download PDF from " + pdfUrl, ioEx);
         }
     }
+
+
 }
