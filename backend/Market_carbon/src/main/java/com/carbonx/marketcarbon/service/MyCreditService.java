@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,15 @@ public interface MyCreditService {
     List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId);
 
     List<CarbonCreditResponse> getMyRetirableCredits();
+
+    /**
+     * Retire một số lượng từ MỘT DÒNG (row) credit cụ thể.
+     */
     CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity);
 
+    /**
+     * Retire một TỔNG SỐ LƯỢNG từ một LÔ (batch),
+     * tự động trừ dần từ các dòng credit con.
+     */
+    List<CarbonCreditResponse> retireCreditsFromBatch(RetireBatchRequest request);
 }

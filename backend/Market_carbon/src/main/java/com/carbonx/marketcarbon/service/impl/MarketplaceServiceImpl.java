@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MarketplaceServiceImpl implements MarketplaceService {
 
-    private final CarbonCreditRepository  carbonCreditRepository;
+    private final CarbonCreditRepository carbonCreditRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
@@ -45,11 +45,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private User currentUser(){
+    private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email =  authentication.getName();
+        String email = authentication.getName();
         User user = userRepository.findByEmail(email);
-        if(user == null){
+        if (user == null) {
             throw new RuntimeException("User not found with email " + email);
         }
         return user;
@@ -85,7 +85,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
             // 2.1 Lấy các credit còn AVAILABLE và còn available > 0
             List<CarbonCredit> credits = batch.getCarbonCredit().stream()
-                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                    .filter( c -> c.getStatus() == CreditStatus.AVAILABLE)
                     .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                     .toList();
 
@@ -184,7 +184,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         // B 4.1 Tính toán số lượng tín chỉ khả dụng
         BigDecimal availableQuantity = getAvailableCreditAmount(creditToSell);
 
-        if (availableQuantity.compareTo(request.getQuantity()) < 0){
+        if (availableQuantity.compareTo(request.getQuantity()) < 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
@@ -383,28 +383,28 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
         CarbonCredit carbonCredit = listing.getCarbonCredit();
         if (carbonCredit != null) {
-            BigDecimal remainingQuantity = listing.getQuantity() != null ? listing.getQuantity() : BigDecimal.ZERO;
-            BigDecimal creditBalance = carbonCredit.getCarbonCredit() != null ? carbonCredit.getCarbonCredit() : BigDecimal.ZERO;
-            BigDecimal listedAmount = carbonCredit.getListedAmount() != null ? carbonCredit.getListedAmount() : BigDecimal.ZERO;
+            BigDecimal remainingQuantity = safe(listing.getQuantity());
 
-            BigDecimal updatedAvailable = creditBalance.add(remainingQuantity);
-            carbonCredit.setCarbonCredit(updatedAvailable);
+            if (remainingQuantity.compareTo(BigDecimal.ZERO) > 0) {
+                CreditBatch batch = carbonCredit.getBatch();
+                BigDecimal leftover = remainingQuantity;
 
-            BigDecimal updatedListed = listedAmount.subtract(remainingQuantity);
-            if (updatedListed.compareTo(BigDecimal.ZERO) < 0) {
-                updatedListed = BigDecimal.ZERO;
-            }
-            carbonCredit.setListedAmount(updatedListed);
-            carbonCredit.setAmount(updatedAvailable.add(updatedListed));
+                if (batch != null) {
+                    leftover = restoreBatchCredits(batch, sellerCompany, remainingQuantity);
+                } else {
+                    leftover = restoreSingleCredit(carbonCredit, remainingQuantity);
+                }
 
-            if (updatedListed.compareTo(BigDecimal.ZERO) > 0) {
-                carbonCredit.setStatus(CreditStatus.LISTED);
-            } else if (updatedAvailable.compareTo(BigDecimal.ZERO) > 0) {
-                carbonCredit.setStatus(CreditStatus.AVAILABLE);
+                if (batch != null && leftover.compareTo(BigDecimal.ZERO) > 0) {
+                    leftover = restoreSingleCredit(carbonCredit, leftover);
+                }
+
+                if (leftover.compareTo(BigDecimal.ZERO) > 0) {
+                    log.warn("Listing {} cancellation still has {} credits un-restored for company {}", listing.getId(), leftover, sellerCompany.getId());
+                }
             } else {
-                carbonCredit.setStatus(CreditStatus.RETIRED);
+                restoreSingleCredit(carbonCredit, BigDecimal.ZERO);
             }
-            carbonCreditRepository.save(carbonCredit);
         }
 
         listing.setQuantity(BigDecimal.ZERO);
@@ -413,6 +413,99 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         marketplaceListingRepository.delete(listing);
 
         return response;
+    }
+
+    // hàm này sẽ hoàn lại tín chỉ carbon khi delete không list nữa
+    private BigDecimal restoreBatchCredits(CreditBatch batch, Company company, BigDecimal quantityToRestore) {
+        BigDecimal remaining = safe(quantityToRestore);
+        if (batch == null || remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            return remaining;
+        }
+
+        // tìm carbon credit
+        List<CarbonCredit> batchCredits = carbonCreditRepository
+                .findByBatch_IdAndCompany_Id(batch.getId(), company.getId());
+
+        if (batchCredits.isEmpty()) {
+            return remaining;
+        }
+
+        boolean hasChanges = false;
+
+        // lấy từng cái một
+        for (CarbonCredit credit : batchCredits) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+
+            // check xem có lỗi không tránh bị null
+            BigDecimal listedAmount = safe(credit.getListedAmount());
+            if (listedAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            BigDecimal restore = listedAmount.min(remaining);
+            if (restore.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            BigDecimal available = safe(credit.getCarbonCredit());
+            BigDecimal updatedListed = listedAmount.subtract(restore);
+            BigDecimal updatedAvailable = available.add(restore);
+
+            // set lại status
+            credit.setCarbonCredit(updatedAvailable);
+            credit.setListedAmount(updatedListed);
+            credit.setAmount(updatedAvailable.add(updatedListed));
+            updateCreditStatus(credit, updatedAvailable, updatedListed);
+
+            remaining = remaining.subtract(restore);
+            hasChanges = true;
+        }
+
+        if (hasChanges) {
+            carbonCreditRepository.saveAll(batchCredits);
+        }
+
+        return remaining;
+    }
+
+    private BigDecimal restoreSingleCredit(CarbonCredit carbonCredit, BigDecimal quantityToRestore) {
+        if (carbonCredit == null) {
+            return safe(quantityToRestore);
+        }
+
+        BigDecimal remaining = safe(quantityToRestore);
+        BigDecimal listedAmount = safe(carbonCredit.getListedAmount());
+        BigDecimal available = safe(carbonCredit.getCarbonCredit());
+
+        BigDecimal restore = listedAmount.min(remaining);
+        if (restore.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal updatedListed = listedAmount.subtract(restore);
+            BigDecimal updatedAvailable = available.add(restore);
+
+            carbonCredit.setCarbonCredit(updatedAvailable);
+            carbonCredit.setListedAmount(updatedListed);
+            carbonCredit.setAmount(updatedAvailable.add(updatedListed));
+            updateCreditStatus(carbonCredit, updatedAvailable, updatedListed);
+
+            carbonCreditRepository.save(carbonCredit);
+            return remaining.subtract(restore);
+        }
+
+        updateCreditStatus(carbonCredit, available, listedAmount);
+        carbonCreditRepository.save(carbonCredit);
+        return remaining;
+    }
+
+    private void updateCreditStatus(CarbonCredit credit, BigDecimal available, BigDecimal listed) {
+        if (listed.compareTo(BigDecimal.ZERO) > 0) {
+            credit.setStatus(CreditStatus.LISTED);
+        } else if (available.compareTo(BigDecimal.ZERO) > 0) {
+            credit.setStatus(CreditStatus.AVAILABLE);
+        } else {
+            credit.setStatus(CreditStatus.RETIRED);
+        }
     }
 
     private MarketplaceListingResponse buildListingResponse(MarketPlaceListing listing) {
