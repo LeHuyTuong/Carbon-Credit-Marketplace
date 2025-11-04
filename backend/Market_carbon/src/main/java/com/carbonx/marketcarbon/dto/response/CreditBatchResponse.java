@@ -43,6 +43,7 @@ public class CreditBatchResponse {
                 .projectTitle(entity.getProject() != null ? entity.getProject().getTitle() : null)
                 .status(entity.getStatus())
                 .issuedAt(entity.getIssuedAt())
+                .certificateUrl(entity.getCertificate() != null ? entity.getCertificate().getCertificateUrl() : null)
                 .build();
     }
 }
