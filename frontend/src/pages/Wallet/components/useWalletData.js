@@ -388,7 +388,7 @@ export default function useWalletData() {
 
 
   // chia sẻ lợi nhuận theo report đã duyệt
-  const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, description }) => {
+  const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, companySharePercent, description }) => {
     if (!projectId || !emissionReportId || !totalMoneyToDistribute)
       throw new Error("Missing required fields for profit sharing.");
 
@@ -401,6 +401,7 @@ export default function useWalletData() {
             projectId,
             emissionReportId,
             totalMoneyToDistribute,
+            companySharePercent,
             description: description || "Profit sharing based on emission report",
           },
         },
