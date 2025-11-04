@@ -16,24 +16,15 @@ import java.util.Optional;
 public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long>,
         JpaSpecificationExecutor<CarbonCredit> {
 
-
-    Optional<CarbonCredit> findByCompanyAndStatus(Company owner, CreditStatus status);
-
-    Page<CarbonCredit> findByStatus(CreditStatus status, Pageable pageable);
-
     Optional<CarbonCredit> findByCreditCodeAndCompany_Id(String creditCode, Long companyId);
 
     Optional<CarbonCredit> findByCreditCode(String creditCode);
-
-    Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
 
     List<CarbonCredit> findByCompanyId(Long companyId);
 
     List<CarbonCredit> findByStatusNot(CreditStatus status);
 
     List<CarbonCredit> findByBatch_IdAndCompany_Id(Long batchId, Long companyId);
-
-    Optional<CarbonCredit> findByStatus(CreditStatus status);
 
 
     @Query("""
@@ -190,5 +181,14 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
       )
 """)
     long sumAvailableIssued(@Param("companyId") Long companyId);
+
+    // tìm cả tín chỉ mua từ marketplace
+    @Query("SELECT c FROM CarbonCredit c WHERE " +
+            "(c.batch.id = :batchId AND c.company.id = :companyId) " +
+            "OR EXISTS (SELECT t FROM WalletTransaction t WHERE " +
+            "t.wallet.company.id = :companyId AND " +
+            "t.order.carbonCredit.batch.id = :batchId AND " +
+            "t.transactionType = 'BUY_CARBON_CREDIT')")
+    List<CarbonCredit> findAllOwnedByBatch(@Param("batchId") Long batchId, @Param("companyId") Long companyId);
 
 }

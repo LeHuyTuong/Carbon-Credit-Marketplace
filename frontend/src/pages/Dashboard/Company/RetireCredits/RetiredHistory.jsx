@@ -7,24 +7,31 @@ import PaginatedTable from "../../../../components/Pagination/PaginatedTable";
 import { FaArrowLeft } from "react-icons/fa";
 
 export default function RetiredHistory() {
+  // lấy hàm fetchRetiredCredits và trạng thái loading từ custom hook
   const { fetchRetiredCredits, loading } = useWalletData();
+  // state lưu toàn bộ danh sách credit đã retire và dữ liệu lọc theo search
   const [credits, setCredits] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
+  // điều hướng trang
   const nav = useNavigate();
+  // ref cho hiệu ứng reveal
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  // gọi api lần đầu khi component mount
   useEffect(() => {
     loadRetired();
   }, []);
 
+  // hàm fetch dữ liệu credit đã retire
   const loadRetired = async () => {
     const data = await fetchRetiredCredits();
     setCredits(data || []);
     setFiltered(data || []);
   };
 
+  // xử lý tìm kiếm theo creditCode hoặc projectTitle
   const handleSearch = (e) => {
     const val = e.target.value.toLowerCase();
     setSearch(val);
@@ -37,11 +44,13 @@ export default function RetiredHistory() {
     );
   };
 
+  // render giao diện danh sách credit đã retire
   return (
     <div
       ref={sectionRef}
       className="auth-hero min-vh-100 d-flex flex-column align-items-center justify-content-start py-5 reveal"
     >
+      {/* nút quay lại trang retire */}
       <Button
         variant="outline-info"
         size="sm"
@@ -61,7 +70,7 @@ export default function RetiredHistory() {
         className="container"
         style={{ maxWidth: "1100px", marginTop: "4rem" }}
       >
-        {/* --- Header --- */}
+        {/* phần tiêu đề và thanh tìm kiếm */}
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h2 className="fw-bold text-white mb-0 text-shadow">
             My Retired Carbon Credits
@@ -78,7 +87,7 @@ export default function RetiredHistory() {
           </div>
         </div>
 
-        {/* --- Table Section --- */}
+        {/* phần hiển thị bảng dữ liệu */}
         <Card
           className="shadow-lg border-0 p-3"
           style={{
@@ -88,10 +97,12 @@ export default function RetiredHistory() {
           }}
         >
           {loading ? (
+            // hiển thị loading spinner khi đang fetch
             <div className="d-flex justify-content-center align-items-center py-5">
               <Spinner animation="border" />
             </div>
           ) : !filtered.length ? (
+            // hiển thị khi không có dữ liệu retire
             <div className="text-center py-5">
               <h5>No retired credits found.</h5>
               <p className="text-muted mb-0">
@@ -99,6 +110,7 @@ export default function RetiredHistory() {
               </p>
             </div>
           ) : (
+            // bảng hiển thị danh sách credit retire có phân trang
             <Table hover responsive className="align-middle mb-0">
               <thead className="table-light">
                 <tr>
@@ -110,6 +122,7 @@ export default function RetiredHistory() {
                 </tr>
               </thead>
 
+              {/* component phân trang hiển thị từng hàng */}
               <PaginatedTable
                 items={filtered}
                 itemsPerPage={6}

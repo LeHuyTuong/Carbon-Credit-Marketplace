@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/ai")
+@RequestMapping({"/api/v1/ai", "/v1/ai"})
 @RequiredArgsConstructor
 public class ChatAiController {
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
+import { apiFetch } from "../../utils/apiFetch";
+import "./aichat.css";
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState([
@@ -13,31 +15,43 @@ export default function ChatWindow() {
 
   const handleSend = async (msg) => {
     if (!msg.trim()) return;
-
     setMessages((prev) => [...prev, { sender: "user", text: msg }]);
     setTyping(true);
 
     try {
-      const response = await fetch("/api/v1/ai/chat", {
+      // lấy token
+      let token = null;
+      try {
+        const authData =
+          JSON.parse(sessionStorage.getItem("auth")) ||
+          JSON.parse(localStorage.getItem("auth"));
+        token = authData?.token;
+      } catch {
+        token = localStorage.getItem("token");
+      }
+
+      // Gọi fetch chuẩn với BE
+      const res = await fetch("/api/v1/ai/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ message: msg }),
       });
 
-      if (!response.ok) throw new Error("API request failed");
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-      const data = await response.json();
-      const aiText = data.reply || "No response from AI.";
+      //be trả về String, nên đọc bằng .text()
+      const aiText = await res.text();
 
       setMessages((prev) => [...prev, { sender: "ai", text: aiText }]);
     } catch (err) {
+      console.error("AI chat error:", err);
       setMessages((prev) => [
         ...prev,
         { sender: "ai", text: "Error: Unable to reach AI service." },
       ]);
-      console.log(err);
     } finally {
       setTyping(false);
     }
@@ -56,16 +70,11 @@ export default function ChatWindow() {
         {messages.map((m, i) => (
           <div key={i} className={`chat-row ${m.sender}`}>
             {m.sender === "ai" && (
-              //   <img
-              //     src="/src/assets/logo.png"
-              //     alt="AI"
-              //     className="chat-avatar"
-              //   />
-              <i className="bi bi-robot chat-avatar text-info fs-4"></i>
+              <i className="bi bi-robot chat-avatar text-success fs-4"></i>
             )}
             <div className={`chat-bubble ${m.sender}`}>{m.text}</div>
             {m.sender === "user" && (
-              <i className="bi bi-person-circle chat-avatar text-success fs-4"></i>
+              <i className="bi bi-person-circle chat-avatar text-muted fs-4"></i>
             )}
           </div>
         ))}
