@@ -134,7 +134,32 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
             carbonCreditRepository.saveAll(credits);
 
-            // 2.4 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
+            // 2.4 Nếu đã có listing cho batch này, cập nhật thay vì tạo mới
+            List<MarketPlaceListing> existingBatchListings = marketplaceListingRepository
+                    .findByCompanyIdAndCarbonCredit_Batch_IdAndStatus(
+                            sellerCompany.getId(),
+                            batch.getId(),
+                            ListingStatus.AVAILABLE);
+
+            if (!existingBatchListings.isEmpty()) {
+                MarketPlaceListing existingListing = existingBatchListings.get(0);
+
+                BigDecimal updatedQuantity = safe(existingListing.getQuantity()).add(request.getQuantity());
+                BigDecimal updatedOriginalQuantity = safe(existingListing.getOriginalQuantity()).add(request.getQuantity());
+
+                existingListing.setQuantity(updatedQuantity);
+                existingListing.setOriginalQuantity(updatedOriginalQuantity);
+                existingListing.setPricePerCredit(request.getPricePerCredit());
+                existingListing.setStatus(ListingStatus.AVAILABLE);
+
+                MarketPlaceListing updatedListing = marketplaceListingRepository.save(existingListing);
+                log.info("Updated existing batch listing ID: {} with additional quantity: {}",
+                        updatedListing.getId(), request.getQuantity());
+
+                return buildListingResponse(updatedListing);
+            }
+
+            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
             MarketPlaceListing listing = MarketPlaceListing.builder()
                     .company(sellerCompany)
                     .carbonCredit(credits.get(0)) // link đại diện theo schema hiện tại

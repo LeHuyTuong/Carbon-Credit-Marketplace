@@ -189,7 +189,7 @@ export default function Login() {
               className="btn btn-outline-secondary w-100"
               onClick={() => {
                 window.location.href =
-                  "http://localhost:8082/oauth2/authorization/google";
+                  "https://carbonx.io.vn/oauth2/authorization/google";
               }}
             >
               Login with Google

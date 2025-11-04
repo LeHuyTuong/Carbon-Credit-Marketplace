@@ -55,6 +55,7 @@ public class AppConfig {
                         .requestMatchers(PUBLIC_ENDPOINT).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/resource").permitAll() // <- thêm dòng này
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/v1/ai/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
