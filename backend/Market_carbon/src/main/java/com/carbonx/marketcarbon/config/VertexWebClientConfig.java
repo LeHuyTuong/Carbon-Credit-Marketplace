@@ -23,7 +23,7 @@ public class VertexWebClientConfig {
     private final AiVertexConfig cfg;
 
     private GoogleCredentials credentials() throws Exception {
-        // Yêu cầu ENV: GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
+        // Yêu cầu biến môi trường: GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
         GoogleCredentials creds = GoogleCredentials.getApplicationDefault()
                 .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
         creds.refreshIfExpired();
@@ -39,6 +39,7 @@ public class VertexWebClientConfig {
 
         GoogleCredentials creds = credentials();
 
+        //  Filter tự động chèn Bearer Token IAM vào mỗi request
         ExchangeFilterFunction oauth = (request, next) -> {
             try {
                 creds.refreshIfExpired();
@@ -68,9 +69,10 @@ public class VertexWebClientConfig {
                     .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
             creds.refreshIfExpired();
             AccessToken token = creds.getAccessToken();
-            System.out.println("[TEST] Vertex token: " + token.getTokenValue().substring(0, 25) + "...");
+            System.out.println("[VertexAI] Auth OK. Token prefix: "
+                    + token.getTokenValue().substring(0, 20) + "...");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[VertexAI]  Auth failed: " + e.getMessage());
         }
     }
 }

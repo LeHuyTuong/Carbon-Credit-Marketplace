@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface EmissionReportDetailRepository extends JpaRepository<EmissionReportDetail, Long> {
     Page<EmissionReportDetail> findByReport_Id(Long reportId, Pageable pageable);
+    List<EmissionReportDetail> findByReport_Id(Long reportId);
 
     // (tuỳ chọn) thêm tìm kiếm theo biển số
     Page<EmissionReportDetail> findByReport_IdAndVehiclePlateContainingIgnoreCase(
