@@ -55,7 +55,6 @@ public class AppConfig {
                         .requestMatchers(PUBLIC_ENDPOINT).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/resource").permitAll() // <- thêm dòng này
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
-                        .requestMatchers("/v1/ai/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
@@ -68,13 +67,13 @@ public class AppConfig {
                         .loginPage("/login")
                         .defaultSuccessUrl("/home", true)
                         .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
-                .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
-                .successHandler((req, res, auth) -> {
-                    var user = (OAuth2UserWithToken) auth.getPrincipal();
-                    res.setContentType("application/json");
-                    res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
-                })
-        );
+                        .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                        .successHandler((req, res, auth) -> {
+                            var user = (OAuth2UserWithToken) auth.getPrincipal();
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
+                        })
+                );
         return http.build();
     }
 
