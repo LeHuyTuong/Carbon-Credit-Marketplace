@@ -167,6 +167,7 @@ export default function ListCredits() {
     try {
       await deleteListing(confirmDelete.id);
       await fetchCredits();
+      await fetchUserCredits(); //reload credit trong ví
       showToast("Credits deleted successfully");
     } catch (err) {
       showToast("Cannot delete credits: " + err.message, "danger");
@@ -315,12 +316,6 @@ export default function ListCredits() {
                       : "N/A"}
                   </td>
                   <td>
-                    <button
-                      className="action-btn view"
-                      onClick={() => nav(`/detail-credit/${row.id}`)}
-                    >
-                      <i className="bi bi-eye"></i>
-                    </button>
                     <button
                       className="action-btn edit"
                       onClick={() => handleEdit(row)}
@@ -486,6 +481,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                   placeholder="Enter quantity"
                   value={values.quantity}
                   onChange={handleChange}
+                  disabled={!!editData}
                   isInvalid={touched.quantity && !!errors.quantity}
                 />
                 <Form.Control.Feedback type="invalid">
