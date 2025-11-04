@@ -63,15 +63,17 @@ public class AppConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(Customizer.withDefaults())
 
-                 .oauth2Login(oauth -> oauth
-                .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
-                .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
-                .successHandler((req, res, auth) -> {
-                    var user = (OAuth2UserWithToken) auth.getPrincipal();
-                    res.setContentType("application/json");
-                    res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
-                })
-        );
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
+                        .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                        .successHandler((req, res, auth) -> {
+                            var user = (OAuth2UserWithToken) auth.getPrincipal();
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
+                        })
+                );
         return http.build();
     }
 

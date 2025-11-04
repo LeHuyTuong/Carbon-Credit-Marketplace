@@ -11,6 +11,6 @@ public class ProjectApplicationRequest {
     @NotNull
     private Long projectId;
 
-    @FileSize(max = 10485760, message = "Legal document must not exceed 10MB")
+    @FileSize(max = 510485760, message = "Legal document must not exceed 50MB")
     private MultipartFile applicationDocs;
 }

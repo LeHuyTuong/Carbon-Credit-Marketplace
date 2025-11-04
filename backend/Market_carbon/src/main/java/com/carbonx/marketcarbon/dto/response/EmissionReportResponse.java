@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -23,7 +23,7 @@ public class EmissionReportResponse {
     Integer vehicleCount;
     String status;
     String source;
-    OffsetDateTime submittedAt;
+    LocalDateTime submittedAt;
 
     // File metadata
     String uploadOriginalFilename;
@@ -34,24 +34,24 @@ public class EmissionReportResponse {
     Integer uploadRows;
 
     // AI suggestion
-    BigDecimal aiPreScore;     // 0..10 (1 chữ số thập phân)
-    String aiVersion;          // ví dụ "v1.0"
-    String aiPreNotes;         // diễn giải điểm gợi ý
+    BigDecimal aiPreScore;
+    String aiVersion;
+    String aiPreNotes;
 
     // CVA verification
-    BigDecimal verificationScore;    // 0..10 do CVA nhập
+    BigDecimal verificationScore;
     String verificationComment;
-    String verifiedBy;               // email/display name
-    OffsetDateTime verifiedAt;
+    String verifiedBy;
+    LocalDateTime verifiedAt;
 
     // Admin approval
-    OffsetDateTime approvedAt;
-    String adminComment;             // nếu bạn lưu ghi chú admin vào report.comment
+    LocalDateTime approvedAt;
+    String adminComment;
 
-    // (Tùy chọn) quick metrics để FE hiển thị chất lượng dữ liệu – không bắt buộc
+    // Optional metrics
     Integer zeroEnergyRows;
-    Double  co2Coverage;             // 0..1
-    BigDecimal avgEf;                // kg/kWh
+    Double co2Coverage;
+    BigDecimal avgEf;
     BigDecimal avgCo2PerVehicle;
 
     public static EmissionReportResponse from(EmissionReport r) {
@@ -86,11 +86,10 @@ public class EmissionReportResponse {
                 .verifiedAt(r.getVerifiedAt())
 
                 .approvedAt(r.getApprovedAt())
-                .adminComment(r.getComment()) // nếu dùng r.getComment() làm ghi chú Admin
+                .adminComment(r.getComment())
                 .build();
     }
 
-    /** Optional: dùng khi bạn có sẵn metrics (tính ở service), tránh đụng DB lần 2 */
     public static EmissionReportResponse fromWithMetrics(
             EmissionReport r,
             Integer zeroEnergyRows,
