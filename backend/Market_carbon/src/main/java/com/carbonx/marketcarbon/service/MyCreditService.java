@@ -17,12 +17,6 @@ public interface MyCreditService {
     List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId);
 
     List<CarbonCreditResponse> getMyRetirableCredits();
-
-    /**
-     * Retire một số lượng từ MỘT DÒNG (row) credit cụ thể.
-     */
-    CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity);
-
     /**
      * Retire một TỔNG SỐ LƯỢNG từ một LÔ (batch),
      * tự động trừ dần từ các dòng credit con.
