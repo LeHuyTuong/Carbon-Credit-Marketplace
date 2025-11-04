@@ -11,13 +11,18 @@ import { Toast, ToastContainer } from "react-bootstrap";
 const DEFAULT_LOGO = "https://placehold.co/800x400?text=CarbonX+Project";
 
 export default function Features() {
+  // ref cho hiệu ứng reveal từng section
   const sectionRef1 = useRef(null);
   const sectionRef2 = useRef(null);
+  // lấy thông tin người dùng và trạng thái đăng nhập
   const { isAuthenticated, user } = useAuth();
   const ripple = useRipple();
   const nav = useNavigate();
+  // danh sách project từ backend
   const [adminProjects, setAdminProjects] = useState([]);
+  // lưu đường dẫn chờ redirect sau khi toast ẩn
   const [pendingRedirect, setPendingRedirect] = useState(null);
+  // trạng thái toast thông báo
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -28,10 +33,11 @@ export default function Features() {
     setToast({ show: true, message, variant });
   };
 
+  // kích hoạt hiệu ứng reveal cho từng section
   useReveal(sectionRef1);
   useReveal(sectionRef2);
 
-  // --- fetch project ---
+  // fetch danh sách project từ backend khi load trang
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -45,7 +51,7 @@ export default function Features() {
     fetchProjects();
   }, []);
 
-  // --- chờ Toast tắt rồi redirect ---
+  // nếu có pending redirect, đợi toast tắt rồi mới điều hướng
   useEffect(() => {
     if (!toast.show && pendingRedirect) {
       nav(pendingRedirect);
@@ -53,6 +59,7 @@ export default function Features() {
     }
   }, [toast.show, pendingRedirect, nav]);
 
+  // đảm bảo url ảnh hợp lệ, fallback nếu lỗi
   const safeLogo = (logo) => {
     if (typeof logo !== "string" || !logo.trim()) return DEFAULT_LOGO;
     // nếu BE lỡ trả thiếu protocol
@@ -61,6 +68,7 @@ export default function Features() {
 
   return (
     <>
+      {/* section hiển thị danh sách dự án */}
       <section
         id="projects"
         ref={sectionRef1}
@@ -70,12 +78,14 @@ export default function Features() {
           <h2 className="section-title text-center text-dark mb-3">
             CHOOSE CARBON PROJECTS
           </h2>
+          {/* hiển thị cảnh báo nếu user không phải company */}
           {user?.role !== "COMPANY" && (
             <p className="text-center text-muted small mb-5">
               Only registered companies can register carbon projects.
             </p>
           )}
 
+          {/* danh sách project */}
           {adminProjects.length > 0 ? (
             <PaginatedList
               items={adminProjects}
@@ -121,6 +131,7 @@ export default function Features() {
                         {proj.description?.length > 160 && "..."}
                       </p>
 
+                      {/* nút đăng ký project */}
                       <button
                         className="btn btn-primary position-relative overflow-hidden mt-3 fw-semibold"
                         onClick={(e) => {
@@ -132,6 +143,7 @@ export default function Features() {
                             setPendingRedirect("/login"); // chờ Toast ẩn rồi redirect
                             return;
                           }
+                          // chặn user không phải company
                           if (user?.role !== "COMPANY") {
                             showToast(
                               "You don’t have permission to register a project",
@@ -139,6 +151,7 @@ export default function Features() {
                             );
                             return;
                           }
+                          // hiệu ứng ripple và điều hướng
                           ripple(e, e.currentTarget);
                           nav(`/detail-project/${proj.id}`);
                         }}
@@ -156,6 +169,7 @@ export default function Features() {
         </div>
       </section>
 
+      {/* section giới thiệu dự án */}
       <section id="about" ref={sectionRef2} className="features-section reveal">
         <div className="container">
           <h2 className="section-title text-center text-dark mb-4">
@@ -201,6 +215,8 @@ export default function Features() {
           </div>
         </div>
       </section>
+
+      {/* container hiển thị toast thông báo */}
       <ToastContainer
         position="bottom-center"
         className="p-3"
