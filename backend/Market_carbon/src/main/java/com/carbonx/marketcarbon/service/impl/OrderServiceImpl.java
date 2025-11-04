@@ -40,7 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final CompanyRepository companyRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
-    private final CreditIssuanceService creditIssuanceService;
+//    private final CreditIssuanceService creditIssuanceService;
 
     @Value("${trading_fee}")
     private BigDecimal tradingFee;
@@ -277,12 +277,12 @@ public class OrderServiceImpl implements OrderService {
                     .map(Authentication::getName)
                     .orElse(buyerCompany.getUser() != null ? buyerCompany.getUser().getEmail() : "system@carbon.con") ;
 
-            CarbonCredit carbonCredit = creditIssuanceService.issueTradeCredit(
-                    sourceCredit,
-                    buyerCompany,
-                    quantityToBuy,
-                    listing.getPricePerCredit(),
-                    issuedBy);
+//            CarbonCredit carbonCredit = creditIssuanceService.issueTradeCredit(
+//                    sourceCredit,
+//                    buyerCompany,
+//                    quantityToBuy,
+//                    listing.getPricePerCredit(),
+//                    issuedBy);
 
             // 5.1 Cập nhật số dư credit carbon trong vi
             // Cộng số lượng tín chỉ đã mua vào ví người mua
