@@ -35,7 +35,6 @@ export default function ChatWindow() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "*/*",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ message: msg }),
