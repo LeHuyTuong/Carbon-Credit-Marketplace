@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -333,21 +334,33 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
      * Xử lý thanh toán cho một EV Owner cụ thể.
      * Được gọi bên trong một luồng riêng (async).
      */
-    private void processPayoutForOwner(ProfitDistribution event, OwnerPayoutData payout, Wallet companyWallet) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void processPayoutForOwner(ProfitDistribution event, OwnerPayoutData payout, Wallet companyWallet) {
         // Tải lại companyWallet trong luồng này để đảm bảo an toàn
+        // B1 Vì hàm này giờ là @Transactional, nó không thể "nhìn thấy" companyWallet
+        // từ giao dịch bên ngoài. giờ phải tải lại nó.
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
             log.error("Company wallet not found in async thread! Wallet ID: {}", companyWallet.getId());
+            saveFailedDetail(event, payout, "Company wallet not found");
             return;
         }
 
         EVOwner owner = evOwnerRepository.findById(payout.getEvOwnerId()).orElse(null);
         if (owner == null || owner.getUser() == null) {
             log.error("EVOwner or associated User not found for EVOwner ID: {}", payout.getEvOwnerId());
+            saveFailedDetail(event, payout, "EVOwner not found");
             return;
         }
 
+        // Lấy ví EV Owner (cũng phải là ví mới nhất)
         Wallet ownerWallet = walletService.findWalletByUser(owner.getUser());
+        if (ownerWallet == null) {
+            log.error("Wallet for EVOwner ID {} not found.", payout.getEvOwnerId());
+            saveFailedDetail(event, payout, "EVOwner wallet not found");
+            return;
+        }
+
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(event);
         detail.setEvOwner(owner);
@@ -372,21 +385,45 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 detail.setErrorMessage("No payout calculated for this owner");
             }
             log.info("Successfully processed payout for EVOwner ID: {}", payout.getEvOwnerId());
-        } catch (WalletException e) {
-            log.error("WalletException during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
+        } catch (Exception e) { // Bắt tất cả lỗi (bao gồm cả WalletException)
+            log.error("Exception during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
+
+            String errorMessage = e.getMessage();
+            if (errorMessage == null) errorMessage = "Unknown error";
+            // Cắt ngắn thông báo lỗi để đảm bảo vừa cột VARCHAR(255)
+            if (errorMessage.length() > 250) {
+                errorMessage = errorMessage.substring(0, 250) + "...";
+            }
+
             detail.setStatus("FAILED");
-            detail.setErrorMessage(e.getMessage());
-        } catch (Exception e) {
-            log.error("System error during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage(), e);
-            detail.setStatus("FAILED");
-            detail.setErrorMessage("System error: " + e.getMessage());
+            detail.setErrorMessage(errorMessage);
         } finally {
-            profitDistributionDetailRepository.save(detail); // Lưu lại chi tiết dù thành công hay thất bại
+            // Dù thành công hay thất bại, lưu lại chi tiết (vì đây là giao dịch mới)
+            profitDistributionDetailRepository.save(detail);
+        }
+    }
+
+    // --- THÊM HÀM HELPER NÀY ĐỂ LƯU LỖI (NẾU WALLET KHÔNG TÌM THẤY) ---
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
+        try {
+            EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
+            ProfitDistributionDetail detail = new ProfitDistributionDetail();
+            detail.setDistribution(event);
+            detail.setEvOwner(ownerRef);
+            detail.setMoneyAmount(payout.getPayoutAmount());
+            detail.setCreditAmount(payout.getCreditContribution());
+            detail.setStatus("FAILED");
+            detail.setErrorMessage(errorMessage);
+            profitDistributionDetailRepository.save(detail);
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to even save the failure detail for owner {}: {}", payout.getEvOwnerId(), e.getMessage());
         }
     }
 
     // --- Helper Methods ---
-    private ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
         ProfitDistribution event = new ProfitDistribution();
         event.setCompanyUser(companyUser);
         if (request.getProjectId() != null) {
