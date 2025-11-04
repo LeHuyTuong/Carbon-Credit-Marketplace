@@ -25,10 +25,8 @@ const ViewTransaction = () => {
   const navigate = useNavigate();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
 
-
   const [trx, setTrx] = useState(null);
   const [loading, setLoading] = useState(true);
-
 
   useEffect(() => {
     const fetchTransaction = async () => {
@@ -38,7 +36,12 @@ const ViewTransaction = () => {
 
         if (transaction) {
           const paymentRes = await getPaymentDetails();
-          transaction.paymentDetails = paymentRes;
+          // Lọc payment theo user
+          const userPayment = paymentRes.find(
+            (p) => p.userId === transaction.user?.id
+          );
+          transaction.paymentDetails = userPayment || null;
+
           setTrx(transaction);
         } else {
           setTrx(null);
@@ -52,6 +55,7 @@ const ViewTransaction = () => {
     };
     fetchTransaction();
   }, [id]);
+
 
   const handleProcess = async (accept) => {
     try {
@@ -125,8 +129,9 @@ const ViewTransaction = () => {
         <Divider sx={{ mb: 2, borderColor: colors.grey[700] }} />
 
         <Box display="flex" flexDirection="column" gap={1.5}>
-          <Typography>
-            <b>Status:</b>{" "}
+          {/*  Fixed status chip DOM nesting */}
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography component="span"><b>Status:</b></Typography>
             <Chip
               label={trx.status}
               sx={{
@@ -136,7 +141,7 @@ const ViewTransaction = () => {
                 textTransform: "capitalize",
               }}
             />
-          </Typography>
+          </Box>
 
           <Typography>
             <b>Amount:</b>{" "}
@@ -185,28 +190,27 @@ const ViewTransaction = () => {
           </Typography>
         </Box>
 
-        {trx.status === "PENDING" && (
-          <Box display="flex" justifyContent="center" gap={2} mt={4}>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => handleProcess(true)}
-              sx={{ px: 4 }}
-            >
-              Approve
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => handleProcess(false)}
-              sx={{ px: 4 }}
-            >
-              Reject
-            </Button>
-          </Box>
-        )}
-
-        <Box display="flex" justifyContent="center" mt={3}>
+        <Box display="flex" justifyContent="center" gap={2} mt={4}>
+          {trx.status === "PENDING" && (
+            <>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={() => handleProcess(true)}
+                sx={{ px: 4 }}
+              >
+                Approve
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => handleProcess(false)}
+                sx={{ px: 4 }}
+              >
+                Reject
+              </Button>
+            </>
+          )}
           <Button
             variant="outlined"
             sx={{
@@ -219,6 +223,7 @@ const ViewTransaction = () => {
             Back
           </Button>
         </Box>
+
       </Box>
 
       {/* Snackbar thông báo */}

@@ -1,4 +1,3 @@
-// ===================== CVALogin.jsx =====================
 import React, { useState } from "react";
 import {
   Box,
@@ -19,16 +18,18 @@ const CVALogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-  const { login } = useAuth(); // lấy login từ context
+  const { login } = useAuth();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🧩 Cập nhật input form
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // 🚀 Submit login
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -40,29 +41,39 @@ const CVALogin = () => {
 
     try {
       setLoading(true);
+      console.log("Attempting login with:", form.email);
 
-      // 🟢 Gọi API login
+      // ✅ Gọi API login
       const res = await apiLogin(form.email, form.password);
-      if (!res?.jwt) throw new Error("Invalid login response");
+      console.log("Login API response:", res);
 
-      // 🟢 Lưu user vào context, ép role = "CVA"
+      if (!res?.jwt) throw new Error("Invalid login response from server");
+
+      // ✅ Lưu user vào context (role = CVA)
       login({ ...res.user, role: "CVA" }, res.jwt, true);
 
-      // 🟢 Kiểm tra KYC
+      // ✅ Gọi check KYC
       const kycRes = await checkKYCCVA();
-      console.log("✅ Full KYC check:", kycRes);
+      console.log("Full KYC check:", kycRes);
 
-      // 🟢 Điều hướng dựa theo KYC
+      // ✅ Điều hướng
       if (kycRes && kycRes.id) {
-        console.log("➡️ KYC found → Go Dashboard");
+        console.log("✅ KYC found → Go to Dashboard");
         navigate("/cva/dashboard", { replace: true });
       } else {
-        console.log("➡️ No KYC found → Go to KYC page");
+        console.log("⚠️ No KYC found → Go to KYC page");
         navigate("/cva/kyc", { replace: true });
       }
     } catch (err) {
-      console.error("❌ Login Error:", err);
-      setError(err.message || "An unexpected error occurred!");
+      console.error("Login Error:", err);
+
+      // Chuẩn hóa message lỗi
+      const apiMsg =
+        err?.responseStatus?.responseMessage ||
+        err?.message ||
+        "Login failed! Please try again.";
+
+      setError(apiMsg);
     } finally {
       setLoading(false);
     }
@@ -88,7 +99,7 @@ const CVALogin = () => {
           backgroundColor: colors.primary[500],
         }}
       >
-        {/* Header */}
+        {/* 🧭 Header */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
           <SupervisorAccount
             sx={{ fontSize: 48, color: colors.greenAccent[500], mb: 1 }}
@@ -96,7 +107,7 @@ const CVALogin = () => {
           <Typography
             variant="h4"
             fontWeight="bold"
-            color={colors.greenAccent[400]}
+color={colors.greenAccent[400]}
           >
             CVA Login
           </Typography>
@@ -105,7 +116,7 @@ const CVALogin = () => {
           </Typography>
         </Box>
 
-        {/* Form */}
+        {/* 🧩 Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email"

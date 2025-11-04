@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from "react"
 import {
   Box,
   Button,
@@ -7,15 +7,17 @@ import {
   useTheme,
   Paper,
   Grid,
-} from "@mui/material";
-import { tokens } from "@/theme";
-import { useNavigate } from "react-router-dom";
-import { apiKYCCVA } from "@/apiCVA/apiAuthor.js";
+} from "@mui/material"
+import { tokens } from "@/theme"
+import { useNavigate } from "react-router-dom"
+import { apiKYCCVA } from "@/apiCVA/apiAuthor.js"
+import { useSnackbar } from "@/hooks/useSnackbar"
 
 const CVAKYC = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const navigate = useNavigate();
+  const theme = useTheme()
+  const colors = tokens(theme.palette.mode)
+  const navigate = useNavigate()
+  const { showSnackbar, SnackbarComponent } = useSnackbar()
 
   const [form, setForm] = useState({
     name: "",
@@ -24,61 +26,55 @@ const CVAKYC = () => {
     organization: "",
     accreditationNo: "",
     capacityQuota: "",
-  });
+  })
 
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" })
+  }
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors = {}
     Object.entries(form).forEach(([key, value]) => {
       if (!value && key !== "email" && key !== "role") {
-        newErrors[key] = "Please fill out this field.";
+        newErrors[key] = "Please fill out this field."
       }
-    });
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    })
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
+  e.preventDefault()
+  if (!validate()) return
 
   try {
-    setLoading(true);
+    setLoading(true)
 
-    // Tạo payload đúng format JSON
-    const payload = {
-      requestTrace: crypto.randomUUID(),
-      requestDateTime: new Date().toISOString(),
-      data: {
-        name: form.name,
-        email: form.email,
-        organization: form.organization,
-        positionTitle: form.role, // hoặc có thể thêm field riêng nếu BE yêu cầu
-        accreditationNo: form.accreditationNo,
-        capacityQuota: Number(form.capacityQuota) || 0,
-        notes: "",
-      },
-    };
+    const formData = new FormData()
+    formData.append("name", form.name)
+    formData.append("email", form.email)
+    formData.append("organization", form.organization)
+    formData.append("positionTitle", form.role)
+    formData.append("accreditationNo", form.accreditationNo)
+    formData.append("capacityQuota", form.capacityQuota || 0)
+    formData.append("notes", "")
 
-    await apiKYCCVA(payload);
+    const res = await apiKYCCVA(formData)
 
-    alert("KYC submitted successfully!");
-    navigate("/cva/dashboard");
+    // nếu API trả về thành công, show snackbar success
+    showSnackbar("success", "KYC submitted successfully")
+    setTimeout(() => navigate("/cva/dashboard"), 1500)
   } catch (error) {
-    alert("KYC submission failed: " + error.message);
-    console.error("KYC Error:", error);
+    // chỉ show fail nếu thật sự throw error
+    showSnackbar("error", "KYC submission failed: " + error.message)
   } finally {
-    setLoading(false);
+    setLoading(false)
   }
-};
-
+}
 
   return (
     <Box
@@ -109,13 +105,16 @@ const CVAKYC = () => {
           KYC Verification
         </Typography>
 
-        <Typography variant="body2" align="center" mb={4} color={colors.grey[300]}>
+        <Typography
+          variant="body2"
+          align="center"
+          mb={4}
+          color={colors.grey[300]}
+        >
           Please complete your personal and organizational information.
         </Typography>
-
         <form onSubmit={handleSubmit} noValidate>
           <Grid container spacing={2} mb={2}>
-            {/* Left Column */}
             <Grid item xs={6}>
               <TextField
                 label="Full Name"
@@ -163,7 +162,6 @@ const CVAKYC = () => {
               />
             </Grid>
 
-            {/* Right Column */}
             <Grid item xs={6}>
               <TextField
                 label="Email"
@@ -236,14 +234,16 @@ const CVAKYC = () => {
               fontWeight: "bold",
               "&:hover": { borderColor: colors.grey[200] },
             }}
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/cva/carbonX/mkp/login')}
           >
             BACK
           </Button>
         </form>
+
+        {SnackbarComponent}
       </Paper>
     </Box>
-  );
-};
+  )
+}
 
 export default CVAKYC;
