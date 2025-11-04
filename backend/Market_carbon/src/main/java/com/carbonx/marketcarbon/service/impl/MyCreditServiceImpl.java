@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
@@ -30,11 +31,13 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import java.net.URLEncoder;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +54,8 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CertificatePdfService certificatePdfService;
     private final EmailService emailService;
     private final SseService sseService;
+    private final StorageService storageService;
+    private final WalletTransactionRepository walletTransactionRepository;
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -201,6 +206,10 @@ public class MyCreditServiceImpl implements MyCreditService {
         return CarbonCreditResponse.from(credit);
     }
 
+    private BigDecimal safe(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
     @Override
     @PreAuthorize("hasRole('COMPANY')")
     public List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId) {
@@ -218,6 +227,9 @@ public class MyCreditServiceImpl implements MyCreditService {
                 .toList();
     }
 
+    /**
+     * Tính toán số lượng tín chỉ có sẵn để retire
+     */
     private BigDecimal getAvailableAmount(CarbonCredit credit) {
         if (credit == null) {
             return BigDecimal.ZERO;
@@ -236,9 +248,19 @@ public class MyCreditServiceImpl implements MyCreditService {
                 return remaining;
             }
         }
-
-        return BigDecimal.ZERO;
+        return amount;
     }
+
+    /**
+     * Kiểm tra xem tín chỉ có phải mua từ marketplace không
+     */
+    private boolean isMarketplacePurchase(CarbonCredit credit) {
+        // Kiểm tra các giao dịch mua cho tín chỉ này
+        return walletTransactionRepository
+                .countByOrderCarbonCreditIdAndTransactionType(
+                        credit.getId(), WalletTransactionType.BUY_CARBON_CREDIT) > 0;
+    }
+
 
     /**
      * [COMPANY] Lấy danh sách tín chỉ có thể retire.
@@ -255,28 +277,21 @@ public class MyCreditServiceImpl implements MyCreditService {
         Long companyId = currentCompanyId();
         log.info("[DEBUG] getMyRetirableCredits() - companyId={}", companyId);
 
-        // B1 Tìm carbon theo compandy id
         return creditRepo.findByCompanyId(companyId).stream()
                 .filter(credit -> {
-                    // luôn phải cập nhật xem credit đã hết hạn chưa
                     checkAndMarkExpired(credit);
 
-                    // 1.1 lọc những tín chỉ hết han hoặc đã retire
                     if (credit.getStatus() == CreditStatus.EXPIRED || credit.getStatus() == CreditStatus.RETIRED) {
                         return false;
                     }
-
-                    // lọc nhuwnxg thằng nào đã list
-                    BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
-                    // nếu list nhỏ hơn = không và hiện ang có lớn hơn 0 thì return true
-                    return listed.compareTo(BigDecimal.ZERO) <= 0 && getAvailableAmount(credit).compareTo(BigDecimal.ZERO) > 0;
+                    return getAvailableAmount(credit).compareTo(BigDecimal.ZERO) > 0;
                 })
                 .map(CarbonCreditResponse::from)
                 .toList();
     }
 
     /**
-     * [COMPANY] Retire một phần/hoặc toàn bộ quantity của credit theo id.
+     * [COMPANY] Retire toàn bộ quantity của batch theo id.
      *
      * - Không cho retire tín chỉ EXPIRED (CREDIT_EXPIRED)
      * - Không cho retire tín chỉ đang niêm yết (listedAmount > 0) (CREDIT_HAS_ACTIVE_LISTING)
@@ -290,95 +305,136 @@ public class MyCreditServiceImpl implements MyCreditService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('COMPANY')")
-    public CarbonCreditResponse retireCredit(Long creditId, BigDecimal quantity) {
-        //B1 tìm công ty hiện tại
+    public List<CarbonCreditResponse> retireCreditsFromBatch(RetireBatchRequest request) {
         Long companyId = currentCompanyId();
         Company company = companyRepo.findById(companyId)
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
-        log.info("[DEBUG] retireCredit() - creditId={}, companyId={}, quantity={}",
-                creditId, companyId, quantity);
 
-        //B2 check id credit hợp lệ không
-        if (creditId == null || creditId.longValue() <= 0) {
-            throw new AppException(ErrorCode.INVALID_INPUT);
-        }
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
-        }
+        log.info("[DEBUG] retireCreditsFromBatch() - batchId={}, companyId={}, quantity={}",
+                request.getBatchId(), companyId, request.getQuantity());
 
-        //Var cho phép trình biên dịch tự suy luận kiểu dữ liệu dựa trên giá trị được gán. java 10 >. đoán
-        //Compile-time (chỉ trong lúc biên dịch)
-        // optional Runtime (trong khi chương trình chạy)
+        // B1: Tìm Batch và kiểm tra
+        CreditBatch batch = batchRepo.findById(request.getBatchId())
+                .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
 
-        //B3 Tìm credit của công ty hiện tại (kèm lock ghi để đảm bảo tính nhất quán khi trừ số lượng)
-        var creditOpt = creditRepo.findByIdAndCompanyIdWithLock(creditId, companyId);
+        // B2: Lấy tất cả credit con trong batch
+        List<CarbonCredit> allCreditsInBatch = creditRepo.findAllOwnedByBatch(batch.getId(), companyId);
 
-        //B4 check credit
-        if (creditOpt.isEmpty()) {
-            if (creditRepo.existsById(creditId)) {  // tồn tại nhưng ko trong công ty
-                throw new AppException(ErrorCode.COMPANY_NOT_OWN);
-            }
-            // không tồn lại
-            throw new AppException(ErrorCode.CREDIT_NOT_FOUND);
-        }
+        log.info("[DEBUG] Found {} credits in batch {}", allCreditsInBatch.size(), batch.getId());
 
-        //B5 Lấy ra credit từ optional và check ngày hết hạn
-        CarbonCredit credit = creditOpt.get();
-        checkAndMarkExpired(credit);
+        // B3: Lọc ra những credit có thể retire (giống hệt getMyRetirableCredits)
+        List<CarbonCredit> retirableCredits = allCreditsInBatch.stream()
+                .filter(c -> {
+                    checkAndMarkExpired(c);
+                    if (c.getStatus() == CreditStatus.EXPIRED || c.getStatus() == CreditStatus.RETIRED) {
+                        return false;
+                    }
+                    return getAvailableAmount(c).compareTo(BigDecimal.ZERO) > 0;
+                })
+                // Sắp xếp ưu tiên credit cũ trước - FIFO
+                .sorted(Comparator.comparing(CarbonCredit::getCreateAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
 
-        // 5.1 nếu mà credit hết hạn thì lỗi
-        if (credit.getStatus() == CreditStatus.EXPIRED) {
-            throw new AppException(ErrorCode.CREDIT_EXPIRED);
-        }
-
-        // 5.2 nếu mà credit retired hoặc là số lượng nhỏ hơn bằng 0 thì lỗi
-        if (credit.getStatus() == CreditStatus.RETIRED && credit.getCarbonCredit().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new AppException(ErrorCode.CREDIT_ALREADY_RETIRED);
-        }
-
-        //  5.3 Kiểm tra xem có đang niêm yết không
-        BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
-        if (listed.compareTo(BigDecimal.ZERO) > 0) {
-            throw new AppException(ErrorCode.CREDIT_HAS_ACTIVE_LISTING);
-        }
-
-        // 5.4 kiểm tra phần khả dụng vaf trừ số lượng retire
-        BigDecimal available = getAvailableAmount(credit);
-        if (available.compareTo(quantity) < 0) {
+        if (retirableCredits.isEmpty()) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
-        // 5.5 tính xem phần còn lại sau khi đã retire
-        BigDecimal remaining = available.subtract(quantity);
-        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
-            remaining = BigDecimal.ZERO;
+        // B4: Check tổng available
+        BigDecimal totalAvailableInBatch = retirableCredits.stream()
+                .map(this::getAvailableAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalAvailableInBatch.compareTo(request.getQuantity()) < 0) {
+            throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
-        // B6 cập nhật lại credit
-        credit.setCarbonCredit(remaining); // còn lại mới
-        credit.setAmount(remaining.add(listed)); // tổng mới
+        // B5: Lặp và trừ dần (giống hệt logic listing)
+        BigDecimal remainingToRetire = request.getQuantity();
+        BigDecimal totalRetiredInTx = BigDecimal.ZERO;
+        List<CarbonCredit> modifiedCredits = new ArrayList<>();
 
-        if (remaining.compareTo(BigDecimal.ZERO) == 0) {
-            credit.setStatus(CreditStatus.RETIRED);
-            credit.setListedAmount(BigDecimal.ZERO);
-        } else {
-            credit.setStatus(CreditStatus.AVAILABLE);
+        for (CarbonCredit credit : retirableCredits) {
+            if (remainingToRetire.compareTo(BigDecimal.ZERO) <= 0) {
+                break; // Đã đủ số lượng
+            }
+
+            // lock từng row một BÊN TRONG vòng lặp
+            CarbonCredit lockedCredit = creditRepo.findByIdWithPessimisticLock(credit.getId())
+                    .orElse(credit); // Fallback (dù findByIdWithPessimisticLock nên luôn tìm thấy)
+
+            BigDecimal available = getAvailableAmount(lockedCredit);
+            if (available.compareTo(BigDecimal.ZERO) <= 0) {
+                continue; // Dòng này đã hết (có thể do race condition đã được xử lý)
+            }
+
+            BigDecimal deduct = available.min(remainingToRetire);
+            BigDecimal newAvailable = available.subtract(deduct);
+
+            // Cập nhật số lượng (carbonCredit = available)
+            lockedCredit.setCarbonCredit(newAvailable);
+
+            // Cập nhật tổng (amount = available + listed)
+            BigDecimal listed = safe(lockedCredit.getListedAmount());
+            lockedCredit.setAmount(newAvailable.add(listed));
+
+            if (newAvailable.compareTo(BigDecimal.ZERO) == 0) {
+                // Chỉ set RETIRED nếu listed cũng = 0
+                if (listed.compareTo(BigDecimal.ZERO) == 0) {
+                    lockedCredit.setStatus(CreditStatus.RETIRED);
+                }
+                // (Nếu listed > 0, nó sẽ tự động là LISTED, không cần set)
+            }
+            // (Nếu newAvailable > 0, status vẫn là AVAILABLE (nếu listed=0)
+            // hoặc LISTED (nếu listed>0))
+
+            // Cập nhật status chung (an toàn)
+            updateCreditStatus(lockedCredit);
+
+            modifiedCredits.add(lockedCredit);
+            remainingToRetire = remainingToRetire.subtract(deduct);
+            totalRetiredInTx = totalRetiredInTx.add(deduct);
         }
 
-        CarbonCredit saved = creditRepo.save(credit);
+        // B6: Lưu tất cả thay đổi vào DB
+        creditRepo.saveAll(modifiedCredits);
 
-        // Gom toàn bộ xử lý chứng chỉ + thông báo sau khi retire thành helper riêng
-        handleRetirementSuccess(saved, company, quantity);
+        // B7: Hậu xử lý (PDF, Email) - Gọi 1 LẦN cho TỔNG SỐ LƯỢNG
+        if (!modifiedCredits.isEmpty()) {
+            // Dùng credit đầu tiên làm "đại diện" để lấy thông tin batch/project
+            // và truyền tổng số lượng đã retire (totalRetiredInTx)
+            handleRetirementSuccess(
+                    modifiedCredits.get(0), // Credit đại diện
+                    company,
+                    totalRetiredInTx      // Tổng số lượng đã retire
+            );
+        }
 
-        log.info("[DEBUG] retireCredit() - creditId={} retiredQuantity={}, remaining={}",
-                saved.getId(), quantity, remaining);
+        log.info("[DEBUG] retireCreditsFromBatch() - batchId={} retiredQuantity={}, remainingToRetire={}",
+                batch.getId(), totalRetiredInTx, remainingToRetire);
 
-        return CarbonCreditResponse.from(saved);
+        // Trả về danh sách các credit đã bị thay đổi
+        return modifiedCredits.stream()
+                .map(CarbonCreditResponse::from)
+                .toList();
     }
 
-    @Override
-    public List<CarbonCreditResponse> retireCreditsFromBatch(RetireBatchRequest request) {
-        return List.of();
+    //  helper cập nhật status
+    private void updateCreditStatus(CarbonCredit credit) {
+        BigDecimal available = safe(credit.getCarbonCredit());
+        BigDecimal listed = safe(credit.getListedAmount());
+
+        if (credit.getStatus() == CreditStatus.EXPIRED) {
+            return; // Đã hết hạn
+        }
+
+        if (available.compareTo(BigDecimal.ZERO) == 0 && listed.compareTo(BigDecimal.ZERO) == 0) {
+            credit.setStatus(CreditStatus.RETIRED);
+        } else if (listed.compareTo(BigDecimal.ZERO) > 0) {
+            credit.setStatus(CreditStatus.LISTED);
+        } else {
+            // (available > 0 && listed == 0)
+            credit.setStatus(CreditStatus.AVAILABLE);
+        }
     }
 
     /**
