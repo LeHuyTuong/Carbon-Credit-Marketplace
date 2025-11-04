@@ -103,7 +103,7 @@ public class CertificatePdfService {
             String type = imageUrl.toLowerCase().endsWith(".png") ? "png" : "jpeg";
             return "data:image/" + type + ";base64," + base64;
         } catch (Exception e) {
-            log.warn("⚠️ Cannot load image from URL: {}", imageUrl);
+            log.warn(" Cannot load image from URL: {}", imageUrl);
             return null;
         }
     }

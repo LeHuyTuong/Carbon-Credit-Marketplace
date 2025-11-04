@@ -9,6 +9,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,11 +81,11 @@ public class EmissionReport {
     @Column(columnDefinition = "text") String parseError;
 
     // Mốc thời gian
-    OffsetDateTime createdAt;
-    OffsetDateTime submittedAt;
-    OffsetDateTime verifiedAt;
-    OffsetDateTime approvedAt;
-    OffsetDateTime updatedAt;
+    LocalDateTime createdAt;
+    LocalDateTime submittedAt;
+    LocalDateTime verifiedAt;
+    LocalDateTime approvedAt;
+    LocalDateTime updatedAt;
 
     @Column(name = "ai_pre_score", precision = 4, scale = 2)
     BigDecimal aiPreScore;
