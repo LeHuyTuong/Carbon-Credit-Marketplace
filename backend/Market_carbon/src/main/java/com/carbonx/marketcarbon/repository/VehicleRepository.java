@@ -20,6 +20,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     @EntityGraph(attributePaths = "company") // tránh N+1 khi lấy company
     List<Vehicle> findByEvOwner_Id(Long evOwnerId);
 
+
+    Optional<Vehicle> findByCompanyIdAndPlateNumberIgnoreCase(Long companyId, String plateNumber);
+
+    List<Vehicle> findByCompanyId(Long companyId);
+
     // Company
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
 
@@ -41,5 +46,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      */
     @Query("SELECT v FROM Vehicle v JOIN FETCH v.evOwner e JOIN FETCH e.user u WHERE v.plateNumber = :plateNumber")
     Optional<Vehicle> findByPlateNumberWithDetails(String plateNumber);
+
+    long countByCompany_Id(Long companyId);
 
 }

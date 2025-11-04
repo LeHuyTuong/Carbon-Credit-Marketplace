@@ -293,55 +293,55 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
         return CreditBatchResponse.from(b);
     }
-//
-//    @Override
-//    @Transactional
-//    public CarbonCredit issueTradeCredit(CarbonCredit sourceCredit, Company buyerCompany, BigDecimal quantity, BigDecimal pricePerUnit, String issuedBy) {
-//        if (sourceCredit == null || sourceCredit.getId() == null)
-//            throw new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND);
-//        if (buyerCompany == null || buyerCompany.getId() == null)
-//            throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
-//        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
-//            throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
-//
-//        Project project = sourceCredit.getProject();
-//        if (project == null || project.getId() == null)
-//            throw new AppException(ErrorCode.PROJECT_NOT_FOUND);
-//
-//        int year = sourceCredit.getIssuedYear() != null ? sourceCredit.getIssuedYear() : OffsetDateTime.now().getYear();
-//
-//        String companyCode = CodeGenerator.slug3WithId(buyerCompany.getCompanyName(), "COMP", buyerCompany.getId());
-//        String projectCode = CodeGenerator.slug3WithId(project.getTitle(), "PRJ", project.getId());
-//
-//        SerialRange range = serialSvc.allocate(project, buyerCompany, year, 1);
-//        String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
-//        String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
-//
-//        LocalDate expiryDate = sourceCredit.getExpiryDate();
-//        if (expiryDate == null && sourceCredit.getBatch() != null) {
-//            expiryDate = sourceCredit.getBatch().getExpiresAt();
-//        }
-//
-//        CarbonCredit newCredit = CarbonCredit.builder()
-//                .batch(sourceCredit.getBatch())
-//                .company(buyerCompany)
-//                .project(project)
-//                .sourceCredit(sourceCredit)
-//                .creditCode(creditCode)
-//                .status(CreditStatus.TRADED)
-//                .carbonCredit(quantity)
-//                .tCo2e(sourceCredit.getTCo2e())
-//                .amount(quantity)
-//                .name(sourceCredit.getName())
-//                .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue() : sourceCredit.getCurrentPrice())
-//                .vintageYear(sourceCredit.getVintageYear())
-//                .issuedAt(OffsetDateTime.now())
-//                .issuedBy(issuer)
-//                .expiryDate(expiryDate)
-//                .build();
-//
-//        return creditRepo.save(newCredit);
-//    }
+
+    @Override
+    @Transactional
+    public CarbonCredit issueTradeCredit(CarbonCredit sourceCredit, Company buyerCompany, BigDecimal quantity, BigDecimal pricePerUnit, String issuedBy) {
+        if (sourceCredit == null || sourceCredit.getId() == null)
+            throw new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND);
+        if (buyerCompany == null || buyerCompany.getId() == null)
+            throw new AppException(ErrorCode.COMPANY_NOT_FOUND);
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0)
+            throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
+
+        Project project = sourceCredit.getProject();
+        if (project == null || project.getId() == null)
+            throw new AppException(ErrorCode.PROJECT_NOT_FOUND);
+
+        int year = sourceCredit.getIssuedYear() != null ? sourceCredit.getIssuedYear() : OffsetDateTime.now().getYear();
+
+        String companyCode = CodeGenerator.slug3WithId(buyerCompany.getCompanyName(), "COMP", buyerCompany.getId());
+        String projectCode = CodeGenerator.slug3WithId(project.getTitle(), "PRJ", project.getId());
+
+        SerialRange range = serialSvc.allocate(project, buyerCompany, year, 1);
+        String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
+        String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
+
+        LocalDate expiryDate = sourceCredit.getExpiryDate();
+        if (expiryDate == null && sourceCredit.getBatch() != null) {
+            expiryDate = sourceCredit.getBatch().getExpiresAt();
+        }
+
+        CarbonCredit newCredit = CarbonCredit.builder()
+                .batch(sourceCredit.getBatch())
+                .company(buyerCompany)
+                .project(project)
+                .sourceCredit(sourceCredit)
+                .creditCode(creditCode)
+                .status(CreditStatus.TRADED)
+                .carbonCredit(quantity)
+                .tCo2e(sourceCredit.getTCo2e())
+                .amount(quantity)
+                .name(sourceCredit.getName())
+                .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue() : sourceCredit.getCurrentPrice())
+                .vintageYear(sourceCredit.getVintageYear())
+                .issuedAt(OffsetDateTime.now())
+                .issuedBy(issuer)
+                .expiryDate(expiryDate)
+                .build();
+
+        return creditRepo.save(newCredit);
+    }
 
     private CreditBatchResponse toResponse(CreditBatch b, CreditCertificate cert) {
         String viewUrl = (frontendBaseUrl != null)
