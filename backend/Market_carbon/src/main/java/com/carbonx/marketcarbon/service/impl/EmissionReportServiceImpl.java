@@ -268,7 +268,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         r.setVerifiedByCva(cva);
         r.setVerifiedAt(OffsetDateTime.now());
         r.setComment(comment);
-        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
+        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.CVA_REJECTED);
         r.setUpdatedAt(OffsetDateTime.now());
 
         reportRepository.save(r);
@@ -395,7 +395,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         r.setVerifiedAt(OffsetDateTime.now());
         r.setVerificationScore(score);
         r.setVerificationComment(comment);
-        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
+        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.CVA_REJECTED);
         r.setUpdatedAt(OffsetDateTime.now());
 
         reportRepository.save(r);

@@ -2,7 +2,6 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.common.ListingStatus;
-import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
 import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
@@ -24,10 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,8 +36,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final MarketplaceListingRepository marketplaceListingRepository;
-    private final WalletTransactionRepository walletTransactionRepository;
-    private final WalletRepository walletRepository;
     private final CreditBatchRepository creditBatchRepository;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
