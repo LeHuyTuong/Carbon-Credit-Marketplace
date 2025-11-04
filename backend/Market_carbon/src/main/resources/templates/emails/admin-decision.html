@@ -13,33 +13,59 @@
     }
     .wrapper { padding: 24px; }
     .card {
-      max-width: 640px; margin: 0 auto; background: #ffffff;
-      border-radius: 14px; box-shadow: 0 6px 24px rgba(17, 24, 39, .06);
+      max-width: 640px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(17, 24, 39, .06);
       overflow: hidden;
+      border-top: 6px solid #00a86b;
     }
     .header {
-      padding: 20px 24px; border-bottom: 1px solid #eef2f7;
-      display: flex; align-items: center; gap: 12px;
+      padding: 20px 24px;
+      border-bottom: 1px solid #eef2f7;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #00a86b, #059669);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
     }
-    .logo { width: 28px; height: 28px; border-radius: 8px; background: #111827; }
-    .title { font-size: 16px; font-weight: 600; }
-    .content { padding: 24px; }
+    .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: transparent;
+    }
+    .content { padding: 24px; line-height: 1.6; }
     .badge {
-      display: inline-block; padding: 6px 10px; border-radius: 999px;
-      color: #fff; font-size: 12px; font-weight: 600; margin: 8px 0 16px;
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 8px 0 16px;
     }
     .note {
-      background: #f9fafb; border: 1px solid #eef2f7;
-      border-radius: 10px; padding: 14px; margin: 16px 0; white-space: pre-wrap;
-    }
-    .cta {
-      display: inline-block; text-decoration: none;
-      background: #111827; color: #fff; padding: 12px 16px;
-      border-radius: 10px; font-weight: 600;
+      background: #f9fafb;
+      border: 1px solid #eef2f7;
+      border-left: 4px solid #00a86b;
+      border-radius: 10px;
+      padding: 14px;
+      margin: 16px 0;
+      white-space: pre-wrap;
+      color: #374151;
     }
     .footer {
-      padding: 18px 24px; color: #9ca3af; font-size: 12px;
+      padding: 18px 24px;
+      color: #9ca3af;
+      font-size: 12px;
       border-top: 1px solid #eef2f7;
+      background: #f9fafb;
+      text-align: center;
     }
   </style>
 </head>
@@ -47,25 +73,33 @@
 <div class="wrapper">
   <div class="card">
     <div class="header">
-      <span class="logo"></span>
-      <div class="title">CarbonX · Final Decision</div>
+      <img src="https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/z7189056163744_90ddda01b07a72bf3494b16a5678f571.jpg"
+           alt="CarbonX Logo"
+           class="logo" />
+      <div>CarbonX · Final Decision</div>
     </div>
+
     <div class="content">
       <p><strong>Company:</strong> <span th:text="${companyName}">Company Name</span></p>
-      <span class="badge" th:text="${decision}" th:style="'background-color:' + ${badgeColor} + ';'">APPROVED</span>
+      <span class="badge"
+            th:text="${decision}"
+            th:style="'background-color:' + ${badgeColor} + ';'">APPROVED</span>
       <p><strong>Application ID:</strong> <span th:text="${applicationId}">12345</span></p>
       <p><strong>Project:</strong> <span th:text="${projectName}">EV Replacement Program</span></p>
       <p><strong>Final Reviewer:</strong> <span th:text="${reviewerName}">Admin User</span></p>
-      <div class="note" th:text="${reviewNote}">All criteria met, approved for credit allocation.</div>
-      <p style="margin-top: 20px;">
-      </p>
-      <p style="margin-top:24px;">
+      <div class="note" th:text="${reviewNote}">
+        All criteria met, approved for credit allocation.
+      </div>
+
+      <p style="margin-top: 24px; color:#4b5563;">
         This is the final decision regarding your CarbonX application.
         Please contact your account administrator if you need further clarification.
       </p>
     </div>
+
     <div class="footer">
-      © 2025 CarbonX MarketCarbon — All rights reserved.
+      © 2025 CarbonX MarketCarbon — All rights reserved.<br>
+      <span style="color:#9ca3af;">This is an automated email. Please do not reply.</span>
     </div>
   </div>
 </div>
