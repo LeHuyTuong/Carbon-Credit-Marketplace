@@ -13,9 +13,9 @@ public interface CreditIssuanceService {
     Page<CreditBatchResponse> listAllBatches(Pageable pageable);
     CreditBatchResponse getBatchById(Long batchId);
 
-    CarbonCredit issueTradeCredit(CarbonCredit sourceCredit,
-                                  Company buyerCompany,
-                                  BigDecimal quantity,
-                                  BigDecimal pricePerUnit,
-                                  String issuedBy);
+//    CarbonCredit issueTradeCredit(CarbonCredit sourceCredit,
+//                                  Company buyerCompany,
+//                                  BigDecimal quantity,
+//                                  BigDecimal pricePerUnit,
+//                                  String issuedBy);
 }

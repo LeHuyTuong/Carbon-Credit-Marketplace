@@ -3,7 +3,6 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
-import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
@@ -51,13 +50,10 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CreditBatchRepository batchRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
-    private final WalletRepository walletRepo;
     private final CreditCertificateRepository certificateRepo;
     private final CertificatePdfService certificatePdfService;
     private final EmailService emailService;
     private final SseService sseService;
-    private final StorageService storageService;
-    private final WalletTransactionRepository walletTransactionRepository;
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -254,23 +250,11 @@ public class MyCreditServiceImpl implements MyCreditService {
     }
 
     /**
-     * Kiểm tra xem tín chỉ có phải mua từ marketplace không
-     */
-    private boolean isMarketplacePurchase(CarbonCredit credit) {
-        // Kiểm tra các giao dịch mua cho tín chỉ này
-        return walletTransactionRepository
-                .countByOrderCarbonCreditIdAndTransactionType(
-                        credit.getId(), WalletTransactionType.BUY_CARBON_CREDIT) > 0;
-    }
-
-
-    /**
      * [COMPANY] Lấy danh sách tín chỉ có thể retire.
      * Điều kiện lọc:
      * - Không EXPIRED, không RETIRED
      * - Không đang niêm yết (listedAmount == 0)
      * - available (getAvailableAmount(credit)) > 0
-     *
      * Invariant: amount = carbonCredit(available) + listedAmount.
      */
     @Override
@@ -345,13 +329,11 @@ public class MyCreditServiceImpl implements MyCreditService {
 
     /**
      * [COMPANY] Retire toàn bộ quantity của batch theo id.
-     *
      * - Không cho retire tín chỉ EXPIRED (CREDIT_EXPIRED)
      * - Không cho retire tín chỉ đang niêm yết (listedAmount > 0) (CREDIT_HAS_ACTIVE_LISTING)
      * - Không cho retire vượt quá available (AMOUNT_IS_NOT_ENOUGH)
      * - Khi remaining == 0, set status = RETIRED và listedAmount = 0 để đóng credit
      * - Ngược lại, giữ status = AVAILABLE (không chạm tới listedAmount)
-     *
      * đồng bộ: dùng findByIdAndCompanyIdWithLock để khóa hàng, tránh race-condition khi nhiều request tới cùng credit.
      * Invariant: amount = carbonCredit(available) + listedAmount.
      */
@@ -496,7 +478,6 @@ public class MyCreditServiceImpl implements MyCreditService {
      * - Đảm bảo/tạo certificate cho batch tương ứng
      * - Render PDF certificate + upload, lưu URL
      * - Gửi email xác nhận kèm file PDF
-     *
      * không roll back giao dịch chính nếu email/PDF fail
      */    private void handleRetirementSuccess(CarbonCredit credit, Company company, BigDecimal retiredQuantity) {
         if (credit == null || retiredQuantity == null) {

@@ -16,7 +16,7 @@ public interface PaymentService {
     Boolean processPaymentOrder(Long orderId, String paymentId) ;
     PaymentOrderResponse createStripePaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws StripeException;
     PaymentOrderResponse createPayPalPaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws PayPalRESTException;
-
-    PaymentOrder createOrderVNPay(Long amount, String orderInfo, String vnp_TxnRef);
-    void updateOrderStatus(String vnp_TxnRef, Status status);
+//
+//    PaymentOrder createOrderVNPay(Long amount, String orderInfo, String vnp_TxnRef);
+//    void updateOrderStatus(String vnp_TxnRef, Status status);
 }

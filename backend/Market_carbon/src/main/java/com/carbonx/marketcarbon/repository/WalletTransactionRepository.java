@@ -3,7 +3,6 @@ package com.carbonx.marketcarbon.repository;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -19,7 +18,4 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     long countByOrderCarbonCreditIdAndTransactionType(
             Long creditId, WalletTransactionType transactionType);
 
-    // Tìm giao dịch mua cho một tín chỉ
-    List<WalletTransaction> findByOrderCarbonCreditIdAndTransactionType(
-            Long creditId, WalletTransactionType transactionType);
 }
