@@ -16,6 +16,11 @@ import java.util.Optional;
 public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long>,
         JpaSpecificationExecutor<CarbonCredit> {
 
+
+    Optional<CarbonCredit> findByCompanyAndStatus(Company owner, CreditStatus status);
+
+    Page<CarbonCredit> findByStatus(CreditStatus status, Pageable pageable);
+
     Optional<CarbonCredit> findByCreditCodeAndCompany_Id(String creditCode, Long companyId);
 
     Optional<CarbonCredit> findByCreditCode(String creditCode);
@@ -26,6 +31,7 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 
     List<CarbonCredit> findByBatch_IdAndCompany_Id(Long batchId, Long companyId);
 
+    Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
 
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
@@ -51,6 +57,8 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     """)
     List<Object[]> sumAmountByVintage(@Param("companyId") Long companyId);
 
+
+    Optional<CarbonCredit> findByStatus(CreditStatus status);
 
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
