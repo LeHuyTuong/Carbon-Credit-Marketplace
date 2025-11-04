@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
@@ -50,10 +51,13 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CreditBatchRepository batchRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
+    private final WalletRepository walletRepo;
     private final CreditCertificateRepository certificateRepo;
     private final CertificatePdfService certificatePdfService;
     private final EmailService emailService;
     private final SseService sseService;
+    private final StorageService storageService;
+    private final WalletTransactionRepository walletTransactionRepository;
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -223,6 +227,17 @@ public class MyCreditServiceImpl implements MyCreditService {
         return credits.stream()
                 .map(CarbonCreditResponse::from)
                 .toList();
+    }
+
+
+    /**
+     * Kiểm tra xem tín chỉ có phải mua từ marketplace không
+     */
+    private boolean isMarketplacePurchase(CarbonCredit credit) {
+        // Kiểm tra các giao dịch mua cho tín chỉ này
+        return walletTransactionRepository
+                .countByOrderCarbonCreditIdAndTransactionType(
+                        credit.getId(), WalletTransactionType.BUY_CARBON_CREDIT) > 0;
     }
 
     /**

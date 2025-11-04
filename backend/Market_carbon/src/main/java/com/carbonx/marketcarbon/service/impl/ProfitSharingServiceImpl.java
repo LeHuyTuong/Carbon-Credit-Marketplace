@@ -35,7 +35,6 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ProfitSharingServiceImpl implements ProfitSharingService {
 
     private static final BigDecimal KG_PER_CREDIT = new BigDecimal("1000");
@@ -55,10 +54,31 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     @Qualifier("profitSharingTaskExecutor")
     private final TaskExecutor taskExecutor;
 
-    // Tự tiêm (self-inject) chính nó để gọi hàm @Async
-    // @Lazy để tránh lỗi circular dependency ( vòng lặp)
-    @Lazy
-    private final ProfitSharingService self;
+
+    public ProfitSharingServiceImpl(
+            EmissionReportRepository emissionReportRepository,
+            VehicleRepository vehicleRepository,
+            EVOwnerRepository evOwnerRepository,
+            UserRepository userRepository,
+            WalletService walletService,
+            WalletRepository walletRepository,
+            ProfitDistributionRepository profitDistributionRepository,
+            ProfitDistributionDetailRepository profitDistributionDetailRepository,
+            ProjectRepository projectRepository,
+            // BÁO CHO SPRING BIẾT: Tiêm chính xác bean tên là "profitSharingTaskExecutor" vào đây
+            @Qualifier("profitSharingTaskExecutor") TaskExecutor taskExecutor
+    ) {
+        this.userRepository = userRepository;
+        this.emissionReportRepository = emissionReportRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.evOwnerRepository = evOwnerRepository;
+        this.walletService = walletService;
+        this.walletRepository = walletRepository;
+        this.profitDistributionRepository = profitDistributionRepository;
+        this.profitDistributionDetailRepository = profitDistributionDetailRepository;
+        this.projectRepository = projectRepository;
+        this.taskExecutor = taskExecutor; // Gán bean đã được chỉ định
+    }
 
     @Data
     private static class ContributionData {
@@ -132,7 +152,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (request.getEmissionReportId() != null) {
                 EmissionReport report = emissionReportRepository.findById(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
-                if (report.getStatus() != EmissionStatus.CREDIT_ISSUED) {
+                if (report.getStatus() != EmissionStatus.CREDIT_ISSUED ) {
                     throw new AppException(ErrorCode.EMISSION_REPORT_NOT_APPROVED);
                 }
                 reportsToProcess.add(report);
