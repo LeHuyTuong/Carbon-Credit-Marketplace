@@ -227,28 +227,28 @@ public class PaymentServiceImpl implements PaymentService {
         return res;
     }
 
-//    @Override
-//    public PaymentOrder createOrderVNPay(Long amount, String orderInfo, String vnp_TxnRef) {
-//        User user = currentUser();
-//
-//        PaymentOrder paymentOrder = PaymentOrder.builder()
-//                .amount(amount)
-//                .status(Status.PENDING)
-//                .user(user)
-//                .vnpTxnRef(vnp_TxnRef)
-//                .build();
-//        return paymentOrderRepository.save(paymentOrder);
-//    }
-//
-//    @Override
-//    public void updateOrderStatus(String vnp_TxnRef, Status status) {
-//        PaymentOrder order = paymentOrderRepository.findByVnpTxnRef(vnp_TxnRef)
-//                .orElseThrow(() -> new ResourceNotFoundException("Order ID not found with : " + vnp_TxnRef));
-//        if(order.getStatus().equals(Status.PENDING)){
-//            order.setStatus(status);
-//            paymentOrderRepository.save(order);
-//        }
-//    }
+    @Override
+    public PaymentOrder createOrderVNPay(Long amount, String orderInfo, String vnp_TxnRef) {
+        User user = currentUser();
+
+        PaymentOrder paymentOrder = PaymentOrder.builder()
+                .amount(amount)
+                .status(Status.PENDING)
+                .user(user)
+                .vnpTxnRef(vnp_TxnRef)
+                .build();
+        return paymentOrderRepository.save(paymentOrder);
+    }
+
+    @Override
+    public void updateOrderStatus(String vnp_TxnRef, Status status) {
+        PaymentOrder order = paymentOrderRepository.findByVnpTxnRef(vnp_TxnRef)
+                .orElseThrow(() -> new ResourceNotFoundException("Order ID not found with : " + vnp_TxnRef));
+        if(order.getStatus().equals(Status.PENDING)){
+            order.setStatus(status);
+            paymentOrderRepository.save(order);
+        }
+    }
 
 
 }
