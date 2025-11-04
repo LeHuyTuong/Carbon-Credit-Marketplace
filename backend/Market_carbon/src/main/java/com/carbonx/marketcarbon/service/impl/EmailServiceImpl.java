@@ -20,6 +20,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -163,5 +164,15 @@ public class EmailServiceImpl implements EmailService {
         ctx.setVariables(variables);
         // Sử dụng template mới emails/withdrawal-failed.html
         return templateEngine.process("emails/withdrawal-failed.html", ctx);
+    }
+
+    @Override
+    public String renderReportCvaDecisionEmail(Map<String, Object> vars) {
+        return templateEngine.process("emails/report-cva-decision.html", new Context(Locale.getDefault(), vars));
+    }
+
+    @Override
+    public String renderReportAdminDecisionEmail(Map<String, Object> vars) {
+        return templateEngine.process("emails/report-admin-decision.html", new Context(Locale.getDefault(), vars));
     }
 }

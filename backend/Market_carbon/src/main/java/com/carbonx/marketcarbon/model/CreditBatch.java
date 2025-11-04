@@ -73,6 +73,9 @@ public class CreditBatch {
     @Column(name = "expires_at")
     private LocalDate expiresAt;
 
+    @OneToOne(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CreditCertificate certificate;
+
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default

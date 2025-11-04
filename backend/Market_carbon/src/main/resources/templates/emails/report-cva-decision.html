@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>CarbonX – CVA Decision</title>
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: 'Inter', Arial, sans-serif;
+            color: #1f2937;
+            margin: 0;
+            padding: 32px;
+        }
+        .card {
+            max-width: 640px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border-top: 6px solid #00a86b;
+        }
+        .header {
+            background: linear-gradient(135deg, #00a86b, #059669);
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .header img.logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: transparent;
+        }
+        .content {
+            padding: 28px;
+            line-height: 1.6;
+        }
+        .label {
+            font-weight: 600;
+            color: #111827;
+        }
+        .badge {
+            display: inline-block;
+            margin: 12px 0;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            background: #16a34a;
+        }
+        .badge.rejected {
+            background: #dc2626;
+        }
+        .note {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #00a86b;
+            border-radius: 10px;
+            padding: 14px 16px;
+            color: #374151;
+            margin-top: 8px;
+            white-space: pre-wrap;
+        }
+        .footer {
+            background: #f3f4f6;
+            padding: 18px 24px;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <img class="logo" src="https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/z7189056163744_90ddda01b07a72bf3494b16a5678f571.jpg" alt="CarbonX Logo" />
+        <span>CarbonX · CVA Decision</span>
+    </div>
+    <div class="content">
+        <p><span class="label">Company:</span> <span th:text="${companyName}">Company</span></p>
+        <p><span class="label">Project:</span> <span th:text="${projectName}">Project</span></p>
+        <p><span class="label">Report ID:</span> <span th:text="${reportId}">123</span></p>
+        <span class="badge" th:classappend="${approved} ? '' : 'rejected'" th:text="${decision}">Approved by CVA</span>
+        <p><span class="label">Reviewer:</span> <span th:text="${reviewerName}">CVA Officer</span></p>
+        <p class="label">Review Note:</p>
+        <div class="note" th:text="${reviewNote}">
+            Your report meets the verification standards and has been approved by CVA.
+        </div>
+    </div>
+    <div class="footer">
+        Thank you for your participation in the CarbonX Verification Program.<br>
+        <span style="color:#9ca3af;">This is an automated email. Please do not reply.</span>
+    </div>
+</div>
+</body>
+</html>
