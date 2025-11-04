@@ -242,6 +242,9 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         cert.setCertificateUrl(pdfUrl);
         certificateRepo.save(cert);
 
+        batch.setCertificate(cert);
+        batchRepo.save(batch);
+
         // Tải bytes để đính kèm email
         byte[] pdf;
         try (InputStream in = new java.net.URL(pdfUrl).openStream()) {

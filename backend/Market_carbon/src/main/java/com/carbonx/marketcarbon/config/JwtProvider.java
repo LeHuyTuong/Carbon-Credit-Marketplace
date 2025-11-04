@@ -45,7 +45,7 @@ public class JwtProvider {
     /**
      * Tạo token tạm thời (Temporary Token)
      * Dùng trong luồng Forgot Password sau khi OTP được xác minh.
-     * Token này chỉ có thời hạn ngắn (ví dụ 10 phút) và không chứa roles.
+     * Token này chỉ có thời hạn ngắn ( 10 phút) và không chứa roles.
      */
 
     public String generateTemporaryToken(User user, Duration validity) {
@@ -70,7 +70,7 @@ public class JwtProvider {
     }
 
     /**
-     * 🔹 Giải mã token để lấy email người dùng
+     *  Giải mã token để lấy email người dùng
      */
     public String getEmailFromJwtToken(String jwt) {
         if (jwt.startsWith("Bearer ")) {
