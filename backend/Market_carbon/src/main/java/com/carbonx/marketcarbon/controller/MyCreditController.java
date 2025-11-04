@@ -7,7 +7,6 @@ import com.carbonx.marketcarbon.dto.request.RetireCreditRequest;
 import com.carbonx.marketcarbon.dto.response.CreditInventorySummaryResponse;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
-import com.carbonx.marketcarbon.dto.response.RetirableBatchResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.CarbonCredit;
@@ -207,26 +206,6 @@ public class MyCreditController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "[COMPANY] Get credits eligible for retirement",
-            description = "Returns credits owned by company that are not expired, retired, or listed.")
-    @GetMapping("/retirableBatch")
-    public ResponseEntity<TuongCommonResponse<List<RetirableBatchResponse>>> listRetirableCreditsBatch(
-            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
-    ) {
-        String traceId = trace != null ? trace : UUID.randomUUID().toString();
-        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        List<RetirableBatchResponse> data = creditService.getMyRetirableCreditsBatch();
-        var response = new TuongCommonResponse<>(
-                traceId,
-                now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable credits successfully"),
-                data
-        );
-        return ResponseEntity.ok(response);
-    }
-
     @Operation(summary = "[COMPANY] Retire a carbon credit block",
             description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
     @PostMapping("/{id}/retire")
@@ -238,7 +217,7 @@ public class MyCreditController {
         String traceId = trace != null ? trace : UUID.randomUUID().toString();
         String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        List<CarbonCreditResponse> data = creditService.retireCreditsFromBatch(request.getData());
+        List<CarbonCreditResponse> data = creditService.retireCreditsFromBatch (request.getData());
 
         var response = new TuongCommonResponse<>(
                 traceId,
