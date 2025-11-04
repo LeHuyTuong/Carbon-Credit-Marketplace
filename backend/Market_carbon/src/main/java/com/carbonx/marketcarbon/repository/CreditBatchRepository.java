@@ -15,5 +15,4 @@ public interface CreditBatchRepository extends JpaRepository<CreditBatch, Long>,
     Optional<CreditBatch> findWithAllById(Long id);
 
     Optional<CreditBatch> findByIdAndCompanyId(Long id, Long companyId);
-    Optional<CreditBatch> findByCompanyId(Long projectId);
 }
