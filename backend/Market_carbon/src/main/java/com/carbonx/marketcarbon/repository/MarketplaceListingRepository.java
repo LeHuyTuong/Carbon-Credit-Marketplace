@@ -33,4 +33,10 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
             Long companyId,
             Long carbonCreditId,
             ListingStatus status);
+
+    // listing theo công ty và batch
+    List<MarketPlaceListing> findByCompanyIdAndCarbonCredit_Batch_IdAndStatus(
+            Long companyId,
+            Long batchId,
+            ListingStatus status);
 }
