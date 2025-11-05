@@ -3,9 +3,11 @@ package com.carbonx.marketcarbon.service.impl;
 import com.carbonx.marketcarbon.certificate.CertificateData;
 import com.carbonx.marketcarbon.certificate.CertificatePdfService;
 import com.carbonx.marketcarbon.common.CreditStatus;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.RetireBatchRequest;
 import com.carbonx.marketcarbon.dto.response.CarbonCreditResponse;
 import com.carbonx.marketcarbon.dto.response.CreditBatchLiteResponse;
+import com.carbonx.marketcarbon.dto.response.RetirableBatchResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.*;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.net.URLEncoder;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,10 +51,13 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final CreditBatchRepository batchRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
+    private final WalletRepository walletRepo;
     private final CreditCertificateRepository certificateRepo;
     private final CertificatePdfService certificatePdfService;
     private final EmailService emailService;
     private final SseService sseService;
+    private final StorageService storageService;
+    private final WalletTransactionRepository walletTransactionRepository;
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -221,6 +227,56 @@ public class MyCreditServiceImpl implements MyCreditService {
         return credits.stream()
                 .map(CarbonCreditResponse::from)
                 .toList();
+    }
+
+    @PreAuthorize("hasRole('COMPANY')")
+    public List<RetirableBatchResponse> getMyRetirableCreditsBatch() {
+        Long companyId = currentCompanyId();
+        log.info("[DEBUG] getMyRetirableCredits (grouped by Batch) - companyId={}", companyId);
+        // 1. Lấy tất cả credit của công ty và lọc những credit có thể retire
+        List<CarbonCredit> retirableCredits = creditRepo.findByCompanyId(companyId).stream()
+                .filter(credit -> {
+                    checkAndMarkExpired(credit);
+                    if (credit.getStatus() == CreditStatus.EXPIRED || credit.getStatus() == CreditStatus.RETIRED) {
+                        return false;
+                    }
+                    // Phải có batch
+                    if (credit.getBatch() == null) {
+                        log.warn("[RETIRE-FILTER] Credit {} skipped: No batch associated.", credit.getId());
+                        return false;
+                    }
+                    // Phải có số lượng available
+                    return getAvailableAmount(credit).compareTo(BigDecimal.ZERO) > 0;
+                })
+                .toList();
+        // 2. Nhóm các credit này theo Batch
+        Map<CreditBatch, List<CarbonCredit>> creditsByBatch = retirableCredits.stream()
+                .collect(Collectors.groupingBy(CarbonCredit::getBatch));
+        // 3. Tính toán tổng available cho mỗi batch và map sang DTO
+        return creditsByBatch.entrySet().stream()
+                .map(entry -> {
+                    CreditBatch batch = entry.getKey();
+                    List<CarbonCredit> creditsInBatch = entry.getValue();
+                    // Tính tổng available cho batch này
+                    BigDecimal totalAvailableInBatch = creditsInBatch.stream()
+                            .map(this::getAvailableAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    // Map sang DTO mới
+                    return RetirableBatchResponse.from(batch, totalAvailableInBatch);
+                })
+                .filter(dto -> dto.getTotalAvailableAmount().compareTo(BigDecimal.ZERO) > 0) // Chỉ giữ batch có available > 0
+                .sorted(Comparator.comparing(RetirableBatchResponse::getBatchCode, Comparator.nullsLast(String::compareTo))) // Sắp xếp
+                .toList();
+    }
+
+    /**
+     * Kiểm tra xem tín chỉ có phải mua từ marketplace không
+     */
+    private boolean isMarketplacePurchase(CarbonCredit credit) {
+        // Kiểm tra các giao dịch mua cho tín chỉ này
+        return walletTransactionRepository
+                .countByOrderCarbonCreditIdAndTransactionType(
+                        credit.getId(), WalletTransactionType.BUY_CARBON_CREDIT) > 0;
     }
 
     /**

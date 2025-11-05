@@ -1,4 +1,3 @@
-// src/pages/Dashboard/CVA/Report/ViewReport.jsx
 import {
   Box,
   Typography,
@@ -10,6 +9,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Table,
   TableHead,
   TableRow,
@@ -28,7 +28,7 @@ import {
   getReportDetails,
 } from "@/apiCVA/reportCVA.js";
 import FormulaImage from "@/assets/z7155603890092_2ed7af1b23662f3986de0fc7dce736af.jpg";
-import { analyzeReportByAI } from "@/apiCVA/aiCVA.js";
+import { analyzeReportByAI, analyzeReportData } from "@/apiCVA/aiCVA.js";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 
@@ -38,26 +38,28 @@ const ViewReport = ({ report: initialReport }) => {
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
+
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
   const [loading, setLoading] = useState(!initialReport);
-
-
-  // Details dialog + pagination state
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [details, setDetails] = useState([]);
   const [detailsPage, setDetailsPage] = useState(0);
   const [detailsSize, setDetailsSize] = useState(20);
   const [detailsTotal, setDetailsTotal] = useState(0);
-
   const [actionTaken, setActionTaken] = useState(false);
 
-  // AI Evaluation
+  // AI + Data
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [dataAnalysis, setDataAnalysis] = useState(null);
+  const [dataLoading, setDataLoading] = useState(false);
 
-  // Formula image
+  // Dialogs for popup display
+  const [openAIDialog, setOpenAIDialog] = useState(false);
+  const [openDataDialog, setOpenDataDialog] = useState(false);
+
   const [showFormula, setShowFormula] = useState(false);
 
   const colorMap = {
@@ -70,7 +72,7 @@ const ViewReport = ({ report: initialReport }) => {
     REJECTED: "#E53935",
   };
 
-  // ===== Load report =====
+  // Load report 
   useEffect(() => {
     if (!report && id) {
       (async () => {
@@ -100,7 +102,7 @@ const ViewReport = ({ report: initialReport }) => {
     }
   }, [id, report]);
 
-  // ===== Update status =====
+  // Update status 
   const handleUpdate = async (approved) => {
     if (!report) return;
     setLoading(true);
@@ -108,7 +110,6 @@ const ViewReport = ({ report: initialReport }) => {
       await verifyReportCVA(report.id, { approved, comment: approved ? "" : note });
       setReport((prev) => ({ ...prev, status: approved ? "CVA_APPROVED" : "REJECTED" }));
       showSnackbar("success", "Status updated successfully!");
-
     } catch (err) {
       console.error("Update failed:", err);
       showSnackbar("error", err.message || "Failed to update status!");
@@ -117,31 +118,25 @@ const ViewReport = ({ report: initialReport }) => {
     }
   };
 
-  // ===== Fetch details (paginated) =====
+  // Fetch details
   const fetchDetails = useCallback(
     async (page = detailsPage, size = detailsSize) => {
       if (!report?.id) return;
       setDetailsLoading(true);
       try {
-        // getReportDetails phải hỗ trợ truyền {page, size}
         const pageRes = await getReportDetails(report.id, { page, size });
-        // Chuẩn hóa (BE có thể trả về TuongCommonResponse/ CommonResponse/ raw Page)
         const pageObj =
           pageRes?.response ||
           pageRes?.responseData ||
           pageRes?.data ||
           pageRes ||
           {};
-
         const rows = pageObj.content ?? [];
         const total = pageObj.totalElements ?? rows.length ?? 0;
-
-        // Chuẩn hóa field vehicleId (fallback vehiclePlate)
         const normalized = rows.map((r) => ({
           ...r,
           vehicleId: r.vehicleId ?? r.vehiclePlate ?? null,
         }));
-
         setDetails(normalized);
         setDetailsTotal(total);
         setDetailsPage(pageObj.number ?? page);
@@ -161,7 +156,7 @@ const ViewReport = ({ report: initialReport }) => {
   const handleOpenDetails = async () => {
     if (!report?.id) return;
     setDetailsOpen(true);
-    await fetchDetails(0, detailsSize); // mở lần đầu luôn page=0
+    await fetchDetails(0, detailsSize);
   };
   const handleCloseDetails = () => setDetailsOpen(false);
 
@@ -173,35 +168,50 @@ const ViewReport = ({ report: initialReport }) => {
     await fetchDetails(0, newSize);
   };
 
-  // ===== AI analyze =====
+  // AI analyze 
   const handleAnalyzeByAI = async () => {
-  if (!report?.id) return;
-  setAiLoading(true);
-  showSnackbar("info", "Analyzing report with AI... please wait");
+    if (!report?.id) return;
+    setAiLoading(true);
+    showSnackbar("info", "Analyzing report with AI... please wait");
+    try {
+      const result = await analyzeReportByAI(report.id);
+      setAiResult(result);
+      setOpenAIDialog(true);
+      showSnackbar("success", "AI analysis completed!");
+    } catch (err) {
+      console.error("AI analysis failed:", err);
+      showSnackbar("error", err.message || "AI analysis failed!");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
-  try {
-    const result = await analyzeReportByAI(report.id);
-    setAiResult(result);
-    showSnackbar("success", "AI analysis completed!");
-  } catch (err) {
-    console.error("AI analysis failed:", err);
-    showSnackbar("error", err.message || "AI analysis failed!");
-  } finally {
-    setAiLoading(false);
-  }
-};
+  //  Data analyze 
+  const handleAnalyzeData = async () => {
+    if (!report?.id) return;
+    setDataLoading(true);
+    showSnackbar("info", "Analyzing report data...");
+    try {
+      const result = await analyzeReportData(report.id);
+      setDataAnalysis(result);
+      setOpenDataDialog(true);
+      showSnackbar("success", "Data analysis completed!");
+    } catch (err) {
+      console.error("Data analysis failed:", err);
+      showSnackbar("error", err.message || "Data analysis failed!");
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
-
-
-  if (loading) {
+  if (loading)
     return (
       <Box m="20px" display="flex" justifyContent="center" alignItems="center" height="70vh">
         <CircularProgress color="info" />
       </Box>
     );
-  }
 
-  if (!report) {
+  if (!report)
     return (
       <Box m="20px" textAlign="center">
         <Typography variant="h4" color={colors.grey[100]}>
@@ -212,16 +222,14 @@ const ViewReport = ({ report: initialReport }) => {
         </Button>
       </Box>
     );
-  }
 
   const statusColor = colorMap[report.status] || colors.grey[300];
 
   return (
     <Box m="20px">
       <Header title="REPORT DETAIL" subtitle={`Details of Report ${report.id}`} />
-
       <Grid container spacing={2}>
-        {/* Left: formula image */}
+        {/* LEFT: formula image */}
         <Grid item xs={12} sm={6}>
           <Box display="flex" flexDirection="column" alignItems="center">
             <Button
@@ -256,56 +264,30 @@ const ViewReport = ({ report: initialReport }) => {
           </Box>
         </Grid>
 
-        {/* Right: report info */}
+        {/* RIGHT: report info */}
         <Grid item xs={12} sm={6}>
-          <Paper
-            elevation={4}
-            sx={{ backgroundColor: colors.primary[400], p: 3, borderRadius: 2, boxShadow: 3 }}
-          >
+          <Paper elevation={4} sx={{ backgroundColor: colors.primary[400], p: 3, borderRadius: 2 }}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6" color={colors.grey[100]}>
-                  Report ID:
-                </Typography>
+                <Typography variant="h6">Report ID:</Typography>
                 <Typography>{report.id}</Typography>
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Company (Sender):
-                </Typography>
+                <Typography variant="h6" mt={2}>Company (Sender):</Typography>
                 <Typography>{report.sellerName}</Typography>
-                <Typography variant="body2" color={colors.grey[300]}>
-                  ID: {report.sellerId}
-                </Typography>
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Project:
-                </Typography>
+                <Typography variant="body2">ID: {report.sellerId}</Typography>
+                <Typography variant="h6" mt={2}>Project:</Typography>
                 <Typography>{report.projectName}</Typography>
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Reporting Period:
-                </Typography>
+                <Typography variant="h6" mt={2}>Reporting Period:</Typography>
                 <Typography>{report.period}</Typography>
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Total Energy:
-                </Typography>
+                <Typography variant="h6" mt={2}>Total Energy:</Typography>
                 <Typography>{report.totalEnergy}</Typography>
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6" color={colors.grey[100]}>
-                  Total CO₂:
-                </Typography>
+                <Typography variant="h6">Total CO₂:</Typography>
                 <Typography>{report.totalCo2}</Typography>
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Submission Date:
-                </Typography>
+                <Typography variant="h6" mt={2}>Submission Date:</Typography>
                 <Typography>{report.submittedAt}</Typography>
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Attachment:
-                </Typography>
+                <Typography variant="h6" mt={2}>Attachment:</Typography>
                 {report.uploadStorageUrl ? (
                   <Button
                     variant="outlined"
@@ -317,24 +299,19 @@ const ViewReport = ({ report: initialReport }) => {
                 ) : (
                   <Typography>—</Typography>
                 )}
-
-                <Typography variant="h6" color={colors.grey[100]} mt={2}>
-                  Status:
-                </Typography>
-                <Typography sx={{ color: statusColor, fontWeight: 600, textTransform: "capitalize" }}>
+                <Typography variant="h6" mt={2}>Status:</Typography>
+                <Typography sx={{ color: statusColor, fontWeight: 600 }}>
                   {report.status?.replace("_", " ")}
                 </Typography>
 
                 {report.status === "REJECTED" && (
                   <Box mt={2}>
-                    <Typography variant="h6" color={colors.grey[100]}>
-                      Note:
-                    </Typography>
+                    <Typography variant="h6">Note:</Typography>
                     <TextField
                       fullWidth
                       multiline
                       rows={3}
-                      placeholder="Enter rejection reason or technical comments..."
+                      placeholder="Enter rejection reason..."
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       sx={{ mt: 1 }}
@@ -359,6 +336,9 @@ const ViewReport = ({ report: initialReport }) => {
               <Button variant="contained" color="secondary" onClick={handleAnalyzeByAI} disabled={aiLoading}>
                 {aiLoading ? "Analyzing..." : "Analyze by AI"}
               </Button>
+              <Button variant="contained" color="warning" onClick={handleAnalyzeData} disabled={dataLoading}>
+                {dataLoading ? "Analyzing..." : "Analyze Data"}
+              </Button>
               <Button variant="outlined" color="info" onClick={handleOpenDetails}>
                 View details
               </Button>
@@ -366,208 +346,11 @@ const ViewReport = ({ report: initialReport }) => {
                 Back
               </Button>
             </Box>
-
-            {/* AI Evaluation */}
-            {aiResult && (
-              <Paper
-                elevation={5}
-                sx={{
-                  mt: 3,
-                  p: 3,
-                  borderRadius: 2,
-                  backgroundColor: theme.palette.mode === "dark" ? colors.primary[400] : "#fff",
-                  color: theme.palette.mode === "dark" ? "#fff" : "#222",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  position: "relative",
-                  whiteSpace: "pre-line",
-                }}
-              >
-                {/* Header */}
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={2}
-                  sx={{
-                    borderBottom:
-                      theme.palette.mode === "dark"
-                        ? "1px solid rgba(255,255,255,0.15)"
-                        : "1px solid rgba(0,0,0,0.1)",
-                    pb: 1,
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: "#E91E63",
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    AI Evaluation Summary
-                  </Typography>
-                  <Button variant="outlined" size="small" color="error" onClick={() => setAiResult(null)}>
-                    CLOSE
-                  </Button>
-                </Box>
-
-                {/* Risk banner */}
-                {((aiResult.aiPreScore && aiResult.aiPreScore < 6) ||
-                  /CRITICAL|HIGH/i.test(aiResult.aiPreNotes || "")) && (
-                    <Box
-                      sx={{
-                        backgroundColor: "#ffebee",
-                        border: "1px solid #f44336",
-                        color: "#b71c1c",
-                        borderRadius: 2,
-                        p: 2,
-                        mb: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <Typography sx={{ fontWeight: 700, fontSize: "1rem" }}>
-                        CRITICAL WARNING:
-                      </Typography>
-                      <Typography variant="body2">
-                        AI detected serious anomalies or potential fraud risk in this report. Immediate manual review is
-                        required.
-                      </Typography>
-                    </Box>
-                  )}
-
-                {/* Version + Score */}
-                <Box
-                  sx={{
-                    backgroundColor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.1)" : "#fafafa",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    p: 2,
-                    borderRadius: 2,
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="body1" sx={{ mb: 0.5 }}>
-                    <strong>Version:</strong> {aiResult.aiVersion || "v?.?"}
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Score:</strong>{" "}
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontWeight: "bold",
-                        color:
-                          aiResult.aiPreScore >= 8
-                            ? "#2E7D32"
-                            : aiResult.aiPreScore >= 6
-                              ? "#FB8C00"
-                              : "#D32F2F",
-                      }}
-                    >
-                      {aiResult.aiPreScore ?? "—"} / 10
-                    </Typography>
-                  </Typography>
-                </Box>
-
-                {/* Notes */}
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    color: "#C2185B",
-                    mb: 1,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
-                >
-                  Detailed Analysis:
-                </Typography>
-                <Box
-                  sx={{
-                    backgroundColor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.05)" : "#fff",
-                    border: "1px solid rgba(0,0,0,0.1)",
-                    borderRadius: 2,
-                    p: 2,
-                    lineHeight: 1.6,
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  <Typography component="pre" sx={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
-                    {aiResult.aiPreNotes || "No AI notes available."}
-                  </Typography>
-                </Box>
-                {/* Optional sections */}
-                {aiResult.aiRisk && (
-                  <>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        color: "#E65100",
-                        mt: 2,
-                        mb: 1,
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      Risk Summary:
-                    </Typography>
-                    <Box
-                      sx={{
-                        backgroundColor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.05)" : "#fff",
-                        border: "1px solid rgba(0,0,0,0.1)",
-                        borderRadius: 2,
-                        p: 2,
-                      }}
-                    >
-                      <Typography component="pre" sx={{ whiteSpace: "pre-wrap" }}>
-                        {aiResult.aiRisk}
-                      </Typography>
-                    </Box>
-                  </>
-                )}
-
-                {aiResult.aiSuggestion && (
-                  <>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        color: "#0277BD",
-                        mt: 2,
-                        mb: 1,
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      Suggestions for CVA:
-                    </Typography>
-                    <Box
-                      sx={{
-                        backgroundColor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.05)" : "#fff",
-                        border: "1px solid rgba(0,0,0,0.1)",
-                        borderRadius: 2,
-                        p: 2,
-                      }}
-                    >
-                      <Typography component="pre" sx={{ whiteSpace: "pre-wrap" }}>
-                        {aiResult.aiSuggestion}
-                      </Typography>
-                    </Box>
-                  </>
-                )}
-              </Paper>
-            )}
           </Paper>
         </Grid>
       </Grid>
 
-      {/* Details dialog */}
+      {/* Details Dialog */}
       <Dialog open={detailsOpen} onClose={handleCloseDetails} fullWidth maxWidth="md">
         <DialogTitle>Report #{report.id} – Vehicle details</DialogTitle>
         <DialogContent dividers>
@@ -599,7 +382,6 @@ const ViewReport = ({ report: initialReport }) => {
                   ))}
                 </TableBody>
               </Table>
-
               <TablePagination
                 component="div"
                 count={detailsTotal}
@@ -632,21 +414,168 @@ const ViewReport = ({ report: initialReport }) => {
                   },
                 }}
               />
-
             </>
           ) : (
             <Typography variant="body2">No details found.</Typography>
           )}
-
           <Box display="flex" justifyContent="flex-end" mt={2}>
             <Button onClick={handleCloseDetails}>Close</Button>
           </Box>
         </DialogContent>
       </Dialog>
 
-      {/* Snackbar */}
-    {SnackbarComponent}
+      {/* --- AI Analysis Popup --- */}
+      <Dialog open={openAIDialog} onClose={() => setOpenAIDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>AI Evaluation Summary</DialogTitle>
+        <DialogContent dividers>
+          {aiLoading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : aiResult ? (
+            <Box>
+              <Typography variant="body1">
+                <strong>Version:</strong> {aiResult.aiVersion || "v?.?"}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Score:</strong> {aiResult.aiPreScore ?? "—"} / 10
+              </Typography>
+              <Typography sx={{ mt: 2, whiteSpace: "pre-wrap" }}>
+                {aiResult.aiPreNotes || "No AI notes available."}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography>No AI result available.</Typography>
+          )}
+        </DialogContent>
+        {/* Exit popup */}
+        <DialogActions>
+          <Button onClick={() => setOpenAIDialog(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
+      {/*  Data Analysis Popup (formatted)  */}
+      <Dialog
+        open={openDataDialog}
+        onClose={() => setOpenDataDialog(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Data Analysis Summary</DialogTitle>
+        <DialogContent dividers>
+          {dataLoading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : dataAnalysis?.response ? (
+            <Box>
+              {/* === Tổng quan === */}
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Overview
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={6}>
+                  <Typography>Report ID: {dataAnalysis.response.reportId}</Typography>
+                  <Typography>Version: {dataAnalysis.response.version}</Typography>
+                  <Typography>
+                    Data Quality: {dataAnalysis.response.dataQualityScore} /{" "}
+                    {dataAnalysis.response.dataQualityMax}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography>
+                    Fraud Risk: {dataAnalysis.response.fraudRiskScore} /{" "}
+                    {dataAnalysis.response.fraudRiskMax}
+                  </Typography>
+                  <Typography>
+                    Fraud Reasons:{" "}
+                    {dataAnalysis.response.fraudReasons?.length
+                      ? dataAnalysis.response.fraudReasons.join(", ")
+                      : "None"}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              {/* === Bảng chi tiết rule === */}
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Rule Details
+              </Typography>
+              <Table size="small" sx={{ mt: 1 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Score</TableCell>
+                    <TableCell>Message</TableCell>
+                    <TableCell>Evidence</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {dataAnalysis.response.details.map((rule) => (
+                    <TableRow
+                      key={rule.ruleId}
+                      sx={{
+                        backgroundColor:
+                          rule.severity === "ERROR"
+                            ? "#ffebee"
+                            : rule.severity === "WARN"
+                              ? "#fff8e1"
+                              : "transparent",
+                      }}
+                    >
+                      <TableCell>{rule.ruleId}</TableCell>
+                      <TableCell>{rule.name}</TableCell>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>
+                        {rule.score} / {rule.maxScore}
+                      </TableCell>
+                      <TableCell>{rule.message}</TableCell>
+                      <TableCell
+                        sx={{
+                          maxWidth: 300,
+                          wordBreak: "break-word",
+                          whiteSpace: "normal",
+                        }}
+                      >
+                        {rule.evidence}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+
+              </Table>
+
+              {/* === Tổng điểm cuối === */}
+              <Box mt={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography fontWeight="bold">
+                  Total Score:{" "}
+                  {dataAnalysis.response.dataQualityScore +
+                    dataAnalysis.response.fraudRiskScore}{" "}
+                  /{" "}
+                  {dataAnalysis.response.dataQualityMax +
+                    dataAnalysis.response.fraudRiskMax}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Response: {dataAnalysis.responseStatus?.responseMessage}
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Typography>No data analysis available.</Typography>
+          )}
+        </DialogContent>
+        {/* Exit popup */}
+        <DialogActions>
+          <Button onClick={() => setOpenDataDialog(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
+      {/* Snackbar */}
+      {SnackbarComponent}
     </Box>
   );
 };
