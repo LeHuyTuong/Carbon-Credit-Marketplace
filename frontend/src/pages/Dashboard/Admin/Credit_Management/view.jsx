@@ -6,7 +6,8 @@ import {
   Grid,
   Snackbar,
   Alert,
-  Paper
+  Paper,
+  Link
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/theme";
@@ -75,11 +76,14 @@ const ViewCredit = () => {
           boxShadow: 3,
         }}
       >
-        <Grid container spacing={2}>
+        <Grid container spacing={20}>
           {/* Cột trái */}
           <Grid item xs={12} sm={6}>
             <Typography variant="h6" color={colors.grey[100]}>Credit ID:</Typography>
             <Typography>{creditData.id}</Typography>
+
+            <Typography variant="h6" color={colors.grey[100]} mt={2}>Batch Code:</Typography>
+            <Typography>{creditData.batchCode}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Company:</Typography>
             <Typography>{creditData.companyName}</Typography>
@@ -87,17 +91,23 @@ const ViewCredit = () => {
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Project Name:</Typography>
             <Typography>{creditData.projectTitle}</Typography>
 
+            <Typography variant="h6" color={colors.grey[100]} mt={2}>Vintage Year:</Typography>
+            <Typography>{creditData.vintageYear}</Typography>
+
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Number of Credits:</Typography>
             <Typography>{creditData.creditsCount}</Typography>
           </Grid>
 
           {/* Cột phải */}
           <Grid item xs={12} sm={6}>
-            <Typography variant="h6" color={colors.grey[100]}>Estimated Value:</Typography>
+            <Typography variant="h6" color={colors.grey[100]}>Estimated Value (tCO2e):</Typography>
             <Typography>{creditData.totalTco2e}</Typography>
 
+            <Typography variant="h6" color={colors.grey[100]} mt={2}>Residual (tCO2e):</Typography>
+            <Typography>{creditData.residualTco2e}</Typography>
+
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Issued Day:</Typography>
-            <Typography>{creditData.issuedAt}</Typography>
+            <Typography>{new Date(creditData.issuedAt).toLocaleString()}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Status:</Typography>
             <Typography sx={{ color, fontWeight: 600, textTransform: "capitalize" }}>
@@ -109,6 +119,19 @@ const ViewCredit = () => {
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Serial To:</Typography>
             <Typography>{creditData.serialTo}</Typography>
+
+            <Typography variant="h6" color={colors.grey[100]} mt={2}>Certificate:</Typography>
+            {creditData.certificateUrl ? (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => window.open(creditData.certificateUrl, "_blank")}
+              >
+                View Certificate
+              </Button>
+            ) : (
+              <Typography>No Certificate Available</Typography>
+            )}
           </Grid>
         </Grid>
 
