@@ -209,7 +209,7 @@ public class MyCreditController {
 
     @Operation(summary = "[COMPANY] Retire a carbon credit block",
             description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
-    @PostMapping("/{id}/retire")
+    @PostMapping("/retire")
     public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse> >> retireCredit(
             @Valid @RequestBody TuongCommonRequest<RetireBatchRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
