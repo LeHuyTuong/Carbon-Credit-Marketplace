@@ -43,7 +43,7 @@ public enum ErrorCode {
     KYC_EXISTED(409, "KYC already exists.", HttpStatus.CONFLICT),
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
-
+    PAYMENT_DETAILS_NOT_FOUND(404, "Payment details not found.", HttpStatus.NOT_FOUND),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_PROCESSING(202, "Application is being processed.", HttpStatus.PROCESSING),
     APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),
@@ -93,7 +93,7 @@ public enum ErrorCode {
     // ==== GENERIC & FILE ====
     FILE_UPLOAD_FAILED(500, "Cannot read upload stream.", HttpStatus.INTERNAL_SERVER_ERROR),
     COMPANY_IS_EXIST(409, "Company already exists.", HttpStatus.CONFLICT),
-    WALLET_NOT_ENOUGH_MONEY(400, "Wallet not enough money to withdraw.", HttpStatus.BAD_REQUEST),
+    WALLET_NOT_ENOUGH_MONEY(400, "Wallet not enough money.", HttpStatus.BAD_REQUEST),
     WITHDRAWAL_MONEY_INVALID_AMOUNT(400, "Amount must be a positive integer. And the amount must be more 2USD", HttpStatus.BAD_REQUEST),
     LISTING_IS_NOT_AVAILABLE(400, "Listing is not available.", HttpStatus.BAD_REQUEST),
     AMOUNT_IS_NOT_VALID(400, "Amount must be positive.", HttpStatus.BAD_REQUEST),

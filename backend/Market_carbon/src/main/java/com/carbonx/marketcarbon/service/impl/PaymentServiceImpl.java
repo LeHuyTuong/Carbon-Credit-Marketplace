@@ -10,10 +10,8 @@ import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.repository.PaymentOrderRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
-import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
 import com.carbonx.marketcarbon.service.SseService;
-import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
@@ -41,8 +39,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentOrderRepository paymentOrderRepository;
     private final WalletRepository walletRepository;
-    private final WalletTransactionRepository walletTransactionRepository;
-    private final WalletTransactionService walletTransactionService;
     private final UserRepository userRepository;
     private final SseService sseService;
 

@@ -9,45 +9,73 @@
         body { font-family: "Times New Roman", serif; background:#ffffff; color:#1f2937; }
 
         .page  { width:210mm; height:297mm; position:relative; margin:0 auto; }
-        .frame { position:absolute; inset:8mm; border:3px solid #0b0b0b; box-sizing:border-box; padding:18mm 18mm 20mm 18mm; }
+        .frame { position:absolute; inset:8mm; border:3px solid #0b0b0b; box-sizing:border-box; padding:18mm; }
 
-        .frame::before{ content:""; position:absolute; inset:12mm; border:2px solid #d4af37; border-radius:2mm; z-index:1; }
+        .frame::before {
+            content:""; position:absolute; inset:12mm;
+            border:2px solid #d4af37; border-radius:2mm; z-index:1;
+        }
 
-        .bg-gradient{ position:absolute; inset:12mm; z-index:0; border-radius:2mm;
-            background: linear-gradient(180deg,#f6f7fb 0%, #ffffff 50%, #f6f7fb 100%); }
-        .bg-lines{ position:absolute; inset:12mm; z-index:0; opacity:.05; border-radius:2mm;
-            background: repeating-linear-gradient(135deg,#064e3b 0,#064e3b 2px,transparent 2px,transparent 8px); }
+        .bg-gradient {
+            position:absolute; inset:12mm; z-index:0; border-radius:2mm;
+            background: linear-gradient(180deg,#f6f7fb 0%, #ffffff 50%, #f6f7fb 100%);
+        }
+        .bg-lines {
+            position:absolute; inset:12mm; z-index:0; opacity:.05; border-radius:2mm;
+            background: repeating-linear-gradient(135deg,#064e3b 0,#064e3b 2px,transparent 2px,transparent 8px);
+        }
 
-        .logo-header{ position:absolute; z-index:3; top:18mm; left:18mm; height:20mm; width:auto; }
-        .content{ position:relative; z-index:2; }
+        .logo-header { position:absolute; z-index:3; top:18mm; left:18mm; height:22mm; width:auto; }
+        .content { position:relative; z-index:2; }
 
-        .header{ text-align:center; }
-        .title{ margin:0 0 6mm 0; font-size:26pt; color:#17a34a; font-weight:bold; letter-spacing:.2pt; }
-        .confirm{ font-size:10pt; color:#475569; letter-spacing:.2pt; }
+        .header { text-align:center; }
+        .title {
+            margin:0 0 6mm 0; font-size:28pt;
+            color:#16a34a; font-weight:bold; letter-spacing:.4pt;
+        }
+        .confirm { font-size:10.5pt; color:#475569; letter-spacing:.3pt; }
 
-        .emphasis{ margin:8mm 0 4mm 0; font-size:16pt; font-weight:bold; color:#111; }
-        .emphasis small{ display:block; font-size:9pt; color:#475569; }
+        .emphasis {
+            margin:8mm 0 4mm 0; font-size:16pt; font-weight:bold; color:#111;
+        }
+        .emphasis small { display:block; font-size:9.5pt; color:#475569; }
 
-        .project-head{ margin:10mm 0 3mm 0; font-size:20pt; font-weight:bold; color:#17a34a; }
-        .on-behalf{ font-size:10pt; color:#475569; margin-bottom:2mm; }
-        .subject{ font-size:12pt; font-weight:bold; }
+        .project-head {
+            margin:10mm 0 3mm 0; font-size:20pt; font-weight:bold; color:#16a34a;
+        }
+        .on-behalf { font-size:10pt; color:#475569; margin-bottom:2mm; }
+        .subject { font-size:12pt; font-weight:bold; }
 
-        .facts{ width:100%; border-collapse:collapse; margin:10mm 0 0; font-size:11pt; }
-        .facts td{ padding:3.2mm 3mm; border:1px solid #cbd5e1; line-height:1.25; vertical-align:middle; }
-        .facts td.label{ width:46mm; background:#f8fafc; color:#0f172a; font-weight:bold; }
-        .facts td:last-child{ word-break:break-word; }
+        .facts {
+            width:100%; border-collapse:collapse; margin:10mm 0 0;
+            font-size:11pt; border-radius:4px; overflow:hidden;
+        }
+        .facts td {
+            padding:3.4mm 3mm; border:1px solid #cbd5e1;
+            line-height:1.25; vertical-align:middle;
+        }
+        .facts td.label {
+            width:46mm; background:#f8fafc;
+            color:#0f172a; font-weight:bold;
+        }
+        .facts td:last-child { word-break:break-word; }
 
-        /* --- Signature row --- */
-        .sign-row{ margin-top:10mm; display:flex; justify-content:space-between; align-items:flex-end; }
-        .date{ font-size:10pt; color:#111; min-width:50mm; text-align:left; }
-        .date .line{ border-bottom:1px dotted #9ca3af; display:inline-block; min-width:45mm; height:4mm; }
+        .sign-row {
+            margin-top:12mm; display:flex; justify-content:space-between; align-items:flex-end;
+        }
+        .date { font-size:10pt; color:#111; min-width:50mm; text-align:left; }
+        .date .line { border-bottom:1px dotted #9ca3af; display:inline-block; min-width:45mm; height:4mm; }
 
-        .sign{ text-align:right; }
-        .sign img{ height:30mm; }
-        .sign .name{ font-weight:bold; margin-top:2mm; }
-        .sign .role{ font-size:10pt; color:#475569; }
+        .sign { text-align:right; }
+        .sign img { height:28mm; }
+        .sign .name { font-weight:bold; margin-top:2mm; }
+        .sign .role { font-size:10pt; color:#475569; }
 
-        .footer{ position:absolute; left:18mm; right:18mm; bottom:10mm; text-align:center; font-size:9pt; color:#475569; }
+        .footer {
+            position:absolute; left:18mm; right:18mm; bottom:10mm;
+            text-align:center; font-size:9pt; color:#475569;
+            letter-spacing:.2pt;
+        }
     </style>
 </head>
 <body>
@@ -78,8 +106,7 @@
                 <tr><td class="label">Status</td><td><span th:text="${status}">ISSUED</span></td></tr>
                 <tr><td class="label">Vintage Year</td><td th:text="${vintageYear}">2026</td></tr>
                 <tr><td class="label">Batch Code</td><td th:text="${batchCode}">2026-CAR24-DNS11-000001_000020</td></tr>
-                <tr><td class="label">Serial Range</td><td><span th:text="${serialPrefix}">2026-CAR24-DNS11-</span><span th:text="${serialFrom}">000001</span>_<span th:text="${serialTo}">000020</span></td></tr>
-                <tr><td class="label">Certificate Code</td><td th:text="${certificateCode}"></td></tr>
+                <tr><td class="label">Certificate Code</td><td th:text="${certificateCode}">CARX-CERT-2026-1121</td></tr>
                 <tr><td class="label">Registry / Standard</td><td th:text="${standard}">CarbonX Internal Registry • ISO 14064-2 &amp; GHG Protocol</td></tr>
                 <tr><td class="label">Methodology</td><td th:text="${methodology}">EV Charging Emission Reduction Methodology v1.0</td></tr>
                 <tr><td class="label">Project Title</td><td th:text="${projectTitle}">Project Title</td></tr>
@@ -88,11 +115,10 @@
                 <tr th:if="${verifiedBy != null}"><td class="label">Verified By</td><td th:text="${verifiedBy}">CVA Organization</td></tr>
             </table>
 
-            <!-- Đảo thứ tự: Date bên trái, Signature bên phải -->
             <div class="sign-row">
                 <div class="date">DATE: <span class="line" th:text="${issuedAt}">2025-10-25</span></div>
                 <div class="sign">
-                    <img th:if="${issuerSignatureUrl != null}" th:src="${issuerSignatureUrl}" alt="Signature"/>
+                    <img th:if="${issuerSignatureUrl != null}" th:src="${issuerSignatureUrl}" alt="Signature" />
                     <div class="name" th:text="${issuerName}">CarbonX Marketplace</div>
                     <div class="role" th:text="${issuerTitle}">Authorized Signatory</div>
                 </div>

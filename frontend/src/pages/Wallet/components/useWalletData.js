@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "../../../utils/apiFetch";
 
 export default function useWalletData() {
+  // state lưu trữ dữ liệu ví và các phần liên quan
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [issuedCredits, setIssuedCredits] = useState([]);
@@ -11,7 +12,7 @@ export default function useWalletData() {
   const [error, setError] = useState("");
   const [creditDetails, setCreditDetails] = useState([]);
 
-  // === FETCH WALLET ===
+  // fetch thông tin ví
   const fetchWallet = async () => {
     try {
       const res = await apiFetch("/api/v1/wallet", { method: "GET" });
@@ -21,7 +22,7 @@ export default function useWalletData() {
     }
   };
 
-  // === FETCH TRANSACTIONS ===
+  // fetch danh sách giao dịch ví
   const fetchTransactions = async () => {
     try {
       const res = await apiFetch("/api/v1/wallet/transactions", {
@@ -36,7 +37,7 @@ export default function useWalletData() {
     }
   };
 
-  // === FETCH ISSUED CREDITS ===
+  // fetch các batch credit đã phát hành
   const fetchIssuedCredits = async (filters = {}) => {
     try {
       setLoading(true);
@@ -51,6 +52,7 @@ export default function useWalletData() {
 
       const list = res?.response?.content || [];
 
+            // map dữ liệu thành format hiển thị
       const mapped = list.map((item) => ({
         id: item.id,
         batchCode: item.batchCode,
@@ -75,25 +77,27 @@ export default function useWalletData() {
     }
   };
 
-  // === FETCH PURCHASED CREDITS ===
-const fetchPurchasedCredits = async () => {
-  try {
-    setLoading(true);
-    const res = await apiFetch("/api/v1/wallet", { method: "GET" });
-    const walletData = res?.response || {};
+  // fetch credit đã mua
+  const fetchPurchasedCredits = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+      const walletData = res?.response || {};
 
-    const txList = walletData.walletTransactions || [];
-    const carbonCredits = walletData.carbonCredits || [];
+      const txList = walletData.walletTransactions || [];
+      const carbonCredits = walletData.carbonCredits || [];
 
-    const purchases = txList
-      .filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT");
+            // lọc các giao dịch mua credit
+      const purchases = txList
+        .filter((tx) => tx.transactionType === "BUY_CARBON_CREDIT");
 
-    // dữ liệu transaction ra danh sách hiển thị
-    const mapped = purchases.map((tx) => {
-      //tìm credit liên quan nếu cần thông tin thêm
-      const relatedCredit = carbonCredits.find(
-        (c) => c.batchCode === tx.batchCode
-      );
+      // dữ liệu transaction ra danh sách hiển thị
+      const mapped = purchases.map((tx) => {
+        //tìm credit liên quan nếu cần thông tin thêm
+        const relatedCredit = carbonCredits.find(
+          (c) => c.batchCode === tx.batchCode
+        );
+
         return {
           id: tx.id,
           orderId: tx.orderId,
@@ -104,24 +108,23 @@ const fetchPurchasedCredits = async () => {
           balanceBefore: tx.balanceBefore || 0,
           balanceAfter: tx.balanceAfter || 0,
           creditStatus: relatedCredit?.status || null,
-          createdAt: new Date(tx.createdAt + "Z").toLocaleString("vi-VN", {
+          createdAt: new Date(tx.createdAt).toLocaleString("vi-VN", {
             timeZone: "Asia/Ho_Chi_Minh",
             hour12: false,
           }),
         };
       });
 
-    setPurchasedCredits(mapped);
-  } catch (err) {
-    console.error("Failed to fetch purchased credits:", err);
-    setPurchasedCredits([]);
-  } finally {
-    setLoading(false);
-  }
-};
+      setPurchasedCredits(mapped);
+    } catch (err) {
+      console.error("Failed to fetch purchased credits:", err);
+      setPurchasedCredits([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
-  // === FETCH MY CREDITS (theo batchId) ===
+  // fetch chi tiết credit theo batchId
   const fetchMyCredits = async (batchId) => {
     try {
       setLoading(true);
@@ -141,7 +144,7 @@ const fetchPurchasedCredits = async () => {
     }
   };
 
-  // === FETCH SUMMARY ===
+  // fetch dữ liệu tổng quan credit
   const fetchSummary = async () => {
     try {
       const res = await apiFetch("/api/v1/my/credits/summary", {
@@ -153,7 +156,7 @@ const fetchPurchasedCredits = async () => {
     }
   };
 
-  // === FETCH CREDIT BALANCE ===
+  // fetch số dư credit
   const fetchCreditBalance = async () => {
     try {
       const res = await apiFetch("/api/v1/my/credits/balance", { method: "GET" });
@@ -164,7 +167,7 @@ const fetchPurchasedCredits = async () => {
     }
   };
 
-  // === FETCH CREDIT BY ID ===
+  // fetch credit theo id
   const fetchCreditById = async (id) => {
     try {
       const res = await apiFetch(`/api/v1/my/credits/${id}`, { method: "GET" });
@@ -175,24 +178,25 @@ const fetchPurchasedCredits = async () => {
     }
   };
 
+    // auto fetch ví khi khởi tạo hook
   useEffect(() => {
     fetchWallet();
   }, []);
 
-  // === FETCH ALL MY CREDITS (tổng hợp) ===
-const fetchAllCredits = async (filters = {}) => {
-  try {
-    setLoading(true);
-    const params = new URLSearchParams({
-      projectId: filters.projectId || "",
-      status: filters.status || "",
-      vintageYear: filters.vintageYear || "",
-      page: filters.page || 0,
-      size: filters.size || 20,
-    }).toString();
+  // fetch toàn bộ credit (phân trang, filter)
+  const fetchAllCredits = async (filters = {}) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        projectId: filters.projectId || "",
+        status: filters.status || "",
+        vintageYear: filters.vintageYear || "",
+        page: filters.page || 0,
+        size: filters.size || 20,
+      }).toString();
 
-    const res = await apiFetch(`/api/v1/my/credits?${params}`, { method: "GET" });
-    const list = res?.response?.content || [];
+      const res = await apiFetch(`/api/v1/my/credits?${params}`, { method: "GET" });
+      const list = res?.response?.content || [];
 
       const mapped = list.map((c) => ({
         id: c.id,
@@ -205,7 +209,7 @@ const fetchAllCredits = async (filters = {}) => {
         vintageYear: c.vintageYear,
         batchCode: c.batchCode,
         issuedAt: c.issuedAt
-          ? new Date(c.issuedAt + "Z").toLocaleString("vi-VN", {
+          ? new Date(c.issuedAt).toLocaleString("vi-VN", {
               timeZone: "Asia/Ho_Chi_Minh",
               hour12: false,
             })
@@ -215,225 +219,207 @@ const fetchAllCredits = async (filters = {}) => {
         listedAmount: c.listedAmount,
       }));
 
-    return mapped;
-  } catch (err) {
-    console.error("Failed to fetch credits:", err);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
-
+      return mapped;
+    } catch (err) {
+      console.error("Failed to fetch credits:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // fetch credit có thể retire
   const fetchRetirableCredits = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/my/credits/retirable", { method: "GET" });
+      const list = res?.response || [];
 
-    //Lấy danh sách batch có thể retire
-    const batchRes = await apiFetch("/api/v1/my/credits/retirable-batches", { method: "GET" });
-    const batchList = batchRes?.response || [];
+      // chỉ lấy AVAILABLE Va TRADED
+      const availableList = list.filter(c => c.status === "AVAILABLE" || c.status === "TRADED");
 
-    //Lấy danh sách credit trong ví
-    const walletRes = await apiFetch("/api/v1/wallet", { method: "GET" });
-    const walletCredits = walletRes?.response?.carbonCredits || [];
-
-    //Chỉ lấy credit hợp lệ
-    const validCredits = walletCredits.filter(
-      c => (c.status === "AVAILABLE" || c.status === "TRADED") && c.batchId && c.batchCode
-    );
-
-    console.table(validCredits.map(c => ({
-      creditId: c.creditId,
-      batchId: c.batchId,
-      batchCode: c.batchCode,
-      status: c.status
-    })));
-
-    // Gộp creditIds tương ứng chính xác theo batch
-    const mapped = batchList.map(batch => {
-      const relatedCredits = validCredits.filter(
-        c => c.batchId === batch.batchId && c.batchCode === batch.batchCode
+      // nhóm theo batchCode
+      const grouped = Object.values(
+        availableList.reduce((acc, c) => {
+          if (!acc[c.batchCode]) {
+            acc[c.batchCode] = {
+              batchCode: c.batchCode,
+              projectTitle: c.projectTitle,
+              vintageYear: c.vintageYear,
+              projectId: c.projectId,
+              availableAmount: 0,
+              expiryDate: c.expiryDate,
+              issuedAt: c.issuedAt,
+              creditIds: [],
+            };
+          }
+          acc[c.batchCode].availableAmount += c.availableAmount || 0;
+          acc[c.batchCode].creditIds.push(c.id);
+          return acc;
+        }, {})
       );
-      const creditIds = relatedCredits.map(c => c.creditId);
 
-      return {
-        batchId: batch.batchId,
-        batchCode: batch.batchCode,
-        projectId: batch.projectId,
-        projectTitle: batch.projectTitle,
-        vintageYear: batch.vintageYear,
-        expiryDate: batch.expiryDate,
-        availableAmount: batch.totalAvailableAmount,
-        creditIds,
-      };
-    });
-
-    console.log("Mapped retirable batches:", mapped);
-    return mapped;
-  } catch (err) {
-    console.error("Failed to fetch retirable batches:", err);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
-
+      return grouped;
+    } catch (err) {
+      console.error("Failed to fetch retirable credits:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // retire credit theo danh sách chọn
   const retireCredits = async (retireList = []) => {
-  if (!retireList.length) throw new Error("No credits selected to retire.");
+    if (!retireList.length) throw new Error("No credits selected to retire.");
 
-  try {
-    setLoading(true);
-    const results = [];
+    try {
+      setLoading(true);
+      const results = [];
 
-    for (const item of retireList) {
-      const { quantity, batchId } = item;
-      if (!quantity || quantity <= 0) continue;
+      for (const item of retireList) {
+        const { creditIds = [], quantity } = item;
 
-      console.log(`[DEBUG] Retiring batchId=${batchId}, quantity=${quantity}`);
+        // Chỉ lấy đúng số lượng cần retire
+        const idsToRetire = creditIds.slice(0, quantity);
 
-      // lấy creditId đầu tiên trong danh sách creditIds của batch
-    const creditId = item.creditIds?.[0];
-    if (!creditId) continue;
+        if (!idsToRetire.length) continue;
 
-    const res = await apiFetch(`/api/v1/my/credits/${creditId}/retire`, {
-      method: "POST",
-      body: {
-        data: { batchId, quantity },
-      },
-    });
+        for (const id of idsToRetire) {
+          console.log(`Retiring creditId: ${id}`);
+          const res = await apiFetch(`/api/v1/my/credits/${id}/retire`, {
+            method: "POST",
+            body: { creditId: id, quantity: 1 },
+          });
+          results.push(res?.response);
+        }
+      }
 
-      results.push(res?.response || []);
+      return results;
+    } catch (err) {
+      console.error("Failed to retire credits:", err);
+      throw new Error(err.message || "Retire credits failed.");
+    } finally {
+      setLoading(false);
     }
-
-    return results;
-  } catch (err) {
-    console.error("Failed to retire credits:", err);
-
-    throw err;
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // === FETCH RETIRED CREDITS===
   const fetchRetiredCredits = async () => {
-  try {
-    setLoading(true);
-    const res = await apiFetch("/api/v1/my/credits", { method: "GET" });
-    const list = res?.response?.content || res?.response || [];
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/my/credits", { method: "GET" });
+      const list = res?.response?.content || res?.response || [];
 
-    // lọc những cái đã retire
-    return list
-      .filter((c) => c.status === "RETIRED")
-      .map((c) => ({
-        id: c.id,
-        creditCode: c.creditCode || "-",
-        projectTitle: c.projectTitle || "-",
-        vintageYear: c.vintageYear || "-",
-        status: c.status || "-",
-        issuedAt: c.issuedAt
-          ? new Date(c.issuedAt).toLocaleDateString("en-GB")
-          : "-",
+    // fetch danh sách credit đã retire
+      return list
+        .filter((c) => c.status === "RETIRED")
+        .map((c) => ({
+          id: c.id,
+          creditCode: c.creditCode || "-",
+          projectTitle: c.projectTitle || "-",
+          vintageYear: c.vintageYear || "-",
+          status: c.status || "-",
+          issuedAt: c.issuedAt
+            ? new Date(c.issuedAt).toLocaleDateString("en-GB")
+            : "-",
+        }));
+    } catch (err) {
+      console.error("Failed to fetch retired credits:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // fetch dự án đã được admin duyệt (cho chia sẻ lợi nhuận)
+  const fetchApprovedProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/project-applications/my", {
+        method: "GET",
+      });
+
+      const data = res?.response || [];
+      const approved = data.filter((p) => p.status === "ADMIN_APPROVED");
+
+      return approved.map((p) => ({
+        id: p.id,
+        projectId: p.projectId,
+        projectTitle: p.projectTitle,
+        status: p.status,
+        submittedAt: p.submittedAt,
       }));
-  } catch (err) {
-    console.error("Failed to fetch retired credits:", err);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err) {
+      console.error("Failed to fetch approved projects:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // === FETCH APPROVED PROJECTS (for profit sharing) ===
-const fetchApprovedProjects = async () => {
-  try {
-    setLoading(true);
-    const res = await apiFetch("/api/v1/project-applications/my", {
-      method: "GET",
-    });
+  // fetch báo cáo được duyệt (dùng cho chia sẻ lợi nhuận)
+  const fetchApprovedReports = async (projectId) => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/reports/my-reports", { method: "GET" });
+      const data = res?.response || [];
 
-    const data = res?.response || [];
-    const approved = data.filter((p) => p.status === "ADMIN_APPROVED");
+      // lọc theo project + status đã duyệt
+      const approved = data.filter(
+        (r) =>
+          (!projectId || r.projectId === Number(projectId)) &&
+          r.status === "CREDIT_ISSUED"
+      );
 
-    return approved.map((p) => ({
-      id: p.id,
-      projectId: p.projectId,
-      projectTitle: p.projectTitle,
-      status: p.status,
-      submittedAt: p.submittedAt,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch approved projects:", err);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // === FETCH APPROVED REPORTS (for profit sharing) ===
-const fetchApprovedReports = async (projectId) => {
-  try {
-    setLoading(true);
-    const res = await apiFetch("/api/v1/reports/my-reports", { method: "GET" });
-    const data = res?.response || [];
-
-    // lọc theo project + status đã duyệt
-    const approved = data.filter(
-      (r) =>
-        (!projectId || r.projectId === Number(projectId)) &&
-        r.status === "CREDIT_ISSUED"
-    );
-
-    return approved.map((r) => ({
-      id: r.id,
-      projectId: r.projectId,
-      projectName: r.projectName,
-      fileName: r.uploadOriginalFilename,
-      submittedAt: r.submittedAt,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch approved reports:", err);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
+      return approved.map((r) => ({
+        id: r.id,
+        projectId: r.projectId,
+        projectName: r.projectName,
+        fileName: r.uploadOriginalFilename,
+        submittedAt: r.submittedAt,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch approved reports:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
-// === DISTRIBUTE PROFIT SHARING (with report selection) ===
-const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, description }) => {
-  if (!projectId || !emissionReportId || !totalMoneyToDistribute)
-    throw new Error("Missing required fields for profit sharing.");
+  // chia sẻ lợi nhuận theo report đã duyệt
+  const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, companySharePercent, description }) => {
+    if (!projectId || !emissionReportId || !totalMoneyToDistribute)
+      throw new Error("Missing required fields for profit sharing.");
 
-  try {
-    setLoading(true);
-    const res = await apiFetch("/api/v1/profit-sharing/share", {
-      method: "POST",
-      body: {
-        data: {
-          projectId,
-          emissionReportId,
-          totalMoneyToDistribute,
-          description: description || "Profit sharing based on emission report",
+    try {
+      setLoading(true);
+      const res = await apiFetch("/api/v1/profit-sharing/share", {
+        method: "POST",
+        body: {
+          data: {
+            projectId,
+            emissionReportId,
+            totalMoneyToDistribute,
+            companySharePercent,
+            description: description || "Profit sharing based on emission report",
+          },
         },
-      },
-    });
+      });
 
-    return res?.responseStatus || {
-      responseCode: "200",
-      responseMessage: "Profit shared successfully",
-    };
-  } catch (err) {
-    console.error("Failed to share profit:", err);
-    throw new Error(err.message || "Profit sharing failed.");
-  } finally {
-    setLoading(false);
-  }
-};
+      return res?.responseStatus || {
+        responseCode: "200",
+        responseMessage: "Profit shared successfully",
+      };
+    } catch (err) {
+      console.error("Failed to share profit:", err);
+      throw new Error(err.message || "Profit sharing failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
+  // expose các state và function ra ngoài hook
   return {
     wallet,
     transactions,

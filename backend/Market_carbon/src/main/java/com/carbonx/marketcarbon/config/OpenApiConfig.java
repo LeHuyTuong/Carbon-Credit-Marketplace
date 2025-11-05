@@ -23,16 +23,16 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI custoOpenAPI(@Value("API document") String title,
-                                @Value("1.0.0") String version,
-                                @Value("Mo ta API Service") String description,
-                                @Value("http://localhost:8082") String serverURL,
-                                @Value("server test") String serverName)
+    public OpenAPI custoOpenAPI(@Value("${springdoc.title}") String title,
+                                @Value("${springdoc.version}") String version,
+                                @Value("${springdoc.description}") String description,
+                                @Value("${server.url}") String serverURL,
+                                @Value("${server.description}") String serverName)
     {
         return new OpenAPI().info(new Info().title(title)
-                .version(version)
-                .description(description)
-                .license(new License().name("API License")))
+                        .version(version)
+                        .description(description)
+                        .license(new License().name("API License")))
                 .servers(List.of(new Server().url(serverURL).description(serverName)));
     }
 

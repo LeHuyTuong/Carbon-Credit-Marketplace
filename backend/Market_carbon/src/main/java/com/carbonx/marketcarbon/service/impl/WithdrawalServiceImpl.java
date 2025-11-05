@@ -1,8 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
-import com.carbonx.marketcarbon.common.WalletTransactionType;
-import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
@@ -14,7 +12,6 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
 import com.carbonx.marketcarbon.service.SseService;
-import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +34,6 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final UserRepository userRepository;
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
-    private final WalletTransactionService walletTransactionService;
     private final ApplicationNotificationService applicationNotificationService;
     private final SseService sseService;
 
@@ -129,7 +125,6 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
             return savedWithdrawal;
         } else {
-            log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
             withdrawalRequest.setStatus(Status.REJECTED);
             reason = "Withdrawal request rejected by administrator."; // Lý do bị từ chối
         }
@@ -155,9 +150,6 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         // Ném Exception sau khi lưu và gửi mail FAILED để báo lỗi rõ ràng
         if (savedWithdrawal.getStatus() == Status.FAILED) {
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
-        }
-        if (savedWithdrawal.getStatus() == Status.FAILED) {
-            throw new ResourceNotFoundException("Wallet not found for user processing withdrawal " + withdrawalId);
         }
         return savedWithdrawal; // Trả về withdrawal với trạng thái FAILED/REJECTED
     }

@@ -17,7 +17,7 @@ export default function AIChatWidget() {
 
       {/*cửa sổ chat */}
       {open && (
-        <div className="ai-chat-popup glass-card shadow-lg">
+        <div className="ai-chat-popup glass-card shadow-lg ai-widget">
           <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
             <h6 className="text-accent fw-bold mb-0">CarbonX AI Assistant</h6>
             <button
