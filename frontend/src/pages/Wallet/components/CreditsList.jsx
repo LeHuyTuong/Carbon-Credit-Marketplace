@@ -6,6 +6,7 @@ import { Table } from "react-bootstrap";
 export default function CreditsList({ credits = [] }) {
   const nav = useNavigate();
 
+  // hiển thị khi dữ liệu chưa sẵn sàng
   if (!credits) {
     return <div>Loading...</div>;
   }
@@ -15,13 +16,16 @@ export default function CreditsList({ credits = [] }) {
 
   return (
     <div className="credits-table glass-card mt-4 p-3">
+      {/* tiêu đề bảng dựa theo loại dữ liệu */}
       <h5 className="text-accent text-center fw-bold mb-3">
         {isPurchased ? "Purchased Credits" : "Issued Credits"}
       </h5>
 
+      {/* bảng hiển thị dữ liệu credit */}
       <Table className="table table-dark table-hover align-middle mb-0">
         <thead>
           <tr className="text-accent text-uppercase small">
+            {/* cấu trúc cột thay đổi theo loại dữ liệu */}
             {isPurchased ? (
               <>
                 <th>Order ID</th>
@@ -45,6 +49,7 @@ export default function CreditsList({ credits = [] }) {
           </tr>
         </thead>
         <tbody>
+          {/* component phân trang cho dữ liệu */}
           <PaginatedTable
             items={credits}
             itemsPerPage={5}
@@ -53,6 +58,7 @@ export default function CreditsList({ credits = [] }) {
             )}
             renderRow={(item) =>
               isPurchased ? (
+                // render dòng dữ liệu cho purchased credits
                 <tr key={item.id}>
                   <td>#{item.orderId}</td>
                   <td>{item.description}</td>
@@ -62,6 +68,7 @@ export default function CreditsList({ credits = [] }) {
                   <td>{item.createdAt}</td>
                 </tr>
               ) : (
+                // render dòng dữ liệu cho issued credits
                 <tr key={item.id}>
                   <td>{item.batchCode}</td>
                   <td>{item.projectTitle}</td>

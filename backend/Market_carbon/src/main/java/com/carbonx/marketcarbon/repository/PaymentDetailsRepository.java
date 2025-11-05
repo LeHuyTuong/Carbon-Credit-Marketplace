@@ -2,10 +2,11 @@ package com.carbonx.marketcarbon.repository;
 
 import com.carbonx.marketcarbon.model.PaymentDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 public interface PaymentDetailsRepository extends JpaRepository<PaymentDetails, Long> {
-    PaymentDetails getPaymentDetailsByUserId(Long userId);
+    Optional<PaymentDetails> findByUserIdAndAccountNumber(Long userId, String accountNumber);
 
-    PaymentDetails  getPaymentDetailsByAccountNumber(String accountNumber);
+    Optional<PaymentDetails> findFirstByUserIdOrderByIdDesc(Long userId);
 }

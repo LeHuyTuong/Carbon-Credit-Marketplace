@@ -2,9 +2,11 @@ package com.carbonx.marketcarbon.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 
 @Configuration
 @EnableAsync
@@ -15,7 +17,7 @@ public class ConcurrencyConfig {
      * liên quan đến việc chia lợi nhuận.
      */
     @Bean("profitSharingTaskExecutor")
-    public TaskExecutor profitSharingTaskExecutor() {
+    public AsyncTaskExecutor profitSharingTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         // Số luồng cơ sở trong pool
         executor.setCorePoolSize(10);
@@ -27,6 +29,6 @@ public class ConcurrencyConfig {
         executor.setThreadNamePrefix("ProfitShare-");
         // Khởi tạo executor
         executor.initialize();
-        return executor;
+        return new DelegatingSecurityContextAsyncTaskExecutor(executor);
     }
 }

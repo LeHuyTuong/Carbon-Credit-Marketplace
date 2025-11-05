@@ -22,6 +22,8 @@ public interface EmailService {
     String renderWithdrawalConfirmationEmail(Map<String, Object> variables);
 
     String renderWithdrawalFailedEmail(Map<String, Object> variables);
+    String renderReportCvaDecisionEmail(Map<String, Object> vars);
+    String renderReportAdminDecisionEmail(Map<String, Object> vars);
 }
 
 

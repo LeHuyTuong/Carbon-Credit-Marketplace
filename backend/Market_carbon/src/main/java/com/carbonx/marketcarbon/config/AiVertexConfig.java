@@ -15,7 +15,7 @@ public class AiVertexConfig {
     private String location = "us-central1";
 
 
-    private String model = "gemini-1.5-pro";
+    private String model = "gemini-2.5-pro";
 
 
     private boolean enabled = true;
