@@ -31,7 +31,7 @@ const CreditsList = () => {
           issuedday: new Date(c.issuedAt).toLocaleDateString(),
           status: c.status,
           expiredday: c.vintageYear,
-          linkedcertificate: `${c.serialFrom}-${c.serialTo}`,
+          serial: `${c.serialFrom}-${c.serialTo}`,
         }));
         setData(mapped);
       } catch (err) {
@@ -102,7 +102,8 @@ const CreditsList = () => {
     },
 
     { field: "expiredday", headerName: "Expired Year", flex: 1 },
-    { field: "linkedcertificate", headerName: "Linked Certificate", flex: 1 },
+    { field: "serial", headerName: "Serial", flex: 1 },
+    { field: "creditcertificateurl", headerName: "Link Certificate", flex: 1 },
     {
       field: "action",
       headerName: "Action",

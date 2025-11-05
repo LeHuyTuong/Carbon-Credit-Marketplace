@@ -23,18 +23,30 @@ export async function getProjectById(id) {
 // Cập nhật project theo id
 export const updateProjectById = async (id, payload) => {
   try {
+    const formData = new FormData();
+
+    // append tất cả key/value trong payload
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value);
+      }
+    });
+
     const res = await fetch(`/api/v1/projects/${id}`, {
       method: "PUT",
+      body: formData, // gửi form-data
       headers: {
-        "Content-Type": "application/json",
+        "X-Request-Trace": payload.requestTrace || `trace_${Date.now()}`,
+        "X-Request-DateTime": payload.requestDateTime || new Date().toISOString(),
       },
-      body: JSON.stringify(payload), // gửi thẳng JSON
     });
+
     return await res.json();
   } catch (err) {
     console.error("Error updating project:", err);
     throw err;
   }
 };
+
 
 
