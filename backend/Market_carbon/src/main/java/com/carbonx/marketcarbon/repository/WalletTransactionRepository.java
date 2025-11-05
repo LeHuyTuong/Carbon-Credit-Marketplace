@@ -17,5 +17,8 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     // Đếm số giao dịch mua cho một tín chỉ
     long countByOrderCarbonCreditIdAndTransactionType(
             Long creditId, WalletTransactionType transactionType);
+    // Tìm giao dịch mua cho một tín chỉ
+    List<WalletTransaction> findByOrderCarbonCreditIdAndTransactionType(
+            Long creditId, WalletTransactionType transactionType);
 
 }

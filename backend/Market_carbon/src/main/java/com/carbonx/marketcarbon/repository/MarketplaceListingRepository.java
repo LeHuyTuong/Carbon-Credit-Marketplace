@@ -23,6 +23,9 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
 
     List<MarketPlaceListing> findByCompanyId(Long id);
 
+    // Tìm các niêm yết đã hết hạn và vẫn đang AVAILABLE
+    List<MarketPlaceListing> findByStatusAndExpiresAtBefore(ListingStatus status, LocalDate now);
+
     //listing theo công ty và carbon credit
     List<MarketPlaceListing> findByCompanyIdAndCarbonCreditIdAndStatus(
             Long companyId,
