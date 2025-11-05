@@ -60,7 +60,7 @@ export default function useWalletData() {
         residualTco2e: item.residualTco2e,
         status: item.status,
         issuedAt: item.issuedAt
-          ? new Date(item.issuedAt).toLocaleString("vi-VN", {
+          ? new Date(item.issuedAt + "Z").toLocaleString("vi-VN", {
               timeZone: "Asia/Ho_Chi_Minh",
               hour12: false,
             })
@@ -94,23 +94,22 @@ const fetchPurchasedCredits = async () => {
       const relatedCredit = carbonCredits.find(
         (c) => c.batchCode === tx.batchCode
       );
-
-      return {
-        id: tx.id,
-        orderId: tx.orderId,
-        description: tx.description || "Carbon credit purchase",
-        unitPrice: tx.unitPrice || 0,
-        amount: tx.amount || 0,
-        quantity: tx.carbonCreditQuantity || 0,
-        balanceBefore: tx.balanceBefore || 0,
-        balanceAfter: tx.balanceAfter || 0,
-        creditStatus: relatedCredit?.status || null,
-        createdAt: new Date(tx.createdAt).toLocaleString("vi-VN", {
-          timeZone: "Asia/Ho_Chi_Minh",
-          hour12: false,
-        }),
-      };
-    });
+        return {
+          id: tx.id,
+          orderId: tx.orderId,
+          description: tx.description || "Carbon credit purchase",
+          unitPrice: tx.unitPrice || 0,
+          amount: tx.amount || 0,
+          quantity: tx.carbonCreditQuantity || 0,
+          balanceBefore: tx.balanceBefore || 0,
+          balanceAfter: tx.balanceAfter || 0,
+          creditStatus: relatedCredit?.status || null,
+          createdAt: new Date(tx.createdAt + "Z").toLocaleString("vi-VN", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            hour12: false,
+          }),
+        };
+      });
 
     setPurchasedCredits(mapped);
   } catch (err) {
@@ -195,26 +194,26 @@ const fetchAllCredits = async (filters = {}) => {
     const res = await apiFetch(`/api/v1/my/credits?${params}`, { method: "GET" });
     const list = res?.response?.content || [];
 
-    const mapped = list.map((c) => ({
-      id: c.id,
-      creditCode: c.creditCode,
-      status: c.status,
-      projectId: c.projectId,
-      projectTitle: c.projectTitle,
-      companyId: c.companyId,
-      companyName: c.companyName,
-      vintageYear: c.vintageYear,
-      batchCode: c.batchCode,
-      issuedAt: c.issuedAt
-        ? new Date(c.issuedAt).toLocaleString("vi-VN", {
-            timeZone: "Asia/Ho_Chi_Minh",
-            hour12: false,
-          })
-        : "-",
-      expiryDate: c.expiryDate,
-      availableAmount: c.availableAmount,
-      listedAmount: c.listedAmount,
-    }));
+      const mapped = list.map((c) => ({
+        id: c.id,
+        creditCode: c.creditCode,
+        status: c.status,
+        projectId: c.projectId,
+        projectTitle: c.projectTitle,
+        companyId: c.companyId,
+        companyName: c.companyName,
+        vintageYear: c.vintageYear,
+        batchCode: c.batchCode,
+        issuedAt: c.issuedAt
+          ? new Date(c.issuedAt + "Z").toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+              hour12: false,
+            })
+          : "-",
+        expiryDate: c.expiryDate,
+        availableAmount: c.availableAmount,
+        listedAmount: c.listedAmount,
+      }));
 
     return mapped;
   } catch (err) {
@@ -225,40 +224,55 @@ const fetchAllCredits = async (filters = {}) => {
   }
 };
 
-// === FETCH RETIRABLE CREDITS ===
-const fetchRetirableCredits = async () => {
+
+  // fetch credit có thể retire
+  const fetchRetirableCredits = async () => {
   try {
     setLoading(true);
-    const res = await apiFetch("/api/v1/my/credits/retirable", { method: "GET" });
-    const list = res?.response || [];
 
-    // chỉ lấy AVAILABLE Va TRADED
-    const availableList = list.filter(c => c.status === "AVAILABLE" || c.status === "TRADED");
+    //Lấy danh sách batch có thể retire
+    const batchRes = await apiFetch("/api/v1/my/credits/retirable-batches", { method: "GET" });
+    const batchList = batchRes?.response || [];
 
-    // nhóm theo batchCode
-    const grouped = Object.values(
-      availableList.reduce((acc, c) => {
-        if (!acc[c.batchCode]) {
-          acc[c.batchCode] = {
-            batchCode: c.batchCode,
-            projectTitle: c.projectTitle,
-            vintageYear: c.vintageYear,
-            projectId: c.projectId,
-            availableAmount: 0,
-            expiryDate: c.expiryDate,
-            issuedAt: c.issuedAt,
-            creditIds: [],
-          };
-        }
-        acc[c.batchCode].availableAmount += c.availableAmount || 0;
-        acc[c.batchCode].creditIds.push(c.id);
-        return acc;
-      }, {})
+    //Lấy danh sách credit trong ví
+    const walletRes = await apiFetch("/api/v1/wallet", { method: "GET" });
+    const walletCredits = walletRes?.response?.carbonCredits || [];
+
+    //Chỉ lấy credit hợp lệ
+    const validCredits = walletCredits.filter(
+      c => (c.status === "AVAILABLE" || c.status === "TRADED") && c.batchId && c.batchCode
     );
 
-    return grouped;
+    console.table(validCredits.map(c => ({
+      creditId: c.creditId,
+      batchId: c.batchId,
+      batchCode: c.batchCode,
+      status: c.status
+    })));
+
+    // Gộp creditIds tương ứng chính xác theo batch
+    const mapped = batchList.map(batch => {
+      const relatedCredits = validCredits.filter(
+        c => c.batchId === batch.batchId && c.batchCode === batch.batchCode
+      );
+      const creditIds = relatedCredits.map(c => c.creditId);
+
+      return {
+        batchId: batch.batchId,
+        batchCode: batch.batchCode,
+        projectId: batch.projectId,
+        projectTitle: batch.projectTitle,
+        vintageYear: batch.vintageYear,
+        expiryDate: batch.expiryDate,
+        availableAmount: batch.totalAvailableAmount,
+        creditIds,
+      };
+    });
+
+    console.log("Mapped retirable batches:", mapped);
+    return mapped;
   } catch (err) {
-    console.error("Failed to fetch retirable credits:", err);
+    console.error("Failed to fetch retirable batches:", err);
     return [];
   } finally {
     setLoading(false);
@@ -266,9 +280,8 @@ const fetchRetirableCredits = async () => {
 };
 
 
-
-// === RETIRE CREDIT (theo từng creditId) ===
-const retireCredits = async (retireList = []) => {
+  // retire credit theo danh sách chọn
+  const retireCredits = async (retireList = []) => {
   if (!retireList.length) throw new Error("No credits selected to retire.");
 
   try {
@@ -276,27 +289,30 @@ const retireCredits = async (retireList = []) => {
     const results = [];
 
     for (const item of retireList) {
-      const { creditIds = [], quantity } = item;
+      const { quantity, batchId } = item;
+      if (!quantity || quantity <= 0) continue;
 
-      // Chỉ lấy đúng số lượng cần retire
-      const idsToRetire = creditIds.slice(0, quantity);
+      console.log(`[DEBUG] Retiring batchId=${batchId}, quantity=${quantity}`);
 
-      if (!idsToRetire.length) continue;
+      // lấy creditId đầu tiên trong danh sách creditIds của batch
+    const creditId = item.creditIds?.[0];
+    if (!creditId) continue;
 
-      for (const id of idsToRetire) {
-        console.log(`Retiring creditId: ${id}`);
-        const res = await apiFetch(`/api/v1/my/credits/${id}/retire`, {
-          method: "POST",
-          body: { creditId: id, quantity: 1 },
-        });
-        results.push(res?.response);
-      }
+    const res = await apiFetch(`/api/v1/my/credits/${creditId}/retire`, {
+      method: "POST",
+      body: {
+        data: { batchId, quantity },
+      },
+    });
+
+      results.push(res?.response || []);
     }
 
     return results;
   } catch (err) {
     console.error("Failed to retire credits:", err);
-    throw new Error(err.message || "Retire credits failed.");
+
+    throw err;
   } finally {
     setLoading(false);
   }
