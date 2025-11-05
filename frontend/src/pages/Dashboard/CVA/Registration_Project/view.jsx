@@ -136,7 +136,7 @@ const ApplicationView = () => {
                 fontWeight: 500,
               }}
             >
-              📎 View Attached Documents
+               View Attached Documents
             </a>
           </Box>
         ) : (

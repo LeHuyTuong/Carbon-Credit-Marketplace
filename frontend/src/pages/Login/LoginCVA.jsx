@@ -56,10 +56,10 @@ const CVALogin = () => {
       // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {
         showSnackbar("success", "Login successful! Redirecting to dashboard...");
-        setTimeout(() => navigate("/cva/dashboard", { replace: true }), 1000);
+        setTimeout(() => navigate("/cva/dashboard", { replace: true }), 3000);
       } else {
         showSnackbar("info", "No KYC found. Redirecting to KYC page...");
-        setTimeout(() => navigate("/cva/kyc", { replace: true }), 1000);
+        setTimeout(() => navigate("/cva/kyc", { replace: true }), 3000);
       }
     } catch (err) {
       console.error("Login Error:", err);
