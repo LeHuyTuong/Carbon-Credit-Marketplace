@@ -207,10 +207,33 @@ public class MyCreditController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "[COMPANY] Get credits eligible for retirement",
-            description = "Returns credits owned by company that are not expired, retired, or listed.")
-    @GetMapping("/retirableBatch")
-    public ResponseEntity<TuongCommonResponse<List<RetirableBatchResponse>>> listRetirableCreditsBatch(
+    @Operation(summary = "[COMPANY] Retire a carbon credit block",
+            description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
+    @PostMapping("/retire")
+    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse> >> retireCredit(
+            @Valid @RequestBody TuongCommonRequest<RetireBatchRequest> request,
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
+    ) {
+        String traceId = trace != null ? trace : UUID.randomUUID().toString();
+        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        List<CarbonCreditResponse> data = creditService.retireCreditsFromBatch (request.getData());
+
+        var response = new TuongCommonResponse<>(
+                traceId,
+                now,
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Retire carbon credit successfully"),
+                data
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "[COMPANY] Get Batches eligible for retirement",
+            description = "Returns batches owned by company that contain credits eligible for retirement, grouped by batch.")
+    @GetMapping("/retirable-batches")
+    public ResponseEntity<TuongCommonResponse<List<RetirableBatchResponse>>> listRetirableCreditsByBatch(
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -221,32 +244,9 @@ public class MyCreditController {
         var response = new TuongCommonResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable credits successfully"),
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable batches successfully"),
                 data
         );
-        return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "[COMPANY] Retire a carbon credit block",
-            description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
-    @PostMapping("/{id}/retire")
-    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse> >> retireCredit(
-            @Valid @RequestBody TuongCommonRequest<RetireBatchRequest> request,
-            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
-            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
-    ) {
-        String traceId = trace != null ? trace : UUID.randomUUID().toString();
-        String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-
-        List<CarbonCreditResponse> data = creditService.retireCreditsFromBatch(request.getData());
-
-        var response = new TuongCommonResponse<>(
-                traceId,
-                now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Retire carbon credit successfully"),
-                data
-        );
-
         return ResponseEntity.ok(response);
     }
 
