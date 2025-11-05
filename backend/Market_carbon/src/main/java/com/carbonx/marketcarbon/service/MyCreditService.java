@@ -18,11 +18,11 @@ public interface MyCreditService {
     List<CarbonCreditResponse> getMyCreditsByBatchId(Long batchId);
 
     List<CarbonCreditResponse> getMyRetirableCredits();
-
-    List<RetirableBatchResponse> getMyRetirableCreditsBatch();
     /**
      * Retire một TỔNG SỐ LƯỢNG từ một LÔ (batch),
      * tự động trừ dần từ các dòng credit con.
      */
     List<CarbonCreditResponse> retireCreditsFromBatch(RetireBatchRequest request);
+
+    List<RetirableBatchResponse> getMyRetirableCreditsBatch();
 }

@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -50,11 +51,12 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     private final ProfitDistributionDetailRepository profitDistributionDetailRepository;
     private final ProjectRepository projectRepository;
 
-    // Inject TaskExecutor đã tạo ở Config
-    @Qualifier("profitSharingTaskExecutor")
-    private final TaskExecutor taskExecutor;
+    // // Inject TaskExecutor đã tạo ở Config
+    // @Qualifier("profitSharingTaskExecutor")
+    // private final TaskExecutor taskExecutor;
 
 
+    // (Constructor của bạn)
     public ProfitSharingServiceImpl(
             EmissionReportRepository emissionReportRepository,
             VehicleRepository vehicleRepository,
@@ -65,7 +67,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             ProfitDistributionRepository profitDistributionRepository,
             ProfitDistributionDetailRepository profitDistributionDetailRepository,
             ProjectRepository projectRepository,
-            // BÁO CHO SPRING BIẾT: Tiêm chính xác bean tên là "profitSharingTaskExecutor" vào đây
             @Qualifier("profitSharingTaskExecutor") TaskExecutor taskExecutor
     ) {
         this.userRepository = userRepository;
@@ -77,8 +78,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         this.profitDistributionRepository = profitDistributionRepository;
         this.profitDistributionDetailRepository = profitDistributionDetailRepository;
         this.projectRepository = projectRepository;
-        this.taskExecutor = taskExecutor; // Gán bean đã được chỉ định
+        // this.taskExecutor = taskExecutor; // (Không cần dùng nữa)
     }
+
 
     @Data
     private static class ContributionData {
@@ -121,28 +123,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
 
     @Async("profitSharingTaskExecutor") // Chạy bất đồng bộ trên luồng riêng
-    @Transactional(rollbackFor = Exception.class) // Bao bọc toàn bộ quá trình trong 1 transaction
     @Override
     public void shareCompanyProfit(ProfitSharingRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        String email = authentication.getName();
-        if (email == null) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        User companyUser = userRepository.findByEmail(email);
+        User companyUser = userRepository.findByEmail(authentication.getName());
         if (companyUser == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            log.error("Authentication failed, user not found for email: {}", authentication.getName());
+            return; // Không ném lỗi ra ngoài @Async
         }
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
-        // 1. Tạo và lưu sự kiện chia lợi nhuận
+        // 1. Tạo và lưu sự kiện chia lợi nhuận (Tự commit)
         ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
 
         try {
-            // 2. Lấy ví của công ty
+            // 2. Lấy ví của công ty (Không nằm trong TX)
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
 
             // 3. Lấy danh sách EmissionReport
@@ -150,8 +145,13 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             // Công ty muốn chia cho 1 report cụ thể
             if (request.getEmissionReportId() != null) {
-                EmissionReport report = emissionReportRepository.findById(request.getEmissionReportId())
+
+                // ================== SỬA LỖI LAZY INIT ==================
+                // Dùng hàm mới `findByIdWithDetails` để load cả 'details'
+                EmissionReport report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
+                // =======================================================
+
                 if (report.getStatus() != EmissionStatus.CREDIT_ISSUED ) {
                     throw new AppException(ErrorCode.EMISSION_REPORT_NOT_APPROVED);
                 }
@@ -177,35 +177,32 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             BigDecimal totalEnergyFromUnregistered = BigDecimal.ZERO;
             BigDecimal totalCreditsFromRegistered = BigDecimal.ZERO;
             BigDecimal totalCreditsFromUnregistered = BigDecimal.ZERO;
+            BigDecimal totalCreditsAll = BigDecimal.ZERO; // Tổng tín chỉ
 
             for (EmissionReport report : reportsToProcess) {
+                // Vòng lặp này (trước đây là line 174) sẽ không còn lỗi "no Session"
                 for (EmissionReportDetail detail : report.getDetails()) {
 
-                    // Tính toán dựa trên Energy
                     BigDecimal energy = detail.getTotalEnergy();
                     if (energy == null || energy.compareTo(BigDecimal.ZERO) <= 0) {
-                        continue; // Bỏ qua nếu không có đóng góp
+                        continue;
                     }
 
-                    // (Bước 1) Nếu xe đã đăng ký
                     BigDecimal creditContribution = resolveCreditContribution(detail, energy);
+                    totalCreditsAll = totalCreditsAll.add(creditContribution); // TÍNH TỔNG
 
                     if (registeredPlates.contains(detail.getVehiclePlate())) {
                         Vehicle vehicle = vehicleRepository.findByPlateNumberWithDetails(detail.getVehiclePlate()).orElse(null);
                         if (vehicle != null && vehicle.getEvOwner() != null) {
                             Long evOwnerId = vehicle.getEvOwner().getId();
 
-                            // Tổng hợp theo EV Owner
                             ContributionData contribution = evOwnerContributions.computeIfAbsent(evOwnerId, ContributionData::new);
-                            contribution.addContribution(energy, creditContribution, detail); // Thêm đóng góp từ detail
+                            contribution.addContribution(energy, creditContribution, detail);
 
-                            // cộng tiền vào
                             totalEnergyFromRegistered = totalEnergyFromRegistered.add(energy);
                             totalCreditsFromRegistered = totalCreditsFromRegistered.add(creditContribution);
                         }
-                    }
-                    // (Bước 2) Xe không đăng ký
-                    else {
+                    } else {
                         totalEnergyFromUnregistered = totalEnergyFromUnregistered.add(energy);
                         totalCreditsFromUnregistered = totalCreditsFromUnregistered.add(creditContribution);
                     }
@@ -216,18 +213,14 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             log.info("Total energy contribution (Registered): {} kWh. (Unregistered): {} kWh.", totalEnergyFromRegistered, totalEnergyFromUnregistered);
             log.info("Total credit contribution (Registered): {}. (Unregistered): {}.", totalCreditsFromRegistered, totalCreditsFromUnregistered);
 
-            BigDecimal totalCreditsAll = totalCreditsFromRegistered.add(totalCreditsFromUnregistered);
-            BigDecimal sharePercent = request.getCompanySharePercent()
-                    .divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP);
+            BigDecimal sharePercent = request.getCompanySharePercent().divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP);
             BigDecimal requestedProfitBase = request.getTotalMoneyToDistribute();
             BigDecimal poolToShare = requestedProfitBase.multiply(sharePercent).setScale(2, RoundingMode.HALF_UP);
 
             if (totalCreditsAll.compareTo(BigDecimal.ZERO) <= 0 || totalCreditsFromRegistered.compareTo(BigDecimal.ZERO) <= 0) {
                 log.warn("No eligible credit contributions from registered vehicles. Requested pool will remain in company wallet.");
-                distributionEvent.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-                distributionEvent.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
-                distributionEvent.setDescription(request.getDescription() + " | No registered vehicles eligible for payout");
                 distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
+                distributionEvent.setDescription(request.getDescription() + " | No registered vehicles eligible for payout");
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -240,11 +233,8 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 if (contribution.getTotalCreditContribution().compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
-                // Tính toán phần trăm đóng góp
 
-                BigDecimal ownerSharePercent = contribution.getTotalCreditContribution()
-                        .divide(totalCreditsAll, 10, RoundingMode.HALF_UP);
-                // Tính số tiền được nhận
+                BigDecimal ownerSharePercent = contribution.getTotalCreditContribution().divide(totalCreditsAll, 10, RoundingMode.HALF_UP);
                 BigDecimal moneyToPay = poolToShare.multiply(ownerSharePercent).setScale(2, RoundingMode.HALF_UP);
 
                 if (moneyToPay.compareTo(BigDecimal.ZERO) > 0) {
@@ -256,61 +246,54 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     ));
                     totalMoneyToPayout = totalMoneyToPayout.add(moneyToPay);
                 }
-                // 7.2 KIỂM TRA TỔNG TIỀN (1 LẦN)
-                if (totalMoneyToPayout.compareTo(BigDecimal.ZERO) <= 0) {
-                    log.warn("Computed payout amount is zero. No funds will be moved.");
-                    distributionEvent.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-                    distributionEvent.setTotalCreditsDistributed(totalCreditsFromRegistered.setScale(6, RoundingMode.HALF_UP));
-                    distributionEvent.setDescription(request.getDescription() + " | Payout amount resolved to zero");
-                    distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
-                    profitDistributionRepository.save(distributionEvent);
-                    return;
-                }
+            } // HẾT VÒNG LẶP TÍNH TOÁN
 
-                validateCompanyBalance(companyWallet, totalMoneyToPayout);
-                // 7.3 Xác nhận
-                BigDecimal undistributedAmount = poolToShare.subtract(totalMoneyToPayout).setScale(2, RoundingMode.HALF_UP);
-                if (undistributedAmount.compareTo(BigDecimal.ZERO) < 0) {
-                    undistributedAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-                }
-
-                distributionEvent.setTotalMoneyDistributed(totalMoneyToPayout);
-                distributionEvent.setTotalCreditsDistributed(totalCreditsFromRegistered.setScale(6, RoundingMode.HALF_UP));
-
-                StringBuilder descriptionBuilder = new StringBuilder(request.getDescription());
-                descriptionBuilder.append(" | Distributed ")
-                        .append(totalMoneyToPayout.toPlainString())
-                        .append(" from requested pool ")
-                        .append(poolToShare.toPlainString());
-                if (undistributedAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    descriptionBuilder.append(" | Undistributed: ")
-                            .append(undistributedAmount.toPlainString())
-                            .append(" due to vehicles not registered in the system");
-                }
-                distributionEvent.setDescription(descriptionBuilder.toString());
+            // 7.2 KIỂM TRA TỔNG TIỀN (1 LẦN)
+            if (totalMoneyToPayout.compareTo(BigDecimal.ZERO) <= 0) {
+                log.warn("Computed payout amount is zero. No funds will be moved.");
+                distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
+                distributionEvent.setDescription(request.getDescription() + " | Payout amount resolved to zero");
                 profitDistributionRepository.save(distributionEvent);
-
-                //7.4 Vòng lặp processing chạy thread pool
-                List<CompletableFuture<Void>> payoutTasks = new ArrayList<>();
-
-                for (OwnerPayoutData payout : payoutPlan) {
-                    CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
-                        processPayoutForOwner(distributionEvent, payout, companyWallet);
-                    }, taskExecutor);
-                    payoutTasks.add(task);
-                }
-
-                log.info("Waiting for {} payout tasks to complete...", payoutTasks.size());
-                CompletableFuture.allOf(payoutTasks.toArray(new CompletableFuture[0])).join();
-                log.info("All payout tasks completed.");
-
+                return;
             }
 
-            // 9. Cập nhật trạng thái EmissionReport -> PAID_OUT
-            for (EmissionReport report : reportsToProcess) {
-                report.setStatus(EmissionStatus.PAID_OUT);
+            // KIỂM TRA VÍ 1 LẦN (An toàn, không còn deadlock)
+            validateCompanyBalance(companyWallet, totalMoneyToPayout);
+
+            // 7.3 Xác nhận
+            BigDecimal undistributedAmount = poolToShare.subtract(totalMoneyToPayout).setScale(2, RoundingMode.HALF_UP);
+            if (undistributedAmount.compareTo(BigDecimal.ZERO) < 0) {
+                undistributedAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
             }
-            emissionReportRepository.saveAll(reportsToProcess);
+
+            distributionEvent.setTotalMoneyDistributed(totalMoneyToPayout);
+            distributionEvent.setTotalCreditsDistributed(totalCreditsFromRegistered.setScale(6, RoundingMode.HALF_UP));
+
+            StringBuilder descriptionBuilder = new StringBuilder(request.getDescription());
+            descriptionBuilder.append(" | Distributed ")
+                    .append(totalMoneyToPayout.toPlainString())
+                    .append(" from requested pool ")
+                    .append(poolToShare.toPlainString());
+            if (undistributedAmount.compareTo(BigDecimal.ZERO) > 0) {
+                descriptionBuilder.append(" | Undistributed: ")
+                        .append(undistributedAmount.toPlainString())
+                        .append(" due to vehicles not registered in the system");
+            }
+            distributionEvent.setDescription(descriptionBuilder.toString());
+            profitDistributionRepository.save(distributionEvent);
+
+            // 7.4 Dùng VÒNG LẶP FOR TUẦN TỰ (Bỏ CompletableFuture)
+            log.info("Starting sequential payout for {} owners...", payoutPlan.size());
+
+            for (OwnerPayoutData payout : payoutPlan) {
+                // Gọi hàm tuần tự (nó là public và @Transactional(REQUIRES_NEW))
+                processPayoutForOwner(distributionEvent, payout, companyWallet);
+            }
+
+            log.info("All sequential payouts processed.");
+
+            // 9. Cập nhật trạng thái EmissionReport -> PAID_OUT (Gói vào TX mới)
+            updateReportsToPaidOut(reportsToProcess);
 
             // 10. Đánh dấu sự kiện là hoàn thành
             distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
@@ -318,36 +301,48 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
         } catch (Exception e) {
             log.error("System Error: {}", e.getMessage(), e);
-            // Lấy message lỗi từ ErrorCode nếu có
             String errorMessage = (e instanceof AppException ae) ? ae.getErrorCode().getMessage() : e.getMessage();
 
             distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-            distributionEvent.setDescription("Error: " + errorMessage);
+            // Cắt ngắn lỗi (Sửa lỗi Data Truncation)
+            if (errorMessage != null && errorMessage.length() > 250) {
+                distributionEvent.setDescription("Error: " + errorMessage.substring(0, 250) + "...");
+            } else {
+                distributionEvent.setDescription("Error: " + errorMessage);
+            }
             profitDistributionRepository.save(distributionEvent);
-            // Vì @Transactional, tất cả các report status sẽ được rollback,
-            // không có report nào bị set thành PAID_OUT -> an toàn để chạy lại.
         }
     }
 
+
     /**
-     * Xử lý thanh toán cho một EV Owner cụ thể.
-     * Được gọi bên trong một luồng riêng (async).
+     * BƯỚC 3: Xử lý thanh toán (Hàm này tạo Lịch sử Giao dịch)
+     * Hàm này chạy trong 1 GIAO DỊCH MỚI (REQUIRES_NEW)
      */
-    private void processPayoutForOwner(ProfitDistribution event, OwnerPayoutData payout, Wallet companyWallet) {
-        // Tải lại companyWallet trong luồng này để đảm bảo an toàn
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void processPayoutForOwner(ProfitDistribution event, OwnerPayoutData payout, Wallet companyWallet) {
+        // Tải lại companyWallet (BẮT BUỘC)
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
             log.error("Company wallet not found in async thread! Wallet ID: {}", companyWallet.getId());
+            saveFailedDetail(event, payout, "Company wallet not found");
             return;
         }
 
         EVOwner owner = evOwnerRepository.findById(payout.getEvOwnerId()).orElse(null);
         if (owner == null || owner.getUser() == null) {
             log.error("EVOwner or associated User not found for EVOwner ID: {}", payout.getEvOwnerId());
+            saveFailedDetail(event, payout, "EVOwner not found");
             return;
         }
 
         Wallet ownerWallet = walletService.findWalletByUser(owner.getUser());
+        if (ownerWallet == null) {
+            // Tự động tạo ví nếu chưa có
+            ownerWallet = ((WalletServiceImpl) walletService).generateWallet(owner.getUser());
+            log.info("Wallet for EVOwner ID {} not found. Generated new wallet.", payout.getEvOwnerId());
+        }
+
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(event);
         detail.setEvOwner(owner);
@@ -355,7 +350,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         detail.setCreditAmount(payout.getCreditContribution());
 
         try {
-            // Thực hiện chuyển tiền (nếu có)
             if (payout.getPayoutAmount().compareTo(BigDecimal.ZERO) > 0) {
                 walletService.transferFunds(
                         threadSafeCompanyWallet,
@@ -366,27 +360,39 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         String.format("Profit-sharing from distribution #%d", event.getId())
                 );
             }
-
             detail.setStatus("SUCCESS");
-            if (payout.getPayoutAmount().compareTo(BigDecimal.ZERO) == 0) {
-                detail.setErrorMessage("No payout calculated for this owner");
-            }
             log.info("Successfully processed payout for EVOwner ID: {}", payout.getEvOwnerId());
-        } catch (WalletException e) {
-            log.error("WalletException during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
-            detail.setStatus("FAILED");
-            detail.setErrorMessage(e.getMessage());
+
         } catch (Exception e) {
-            log.error("System error during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage(), e);
+            log.error("Exception during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage == null) errorMessage = "Unknown error";
+            if (errorMessage.length() > 250) {
+                errorMessage = errorMessage.substring(0, 250) + "...";
+            }
             detail.setStatus("FAILED");
-            detail.setErrorMessage("System error: " + e.getMessage());
+            detail.setErrorMessage(errorMessage);
         } finally {
-            profitDistributionDetailRepository.save(detail); // Lưu lại chi tiết dù thành công hay thất bại
+            profitDistributionDetailRepository.save(detail);
         }
     }
 
-    // --- Helper Methods ---
-    private ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
+    // Gói việc update Report vào Transaction
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateReportsToPaidOut(List<EmissionReport> reports) {
+        if (reports == null || reports.isEmpty()) return;
+        List<Long> reportIds = reports.stream().map(EmissionReport::getId).toList();
+        List<EmissionReport> freshReports = emissionReportRepository.findAllById(reportIds);
+
+        for (EmissionReport report : freshReports) {
+            report.setStatus(EmissionStatus.PAID_OUT);
+        }
+        emissionReportRepository.saveAll(freshReports);
+    }
+
+    // Gói việc tạo Event vào Transaction
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
         ProfitDistribution event = new ProfitDistribution();
         event.setCompanyUser(companyUser);
         if (request.getProjectId() != null) {
@@ -397,33 +403,51 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         event.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         event.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
         event.setDescription(request.getDescription());
-        event.setStatus(ProfitDistributionStatus.PROCESSING); // Bắt đầu xử lý ngay
+        event.setStatus(ProfitDistributionStatus.PROCESSING);
         return profitDistributionRepository.save(event);
     }
 
-    private void validateCompanyBalance(Wallet companyWallet, BigDecimal requiredAmount) throws WalletException {
-        if (requiredAmount == null) {
-            return;
+    // Gói việc lưu lỗi chi tiết vào Transaction
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
+        try {
+            EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
+            ProfitDistributionDetail detail = new ProfitDistributionDetail();
+            detail.setDistribution(event);
+            detail.setEvOwner(ownerRef);
+            detail.setMoneyAmount(payout.getPayoutAmount());
+            detail.setCreditAmount(payout.getCreditContribution());
+            detail.setStatus("FAILED");
+            detail.setErrorMessage(errorMessage.substring(0, Math.min(errorMessage.length(), 254)));
+            profitDistributionDetailRepository.save(detail);
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to save failure detail for owner {}: {}", payout.getEvOwnerId(), e.getMessage());
         }
-        if (companyWallet.getBalance().compareTo(requiredAmount) < 0) {
+    }
+
+    private void validateCompanyBalance(Wallet companyWallet, BigDecimal requiredAmount) throws WalletException {
+        if (requiredAmount == null) return;
+
+        Wallet freshWallet = walletRepository.findById(companyWallet.getId())
+                .orElseThrow(() -> new WalletException("Wallet not found during validation"));
+
+        if (freshWallet.getBalance().compareTo(requiredAmount) < 0) {
+            log.warn("Insufficient funds: Wallet {} has {} but requires {}",
+                    freshWallet.getId(), freshWallet.getBalance(), requiredAmount);
             throw new AppException(ErrorCode.WALLET_INSUFFICIENT_FUNDS);
         }
     }
 
     private BigDecimal resolveCreditContribution(EmissionReportDetail detail, BigDecimal fallbackEnergy) {
-        if (detail == null) {
-            return BigDecimal.ZERO;
-        }
-
+        if (detail == null) return BigDecimal.ZERO;
         BigDecimal co2Kg = detail.getCo2Kg();
         if (co2Kg != null && co2Kg.compareTo(BigDecimal.ZERO) > 0) {
             return co2Kg.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
         }
-
         if (fallbackEnergy != null && fallbackEnergy.compareTo(BigDecimal.ZERO) > 0) {
-            return fallbackEnergy.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
+            BigDecimal defaultEF = new BigDecimal("0.4");
+            return fallbackEnergy.multiply(defaultEF).divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
         }
-
         return BigDecimal.ZERO;
     }
 }

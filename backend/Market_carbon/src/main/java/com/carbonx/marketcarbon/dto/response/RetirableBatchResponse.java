@@ -7,6 +7,10 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * DTO tóm tắt thông tin một Lô (Batch) có tín chỉ
+ * sẵn sàng để nghỉ hưu (Retire).
+ */
 @Data
 @Builder
 public class RetirableBatchResponse {
