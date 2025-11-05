@@ -18,16 +18,16 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Chart/Header.jsx";
 import { registerUser, verifyOtp } from "@/apiAdmin/apiLogin.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const RegisterForm = () => {
   const isNonMobile = useMediaQuery("(min-width:600px)");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [errorSnackbar, setErrorSnackbar] = useState(false);
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(300); // 5 phút = 300s
   const [userEmail, setUserEmail] = useState("");
-  const otpRefs = useRef([]); // 🔥 refs cho auto focus
+  const otpRefs = useRef([]); //  refs cho auto focus
 
   // Timer countdown
   useEffect(() => {
@@ -47,11 +47,11 @@ const RegisterForm = () => {
     newOtp[index] = value;
     setOtpValues(newOtp);
 
-    // 🔥 tự động chuyển sang ô tiếp theo
+    //  tự động chuyển sang ô tiếp theo
     if (value && index < 5) {
       otpRefs.current[index + 1].focus();
     }
-    // 🔥 nếu xóa thì lùi lại
+    //  nếu xóa thì lùi lại
     if (!value && index > 0) {
       otpRefs.current[index - 1].focus();
     }
@@ -67,22 +67,23 @@ const RegisterForm = () => {
       };
 
       const res = await registerUser(payload);
-      console.log("✅ Register success:", res);
+      console.log(" Register success:", res);
 
       setUserEmail(values.email);
       setOpenOtpDialog(true);
       setTimer(300); // reset timer 5 phút
       resetForm();
+      showSnackbar("info", "Registration successful! Please verify OTP.");
     } catch (error) {
-      console.error("❌ Register failed:", error);
-      setErrorSnackbar(true);
+      console.error(" Register failed:", error);
+      showSnackbar("error", "Failed to register account!");
     }
   };
 
   const handleOtpSubmit = async () => {
     const otpCode = otpValues.join("");
     if (otpCode.length !== 6) {
-      alert("Please enter all 6 digits of the OTP!");
+      showSnackbar("warning", "Please enter all 6 digits of the OTP!");
       return;
     }
 
@@ -92,16 +93,16 @@ const RegisterForm = () => {
         otpCode: otpCode,
       });
 
-      console.log("🔒 OTP verified:", res);
+      console.log(" OTP verified:", res);
       if (res?.responseStatus?.responseCode === "200") {
         setOpenOtpDialog(false);
-        setOpenSnackbar(true);
+        showSnackbar("success", "Account verified successfully!");
       } else {
-        alert("Invalid OTP or verification failed!");
+        showSnackbar("error", "Invalid OTP or verification failed!");
       }
     } catch (error) {
-      console.error("❌ OTP verify failed:", error);
-      alert("Error verifying OTP!");
+      console.error(" OTP verify failed:", error);
+      showSnackbar("error", "Error verifying OTP!");
     }
   };
 
@@ -217,7 +218,7 @@ const RegisterForm = () => {
             {otpValues.map((val, index) => (
               <TextField
                 key={index}
-                inputRef={(el) => (otpRefs.current[index] = el)} // 🔥 gán ref
+                inputRef={(el) => (otpRefs.current[index] = el)} //  gán ref
                 value={val}
                 onChange={(e) => handleOtpChange(index, e.target.value)}
                 inputProps={{
@@ -252,39 +253,8 @@ const RegisterForm = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Success Snackbar */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity="success"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          Account verified successfully!
-        </Alert>
-      </Snackbar>
-
-      {/* Error Snackbar */}
-      <Snackbar
-        open={errorSnackbar}
-        autoHideDuration={3000}
-        onClose={() => setErrorSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setErrorSnackbar(false)}
-          severity="error"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          Failed to register account!
-        </Alert>
-      </Snackbar>
+      {/* Snackbar component */}
+      {SnackbarComponent}
     </Box>
   );
 };

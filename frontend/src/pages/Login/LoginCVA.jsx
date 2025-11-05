@@ -13,29 +13,27 @@ import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx"; // import hook snackbar
 
 const CVALogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showSnackbar, SnackbarComponent } = useSnackbar(); // hook snackbar
 
   const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🧩 Cập nhật input form
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🚀 Submit login
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     if (!form.email || !form.password) {
-      setError("Please fill in all fields!");
+      showSnackbar("warning", "Please fill in all fields!");
       return;
     }
 
@@ -43,37 +41,33 @@ const CVALogin = () => {
       setLoading(true);
       console.log("Attempting login with:", form.email);
 
-      // ✅ Gọi API login
       const res = await apiLogin(form.email, form.password);
       console.log("Login API response:", res);
 
       if (!res?.jwt) throw new Error("Invalid login response from server");
 
-      // ✅ Lưu user vào context (role = CVA)
+      // Lưu user vào context (role = CVA)
       login({ ...res.user, role: "CVA" }, res.jwt, true);
 
-      // ✅ Gọi check KYC
+      // Gọi check KYC
       const kycRes = await checkKYCCVA();
       console.log("Full KYC check:", kycRes);
 
-      // ✅ Điều hướng
+      // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {
-        console.log("✅ KYC found → Go to Dashboard");
-        navigate("/cva/dashboard", { replace: true });
+        showSnackbar("success", "Login successful! Redirecting to dashboard...");
+        setTimeout(() => navigate("/cva/dashboard", { replace: true }), 1000);
       } else {
-        console.log("⚠️ No KYC found → Go to KYC page");
-        navigate("/cva/kyc", { replace: true });
+        showSnackbar("info", "No KYC found. Redirecting to KYC page...");
+        setTimeout(() => navigate("/cva/kyc", { replace: true }), 1000);
       }
     } catch (err) {
       console.error("Login Error:", err);
-
-      // Chuẩn hóa message lỗi
       const apiMsg =
         err?.responseStatus?.responseMessage ||
         err?.message ||
         "Login failed! Please try again.";
-
-      setError(apiMsg);
+      showSnackbar("error", apiMsg);
     } finally {
       setLoading(false);
     }
@@ -99,7 +93,7 @@ const CVALogin = () => {
           backgroundColor: colors.primary[500],
         }}
       >
-        {/* 🧭 Header */}
+        {/* Header */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
           <SupervisorAccount
             sx={{ fontSize: 48, color: colors.greenAccent[500], mb: 1 }}
@@ -107,7 +101,7 @@ const CVALogin = () => {
           <Typography
             variant="h4"
             fontWeight="bold"
-color={colors.greenAccent[400]}
+            color={colors.greenAccent[400]}
           >
             CVA Login
           </Typography>
@@ -116,7 +110,7 @@ color={colors.greenAccent[400]}
           </Typography>
         </Box>
 
-        {/* 🧩 Form */}
+        {/* Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email"
@@ -147,16 +141,6 @@ color={colors.greenAccent[400]}
             }}
           />
 
-          {error && (
-            <Typography
-              color="error"
-              variant="body2"
-              sx={{ mb: 2, fontWeight: "bold" }}
-            >
-              {error}
-            </Typography>
-          )}
-
           <Button
             type="submit"
             fullWidth
@@ -183,6 +167,9 @@ color={colors.greenAccent[400]}
           © 2025 EV-CarbonX System
         </Typography>
       </Paper>
+
+      {/* Snackbar Component */}
+      {SnackbarComponent}
     </Box>
   );
 };

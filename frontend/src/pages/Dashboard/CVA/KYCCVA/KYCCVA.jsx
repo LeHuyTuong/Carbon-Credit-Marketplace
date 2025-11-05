@@ -234,7 +234,7 @@ const CVAKYC = () => {
               fontWeight: "bold",
               "&:hover": { borderColor: colors.grey[200] },
             }}
-            onClick={() => navigate('/cva/carbonX/mkp/login')}
+            onClick={() => navigate('/cva/carbonX/mkp/login',{ replace: true })}
           >
             BACK
           </Button>

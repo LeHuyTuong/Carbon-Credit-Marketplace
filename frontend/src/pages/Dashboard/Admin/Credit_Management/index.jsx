@@ -78,7 +78,7 @@ const CreditsList = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-start",
+              justifyContent: "center",
               width: "100%",
             }}
           >

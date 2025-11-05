@@ -16,7 +16,7 @@ const CompanyTeam = () => {
     async function fetchCompanies() {
       try {
         const response = await getAllCompanyKYCProfiles();
-        console.log("📦 API Company KYC Response:", response);
+        console.log(" API Company KYC Response:", response);
 
         const list = Array.isArray(response?.response)
           ? response.response
@@ -39,7 +39,7 @@ const CompanyTeam = () => {
 
         setData(mapped);
       } catch (err) {
-        console.error("❌ Error fetching company KYC profiles:", err);
+        console.error("Error fetching company KYC profiles:", err);
       }
     }
 

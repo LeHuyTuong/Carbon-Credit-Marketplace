@@ -13,12 +13,16 @@ import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, checkKYCAdmin } from "@/apiAdmin/apiLogin.js";
 import { useAuth } from "@/context/AuthContext.jsx";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const AdminLogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const { showSnackbar, SnackbarComponent } = useSnackbar(); // hook snackbar
+
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -33,7 +37,7 @@ const AdminLogin = () => {
     setError("");
 
     if (!form.email || !form.password) {
-      setError("Please fill in all fields!");
+      showSnackbar("warning", "Please fill in all fields!");
       return;
     }
 
@@ -53,19 +57,19 @@ const AdminLogin = () => {
 
         //  Điều hướng dựa theo KYC có hay chưa
         if (kycRes && kycRes.id) {
-          console.log(" KYC found → Go Dashboard");
-          setTimeout(() => navigate("/admin/dashboard", { replace: true }), 0);
+          showSnackbar("success", "Login successful! Redirecting to dashboard...");
+          setTimeout(() => navigate("/admin/dashboard", { replace: true }), 3000);
         } else {
-          console.log(" No KYC found → Go to KYC page");
-          setTimeout(() => navigate("/admin/kyc", { replace: true }), 0);
+          showSnackbar("info", "No KYC found. Redirecting to KYC page...");
+          setTimeout(() => navigate("/admin/kyc", { replace: true }), 3000);
         }
 
       } else {
-        setError(res?.message || "Login failed. Please try again.");
+        showSnackbar("error", res?.message || "Login failed. Please try again.");
       }
     } catch (err) {
       console.error(" Login error:", err);
-      setError(err.message || "An unexpected error occurred!");
+      showSnackbar("error", err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);
     }
@@ -177,6 +181,8 @@ const AdminLogin = () => {
           © 2025 EV-CarbonX System
         </Typography>
       </Paper>
+      {/* Snackbar Component */}
+      {SnackbarComponent}
     </Box>
   );
 };
