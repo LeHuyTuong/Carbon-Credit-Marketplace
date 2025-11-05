@@ -25,16 +25,13 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 
     Optional<CarbonCredit> findByCreditCode(String creditCode);
 
-    Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
-
     List<CarbonCredit> findByCompanyId(Long companyId);
 
     List<CarbonCredit> findByStatusNot(CreditStatus status);
 
     List<CarbonCredit> findByBatch_IdAndCompany_Id(Long batchId, Long companyId);
 
-    Optional<CarbonCredit> findByStatus(CreditStatus status);
-
+    Optional<CarbonCredit> findFirstByCompanyAndStatus(Company company, CreditStatus status);
 
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
@@ -60,6 +57,8 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     """)
     List<Object[]> sumAmountByVintage(@Param("companyId") Long companyId);
 
+
+    Optional<CarbonCredit> findByStatus(CreditStatus status);
 
     @Query("""
         SELECT c.status, COALESCE(SUM(c.amount), 0)
@@ -144,7 +143,7 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
      * Tìm CarbonCredit theo ID và Company ID đồng thời khóa PESSIMISTIC_WRITE.
      * Phương thức này dùng cho các hoạt động cần cập nhật an toàn (như retire, list).
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE) // tránh race condition khi có 2 giao dịch cùng “retire” 1 credit.
     @Query("SELECT c FROM CarbonCredit c WHERE c.id = :id AND c.company.id = :companyId")
     Optional<CarbonCredit> findByIdAndCompanyIdWithLock(@Param("id") Long id, @Param("companyId") Long companyId);
 
@@ -190,5 +189,14 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
       )
 """)
     long sumAvailableIssued(@Param("companyId") Long companyId);
+
+    // tìm cả tín chỉ mua từ marketplace
+    @Query("SELECT c FROM CarbonCredit c WHERE " +
+            "(c.batch.id = :batchId AND c.company.id = :companyId) " +
+            "OR EXISTS (SELECT t FROM WalletTransaction t WHERE " +
+            "t.wallet.company.id = :companyId AND " +
+            "t.order.carbonCredit.batch.id = :batchId AND " +
+            "t.transactionType = 'BUY_CARBON_CREDIT')")
+    List<CarbonCredit> findAllOwnedByBatch(@Param("batchId") Long batchId, @Param("companyId") Long companyId);
 
 }

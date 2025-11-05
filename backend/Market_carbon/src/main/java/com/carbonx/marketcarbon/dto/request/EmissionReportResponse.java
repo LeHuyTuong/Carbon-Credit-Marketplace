@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Data
@@ -21,7 +22,7 @@ public class EmissionReportResponse {
     Integer vehicleCount;      // Tổng xe (Total EV_Owner / total_vehicles)
     String status;
     String source;
-    OffsetDateTime submittedAt;
+    LocalDateTime submittedAt;
 
     // Metadata (nếu FE muốn xem)
     String uploadOriginalFilename;

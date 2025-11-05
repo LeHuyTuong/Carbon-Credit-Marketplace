@@ -1,6 +1,8 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.dto.request.PaymentDetailsRequest;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PaymentDetails;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.PaymentDetailsRepository;
@@ -40,7 +42,9 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
 
-        PaymentDetails paymentDetails = paymentDetailsRepository.getPaymentDetailsByAccountNumber(request.getAccountNumber());
+        PaymentDetails paymentDetails = PaymentDetails.builder()
+                .user(user)
+                .build();
 
         paymentDetails.setAccountHolderName(request.getAccountHolderName());
         paymentDetails.setCustomerName(request.getCustomerName());
@@ -65,7 +69,10 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
 
-        PaymentDetails paymentDetails = paymentDetailsRepository.getPaymentDetailsByAccountNumber(request.getAccountNumber());
+        PaymentDetails paymentDetails = paymentDetailsRepository
+                .findByUserIdAndAccountNumber(user.getId(), request.getAccountNumber())
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
+
         paymentDetailsRepository.delete(paymentDetails);
     }
 
@@ -74,6 +81,6 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
-        return paymentDetailsRepository.getPaymentDetailsByUserId(user.getId());
+        return paymentDetailsRepository.findFirstByUserIdOrderByIdDesc(user.getId()).orElse(null);
     }
 }

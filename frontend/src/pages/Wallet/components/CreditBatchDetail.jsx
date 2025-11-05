@@ -7,13 +7,17 @@ import PaginatedList from "../../../components/Pagination/PaginatedList";
 import useReveal from "../../../hooks/useReveal";
 
 export default function CreditBatchDetail() {
+  // lấy batch id từ url
   const { id } = useParams();
   const nav = useNavigate();
   const sectionRef = useRef(null);
+  // lấy dữ liệu và hàm fetch từ custom hook
   const { creditDetails, fetchMyCredits, loading } = useWalletData();
+  // state lưu danh sách credit theo batch
   const [credits, setCredits] = useState([]);
   useReveal(sectionRef);
 
+  // fetch danh sách credit theo batch id khi id thay đổi
   useEffect(() => {
     const loadCredits = async () => {
       if (id) {
@@ -23,6 +27,7 @@ export default function CreditBatchDetail() {
     loadCredits();
   }, [id]);
 
+  // đồng bộ state credits khi dữ liệu hook thay đổi
   useEffect(() => {
     if (creditDetails?.length) setCredits(creditDetails);
   }, [creditDetails]);
@@ -61,12 +66,15 @@ export default function CreditBatchDetail() {
       {/* Content */}
       <div className="glass-card p-4 w-75">
         {loading ? (
-          <div className="text-center text-light">Đang tải dữ liệu...</div>
+          // hiển thị khi đang tải dữ liệu
+          <div className="text-center text-light">Loading...</div>
         ) : !credits?.length ? (
+          // hiển thị khi không có dữ liệu
           <div className="text-light text-center">
-            Không tìm thấy tín chỉ cho batch này.
+            Not found any credit for this batch.
           </div>
         ) : (
+          // hiển thị danh sách credit có phân trang
           <PaginatedList
             items={credits}
             itemsPerPage={6}
@@ -80,7 +88,7 @@ export default function CreditBatchDetail() {
                   <div className="small text-light">
                     {c.projectTitle} — {c.companyName}
                   </div>
-                  <div className="small text-muted">
+                  <div className="small text-light">
                     {new Date(c.issuedAt).toLocaleString("vi-VN", {
                       timeZone: "Asia/Ho_Chi_Minh",
                       hour12: false,
@@ -88,6 +96,7 @@ export default function CreditBatchDetail() {
                   </div>
                 </div>
 
+                {/* trạng thái hiển thị dạng badge màu khác nhau */}
                 <span
                   className={`badge ${
                     c.status === "AVAILABLE"
