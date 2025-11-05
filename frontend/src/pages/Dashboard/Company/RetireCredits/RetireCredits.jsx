@@ -30,16 +30,25 @@ export default function RetireCredits() {
     loadCredits();
   }, [statusFilter]);
 
+  // tự động ẩn toast sau 3 giây
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+      }, 3000); // 3 giây
+
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
   //chọn/ bỏ chọn credit theo batch
-  const handleSelect = (batchCode, creditIds) => {
+  const handleSelect = (batchCode, batchId, creditIds) => {
     setSelectedList((prev) => {
       const exists = prev.find((x) => x.batchCode === batchCode);
       if (exists) {
-        // nếu đã chọn, bỏ chọn
         return prev.filter((x) => x.batchCode !== batchCode);
       } else {
-        // nếu chưa có, thêm vào danh sách chọn
-        return [...prev, { batchCode, creditIds, quantity: 1 }];
+        return [...prev, { batchCode, batchId, creditIds, quantity: 1 }];
       }
     });
   };
@@ -61,7 +70,14 @@ export default function RetireCredits() {
       if (!selectedList.length) return;
 
       // validate quantity > 0
-      const invalid = selectedList.some((x) => !x.quantity || x.quantity <= 0);
+      const invalid = selectedList.some((x) => {
+        const found = credits.find((c) => c.batchCode === x.batchCode);
+        return (
+          !x.quantity ||
+          x.quantity <= 0 ||
+          x.quantity > (found?.availableAmount || 0)
+        );
+      });
       if (invalid) {
         setToast({
           show: true,
@@ -176,7 +192,7 @@ export default function RetireCredits() {
                           type="checkbox"
                           checked={isSelected(b.batchCode)}
                           onChange={() =>
-                            handleSelect(b.batchCode, b.creditIds)
+                            handleSelect(b.batchCode, b.batchId, b.creditIds)
                           }
                         />
                       </td>

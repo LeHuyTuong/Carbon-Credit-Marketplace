@@ -88,7 +88,7 @@ export default function CreditBatchDetail() {
                   <div className="small text-light">
                     {c.projectTitle} — {c.companyName}
                   </div>
-                  <div className="small text-muted">
+                  <div className="small text-light">
                     {new Date(c.issuedAt).toLocaleString("vi-VN", {
                       timeZone: "Asia/Ho_Chi_Minh",
                       hour12: false,

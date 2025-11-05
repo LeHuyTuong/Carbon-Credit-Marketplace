@@ -36,5 +36,6 @@ export const processWithdrawal = async (id, accept) => {
 
 export const getPaymentDetails = async () => {
   const res = await apiFetch("/api/v1/paymentDetails", { method: "GET" });
-  return res?.response || null; // vì response là object chứ không phải mảng
+  return res?.response || [];
 };
+
