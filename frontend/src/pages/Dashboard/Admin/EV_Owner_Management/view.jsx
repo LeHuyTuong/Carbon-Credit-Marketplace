@@ -1,4 +1,3 @@
-// ===================== ViewEvOwner.jsx =====================
 import {
   Box,
   Typography,
@@ -41,7 +40,7 @@ const ViewEvOwner = () => {
     }
   };
 
-  // ===================== FETCH USER =====================
+  // FETCH USER
   useEffect(() => {
     async function fetchUser() {
       setLoading(true);
@@ -88,7 +87,7 @@ const ViewEvOwner = () => {
     };
   }, []);
 
-  // ===================== HANDLE UPDATE =====================
+  //HANDLE UPDATE
   const handleUpdate = async () => {
     const err = validateBeforeUpdate(editedUser);
     if (err) {
@@ -121,7 +120,7 @@ const ViewEvOwner = () => {
   if (loading) return <Typography>Loading...</Typography>;
   if (!user) return <Typography>User not found</Typography>;
 
-  // ===================== UI =====================
+  // UI
   return (
     <Box m="20px">
       <Header title="EV OWNER DETAILS" subtitle="View or edit your profile information" />
