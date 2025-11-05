@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.dto.response.EmissionReportDetailResponse;
 import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
+import com.carbonx.marketcarbon.helper.notification.ReportNotificationService;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.AiScoringService;
@@ -30,6 +31,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,6 +49,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private final FileStorageService storage;
     private final AiScoringService aiScoringService;
     private final CvaRepository cvaRepository;
+    private final ReportNotificationService notificationService;
 
     // Hệ số phát thải mặc định nếu CSV không có cột CO2
     private static final BigDecimal DEFAULT_EF_KG_PER_KWH = new BigDecimal("0.4");
@@ -208,8 +211,8 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 .uploadStorageKey(put.key())
                 .uploadStorageUrl(put.url())
                 .uploadRows(rows)
-                .createdAt(OffsetDateTime.now())
-                .submittedAt(OffsetDateTime.now())
+                .createdAt(LocalDateTime.now())
+                .submittedAt(LocalDateTime.now())
                 .build();
 
         EmissionReport saved = reportRepository.save(report);
@@ -257,52 +260,75 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
     @Override
     public EmissionReportResponse verifyReport(Long reportId, boolean approved, String comment) {
-        EmissionReport r = reportRepository.findById(reportId)
+        EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
         Cva cva = cvaRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
 
-        r.setVerifiedByCva(cva);
-        r.setVerifiedAt(OffsetDateTime.now());
-        r.setComment(comment);
-        r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
-        r.setUpdatedAt(OffsetDateTime.now());
+        report.setVerifiedByCva(cva);
+        report.setVerifiedAt(LocalDateTime.now());
+        report.setComment(comment);
+        report.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
+        report.setUpdatedAt(LocalDateTime.now());
+        reportRepository.save(report);
 
-        reportRepository.save(r);
+        try {
+            String companyEmail = report.getSeller().getUser().getEmail();
+            notificationService.sendCvaDecision(
+                    companyEmail,
+                    report.getSeller().getCompanyName(),
+                    report.getId(),
+                    report.getProject().getTitle(),
+                    cva.getOrganization(),
+                    approved,
+                    comment
+            );
+            log.info("[EMAIL] CVA decision email sent to {}", companyEmail);
+        } catch (Exception e) {
+            log.warn("[EMAIL] Failed to send CVA decision email: {}", e.getMessage());
+        }
 
-        return EmissionReportResponse.from(r);
+        return EmissionReportResponse.from(report);
     }
 
 
     @Override
     public EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note) {
-        // Tìm báo cáo bằng ID
-        EmissionReport r = reportRepository.findById(reportId)
+        EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
-        // Kiểm tra trạng thái hiện tại trước khi thay đổi
-        EmissionStatus currentStatus = r.getStatus();
-
-        // Chỉ cho phép duyệt khi báo cáo có trạng thái là ADMIN_APPROVED, ADMIN_REJECTED, hoặc CVA_APPROVED
-        if (!(currentStatus == EmissionStatus.ADMIN_APPROVED ||
-                currentStatus == EmissionStatus.ADMIN_REJECTED ||
-                currentStatus == EmissionStatus.CVA_APPROVED)) {
+        EmissionStatus currentStatus = report.getStatus();
+        if (!(currentStatus == EmissionStatus.CVA_APPROVED ||
+                currentStatus == EmissionStatus.ADMIN_APPROVED ||
+                currentStatus == EmissionStatus.ADMIN_REJECTED)) {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        // Cập nhật thông tin báo cáo
-        r.setApprovedAt(OffsetDateTime.now());
-        r.setComment(note);
-        r.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.ADMIN_REJECTED);
+        report.setApprovedAt(LocalDateTime.now());
+        report.setComment(note);
+        report.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.ADMIN_REJECTED);
+        reportRepository.save(report);
 
-        // Lưu lại báo cáo
-        reportRepository.save(r);
 
-        // Trả về response
-        return EmissionReportResponse.from(r);
+        try {
+            String companyEmail = report.getSeller().getUser().getEmail();
+            notificationService.sendAdminDecision(
+                    companyEmail,
+                    report.getSeller().getCompanyName(),
+                    report.getId(),
+                    report.getProject().getTitle(),
+                    "Admin",
+                    approved,
+                    note
+            );
+            log.info("[EMAIL] Admin decision email sent to {}", companyEmail);
+        } catch (Exception e) {
+            log.warn("[EMAIL] Failed to send Admin decision email: {}", e.getMessage());
+        }
+
+        return EmissionReportResponse.from(report);
     }
 
 
@@ -375,7 +401,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         r.setAiPreScore(rs.score());
         r.setAiPreNotes(rs.notes());
         r.setAiVersion(rs.version());
-        r.setUpdatedAt(OffsetDateTime.now());
+        r.setUpdatedAt(LocalDateTime.now());
         reportRepository.save(r);
 
         return EmissionReportResponse.from(r);
@@ -392,13 +418,15 @@ public class EmissionReportServiceImpl implements EmissionReportService {
                 .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
 
         r.setVerifiedByCva(cva);
-        r.setVerifiedAt(OffsetDateTime.now());
+        r.setVerifiedAt(LocalDateTime.now());
         r.setVerificationScore(score);
         r.setVerificationComment(comment);
         r.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.REJECTED);
-        r.setUpdatedAt(OffsetDateTime.now());
+        r.setUpdatedAt(LocalDateTime.now());
 
         reportRepository.save(r);
+
+
 
         return EmissionReportResponse.from(r);
     }

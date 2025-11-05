@@ -242,6 +242,9 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         cert.setCertificateUrl(pdfUrl);
         certificateRepo.save(cert);
 
+        batch.setCertificate(cert);
+        batchRepo.save(batch);
+
         // Tải bytes để đính kèm email
         byte[] pdf;
         try (InputStream in = new java.net.URL(pdfUrl).openStream()) {
@@ -313,34 +316,45 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         String companyCode = CodeGenerator.slug3WithId(buyerCompany.getCompanyName(), "COMP", buyerCompany.getId());
         String projectCode = CodeGenerator.slug3WithId(project.getTitle(), "PRJ", project.getId());
 
-        SerialRange range = serialSvc.allocate(project, buyerCompany, year, 1);
-        String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
-        String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
-
         LocalDate expiryDate = sourceCredit.getExpiryDate();
         if (expiryDate == null && sourceCredit.getBatch() != null) {
             expiryDate = sourceCredit.getBatch().getExpiresAt();
         }
 
-        CarbonCredit newCredit = CarbonCredit.builder()
-                .batch(sourceCredit.getBatch())
-                .company(buyerCompany)
-                .project(project)
-                .sourceCredit(sourceCredit)
-                .creditCode(creditCode)
-                .status(CreditStatus.TRADED)
-                .carbonCredit(quantity)
-                .tCo2e(sourceCredit.getTCo2e())
-                .amount(quantity)
-                .name(sourceCredit.getName())
-                .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue() : sourceCredit.getCurrentPrice())
-                .vintageYear(sourceCredit.getVintageYear())
-                .issuedAt(OffsetDateTime.now())
-                .issuedBy(issuer)
-                .expiryDate(expiryDate)
-                .build();
+        int numberOfCreditsToCreate = quantity.intValueExact(); // Giả định mua số lượng nguyên
+        List<CarbonCredit> newCredits = new ArrayList<>(numberOfCreditsToCreate);
 
-        return creditRepo.save(newCredit);
+        for (int i = 0; i < numberOfCreditsToCreate; i++) {
+            // Phải tạo creditCode mới cho từng cái
+            SerialRange range = serialSvc.allocate(project, buyerCompany, year, 1);
+            String creditCode = serialSvc.buildCode(year, companyCode, projectCode, range.from());
+            String issuer = (issuedBy == null || issuedBy.isBlank()) ? "system@carbonx.com" : issuedBy;
+
+            CarbonCredit newCredit = CarbonCredit.builder()
+                    .batch(sourceCredit.getBatch())
+                    .company(buyerCompany)
+                    .project(project)
+                    .sourceCredit(sourceCredit) // Tất cả đều trỏ về nguồn
+                    .creditCode(creditCode)      // Code mới, duy nhất
+                    .status(CreditStatus.TRADED) // (Hoặc AVAILABLE ngay)
+                    .carbonCredit(BigDecimal.ONE) // LUÔN LÀ 1
+                    .tCo2e(sourceCredit.getTCo2e()) // (Hoặc tCo2e/quantity)
+                    .amount(BigDecimal.ONE)       // LUÔN LÀ 1
+                    .name(sourceCredit.getName())
+                    .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue() : sourceCredit.getCurrentPrice())
+                    .vintageYear(sourceCredit.getVintageYear())
+                    .issuedAt(OffsetDateTime.now())
+                    .issuedBy(issuer)
+                    .expiryDate(expiryDate)
+                    .build();
+
+            newCredits.add(newCredit);
+        }
+
+        creditRepo.saveAll(newCredits);
+
+        // Trả về credit đầu tiên làm đại diện
+        return newCredits.get(0);
     }
 
     private CreditBatchResponse toResponse(CreditBatch b, CreditCertificate cert) {

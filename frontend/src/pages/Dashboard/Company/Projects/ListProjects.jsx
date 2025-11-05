@@ -156,10 +156,13 @@ export default function ListProjects() {
 
                     <td className="text-muted">
                       {a.submittedAt
-                        ? new Date(a.submittedAt).toLocaleString("vi-VN", {
-                            timeZone: "Asia/Ho_Chi_Minh",
-                            hour12: false,
-                          })
+                        ? new Date(a.submittedAt + "Z").toLocaleString(
+                            "vi-VN",
+                            {
+                              timeZone: "Asia/Ho_Chi_Minh",
+                              hour12: false,
+                            }
+                          )
                         : "—"}
                     </td>
 

@@ -24,7 +24,7 @@ import java.time.LocalDate;
         @Size(max = 255, message = "Description must be at most 255 characters")
         private String description;
 
-        @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
+        @FileSize(max = 55242880, message = "Logo file must not exceed 50MB")
         private MultipartFile logo;
 
         @Size(max = 2000, message = "Commitments must be at most 2000 characters")
@@ -36,10 +36,9 @@ import java.time.LocalDate;
         @Size(max = 2000, message = "Measurement method must be at most 2000 characters")
         private String measurementMethod;
 
-        @FileSize(max = 5242880, message = "Logo file must not exceed 5MB")
+        @FileSize(max = 55242880, message = "legalDocsFile file must not exceed 50MB")
         private MultipartFile  legalDocsFile;
 
-        @NotBlank(message = "emissionFactorKgPerKwh must not be blank")
         private BigDecimal emissionFactorKgPerKwh;
 
          private ProjectStatus status;
