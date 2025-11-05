@@ -62,7 +62,7 @@ export default function useWalletData() {
         residualTco2e: item.residualTco2e,
         status: item.status,
         issuedAt: item.issuedAt
-          ? new Date(item.issuedAt).toLocaleString("vi-VN", {
+          ? new Date(item.issuedAt + "Z").toLocaleString("vi-VN", {
               timeZone: "Asia/Ho_Chi_Minh",
               hour12: false,
             })

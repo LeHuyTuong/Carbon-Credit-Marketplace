@@ -224,7 +224,7 @@ export default function UploadReport() {
                   </span>
                 </td>
                 <td>
-                  {new Date(r.submittedAt).toLocaleString("vi-VN", {
+                  {new Date(r.submittedAt + "Z").toLocaleString("vi-VN", {
                     timeZone: "Asia/Ho_Chi_Minh",
                     hour12: false,
                   })}
