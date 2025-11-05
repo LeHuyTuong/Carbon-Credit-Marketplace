@@ -2,10 +2,13 @@ package com.carbonx.marketcarbon.repository;
 
 import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.carbonx.marketcarbon.model.EmissionReport;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,5 +35,13 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
      * Tìm tất cả các báo cáo theo trạng thái
      */
     List<EmissionReport> findByStatus(EmissionStatus status);
+
+    /**
+     * Tải EmissionReport và fetch EAGER collection 'details'
+     * để tránh LazyInitializationException khi không có Transaction.
+     */
+    @Query("SELECT r FROM EmissionReport r WHERE r.id = :id")
+    @EntityGraph(attributePaths = {"details"})
+    Optional<EmissionReport> findByIdWithDetails(@Param("id") Long id);
 
 }

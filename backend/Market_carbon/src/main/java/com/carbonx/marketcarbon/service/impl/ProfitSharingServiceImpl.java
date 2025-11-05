@@ -16,7 +16,6 @@ import lombok.Data; // THÊM
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
@@ -35,7 +34,6 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ProfitSharingServiceImpl implements ProfitSharingService {
 
     private static final BigDecimal KG_PER_CREDIT = new BigDecimal("1000");
@@ -55,10 +53,30 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     @Qualifier("profitSharingTaskExecutor")
     private final TaskExecutor taskExecutor;
 
-    // Tự tiêm (self-inject) chính nó để gọi hàm @Async
-    // @Lazy để tránh lỗi circular dependency ( vòng lặp)
-    @Lazy
-    private final ProfitSharingService self;
+    public ProfitSharingServiceImpl(
+            EmissionReportRepository emissionReportRepository,
+            VehicleRepository vehicleRepository,
+            EVOwnerRepository evOwnerRepository,
+            UserRepository userRepository,
+            WalletService walletService,
+            WalletRepository walletRepository,
+            ProfitDistributionRepository profitDistributionRepository,
+            ProfitDistributionDetailRepository profitDistributionDetailRepository,
+            ProjectRepository projectRepository,
+            // BÁO CHO SPRING BIẾT: Tiêm chính xác bean tên là "profitSharingTaskExecutor" vào đây
+            @Qualifier("profitSharingTaskExecutor") TaskExecutor taskExecutor
+    ) {
+        this.userRepository = userRepository;
+        this.emissionReportRepository = emissionReportRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.evOwnerRepository = evOwnerRepository;
+        this.walletService = walletService;
+        this.walletRepository = walletRepository;
+        this.profitDistributionRepository = profitDistributionRepository;
+        this.profitDistributionDetailRepository = profitDistributionDetailRepository;
+        this.projectRepository = projectRepository;
+        this.taskExecutor = taskExecutor; // Gán bean đã được chỉ định
+    }
 
     @Data
     private static class ContributionData {
@@ -132,7 +150,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (request.getEmissionReportId() != null) {
                 EmissionReport report = emissionReportRepository.findById(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
-                if (report.getStatus() != EmissionStatus.CREDIT_ISSUED) {
+                if (report.getStatus() != EmissionStatus.CVA_APPROVED) {
                     throw new AppException(ErrorCode.EMISSION_REPORT_NOT_APPROVED);
                 }
                 reportsToProcess.add(report);
@@ -212,7 +230,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 return;
             }
 
-            // 7.1 Tạo các thanh toán
+            // 7. (Bước 4 - Concurrency) Tạo các tác vụ thanh toán
             List<OwnerPayoutData> payoutPlan = new ArrayList<>();
             BigDecimal totalMoneyToPayout = BigDecimal.ZERO;
 
@@ -224,19 +242,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
                 BigDecimal ownerSharePercent = contribution.getTotalCreditContribution()
                         .divide(totalCreditsAll, 10, RoundingMode.HALF_UP);
+
                 // Tính số tiền được nhận
                 BigDecimal moneyToPay = poolToShare.multiply(ownerSharePercent).setScale(2, RoundingMode.HALF_UP);
-
-                if (moneyToPay.compareTo(BigDecimal.ZERO) > 0) {
-                    payoutPlan.add(new OwnerPayoutData(
-                            contribution.getEvOwnerId(),
-                            contribution.getTotalCreditContribution(),
-                            contribution.getTotalEnergyContribution(),
-                            moneyToPay
-                    ));
-                    totalMoneyToPayout = totalMoneyToPayout.add(moneyToPay);
-                }
-                // 7.2 KIỂM TRA TỔNG TIỀN (1 LẦN)
+                payoutPlan.add(new OwnerPayoutData(
+                        contribution.getEvOwnerId(),
+                        contribution.getTotalCreditContribution(),
+                        contribution.getTotalEnergyContribution(),
+                        moneyToPay
+                ));
+                totalMoneyToPayout = totalMoneyToPayout.add(moneyToPay);
                 if (totalMoneyToPayout.compareTo(BigDecimal.ZERO) <= 0) {
                     log.warn("Computed payout amount is zero. No funds will be moved.");
                     distributionEvent.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
@@ -248,7 +263,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 }
 
                 validateCompanyBalance(companyWallet, totalMoneyToPayout);
-                // 7.3 Xác nhận
+
                 BigDecimal undistributedAmount = poolToShare.subtract(totalMoneyToPayout).setScale(2, RoundingMode.HALF_UP);
                 if (undistributedAmount.compareTo(BigDecimal.ZERO) < 0) {
                     undistributedAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
@@ -270,15 +285,18 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 distributionEvent.setDescription(descriptionBuilder.toString());
                 profitDistributionRepository.save(distributionEvent);
 
-                //7.4 Vòng lặp processing chạy thread pool
                 List<CompletableFuture<Void>> payoutTasks = new ArrayList<>();
 
                 for (OwnerPayoutData payout : payoutPlan) {
+                    if (payout.getPayoutAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                        continue;
+                    }
                     CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
                         processPayoutForOwner(distributionEvent, payout, companyWallet);
                     }, taskExecutor);
                     payoutTasks.add(task);
                 }
+
 
                 log.info("Waiting for {} payout tasks to complete...", payoutTasks.size());
                 CompletableFuture.allOf(payoutTasks.toArray(new CompletableFuture[0])).join();
@@ -407,4 +425,3 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         return BigDecimal.ZERO;
     }
 }
-
