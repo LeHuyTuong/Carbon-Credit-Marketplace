@@ -55,6 +55,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
     }
 
+
     @Override
     @Transactional
     public MarketplaceListingResponse listCreditsForSale(CreditListingRequest request) {
@@ -69,8 +70,86 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
 
-        // B2 Nếu request có batchId, xử lý theo batch (TRỪ availableQuantity trên toàn bộ credits trong batch)
+        // TIỀN XỬ LÝ - AUTO BATCH DETECTION
+        // Nếu request có carbonCreditId nhưng không có batchId
+        if (request.getCarbonCreditId() != null && request.getBatchId() == null) {
+            log.info("[AUTO-BATCH] Checking if carbonCreditId={} needs batch grouping for quantity={}",
+                    request.getCarbonCreditId(), request.getQuantity());
+
+            // Bước 1: Tìm credit được chỉ định
+            CarbonCredit targetCredit = carbonCreditRepository
+                    .findByIdAndCompanyId(request.getCarbonCreditId(), sellerCompany.getId())
+                    .orElse(null);
+
+            if (targetCredit != null) {
+                // Bước 2: Tính available của credit này
+                BigDecimal singleCreditAvailable = getAvailableCreditAmount(targetCredit);
+
+                log.debug("[AUTO-BATCH] Credit {} has available={}, requested={}",
+                        targetCredit.getId(), singleCreditAvailable, request.getQuantity());
+
+                // Bước 3: Kiểm tra xem credit có thuộc batch không
+                CreditBatch batch = targetCredit.getBatch();
+
+                // Bước 4: NẾU credit đơn lẻ không đủ SỐ LƯỢNG VÀ thuộc về một batch
+                if (singleCreditAvailable.compareTo(request.getQuantity()) < 0 && batch != null) {
+                    log.info("[AUTO-BATCH] Credit {} insufficient (available={} < requested={}). " +
+                                    "Checking batch {}...",
+                            targetCredit.getId(), singleCreditAvailable,
+                            request.getQuantity(), batch.getId());
+
+                    // Bước 4.1: Tính tổng available của toàn bộ batch
+                    List<CarbonCredit> batchCredits = batch.getCarbonCredit().stream()
+                            .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                            .filter(c -> c.getCompany().getId().equals(sellerCompany.getId()))
+                            .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
+                            .toList();
+
+                    BigDecimal totalBatchAvailable = batchCredits.stream()
+                            .map(this::availableOf)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    log.info("[AUTO-BATCH] Batch {} has {} credits with total available={}",
+                            batch.getId(), batchCredits.size(), totalBatchAvailable);
+
+                    // Bước 4.2: NẾU batch đủ số lượng → CHUYỂN REQUEST SANG BATCH MODE
+                    if (totalBatchAvailable.compareTo(request.getQuantity()) >= 0) {
+                        log.info("[AUTO-BATCH]  Batch {} has enough credits. " +
+                                        "Redirecting request from carbonCreditId={} to batchId={}",
+                                batch.getId(), request.getCarbonCreditId(), batch.getId());
+
+                        // FIX: Sửa request để dùng logic batch
+                        request.setBatchId(batch.getId());
+                        request.setCarbonCreditId(null); // Clear carbonCreditId
+
+                        log.info("[AUTO-BATCH] Request updated: batchId={}, carbonCreditId=null",
+                                request.getBatchId());
+                    } else {
+                        // Batch cũng không đủ → Vẫn báo lỗi như cũ
+                        log.warn("[AUTO-BATCH] Batch {} also insufficient " +
+                                        "(total={} < requested={}). Will fail with AMOUNT_IS_NOT_ENOUGH",
+                                batch.getId(), totalBatchAvailable, request.getQuantity());
+                    }
+                } else if (singleCreditAvailable.compareTo(request.getQuantity()) >= 0) {
+                    // Credit đơn lẻ đủ số lượng
+                    log.info("[AUTO-BATCH] Credit {} has enough available={}. Using single-credit mode.",
+                            targetCredit.getId(), singleCreditAvailable);
+                } else if (batch == null) {
+                    // Credit không thuộc batch nào → Không thể gộp
+                    log.warn("[AUTO-BATCH] Credit {} has no batch. Cannot group credits.",
+                            targetCredit.getId());
+                }
+            } else {
+                log.warn("[AUTO-BATCH] Credit {} not found or not owned by company {}",
+                        request.getCarbonCreditId(), sellerCompany.getId());
+            }
+        }
+        // KẾT THÚC LOGIC TIỀN XỬ LÝ
+
+        // B2: Nếu request có batchId (bao gồm cả request đã được sửa ở trên)
         if (request.getBatchId() != null) {
+            log.info("[BATCH-MODE] Processing batch listing - batchId={}", request.getBatchId());
+
             CreditBatch batch = creditBatchRepository.findById(request.getBatchId())
                     .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
 
@@ -80,7 +159,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
             // 2.1 Lấy các credit còn AVAILABLE và còn available > 0
             List<CarbonCredit> credits = batch.getCarbonCredit().stream()
-                    .filter( c -> c.getStatus() == CreditStatus.AVAILABLE)
+                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
                     .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                     .toList();
 
@@ -88,10 +167,13 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
             }
 
-            // 2.2 Check tổng available trong batch có đủ không (tính theo availableOf)
+            // 2.2 Check tổng available trong batch có đủ không
             BigDecimal totalAvailable = credits.stream()
                     .map(this::availableOf)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.info("[BATCH-MODE] Batch {} has {} available credits, total quantity={}",
+                    batch.getId(), credits.size(), totalAvailable);
 
             if (totalAvailable.compareTo(request.getQuantity()) < 0) {
                 throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
@@ -124,10 +206,16 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     c.setStatus(CreditStatus.LISTED);
                 }
 
+                log.debug("[BATCH-MODE] Updated credit {} - deduct={}, availBefore={}, availAfter={}, listed={}",
+                        c.getId(), deduct, availBefore, availAfter, c.getListedAmount());
+
                 remaining = remaining.subtract(deduct);
             }
 
             carbonCreditRepository.saveAll(credits);
+
+            log.info("[BATCH-MODE] Successfully distributed quantity={} across {} credits",
+                    request.getQuantity(), credits.size());
 
             // 2.4 Nếu đã có listing cho batch này, cập nhật thay vì tạo mới
             List<MarketPlaceListing> existingBatchListings = marketplaceListingRepository
@@ -154,10 +242,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 return buildListingResponse(updatedListing);
             }
 
-            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
+            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU
             MarketPlaceListing listing = MarketPlaceListing.builder()
                     .company(sellerCompany)
-                    .carbonCredit(credits.get(0)) // link đại diện theo schema hiện tại
+                    .carbonCredit(credits.get(0)) // link đại diện
                     .quantity(request.getQuantity())
                     .pricePerCredit(request.getPricePerCredit())
                     .originalQuantity(request.getQuantity())
@@ -173,10 +261,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             return buildListingResponse(saved);
         }
 
-        // B3 Tìm tín chir carbon mà company đang sở hữu , lấy id carbon , conpany , và số lượng muốn bán
-        CarbonCredit creditToSell = resolveOwnedCredit(request.getCarbonCreditId(), sellerCompany, request.getQuantity());
+        // B3: Logic xử lý single credit (GIỮ NGUYÊN CODE CŨ)
+        log.info("[SINGLE-MODE] Processing single credit listing - carbonCreditId={}",
+                request.getCarbonCreditId());
 
-        // B 4.1 Tính toán số lượng tín chỉ khả dụng
+        CarbonCredit creditToSell = resolveOwnedCredit(
+                request.getCarbonCreditId(), sellerCompany, request.getQuantity());
+
+        // ... (giữ nguyên phần còn lại từ dòng 204 đến hết)
         BigDecimal availableQuantity = getAvailableCreditAmount(creditToSell);
 
         if (availableQuantity.compareTo(request.getQuantity()) < 0) {
