@@ -1,7 +1,11 @@
 package com.carbonx.marketcarbon.config;
+
+import com.carbonx.marketcarbon.common.USER_ROLE;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,12 +13,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +28,7 @@ import java.util.Collections;
 public class AppConfig {
 
     private final JwtTokenValidator jwtTokenValidator;
+    private final JwtProvider jwtProvider;
 
     private static final String[] PUBLIC_ENDPOINT = {
             "/api/v1/auth/register",
@@ -46,14 +49,23 @@ public class AppConfig {
     };
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http,  CustomOAuth2UserService customOAuth2UserService,
-                                            HttpCookieOAuth2AuthorizationRequestRepository cookieRepo) throws Exception {
+    public HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository() {
+        return new HttpCookieOAuth2AuthorizationRequestRepository();
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            CustomOAuth2UserService customOAuth2UserService,
+            HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository
+    ) throws Exception {
 
         http
-                .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/resource").permitAll() // <- thêm dòng này
+                        .requestMatchers(HttpMethod.GET, "/api/resource").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers(
@@ -63,25 +75,51 @@ public class AppConfig {
                         ).permitAll()
                         .anyRequest().permitAll()
                 )
+
                 .addFilterBefore(jwtTokenValidator, UsernamePasswordAuthenticationFilter.class)
+
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(Customizer.withDefaults())
 
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/home", true)
-                        .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieRepo))
+                        .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieAuthorizationRequestRepository))
                         .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
                         .successHandler((req, res, auth) -> {
-                            var user = (OAuth2UserWithToken) auth.getPrincipal();
+                            Object principal = auth.getPrincipal();
+                            String email = null;
+
+                            if (principal instanceof org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser oidcUser) {
+                                email = oidcUser.getEmail();
+                            } else if (principal instanceof org.springframework.security.oauth2.core.user.DefaultOAuth2User oauth2User) {
+                                email = (String) oauth2User.getAttributes().get("email");
+                            }
+
+                            if (email == null || email.isBlank()) {
+                                res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                                res.setContentType("application/json");
+                                res.getWriter().write("{\"error\":\"Email not found in Google profile\"}");
+                                return;
+                            }
+
+                            String token = jwtProvider.generateToken(email, USER_ROLE.EV_OWNER);
+
+                            String frontendUrl = req.getServerName().contains("localhost")
+                                    ? "http://localhost:5173"
+                                    : "https://carbonx.io.vn";
+
+                            System.out.println("[OAuth2 SUCCESS] email=" + email + ", redirect=" + frontendUrl);
+                            res.sendRedirect(frontendUrl + "/oauth-success?token=" + token);
+                        })
+                        .failureHandler((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             res.setContentType("application/json");
-                            res.getWriter().write("{\"token\":\"" + user.getToken() + "\"}");
+                            res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
                         })
                 );
+
         return http.build();
     }
-
 
     private CorsConfigurationSource corsConfigurationSource() {
         return request -> {
