@@ -18,6 +18,10 @@
   height: auto !important;     
 }
 
+.card {
+  border-radius: 10px !important;
+  overflow: hidden; /* ép nội dung theo bo góc */
+}
 
 .auth-container {
   max-width: 520px; 

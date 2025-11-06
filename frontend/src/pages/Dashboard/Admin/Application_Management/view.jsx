@@ -90,14 +90,14 @@ const ApplicationView = () => {
             color="secondary"
             onClick={() => navigate("/admin/company_management")}
           >
-             Back
+            Back
           </Button>
           <Button
             variant="contained"
             color="secondary"
             onClick={() => navigate(`/admin/edit_company/${application.id}`)}
           >
-             Edit
+            Edit
           </Button>
         </Box>
       </Box>
@@ -120,9 +120,17 @@ const ApplicationView = () => {
         <Typography sx={{ mt: 2 }}>
           Submitted At:{" "}
           {application.submittedAt
-            ? new Date(application.submittedAt).toLocaleString()
+            ? (() => {
+              const date = new Date(application.submittedAt);
+              const day = String(date.getDate()).padStart(2, "0");
+              const month = String(date.getMonth() + 1).padStart(2, "0");
+              const year = date.getFullYear();
+              const time = date.toLocaleTimeString();
+              return `${day}/${month}/${year}, ${time}`;
+            })()
             : "N/A"}
         </Typography>
+
 
         {application.applicationDocsUrl ? (
           <Box mt={2}>

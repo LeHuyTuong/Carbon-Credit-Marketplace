@@ -257,7 +257,7 @@ export default function useWalletData() {
             method: "POST",
             body: {
               data: {
-                batchId: item.batchId,
+                batchCode: item.batchCode,
                 quantity: quantity
               }
             }

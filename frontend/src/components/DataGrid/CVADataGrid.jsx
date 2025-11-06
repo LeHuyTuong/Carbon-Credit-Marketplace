@@ -7,7 +7,6 @@ const CVADataGrid = ({ rows, columns, getRowId }) => {
       rows={rows}
       columns={columns}
       getRowId={getRowId}
-      checkboxSelection
       pagination
       initialState={{
         pagination: { paginationModel: { pageSize: 10, page: 0 } },

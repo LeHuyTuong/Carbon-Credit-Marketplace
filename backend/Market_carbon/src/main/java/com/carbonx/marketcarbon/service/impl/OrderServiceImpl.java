@@ -178,158 +178,142 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         log.info("Starting order completion process for orderId: {}", orderId);
 
-        // B1: Lấy thông tin đơn hàng và kiểm tra trạng thái trước khi xử lý
-        Order order = orderRepository.findById(orderId).orElseThrow(
-                () -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        // B1-B3: [Giữ nguyên code cũ]
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        // Kiểm tra idempotency - nếu đơn hàng đã xử lý thành công
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
-            log.info("Order already completed successfully: {}", orderId);
+            log.info("Order already completed: {}", orderId);
             return;
         }
 
-        // B2: Khóa bản ghi listing để đảm bảo nhất quán khi nhiều giao dịch cùng lúc
-        MarketPlaceListing listing = marketplaceListingRepository.findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
+        MarketPlaceListing listing = marketplaceListingRepository
+                .findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
 
-        // B3 Lấy thông tin bên mua, bên bán và khối tín chỉ
         Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
-        CarbonCredit sourceCredit = carbonCreditRepository.findByIdWithPessimisticLock(listing.getCarbonCredit().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Carbon credit not found"));
-
+        CarbonCredit sourceCredit = carbonCreditRepository
+                .findByIdWithPessimisticLock(listing.getCarbonCredit().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Credit not found"));
 
         BigDecimal quantityToBuy = order.getQuantity();
         BigDecimal totalPrice = order.getTotalPrice();
 
-        // B4: Kiểm tra số lượng còn lại trên sàn có đủ để đáp ứng đơn hay không
         if (listing.getQuantity().compareTo(quantityToBuy) < 0) {
             order.setOrderStatus(OrderStatus.ERROR);
             orderRepository.save(order);
-            log.warn("Insufficient quantity in listing. Available: {}, Requested: {}",
-                    listing.getQuantity(), quantityToBuy);
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
-        // B4: Xử lý giao dịch trong một transaction
-        try{
-            //4.1 lấy ví của các bên
+        try {
+            // B4.1: Lấy ví
             Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
             if (buyerWallet == null) {
-                throw new ResourceNotFoundException("Buyer wallet not found for user: " + buyerCompany.getUser().getId());
+                throw new ResourceNotFoundException("Buyer wallet not found");
             }
-
-            // Chỉ kiểm tra, không trừ tiền ở đây
             if (buyerWallet.getBalance().compareTo(totalPrice) < 0) {
-                order.setOrderStatus(OrderStatus.ERROR); // Đánh dấu lỗi nếu không đủ tiền
+                order.setOrderStatus(OrderStatus.ERROR);
                 orderRepository.save(order);
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
 
             Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
             if (sellerWallet == null) {
-                throw new ResourceNotFoundException("Seller wallet not found for user: " + sellerCompany.getUser().getId());
+                throw new ResourceNotFoundException("Seller wallet not found");
             }
 
-            // 4.2 Tính toán chính xác số lượng niêm yết sau khi bán
-            BigDecimal currentListedAmount = sourceCredit.getListedAmount();
-            if (currentListedAmount == null) {
-                currentListedAmount = BigDecimal.ZERO;
-            }
-
-            // Số lượng niêm yết mới = số lượng niêm yết cũ - số lượng mua
+            // B4.2: Cập nhật sourceCredit (bên bán)
+            BigDecimal currentListedAmount = sourceCredit.getListedAmount() != null
+                    ? sourceCredit.getListedAmount()
+                    : BigDecimal.ZERO;
             BigDecimal updatedListedAmount = currentListedAmount.subtract(quantityToBuy);
             if (updatedListedAmount.compareTo(BigDecimal.ZERO) < 0) {
                 updatedListedAmount = BigDecimal.ZERO;
             }
 
-            // Tính toán lại tổng số lượng sở hữu và available sau khi bán
             BigDecimal directAvailable = sourceCredit.getCarbonCredit() != null
                     ? sourceCredit.getCarbonCredit()
                     : BigDecimal.ZERO;
+            BigDecimal totalAfterSale = directAvailable.add(updatedListedAmount);
 
-            LocalDate expiryDate = sourceCredit.getExpiryDate();
-            if (expiryDate == null && sourceCredit.getBatch() != null) {
-                expiryDate = sourceCredit.getBatch().getExpiresAt();
-            }
-
-
-            // 4.3 Tổng số sau khi bán  trừ đi số lượng đã bán
-            BigDecimal totalAfterSale = directAvailable.add(updatedListedAmount);  // Tổng = Available + Listed
-
-            // 4.4 Cập nhật lại thông tin tín chỉ
             sourceCredit.setListedAmount(updatedListedAmount);
-            sourceCredit.setAmount(totalAfterSale);  // Tổng = Available + Listed
+            sourceCredit.setAmount(totalAfterSale);
             sourceCredit.setCarbonCredit(directAvailable);
-            sourceCredit.setExpiryDate(expiryDate);
 
-            // 4.5 Thêm xác thực để đảm bảo tính nhất quán
             if (totalAfterSale.compareTo(BigDecimal.ZERO) <= 0) {
-                // Nếu đã bán hết, đặt trạng thái tín chỉ thành TRADED
                 sourceCredit.setStatus(CreditStatus.TRADED);
             }
-
-            // Lưu lại tín chỉ đã cập nhật số lượng niêm yết cho bên bán
             carbonCreditRepository.save(sourceCredit);
 
-            // Tạo tín chỉ mới cho người mua
+            // B4.3: Tạo tín chỉ mới cho người mua
             String issuedBy = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
                     .map(Authentication::getName)
-                    .orElse(buyerCompany.getUser() != null ? buyerCompany.getUser().getEmail() : "system@carbon.con") ;
-
-            CarbonCredit carbonCredit = creditIssuanceService.issueTradeCredit(
+                    .orElse(buyerCompany.getUser() != null
+                            ? buyerCompany.getUser().getEmail()
+                            : "system@carbon.com");
+            //  Giữ nguyên issueTradeCredit(), tính dựa trên quantity
+            creditIssuanceService.issueTradeCredit(
                     sourceCredit,
                     buyerCompany,
                     quantityToBuy,
                     listing.getPricePerCredit(),
-                    issuedBy);
+                    issuedBy
+            );
 
-            // 5.1 Cập nhật số dư credit carbon trong vi
-            // Cộng số lượng tín chỉ đã mua vào ví người mua
-            BigDecimal currentBuyerCredit = buyerWallet.getCarbonCreditBalance() != null ? buyerWallet.getCarbonCreditBalance() : BigDecimal.ZERO;
-            buyerWallet.setCarbonCreditBalance(currentBuyerCredit.add(quantityToBuy));
-            walletRepository.save(buyerWallet); // Lưu thay đổi số dư tín chỉ
+            // Số credits thực tế = phần nguyên của quantity (vì mỗi credit = 1 unit)
+            int actualCreditsCreated = quantityToBuy.intValue();
 
-            // Trừ số dư tín chỉ tổng trong ví người bán
-            BigDecimal currentSellerCredit = sellerWallet.getCarbonCreditBalance() != null ? sellerWallet.getCarbonCreditBalance() : BigDecimal.ZERO;
-            sellerWallet.setCarbonCreditBalance(currentSellerCredit.subtract(quantityToBuy));
+            // B5.1: Cập nhật số dư tín chỉ trong ví
+            BigDecimal currentBuyerCredit = buyerWallet.getCarbonCreditBalance() != null
+                    ? buyerWallet.getCarbonCreditBalance()
+                    : BigDecimal.ZERO;
 
-            // Đảm bảo không âm
-            if (sellerWallet.getCarbonCreditBalance().compareTo(BigDecimal.ZERO) < 0) {
-                sellerWallet.setCarbonCreditBalance(BigDecimal.ZERO);
-            }
+            // Cộng đúng số lượng credits đã tạo (dưới dạng BigDecimal)
+            buyerWallet.setCarbonCreditBalance(
+                    currentBuyerCredit.add(BigDecimal.valueOf(actualCreditsCreated))
+            );
+            walletRepository.save(buyerWallet);
+
+            // Trừ từ ví seller
+            BigDecimal currentSellerCredit = sellerWallet.getCarbonCreditBalance() != null
+                    ? sellerWallet.getCarbonCreditBalance()
+                    : BigDecimal.ZERO;
+            sellerWallet.setCarbonCreditBalance(
+                    currentSellerCredit.subtract(quantityToBuy).max(BigDecimal.ZERO)
+            );
             walletRepository.save(sellerWallet);
 
-
-            // 5.2 : Cập nhật lại listing (số lượng còn lại, trạng thái nếu đã bán hết)
-            // Cập nhật tồn kho listing sau khi giao dịch hoàn tất
+            // B5.2: Cập nhật listing
             listing.setQuantity(listing.getQuantity().subtract(quantityToBuy));
-            BigDecimal currentSold = listing.getSoldQuantity() != null ? listing.getSoldQuantity() : BigDecimal.ZERO;
+            BigDecimal currentSold = listing.getSoldQuantity() != null
+                    ? listing.getSoldQuantity()
+                    : BigDecimal.ZERO;
             listing.setSoldQuantity(currentSold.add(quantityToBuy));
 
             if (listing.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 listing.setStatus(ListingStatus.SOLD);
-                listing.setExpiresAt(sourceCredit.getExpiryDate());
             }
             marketplaceListingRepository.save(listing);
 
-            // 6.5: Đánh dấu đơn hàng hoàn tất thành công
+            // B6: Đánh dấu order thành công
             order.setOrderStatus(OrderStatus.SUCCESS);
             order.setCompletedAt(LocalDateTime.now(VIETNAM_ZONE));
             orderRepository.save(order);
 
-            // 7 Xử lý giao dịch tài chính
-            processFinancialTransactions(order, buyerWallet, sellerWallet, totalPrice, quantityToBuy,
-                    listing, sellerCompany, buyerCompany);
+            // B7: Xử lý giao dịch tài chính
+            processFinancialTransactions(order, buyerWallet, sellerWallet, totalPrice,
+                    quantityToBuy, listing, sellerCompany, buyerCompany);
 
-            log.info("Order {} completed successfully. Buyer: {}, Seller: {}, Amount: {}, Price: {}",
-                    orderId, buyerCompany.getId(), sellerCompany.getId(), quantityToBuy, totalPrice);
+            log.info("Order {} completed. Buyer: {}, Seller: {}, Credits created: {}, Price: {}",
+                    orderId, buyerCompany.getId(), sellerCompany.getId(),
+                    actualCreditsCreated, totalPrice);
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error completing order: {}", orderId, e);
             order.setOrderStatus(OrderStatus.ERROR);
             orderRepository.save(order);
-            throw e; // Transaction sẽ rollback tự động
+            throw e;
         }
     }
 
