@@ -11,6 +11,7 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
+    @Operation(summary = "Get current user profile")
     @GetMapping("/me/profile")
     public CommonResponse<User> getMyProfile(@RequestHeader("Authorization") String bearerToken) {
         if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
@@ -49,6 +51,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Get user by email (Admin only)")
     // TÌM USER THEO EMAIL (phục vụ kiểm tra, hiển thị chi tiết) — có thể hạn chế cho ADMIN
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users/by-email")
@@ -65,8 +68,10 @@ public class UserController {
                 .build();
     }
 
+
     // LẤY TOÀN BỘ USER (đơn giản, chưa phân trang) — nên chỉ mở cho ADMIN
-     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all users (Admin only)")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users")
     public CommonResponse<java.util.List<User>> getAllUsers() {
         java.util.List<User> users = userService.findALlUser();
@@ -81,6 +86,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Check if a user exists by email")
     @PostMapping("/check-exists-user")
     public CommonResponse<Boolean> checkExistsUser(@RequestBody EmailRequest request) {
         User user = userService.findUserByEmail(request.getEmail());
@@ -99,6 +105,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Send OTP for password reset")
     @PostMapping("/send-otp-forgot")
     CommonResponse<Void> sendOtpForgotPassword(@RequestBody EmailRequest request)
             throws MessagingException, UnsupportedEncodingException {
@@ -117,6 +124,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Reset password using OTP")
     @PostMapping("/reset-password")
     public CommonResponse<MessageResponse> resetPassword(
             @RequestBody @Valid ResetPasswordRequest request,
@@ -135,6 +143,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Change password with old password")
     @PostMapping("/change-password")
     public ResponseEntity<CommonResponse<MessageResponse>> changePassword(
             @RequestHeader("Authorization") String bearerToken,
@@ -153,6 +162,8 @@ public class UserController {
                         new MessageResponse("Password changed successfully"))
         );
     }
+
+    @Operation(summary = "Get user by ID (Admin only)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users/{id}")
     public CommonResponse<User> getUserById(@PathVariable Long id) {
@@ -172,6 +183,7 @@ public class UserController {
                 .build();
     }
 
+    @Operation(summary = "Resend OTP for forgot password")
     @PostMapping("/forgot-password/resend-otp")
     public ResponseEntity<CommonResponse<MessageResponse>> resendOtp(@RequestBody EmailRequest req)
             throws Exception {
@@ -185,6 +197,8 @@ public class UserController {
                 )
         );
     }
+
+    @Operation(summary = "Get total user count (Admin only)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users/count")
     public ResponseEntity<Long> getUserCount() {
