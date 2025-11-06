@@ -410,7 +410,6 @@ public class MyCreditServiceImpl implements MyCreditService {
 
             // Cập nhật số lượng (carbonCredit = available)
             lockedCredit.setCarbonCredit(newAvailable);
-
             // Cập nhật tổng (amount = available + listed)
             BigDecimal listed = safe(lockedCredit.getListedAmount());
             lockedCredit.setAmount(newAvailable.add(listed));
