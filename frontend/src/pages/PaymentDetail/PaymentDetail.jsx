@@ -80,10 +80,10 @@ export default function PaymentDetail() {
   //nếu chưa có dữ liệu payment
   if (!paymentData) {
     return (
-      <div className="text-center mt-5">
+      <div className="auth-hero d-flex align-items-center justify-content-center min-vh-100">
         <UpdateModal
           show={showModal}
-          onHide={() => setShowModal(false)}
+          onHide={() => nav("/wallet")}
           data={{ paymentData }}
           token={token}
           isCreating={isCreating}
@@ -168,7 +168,7 @@ export default function PaymentDetail() {
       {/* modal cập nhật/thêm mới thông tin */}
       <UpdateModal
         show={showModal}
-        onHide={() => setShowModal(false)}
+        onHide={() => nav("/wallet")}
         data={paymentData}
         token={token}
         isCreating={isCreating}
@@ -222,114 +222,105 @@ function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
   };
 
   return (
-    <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
-      <Modal
-        show={show}
-        onHide={onHide}
-        centered
-        dialogClassName="payment-detai"
+    <Modal show={show} onHide={onHide} centered dialogClassName="payment-detai">
+      <Modal.Header closeButton>
+        <Modal.Title>
+          {isCreating ? "Add Payment Details" : "Update Payment Details"}
+        </Modal.Title>
+      </Modal.Header>
+
+      {/* formik quản lý form nhập liệu và validate */}
+      <Formik
+        enableReinitialize
+        validationSchema={schema}
+        initialValues={{
+          accountHolderName: data?.accountHolderName || "",
+          accountNumber: data?.accountNumber || "",
+          confirm: data?.accountNumber || "",
+          bankCode: data?.bankCode || "",
+        }}
+        onSubmit={handleSubmitForm}
       >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {isCreating ? "Add Payment Details" : "Update Payment Details"}
-          </Modal.Title>
-        </Modal.Header>
+        {({
+          handleSubmit,
+          handleChange,
+          handleBlur,
+          values,
+          errors,
+          touched,
+        }) => (
+          <Form noValidate onSubmit={handleSubmit}>
+            <Modal.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Account Holder Name</Form.Label>
+                <Form.Control
+                  name="accountHolderName"
+                  value={values.accountHolderName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={
+                    touched.accountHolderName && !!errors.accountHolderName
+                  }
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.accountHolderName}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-        {/* formik quản lý form nhập liệu và validate */}
-        <Formik
-          enableReinitialize
-          validationSchema={schema}
-          initialValues={{
-            accountHolderName: data?.accountHolderName || "",
-            accountNumber: data?.accountNumber || "",
-            confirm: data?.accountNumber || "",
-            bankCode: data?.bankCode || "",
-          }}
-          onSubmit={handleSubmitForm}
-        >
-          {({
-            handleSubmit,
-            handleChange,
-            handleBlur,
-            values,
-            errors,
-            touched,
-          }) => (
-            <Form noValidate onSubmit={handleSubmit}>
-              <Modal.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Account Holder Name</Form.Label>
-                  <Form.Control
-                    name="accountHolderName"
-                    value={values.accountHolderName}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    isInvalid={
-                      touched.accountHolderName && !!errors.accountHolderName
-                    }
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.accountHolderName}
-                  </Form.Control.Feedback>
-                </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Account Number</Form.Label>
+                <Form.Control
+                  name="accountNumber"
+                  value={values.accountNumber}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.accountNumber && !!errors.accountNumber}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.accountNumber}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Account Number</Form.Label>
-                  <Form.Control
-                    name="accountNumber"
-                    value={values.accountNumber}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    isInvalid={touched.accountNumber && !!errors.accountNumber}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.accountNumber}
-                  </Form.Control.Feedback>
-                </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Confirm Account Number</Form.Label>
+                <Form.Control
+                  name="confirm"
+                  value={values.confirm}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.confirm && !!errors.confirm}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.confirm}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Confirm Account Number</Form.Label>
-                  <Form.Control
-                    name="confirm"
-                    value={values.confirm}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    isInvalid={touched.confirm && !!errors.confirm}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.confirm}
-                  </Form.Control.Feedback>
-                </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Bank Code</Form.Label>
+                <Form.Control
+                  name="bankCode"
+                  value={values.bankCode}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  isInvalid={touched.bankCode && !!errors.bankCode}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.bankCode}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Modal.Body>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Bank Code</Form.Label>
-                  <Form.Control
-                    name="bankCode"
-                    value={values.bankCode}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    isInvalid={touched.bankCode && !!errors.bankCode}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.bankCode}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Modal.Body>
-
-              <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>
-                  Close
-                </Button>
-                <Button type="submit" variant="primary">
-                  {isCreating
-                    ? "Create Payment Method"
-                    : "Update Payment Method"}
-                </Button>
-              </Modal.Footer>
-            </Form>
-          )}
-        </Formik>
-      </Modal>
-    </div>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={onHide}>
+                Close
+              </Button>
+              <Button type="submit" variant="primary">
+                {isCreating ? "Create Payment Method" : "Update Payment Method"}
+              </Button>
+            </Modal.Footer>
+          </Form>
+        )}
+      </Formik>
+    </Modal>
   );
 }
