@@ -64,7 +64,6 @@ const ApplicationList = () => {
 
   // Columns
   const columns = [
-    { field: "id", headerName: "ID", flex: 0.3 },
     { field: "projectId", headerName: "Project ID", flex: 0.5 },
     {
       field: "projectTitle",
@@ -81,10 +80,11 @@ const ApplicationList = () => {
       renderCell: (params) => {
         const value = params?.row?.status || "unknown";
         const colorMap = {
-          SUBMITTED: "#42A5F5",
-          APPROVED: "#4CAF50",
-          REJECTED: "#E53935",
-          REVIEWING: "#FFB300",
+          CVA_APPROVED: colors.blueAccent[500],
+          ADMIN_APPROVED: colors.greenAccent[500],
+          ADMIN_REJECTED: colors.redAccent[500],
+          CVA_REJECTED: "#FFB300",
+          UNDER_REVIEW: colors.grey[500],
         };
         const color = colorMap[value.toUpperCase()] || "#E0E0E0";
 

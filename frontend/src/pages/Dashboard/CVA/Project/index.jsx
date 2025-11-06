@@ -14,7 +14,6 @@ const Invoices = () => {
     const [data, setData] = useState(mockDataProjectsCVA);
     
   const columns = [
-    { field: "id", headerName: "" },
     { field: "projectid", headerName: "Project ID", flex: 1 },
     {
       field: "projectname",

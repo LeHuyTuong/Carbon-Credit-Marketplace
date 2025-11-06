@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
 import { getAllReportsAdmin } from "@/apiAdmin/reportAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
- const ReportsList = () => {
+const ReportsList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -17,35 +17,35 @@ import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
   // Fetch API
   useEffect(() => {
-  const fetchReports = async () => {
-    try {
-      const res = await getAllReportsAdmin({ page: 0, size: 50  });
-      console.log("Raw API response:", res);
-      if (res?.response) {
-        const formatted = res.response.map((item, index) => ({
-          id: item.id ?? `report-${index}`, // fallback id nếu null
-          sellerName: item.sellerName ?? "—",
-          projectName: item.projectName ?? "—",
-          period: item.period ?? "—",
-          totalEnergy: item.totalEnergy ?? 0,
-          totalCo2: item.totalCo2 ?? 0,
-          vehicleCount: item.vehicleCount ?? 0,
-          status: item.status ?? "—",
-          submittedAt: item.submittedAt,
-        }));
-        setData(formatted);
-        console.log("Formatted data:", formatted);
-        console.log("IDs:", formatted.map(d => d.id));
+    const fetchReports = async () => {
+      try {
+        const res = await getAllReportsAdmin({ page: 0, size: 50 });
+        console.log("Raw API response:", res);
+        if (res?.response) {
+          const formatted = res.response.map((item, index) => ({
+            id: item.id ?? `report-${index}`, // fallback id nếu null
+            sellerName: item.sellerName ?? "—",
+            projectName: item.projectName ?? "—",
+            period: item.period ?? "—",
+            totalEnergy: item.totalEnergy ?? 0,
+            totalCo2: item.totalCo2 ?? 0,
+            vehicleCount: item.vehicleCount ?? 0,
+            status: item.status ?? "—",
+            submittedAt: item.submittedAt,
+          }));
+          setData(formatted);
+          console.log("Formatted data:", formatted);
+          console.log("IDs:", formatted.map(d => d.id));
+        }
+      } catch (error) {
+        console.error("Failed to fetch reports:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch reports:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchReports();
-}, []);
+    fetchReports();
+  }, []);
 
 
 
@@ -61,9 +61,16 @@ import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
     {
       field: "submittedAt",
       headerName: "Submitted At",
-      flex: 1,
-      renderCell: ({ value }) =>
-        value ? new Date(value).toLocaleString() : "—",
+      flex: 1.2,
+      renderCell: ({ value }) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        const time = date.toLocaleTimeString();
+        return `${day}/${month}/${year}, ${time}`;
+      },
     },
     {
       field: "status",
@@ -77,7 +84,7 @@ import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
         };
         return (
           <Box
-           sx={{
+            sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "left",
@@ -85,13 +92,13 @@ import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
               height: "100%",
             }}
           >
-          <Typography
-            color={statusColorMap[status] || colors.grey[100]}
-            fontWeight="600"
-            sx={{ textTransform: "capitalize", lineHeight: 1 }}
-          >
-            {status || "—"}
-          </Typography>
+            <Typography
+              color={statusColorMap[status] || colors.grey[100]}
+              fontWeight="600"
+              sx={{ textTransform: "capitalize", lineHeight: 1 }}
+            >
+              {status || "—"}
+            </Typography>
           </Box>
         );
       },

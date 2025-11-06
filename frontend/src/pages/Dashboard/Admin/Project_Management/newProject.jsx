@@ -41,16 +41,19 @@ const NewProjectForm = () => {
       );
 
       if (values.status) formDataToSend.append("status", values.status);
-      if (values.startedDate)
-        formDataToSend.append(
-          "startedDate",
-          dayjs(values.startedDate).format("YYYY-MM-DD")
-        );
-      if (values.endDate)
-        formDataToSend.append(
-          "endDate",
-          dayjs(values.endDate).format("YYYY-MM-DD")
-        );
+      if (values.endDate) {
+        // Chuẩn hóa thủ công nếu nhập dd/MM/yyyy
+        const [day, month, year] = values.endDate.split("/");
+        const formattedEndDate = `${year}-${month}-${day}`;
+        formDataToSend.append("endDate", formattedEndDate);
+      }
+
+      if (values.startedDate) {
+        const [day, month, year] = values.startedDate.split("/");
+        const formattedStartDate = `${year}-${month}-${day}`;
+        formDataToSend.append("startedDate", formattedStartDate);
+      }
+
 
       if (values.logo) formDataToSend.append("logo", values.logo);
       if (values.legalDocsFile)
@@ -67,7 +70,7 @@ const NewProjectForm = () => {
       } else {
         throw new Error(
           response?.responseStatus?.responseMessage ||
-            "Failed to create project"
+          "Failed to create project"
         );
       }
     } catch (error) {
@@ -141,6 +144,10 @@ const NewProjectForm = () => {
                   onChange={handleChange}
                   error={!!touched.title && !!errors.title}
                   helperText={touched.title && errors.title}
+                  multiline
+                  minRows={2}
+                  maxRows={8}
+
                 />
 
                 {/* Commitments */}
@@ -155,6 +162,10 @@ const NewProjectForm = () => {
                   onChange={handleChange}
                   error={!!touched.commitments && !!errors.commitments}
                   helperText={touched.commitments && errors.commitments}
+                  multiline
+                  minRows={2}
+                  maxRows={8}
+
                 />
 
                 {/* Technical Indicators */}
@@ -173,6 +184,10 @@ const NewProjectForm = () => {
                   helperText={
                     touched.technicalIndicators && errors.technicalIndicators
                   }
+                  multiline
+                  minRows={2}
+                  maxRows={8}
+
                 />
 
                 {/* Description */}
@@ -243,27 +258,32 @@ const NewProjectForm = () => {
                   fullWidth
                   size="small"
                   variant="outlined"
-                  type="date"
-                  label="Start Date"
+                  type="text"
+                  label="Start Date (dd/mm/yyyy)"
                   name="startedDate"
-                  InputLabelProps={{ shrink: true }}
+                  placeholder="dd/mm/yyyy"
                   value={values.startedDate}
                   onBlur={handleBlur}
                   onChange={handleChange}
+                  error={!!touched.startedDate && !!errors.startedDate}
+                  helperText={touched.startedDate && errors.startedDate}
                 />
 
                 <TextField
                   fullWidth
                   size="small"
                   variant="outlined"
-                  type="date"
-                  label="End Date"
+                  type="text"
+                  label="End Date (dd/mm/yyyy)"
                   name="endDate"
-                  InputLabelProps={{ shrink: true }}
+                  placeholder="dd/mm/yyyy"
                   value={values.endDate}
                   onBlur={handleBlur}
                   onChange={handleChange}
+                  error={!!touched.endDate && !!errors.endDate}
+                  helperText={touched.endDate && errors.endDate}
                 />
+
 
                 {/* Logo Upload */}
                 <Box>
@@ -334,7 +354,7 @@ const NewProjectForm = () => {
                   />
                   {values.legalDocsFile && (
                     <Typography mt={0.5} fontSize="0.8rem" noWrap>
-                       {values.legalDocsFile.name}
+                      {values.legalDocsFile.name}
                     </Typography>
                   )}
                 </Box>
@@ -374,7 +394,7 @@ const NewProjectForm = () => {
     </Box>
   );
 };
-
+const dateRegex = /^(0[1-9]|[12][0-9]|3[01])[\/](0[1-9]|1[0-2])[\/]\d{4}$/;
 const checkoutSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
   description: yup.string().required("Description is required"),
@@ -385,6 +405,16 @@ const checkoutSchema = yup.object().shape({
     .number()
     .typeError("Emission factor must be a number")
     .required("Emission factor is required"),
+
+  // Bắt buộc nhập và đúng format dd/mm/yyyy
+  startedDate: yup
+    .string()
+    .required("Start date is required")
+    .matches(dateRegex, "Start date must be in dd/mm/yyyy format"),
+  endDate: yup
+    .string()
+    .required("End date is required")
+    .matches(dateRegex, "End date must be in dd/mm/yyyy format"),
 });
 
 const initialValues = {

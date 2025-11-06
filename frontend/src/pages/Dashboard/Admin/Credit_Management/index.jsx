@@ -6,7 +6,8 @@ import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss"; // style cũ
-import { getCredits } from "@/apiAdmin/creditAdmin.js"; // API mới
+import { getCredits } from "@/apiAdmin/creditAdmin.js"; // API lấy ra credit 
+import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 
 const CreditsList = () => {
   const theme = useTheme();
@@ -28,7 +29,15 @@ const CreditsList = () => {
           projectname: c.projectTitle,
           numbercredit: c.creditsCount,
           estimatedvalue: c.totalTco2e,
-          issuedday: new Date(c.issuedAt).toLocaleDateString(),
+          issuedday: (() => {
+            if (!c.issuedAt) return "N/A";
+            const date = new Date(c.issuedAt);
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            const time = date.toLocaleTimeString();
+            return `${day}/${month}/${year}, ${time}`;
+          })(),
           status: c.status,
           expiredday: c.vintageYear,
           serial: `${c.serialFrom}-${c.serialTo}`,
@@ -43,7 +52,6 @@ const CreditsList = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "", flex: 0.5 },
     {
       field: "creditid",
       headerName: "Credit ID",
@@ -75,7 +83,7 @@ const CreditsList = () => {
     {
       field: "projectname",
       headerName: "Project Name",
-      flex: 1,
+      flex: 1.3,
       renderCell: (params) => (
         <Box
           sx={{
@@ -103,7 +111,7 @@ const CreditsList = () => {
       flex: 1,
     },
     { field: "estimatedvalue", headerName: "Estimated value", flex: 1 },
-    { field: "issuedday", headerName: "Issued Day", flex: 1 },
+    { field: "issuedday", headerName: "Issued Day", flex: 1.5 },
     {
       field: "status",
       headerName: "Status",
@@ -237,33 +245,7 @@ const CreditsList = () => {
           },
         }}
       >
-        <DataGrid
-          checkboxSelection
-          rows={data}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pagination
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10, page: 0 } },
-          }}
-          pageSizeOptions={[10, 20, 50]}
-          sx={{
-            "& .MuiDataGrid-footerContainer": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              height: "56px", // chuẩn chiều cao theo Material Design
-              padding: "0 16px",
-            },
-            "& .MuiTablePagination-displayedRows, & .MuiTablePagination-selectLabel": {
-              margin: 0,
-              lineHeight: "1.5rem",
-            },
-            "& .MuiTablePagination-actions": {
-              marginRight: "4px",
-            },
-          }}
-        />
+        <AdminDataGrid rows={data} columns={columns} getRowId={(row) => row.id} />
       </Box>
     </Box>
   );
