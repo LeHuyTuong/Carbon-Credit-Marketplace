@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -24,7 +24,7 @@ const CreditsList = () => {
         const mapped = credits.map((c) => ({
           id: c.id,
           creditid: c.batchCode,
-          aggregator: c.companyName,
+          company: c.companyName,
           projectname: c.projectTitle,
           numbercredit: c.creditsCount,
           estimatedvalue: c.totalTco2e,
@@ -32,6 +32,7 @@ const CreditsList = () => {
           status: c.status,
           expiredday: c.vintageYear,
           serial: `${c.serialFrom}-${c.serialTo}`,
+          creditcertificateurl: c.certificateUrl,
         }));
         setData(mapped);
       } catch (err) {
@@ -43,14 +44,56 @@ const CreditsList = () => {
 
   const columns = [
     { field: "id", headerName: "", flex: 0.5 },
-    { field: "creditid", headerName: "Credit ID" },
     {
-      field: "aggregator",
+      field: "creditid",
+      headerName: "Credit ID",
+      flex: 1.3,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",     // canh giữa theo chiều dọc
+            justifyContent: "center", // canh giữa theo chiều ngang
+            height: "100%",           // để căn giữa hoạt động đúng
+            textAlign: "left",
+            whiteSpace: "normal",     // cho phép xuống dòng
+            wordBreak: "break-word",  // tự ngắt từ
+            lineHeight: 1.3,
+            p: 0.5,
+          }}
+        >
+          {params.value}
+        </Box>
+      ),
+    },
+    {
+      field: "company",
       headerName: "Company",
       flex: 1,
       cellClassName: "name-column--cell",
     },
-    { field: "projectname", headerName: "Project Name", flex: 1 },
+    {
+      field: "projectname",
+      headerName: "Project Name",
+      flex: 1,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",     // canh giữa theo chiều dọc
+            justifyContent: "center", // canh giữa theo chiều ngang
+            height: "100%",           // để căn giữa hoạt động đúng
+            textAlign: "left",
+            whiteSpace: "normal",     // cho phép xuống dòng
+            wordBreak: "break-word",  // tự ngắt từ
+            lineHeight: 1.3,
+            p: 0.5,
+          }}
+        >
+          {params.value}
+        </Box>
+      ),
+    },
     {
       field: "numbercredit",
       headerName: "Number of Credits",
@@ -66,44 +109,90 @@ const CreditsList = () => {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        const value = params?.row?.status || "unknown";
+        const value = params?.row?.status || "Unknown";
         const lower = value.toLowerCase();
 
-        // Mặc định ISSUED là xanh lá, các trạng thái khác fallback sang xám
-        const color = lower === "issued" ? "#2E7D32" : "#9E9E9E";
-        
+        // mapping màu (tùy chỉnh theo trạng thái)
+        const colorMap = {
+          issued: "#2E7D32", // xanh lá
+          pending: "#F9A825", // vàng
+          rejected: "#C62828", // đỏ
+          default: "#9E9E9E", // xám
+        };
+
+        const color = colorMap[lower] || colorMap.default;
 
         return (
-          <div
-            style={{
+          <Box
+            sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-start",
+              justifyContent: "left",
               width: "100%",
+              height: "100%",
             }}
           >
-            <span
-              style={{
+            <Typography
+              sx={{
                 color,
                 fontWeight: 600,
                 textTransform: "capitalize",
-                padding: "4px 12px",
+                px: 1.5,
+                py: 0.5,
                 borderRadius: "8px",
                 fontSize: "0.95rem",
                 minWidth: "90px",
-                textAlign: "center",
+                textAlign: "left",
+                pl: -5, // đẩy nội dung sang trái
               }}
             >
               {value}
-            </span>
-          </div>
+            </Typography>
+          </Box>
         );
       },
     },
-
     { field: "expiredday", headerName: "Expired Year", flex: 1 },
     { field: "serial", headerName: "Serial", flex: 1 },
-    { field: "creditcertificateurl", headerName: "Link Certificate", flex: 1 },
+    {
+      field: "creditcertificateurl",
+      headerName: "Certificate",
+      flex: 1,
+      renderCell: (params) => {
+        const url = params.value;
+        if (!url) return <Typography color="text.secondary">No certificate</Typography>;
+
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              height: "100%",
+              width: "100%",
+              pl: 2,
+            }}
+          >
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                textDecoration: "none",
+                color: colors.blueAccent[400],
+                fontWeight: 600,
+                borderRadius: "6px",
+                padding: "4px 10px",
+                transition: "all 0.2s ease",
+              }}
+            >
+              Link Certificate
+            </a>
+          </Box>
+        );
+      },
+    },
+    ,
     {
       field: "action",
       headerName: "Action",

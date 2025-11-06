@@ -11,6 +11,7 @@ import {
 import { tokens } from "@/theme";
 import { useNavigate } from "react-router-dom";
 import { apiKYCAdmin } from "@/apiAdmin/apiLogin.js"; //  Gọi API KYC
+import { useSnackbar } from "@/hooks/useSnackbar.jsx"; //component snackbar to, rõ, dễ nhìn
 
 const AdminKYC = () => {
   const theme = useTheme();
@@ -18,8 +19,9 @@ const AdminKYC = () => {
   const navigate = useNavigate();
 
   const savedEmail =
-  sessionStorage.getItem("admin_email") || localStorage.getItem("admin_email") || "";
+    sessionStorage.getItem("admin_email") || localStorage.getItem("admin_email") || "";
 
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
 
   const [form, setForm] = useState({
     firstName: "",
@@ -57,40 +59,40 @@ const AdminKYC = () => {
 
   //  Handle Submit
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
+    e.preventDefault();
+    if (!validate()) return;
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const formData = new FormData();
-    formData.append("name", `${form.firstName} ${form.lastName}`.trim());
+      const formData = new FormData();
+      formData.append("name", `${form.firstName} ${form.lastName}`.trim());
 
-    Object.entries(form).forEach(([key, value]) => {
-      if (key !== "name") formData.append(key, value);
-    });
+      Object.entries(form).forEach(([key, value]) => {
+        if (key !== "name") formData.append(key, value);
+      });
 
-    const res = await apiKYCAdmin(formData);
-    console.log(" Full KYC response:", res);
+      const res = await apiKYCAdmin(formData);
+      console.log(" Full KYC response:", res);
 
-    //  Kiểm tra mã phản hồi thành công từ backend
-    if (
-      res?.responseStatus?.responseCode === "00000000" ||
-      res?.responseStatus?.responseMessage?.toLowerCase().includes("success")
-    ) {
-      alert(" KYC submitted successfully!");
-      navigate("/admin/dashboard"); //  chuyển hướng sau khi KYC thành công
-    } else {
-      console.error(" KYC failed:", res?.responseStatus?.responseMessage);
-      alert(`KYC failed: ${res?.responseStatus?.responseMessage}`);
+      //  Kiểm tra mã phản hồi thành công từ backend
+      if (
+        res?.responseStatus?.responseCode === "00000000" ||
+        res?.responseStatus?.responseMessage?.toLowerCase().includes("success")
+      ) {
+        showSnackbar("success", "KYC submitted successfully!", 5000);
+        setTimeout(() => navigate("/admin/dashboard"), 1500); // delay để snackbar hiển thị
+      } else {
+        console.error(" KYC failed:", res?.responseStatus?.responseMessage);
+        showSnackbar("error", `KYC failed: ${res?.responseStatus?.responseMessage}`, 5000);
+      }
+    } catch (err) {
+      console.error(" KYC Error:", err.message);
+      showSnackbar("error", `KYC submission failed: ${err.message}`, 5000);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(" KYC Error:", err.message);
-    alert(`KYC submission failed: ${err.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (
@@ -142,88 +144,82 @@ const AdminKYC = () => {
             Personal Information
           </Typography>
 
-          <Grid container spacing={2} mb={2}>
+          <Grid container spacing={13} mb={2}>
+            {/* Cột trái */}
             <Grid item xs={6}>
-              <TextField
-                label="First Name"
-                name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.firstName}
-                helperText={errors.firstName}
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
+              <Box display="flex" flexDirection="column" gap={2}>
+                <TextField
+                  label="First Name"
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                  fullWidth
+                  error={!!errors.firstName}
+                  helperText={errors.firstName}
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
+                <TextField
+                  label="Last Name"
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handleChange}
+                  fullWidth
+                  error={!!errors.lastName}
+                  helperText={errors.lastName}
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
+                <TextField
+                  label="Phone"
+                  name="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={handleChange}
+                  fullWidth
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
+              </Box>
             </Grid>
 
+            {/* Cột phải */}
             <Grid item xs={6}>
-              <TextField
-                label="Last Name"
-                name="lastName"
-                value={form.lastName}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.lastName}
-                helperText={errors.lastName}
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
-            </Grid>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <TextField
+                  label="Email"
+                  name="email"
+                  value={form.email}
+                  fullWidth
+                  disabled
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
+                <TextField
+                  label="Date of Birth"
+                  name="dob"
+                  placeholder="dd/mm/yyyy"
+                  value={form.dob}
+                  onChange={handleChange}
+                  fullWidth
+                  error={!!errors.dob}
+                  helperText={errors.dob}
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
 
-            <Grid item xs={12}>
-              <TextField
-                label="Email"
-                name="email"
-                value={form.email}
-                fullWidth
-                disabled
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Phone"
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.phone}
-                helperText={errors.phone}
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Date of Birth"
-                name="dob"
-                type="date"
-                value={form.dob}
-                onChange={handleChange}
-                fullWidth
-                error={!!errors.dob}
-                helperText={errors.dob}
-                InputLabelProps={{ shrink: true }}
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <TextField
-                label="Role"
-                name="role"
-                value={form.role}
-                fullWidth
-                disabled
-                variant="filled"
-                sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
-              />
+                <TextField
+                  label="Role"
+                  name="role"
+                  value={form.role}
+                  fullWidth
+                  disabled
+                  variant="filled"
+                  sx={{ backgroundColor: colors.primary[400], borderRadius: "6px" }}
+                />
+              </Box>
             </Grid>
           </Grid>
 
@@ -237,7 +233,7 @@ const AdminKYC = () => {
             Address
           </Typography>
 
-          <Grid container spacing={2} mb={2}>
+          <Grid container spacing={13} mb={2}>
             <Grid item xs={6}>
               <TextField
                 label="Country"
@@ -288,7 +284,7 @@ const AdminKYC = () => {
           <Button
             fullWidth
             variant="text"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/admin/carbonX/mkp/login",{ replace: true })}
             sx={{
               mt: 1.5,
               color: colors.blueAccent[400],
@@ -299,6 +295,8 @@ const AdminKYC = () => {
           </Button>
         </form>
       </Paper>
+      {/* Snackbar */}
+      {SnackbarComponent}
     </Box>
   );
 };
