@@ -66,7 +66,6 @@ const Team = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "" },
     { field: "userid", headerName: "User ID" },
     { field: "email", headerName: "Email", flex: 1 },
     {

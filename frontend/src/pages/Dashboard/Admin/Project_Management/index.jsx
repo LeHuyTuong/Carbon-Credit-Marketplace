@@ -40,18 +40,9 @@ const ListProjects = () => {
     fetchProjects();
   }, []);
 
-  //  Cấu hình cột hiển thị DataGrid 
-  const textCellStyle = {
-    whiteSpace: "normal",
-    wordWrap: "break-word",
-    overflowWrap: "break-word",
-    lineHeight: 1.4,
-    fontSize: 14,
-  };
 
   const columns = [
-    { field: "id", headerName: "#", width: 70 },
-    { field: "projectid", headerName: "Project ID", flex: 1 },
+    { field: "projectid", headerName: "Project ID", flex: 0.5 },
     {
       field: "projectname",
       headerName: "Project Name",
@@ -66,7 +57,7 @@ const ListProjects = () => {
     {
       field: "shortdescription",
       headerName: "Description",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => (
         <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
           {params.value}
@@ -77,7 +68,7 @@ const ListProjects = () => {
     {
       field: "commitments",
       headerName: "Commitments",
-      flex: 1.2,
+      flex: 1.5,
       renderCell: (params) => (
         <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
           {params.value}
@@ -88,7 +79,7 @@ const ListProjects = () => {
     {
       field: "measurementmethod",
       headerName: "Measurement Method",
-      flex: 1.2,
+      flex: 1.5,
       renderCell: (params) => (
         <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
           {params.value}
@@ -99,7 +90,7 @@ const ListProjects = () => {
     {
       field: "totalexpectedcredits",
       headerName: "Technical Indicators",
-      flex: 1.2,
+      flex: 1.5,
       renderCell: (params) => (
         <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
           {params.value}

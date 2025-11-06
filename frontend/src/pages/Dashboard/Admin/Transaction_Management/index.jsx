@@ -38,7 +38,6 @@ const TransactionAdmin = () => {
 
   //  Cột hiển thị
   const columns = [
-    { field: "id", headerName: "", flex: 0.3 },
     { field: "transactionId", headerName: "Transaction ID", flex: 0.8 },
     { field: "email", headerName: "Email", flex: 1 },
     {
@@ -90,7 +89,7 @@ const TransactionAdmin = () => {
       renderCell: ({ row }) => {
         const colorMap = {
           pending: colors.grey[300],
-          approved: colors.greenAccent[400],
+          succeeded: colors.greenAccent[400],
           rejected: colors.redAccent[400],
         };
         return (

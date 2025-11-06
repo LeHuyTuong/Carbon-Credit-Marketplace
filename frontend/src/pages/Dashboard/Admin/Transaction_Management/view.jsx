@@ -29,32 +29,33 @@ const ViewTransaction = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        const list = await getWithdrawalsAdmin();
-        const transaction = list.find((t) => t.id.toString() === id);
+  const fetchTransaction = async () => {
+    try {
+      const list = await getWithdrawalsAdmin();
+      const transaction = list.find((t) => t.id.toString() === id);
 
-        if (transaction) {
-          const paymentRes = await getPaymentDetails();
-          // Lọc payment theo user
-          const userPayment = paymentRes.find(
-            (p) => p.userId === transaction.user?.id
-          );
-          transaction.paymentDetails = userPayment || null;
+      if (transaction) {
+        const paymentRes = await getPaymentDetails();
+        // Lọc theo p.user?.id thay vì p.userId
+        const userPayment = paymentRes.find(
+          (p) => p.user?.id === transaction.user?.id
+        );
 
-          setTrx(transaction);
-        } else {
-          setTrx(null);
-        }
-      } catch (error) {
-        console.error(error);
-        showSnackbar("error", "Failed to load transaction data.");
-      } finally {
-        setLoading(false);
+        transaction.paymentDetails = userPayment || null;
+        setTrx(transaction);
+      } else {
+        setTrx(null);
       }
-    };
-    fetchTransaction();
-  }, [id]);
+    } catch (error) {
+      console.error(error);
+      showSnackbar("error", "Failed to load transaction data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchTransaction();
+}, [id]);
+
 
 
   const handleProcess = async (accept) => {
@@ -101,7 +102,7 @@ const ViewTransaction = () => {
 
   const statusColor = {
     PENDING: colors.grey[300],
-    APPROVED: colors.greenAccent[400],
+    SUCCEEDED: colors.greenAccent[400],
     REJECTED: colors.redAccent[400],
   };
 
