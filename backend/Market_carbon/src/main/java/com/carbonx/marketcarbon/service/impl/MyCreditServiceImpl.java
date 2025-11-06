@@ -279,50 +279,56 @@ public class MyCreditServiceImpl implements MyCreditService {
         Long companyId = currentCompanyId();
         log.info("[DEBUG] getMyRetirableCredits (grouped by Batch) - companyId={}", companyId);
 
-        // FIX: Query lại từ DB để có data mới nhất thay vì dùng cached entities
+        // B1: Lấy TẤT CẢ tín chỉ CỦA BẠN (ĐÚNG)
         List<CarbonCredit> allCredits = creditRepo.findByCompanyId(companyId);
 
-        // 1. Lọc những credit có thể retire(phần chưa list)
+        // B2: Lọc tín chỉ CÓ THỂ RETIRE
         List<CarbonCredit> retirableCredits = allCredits.stream()
                 .filter(credit -> {
-                    checkAndMarkExpired(credit);
+                    checkAndMarkExpired(credit); // Kiểm tra hết hạn
 
+                    // Lọc 1: Không thể retire nếu đã EXPIRED hoặc RETIRED
                     if (credit.getStatus() == CreditStatus.EXPIRED ||
                             credit.getStatus() == CreditStatus.RETIRED) {
                         return false;
                     }
 
-                    if (credit.getBatch() == null) {
-                        log.warn("[RETIRE-FILTER] Credit {} skipped: No batch", credit.getId());
-                        return false;
-                    }
-
-                    BigDecimal freeQty = getAvailableForRetire(credit);
+                    // Lọc 2: Phải có số lượng khả dụng (chưa niêm yết)
+                    BigDecimal freeQty = getAvailableForRetire(credit); //
                     if (freeQty.compareTo(BigDecimal.ZERO) <= 0) {
-                        log.debug("[RETIRE-FILTER] Credit {} skipped: no free amount", credit.getId());
+                        // (Tín chỉ 165, 166 sẽ bị loại ở đây - ĐÚNG)
+                        log.debug("[RETIRE-FILTER] Credit {} skipped: no free amount (Avail: {}, Listed: {})",
+                                credit.getId(), credit.getCarbonCredit(), credit.getListedAmount());
                         return false;
                     }
 
+                    // Lọc 3: Tín chỉ phải thuộc về 1 lô (để nhóm)
+                    if (credit.getBatch() == null) {
+                        log.warn("[RETIRE-FILTER] Credit {} skipped: Data error - No batch associated.", credit.getId());
+                        return false;
+                    }
+
+                    // (Tín chỉ 164, 188, 189, 250, 251 sẽ vượt qua)
                     return true;
                 })
                 .toList();
 
-        log.info("[DEBUG] Found {} retirable credits from {} total credits",
-                retirableCredits.size(), allCredits.size());
+        log.info("[DEBUG] Found {} retirable credits (non-listed, non-expired) from {} total credits",
+                retirableCredits.size(), allCredits.size()); // Log này sẽ là 5 tín chỉ
 
-        // 2. Nhóm các credit này theo Batch
+        // B3: Nhóm các tín chỉ (ĐÃ ĐÚNG) theo Lô
         Map<CreditBatch, List<CarbonCredit>> creditsByBatch = retirableCredits.stream()
-                .collect(Collectors.groupingBy(CarbonCredit::getBatch));
+                .collect(Collectors.groupingBy(CarbonCredit::getBatch)); //
 
-        // 3. Tính toán tổng available cho mỗi batch và map sang DTO
+        // B4: Tính tổng và tạo Response
         return creditsByBatch.entrySet().stream()
                 .map(entry -> {
                     CreditBatch batch = entry.getKey();
                     List<CarbonCredit> creditsInBatch = entry.getValue();
 
-                    //  Tính tổng free amount (available - listed)
+                    // Tính tổng số lượng CÓ THỂ RETIRE trong lô này
                     BigDecimal totalFreeInBatch = creditsInBatch.stream()
-                            .map(this::getAvailableForRetire)
+                            .map(this::getAvailableForRetire) //
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     log.debug("[BATCH-{}] Total free (not listed): {} from {} credits",
@@ -423,15 +429,14 @@ public class MyCreditServiceImpl implements MyCreditService {
         log.info("[RETIRE] Starting batch retire - batchCode={}, companyId={}, quantity={}",
                 request.getBatchCode(), companyId, request.getQuantity());
 
-        // B1: Tìm batch
-        CreditBatch batch = batchRepo.findByBatchCodeAndCompany_Id(request.getBatchCode(), companyId)
+        // B1: Chỉ tìm batch bằng batchCode
+        CreditBatch batch = batchRepo.findByBatchCode(request.getBatchCode()) // <--- SỬA DÒNG NÀY
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
-
         // B2: Lấy tất cả credits trong batch
-        List<CarbonCredit> allCreditsInBatch = creditRepo.findAllOwnedByBatch(
-                batch.getId(), companyId);
+        List<CarbonCredit> allCreditsInBatch = creditRepo.findByBatch_IdAndCompany_Id(batch.getId(), companyId);
 
-        log.info("[RETIRE] Found {} total credits in batch", allCreditsInBatch.size());
+        log.info("[RETIRE] Found {} total credits in batch {} owned by company {}",
+                allCreditsInBatch.size(), batch.getId(), companyId);
 
         // B3: Lọc credits có thể retire (chưa list, chưa expired, chưa retired)
         List<CarbonCredit> retirableCredits = allCreditsInBatch.stream()
@@ -445,7 +450,7 @@ public class MyCreditServiceImpl implements MyCreditService {
                         return false;
                     }
 
-                    // FIX: Chỉ lấy credits có free amount > 0
+                    // Chỉ lấy credits có free amount > 0
                     BigDecimal freeQty = getAvailableForRetire(c);
                     if (freeQty.compareTo(BigDecimal.ZERO) <= 0) {
                         log.debug("[RETIRE-FILTER] Credit {} skipped: free={}",
@@ -460,6 +465,7 @@ public class MyCreditServiceImpl implements MyCreditService {
                 .collect(Collectors.toList());
 
         if (retirableCredits.isEmpty()) {
+            log.error("[RETIRE] No retirable credits found in batch {}", batch.getBatchCode());
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
@@ -490,7 +496,7 @@ public class MyCreditServiceImpl implements MyCreditService {
             CarbonCredit lockedCredit = creditRepo.findByIdWithPessimisticLock(credit.getId())
                     .orElse(credit);
 
-            // FIX: Chỉ retire phần free (chưa list)
+            // Chỉ retire phần free (chưa list)
             BigDecimal freeAmount = getAvailableForRetire(lockedCredit);
             if (freeAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 log.warn("[RETIRE] Credit {} has no free amount, skipping", lockedCredit.getId());
