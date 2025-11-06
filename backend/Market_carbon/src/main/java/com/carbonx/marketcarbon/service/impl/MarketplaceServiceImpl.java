@@ -359,6 +359,20 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         return buildListingResponse(savedListing);
     }
 
+    /**
+     * Sửa lỗi Task 1: Hủy bỏ niêm yết (delete listing)
+     * Logic mới:
+     * 1. Tìm Listing, xác thực chủ sở hữu và trạng thái AVAILABLE.
+     * 2. Lấy CarbonCredit liên quan và KHOÁ (lock) nó lại.
+     * 3. Lấy số lượng `quantityToRestore` từ listing (số lượng còn lại).
+     * 4. Hoàn trả số lượng này cho CarbonCredit:
+     * - `credit.listedAmount` -= `quantityToRestore`
+     * - `credit.carbonCredit` (available) += `quantityToRestore`
+     * - `credit.amount` (total) = `listedAmount` + `carbonCredit`
+     * 5. Cập nhật lại trạng thái (status) của CarbonCredit.
+     * 6. Lưu CarbonCredit.
+     * 7. Xóa MarketPlaceListing.
+     */
     @Override
     @Transactional
     public MarketplaceListingResponse deleteListCredits(Long creditListingId) {
@@ -369,6 +383,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
 
+        // 1. Tìm Listing, xác thực
         MarketPlaceListing listing = marketplaceListingRepository.findById(creditListingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE));
 
@@ -376,36 +391,63 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.COMPANY_NOT_OWN);
         }
 
-        CarbonCredit carbonCredit = listing.getCarbonCredit();
-        if (carbonCredit != null) {
-            BigDecimal remainingQuantity = safe(listing.getQuantity());
-
-            if (remainingQuantity.compareTo(BigDecimal.ZERO) > 0) {
-                CreditBatch batch = carbonCredit.getBatch();
-                BigDecimal leftover = remainingQuantity;
-
-                if (batch != null) {
-                    leftover = restoreBatchCredits(batch, sellerCompany, remainingQuantity);
-                } else {
-                    leftover = restoreSingleCredit(carbonCredit, remainingQuantity);
-                }
-
-                if (batch != null && leftover.compareTo(BigDecimal.ZERO) > 0) {
-                    leftover = restoreSingleCredit(carbonCredit, leftover);
-                }
-
-                if (leftover.compareTo(BigDecimal.ZERO) > 0) {
-                    log.warn("Listing {} cancellation still has {} credits un-restored for company {}", listing.getId(), leftover, sellerCompany.getId());
-                }
-            } else {
-                restoreSingleCredit(carbonCredit, BigDecimal.ZERO);
+        if (listing.getStatus() != ListingStatus.AVAILABLE) {
+            log.warn("Attempt to delete listing {} which is not AVAILABLE (Status: {})", creditListingId, listing.getStatus());
+            // Trả về thông tin listing đã bị hủy/bán
+            if (listing.getStatus() == ListingStatus.CANCELLED) {
+                return buildListingResponse(listing);
             }
+            throw new AppException(ErrorCode.LISTING_IS_NOT_AVAILABLE);
         }
 
-        listing.setQuantity(BigDecimal.ZERO);
-        listing.setStatus(ListingStatus.CANCELLED);
+        // 2. Lấy CarbonCredit liên quan và KHOÁ
+        CarbonCredit carbonCredit = listing.getCarbonCredit();
+        if (carbonCredit == null) {
+            log.error("Listing {} has no associated CarbonCredit. Deleting listing entry only.", listing.getId());
+            marketplaceListingRepository.delete(listing);
+            return buildListingResponse(listing);
+        }
+
+        CarbonCredit lockedCredit = carbonCreditRepository.findByIdWithPessimisticLock(carbonCredit.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CREDIT_NOT_FOUND));
+
+        // 3. Lấy số lượng cần hoàn trả
+        BigDecimal quantityToRestore = safe(listing.getQuantity());
+
+        if (quantityToRestore.compareTo(BigDecimal.ZERO) > 0) {
+            // 4. Hoàn trả số lượng
+            BigDecimal listedAmount = safe(lockedCredit.getListedAmount());
+            BigDecimal availableAmount = safe(lockedCredit.getCarbonCredit()); // carbonCredit field = available
+
+            BigDecimal updatedListed = listedAmount.subtract(quantityToRestore);
+            BigDecimal updatedAvailable = availableAmount.add(quantityToRestore);
+
+            if (updatedListed.compareTo(BigDecimal.ZERO) < 0) {
+                log.warn("Inconsistency detected: Credit {} has listedAmount {} but listing {} tried to restore {}. Setting listed to 0.",
+                        lockedCredit.getId(), listedAmount, listing.getId(), quantityToRestore);
+                updatedListed = BigDecimal.ZERO;
+            }
+
+            lockedCredit.setListedAmount(updatedListed);
+            lockedCredit.setCarbonCredit(updatedAvailable); // Cập nhật available
+            lockedCredit.setAmount(updatedAvailable.add(updatedListed)); // Cập nhật total
+
+            // 5. Cập nhật trạng thái
+            updateCreditStatus(lockedCredit, updatedAvailable, updatedListed);
+
+            // 6. Lưu CarbonCredit
+            carbonCreditRepository.save(lockedCredit);
+            log.info("Restored {} credits to CarbonCredit {} (new available: {}, new listed: {})",
+                    quantityToRestore, lockedCredit.getId(), updatedAvailable, updatedListed);
+        } else {
+            log.warn("Listing {} had 0 quantity. No credits restored to CarbonCredit {}.", listing.getId(), lockedCredit.getId());
+        }
+
+        // 7. Xóa MarketPlaceListing
+        // Tạo response DTO trước khi xóa
         MarketplaceListingResponse response = buildListingResponse(listing);
         marketplaceListingRepository.delete(listing);
+        log.info("Deleted MarketPlaceListing {}", listing.getId());
 
         return response;
     }
