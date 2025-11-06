@@ -1,4 +1,3 @@
-// ===================== CVALogin.jsx =====================
 import React, { useState } from "react";
 import {
   Box,
@@ -14,15 +13,16 @@ import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx"; // import hook snackbar
 
 const CVALogin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-  const { login } = useAuth(); // lấy login từ context
+  const { login } = useAuth();
+  const { showSnackbar, SnackbarComponent } = useSnackbar(); // hook snackbar
 
   const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -31,38 +31,43 @@ const CVALogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     if (!form.email || !form.password) {
-      setError("Please fill in all fields!");
+      showSnackbar("warning", "Please fill in all fields!");
       return;
     }
 
     try {
       setLoading(true);
+      console.log("Attempting login with:", form.email);
 
-      // 🟢 Gọi API login
       const res = await apiLogin(form.email, form.password);
-      if (!res?.jwt) throw new Error("Invalid login response");
+      console.log("Login API response:", res);
 
-      // 🟢 Lưu user vào context, ép role = "CVA"
+      if (!res?.jwt) throw new Error("Invalid login response from server");
+
+      // Lưu user vào context (role = CVA)
       login({ ...res.user, role: "CVA" }, res.jwt, true);
 
-      // 🟢 Kiểm tra KYC
+      // Gọi check KYC
       const kycRes = await checkKYCCVA();
-      console.log("✅ Full KYC check:", kycRes);
+      console.log("Full KYC check:", kycRes);
 
-      // 🟢 Điều hướng dựa theo KYC
+      // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {
-        console.log("➡️ KYC found → Go Dashboard");
-        navigate("/cva/dashboard", { replace: true });
+        showSnackbar("success", "Login successful! Redirecting to dashboard...");
+        setTimeout(() => navigate("/cva/dashboard", { replace: true }), 3000);
       } else {
-        console.log("➡️ No KYC found → Go to KYC page");
-        navigate("/cva/kyc", { replace: true });
+        showSnackbar("info", "No KYC found. Redirecting to KYC page...");
+        setTimeout(() => navigate("/cva/kyc", { replace: true }), 3000);
       }
     } catch (err) {
-      console.error("❌ Login Error:", err);
-      setError(err.message || "An unexpected error occurred!");
+      console.error("Login Error:", err);
+      const apiMsg =
+        err?.responseStatus?.responseMessage ||
+        err?.message ||
+        "Login failed! Please try again.";
+      showSnackbar("error", apiMsg);
     } finally {
       setLoading(false);
     }
@@ -136,16 +141,6 @@ const CVALogin = () => {
             }}
           />
 
-          {error && (
-            <Typography
-              color="error"
-              variant="body2"
-              sx={{ mb: 2, fontWeight: "bold" }}
-            >
-              {error}
-            </Typography>
-          )}
-
           <Button
             type="submit"
             fullWidth
@@ -172,6 +167,9 @@ const CVALogin = () => {
           © 2025 EV-CarbonX System
         </Typography>
       </Paper>
+
+      {/* Snackbar Component */}
+      {SnackbarComponent}
     </Box>
   );
 };

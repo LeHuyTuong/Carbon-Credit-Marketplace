@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.request;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -22,7 +23,12 @@ public class ProfitSharingRequest {
 
     @NotNull(message = "Tổng số tiền chia sẻ không được để trống")
     @DecimalMin(value = "0.0", inclusive = false, message = "Số tiền phải lớn hơn 0")
-    private BigDecimal totalMoneyToDistribute; // Tổng số tiền (VND) công ty muốn chia
+    private BigDecimal totalMoneyToDistribute; // Tổng lợi nhuận (VND) công ty muốn sử dụng làm cơ sở chia sẻ
+
+    @NotNull(message = "Tỷ lệ chia sẻ không được để trống")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Tỷ lệ phải lớn hơn 0")
+    @DecimalMax(value = "100.0", message = "Tỷ lệ không được vượt quá 100")
+    private BigDecimal companySharePercent; // Phần trăm lợi nhuận công ty muốn chia cho EV Owner
 
     @NotNull(message = "Mô tả không được để trống")
     private String description;

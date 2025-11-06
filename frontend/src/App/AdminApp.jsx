@@ -14,8 +14,8 @@ import Transaction_Management from "../pages/Dashboard/Admin/Transaction_Managem
 import Credit_Management from "../pages/Dashboard/Admin/Credit_Management/index.jsx";
 import Report_Management from "../pages/Dashboard/Admin/Report_Management/index.jsx";
 import EV_Management from "../pages/Dashboard/Admin/EV_Management/index.jsx";
-import Project_Management from "../pages/Dashboard/Admin/Project_Management/index.jsx";
 import View_Profile from "../pages/Dashboard/Admin/profile/view.jsx";
+import Project_Management from "../pages/Dashboard/Admin/Project_Management/index.jsx";
 import Edit_Profile from "../pages/Dashboard/Admin/profile/edit.jsx";
 import User_View from "../pages/Dashboard/Admin/User_Management/view.jsx";
 import Transaction_Page from "../pages/Dashboard/Admin/Transaction_Management/transactionPage.jsx";

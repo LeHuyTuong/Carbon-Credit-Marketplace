@@ -27,5 +27,11 @@ public interface WalletService {
 
     Wallet findWalletByUser(User user);
 
-    void transferFunds(Wallet fromWallet, Wallet toWallet, BigDecimal amount, String type, String description) throws  WalletException;
-    }
+    void transferFunds(
+            Wallet fromWallet,
+            Wallet toWallet,
+            BigDecimal amount,
+            String type,
+            String debitDescription,
+            String creditDescription
+    ) throws WalletException;    }

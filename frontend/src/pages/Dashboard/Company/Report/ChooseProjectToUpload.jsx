@@ -95,7 +95,7 @@ export default function ChooseProjectToUpload() {
                     <td>{index + 1}</td>
                     <td className="fw-semibold">{p.projectTitle}</td>
                     <td className="text-muted">
-                      {new Date(p.submittedAt).toLocaleString("vi-VN", {
+                      {new Date(p.submittedAt + "Z").toLocaleString("vi-VN", {
                         timeZone: "Asia/Ho_Chi_Minh",
                         hour12: false,
                       })}

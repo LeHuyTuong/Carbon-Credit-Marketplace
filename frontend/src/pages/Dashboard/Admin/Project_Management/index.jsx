@@ -40,7 +40,7 @@ const ListProjects = () => {
     fetchProjects();
   }, []);
 
-  // ======= Cấu hình cột hiển thị DataGrid =======
+  //  Cấu hình cột hiển thị DataGrid 
   const textCellStyle = {
     whiteSpace: "normal",
     wordWrap: "break-word",
@@ -150,7 +150,7 @@ const ListProjects = () => {
     },
   ];
 
-  // ======= Render Component =======
+  //  Render Component 
   return (
     <Box m="20px" className="actionadmin">
       <Box display="flex" justifyContent="space-between" alignItems="center">

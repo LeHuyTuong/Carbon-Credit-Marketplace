@@ -14,3 +14,20 @@ export async function analyzeReportByAI(id, payload = {}) {
     body: payload,
   });
 }
+//AI for analysis Data
+export const analyzeReportData = async (reportId) => {
+  const trace = `trace_${Date.now()}`;
+  const timestamp = new Date().toISOString();
+
+  const res = await apiFetch(`/api/v1/reports/${reportId}/analyze`, {
+    method: "POST",
+    headers: {
+      "X-Request-Trace": trace,
+      "X-Request-DateTime": timestamp,
+      "Content-Type": "application/json",
+    },
+    params: { persist: true },
+  });
+
+  return res.data || res;
+};
