@@ -34,9 +34,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             "/api/v1/send-otp-forgot",
             "/api/v1/check-exists-user",
             "/api/v1/projects/all",
-            "/api/v1/forgot-password/resend-otp",
-            "/oauth2/**",
-            "/login/**"
+            "/api/v1/forgot-password/resend-otp"
     );
 
     @Override
@@ -46,13 +44,16 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        //  1️ Bỏ qua các endpoint public, không check JWT
+        if (path.startsWith("/oauth2/") || path.startsWith("/login/oauth2/") || path.startsWith("/error")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        //  2️ Lấy token từ header
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
         if (jwt == null || !jwt.startsWith("Bearer ")) {
@@ -85,13 +86,12 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            //  Debug log
-            System.out.println("[JWT  OK] User: " + email + " | Roles: " + auths);
+            System.out.println("[JWT OK] User: " + email + " | Roles: " + auths);
 
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            System.err.println(" JWT expired at: " + e.getClaims().getExpiration());
+            System.err.println("[JWT Expired] " + e.getClaims().getExpiration());
         } catch (Exception e) {
-            System.err.println(" Invalid token: " + e.getMessage());
+            System.err.println("[JWT Invalid] " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);
