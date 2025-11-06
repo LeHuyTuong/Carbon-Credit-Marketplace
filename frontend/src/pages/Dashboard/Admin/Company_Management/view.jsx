@@ -42,7 +42,7 @@ const ViewCompanyKYC = () => {
           setProfile(data);
         }
       } catch (error) {
-        console.error("❌ Error fetching company KYC profile:", error);
+        console.error(" Error fetching company KYC profile:", error);
       } finally {
         setLoading(false);
       }
@@ -68,7 +68,7 @@ const ViewCompanyKYC = () => {
       setOpenSnackbar(true);
       setEditMode(false);
     } catch (err) {
-      console.error("❌ Error updating KYC:", err);
+      console.error(" Error updating KYC:", err);
       alert("Update failed. Please try again.");
     } finally {
       setSaving(false);
