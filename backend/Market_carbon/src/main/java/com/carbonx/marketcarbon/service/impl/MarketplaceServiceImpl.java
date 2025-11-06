@@ -360,16 +360,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     /**
-     * Sửa lỗi Task 1: Hủy bỏ niêm yết (delete listing)
-     * Logic mới:
      * 1. Tìm Listing, xác thực chủ sở hữu và trạng thái AVAILABLE.
-     * 2. Lấy CarbonCredit liên quan và KHOÁ (lock) nó lại.
-     * 3. Lấy số lượng `quantityToRestore` từ listing (số lượng còn lại).
+     * 2. Lấy CarbonCredit liên quan và khóa nó lại.
+     * 3. Lấy số lượng quantityToRestore từ listing (số lượng còn lại).
      * 4. Hoàn trả số lượng này cho CarbonCredit:
-     * - `credit.listedAmount` -= `quantityToRestore`
-     * - `credit.carbonCredit` (available) += `quantityToRestore`
-     * - `credit.amount` (total) = `listedAmount` + `carbonCredit`
-     * 5. Cập nhật lại trạng thái (status) của CarbonCredit.
+     * - credit.listedAmount -= quantityToRestore
+     * - credit.carbonCredit (available) += quantityToRestore
+     * - credit.amount (total) = listedAmount + carbonCredit
+     * 5. Update lại trạng thái (status) của CarbonCredit.
      * 6. Lưu CarbonCredit.
      * 7. Xóa MarketPlaceListing.
      */
