@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,18 +20,17 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     @EntityGraph(attributePaths = "company") // tránh N+1 khi lấy company
     List<Vehicle> findByEvOwner_Id(Long evOwnerId);
 
-    // Company
-    Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
 
     Optional<Vehicle> findByCompanyIdAndPlateNumberIgnoreCase(Long companyId, String plateNumber);
 
     List<Vehicle> findByCompanyId(Long companyId);
 
+    // Company
+    Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);
+
     long count(); // count all vehicle for admin
 
     long countByEvOwner_Id(Long evOwnerId);
-
-    long countByCompany_Id(Long companyId);
 
     /**
      * Lấy ra một Set (HashSet) chứa tất cả các biển số xe (plateNumber)
@@ -48,5 +46,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      */
     @Query("SELECT v FROM Vehicle v JOIN FETCH v.evOwner e JOIN FETCH e.user u WHERE v.plateNumber = :plateNumber")
     Optional<Vehicle> findByPlateNumberWithDetails(String plateNumber);
+
+    long countByCompany_Id(Long companyId);
 
 }

@@ -11,7 +11,9 @@ import Home from "../pages/Home/Home.jsx";
 import Login from "../pages/Login/Login.jsx";
 import LoginAdmin from "../pages/Login/LoginAdmin.jsx";
 import KYCAdmin from "../pages/Dashboard/Admin/KYCAdmin/KYCAdmin.jsx";
+import RegisterCVA from "../pages/Register/RegisterCVA.jsx";
 import LoginCVA from "../pages/Login/LoginCVA.jsx";
+import OTPCVA from "../pages/OTP/OTP_CVA.jsx";
 import KYCCVA from "../pages/Dashboard/CVA/KYCCVA/KYCCVA.jsx";
 import Register from "../pages/Register/Register.jsx";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword.jsx";
@@ -189,6 +191,15 @@ export default function App() {
         <Route
           path="/admin/change-password"
           element={<AdminChangePassword />}
+        />
+        <Route path="/cva/carbonX/mkp/register" element={<RegisterCVA />} />
+        <Route
+          path="/cva/otp"
+          element={
+            
+              <OTPCVA/>
+            
+          }
         />
         <Route path="/cva/carbonX/mkp/login" element={<LoginCVA />} />
         <Route

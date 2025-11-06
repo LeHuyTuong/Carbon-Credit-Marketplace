@@ -312,13 +312,18 @@ public class WalletServiceImpl implements WalletService {
      * @param toWallet    Ví đích (chỉ dùng để lấy ID)
      * @param amount      Số tiền (luôn là số dương)
      * @param type        Loại giao dịch (dưới dạng String)
-     * @param description Mô tả
      * @throws WalletException Nếu có lỗi (VD: không đủ tiền, khóa thất bại)
      */
     @Override
     @Transactional(rollbackOn = WalletException.class)
-    public void transferFunds(Wallet fromWallet, Wallet toWallet, BigDecimal amount, String type, String description) throws WalletException {
-
+    public void transferFunds(
+            Wallet fromWallet,
+            Wallet toWallet,
+            BigDecimal amount,
+            String type,
+            String debitDescription,
+            String creditDescription
+    ) throws WalletException {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("Transfer amount must be positive. Amount: {}", amount);
             throw new AppException(ErrorCode.MONEY_MUST_POSITIVE);
@@ -339,18 +344,24 @@ public class WalletServiceImpl implements WalletService {
                 throw new AppException(ErrorCode.WALLET_NOT_FOUND);
             }
 
+            BigDecimal fromBefore = lockedFromWallet.getBalance();
+            BigDecimal toBefore = lockedToWallet.getBalance();
+
             // 3. Kiểm tra số dư trên ví đã bị khóa
-            if (lockedFromWallet.getBalance().compareTo(amount) < 0) {
+            if (fromBefore.compareTo(amount) < 0) {
                 log.warn("Insufficient funds for transfer. Wallet {} has {}, but {} is required.",
-                        lockedFromWallet.getId(), lockedFromWallet.getBalance(), amount);
+                        lockedFromWallet.getId(), fromBefore, amount);
                 throw new AppException(ErrorCode.WALLET_INSUFFICIENT_FUNDS);
             }
 
             // 4. Trừ tiền ví nguồn (Debit)
-            lockedFromWallet.setBalance(lockedFromWallet.getBalance().subtract(amount));
+            lockedFromWallet.setBalance(fromBefore.subtract(amount));
 
             // 5. Cộng tiền ví đích (Credit)
-            lockedToWallet.setBalance(lockedToWallet.getBalance().add(amount));
+            lockedToWallet.setBalance(toBefore.add(amount));
+
+            BigDecimal fromAfter = lockedFromWallet.getBalance();
+            BigDecimal toAfter = lockedToWallet.getBalance();
 
             // 6. Ghi log giao dịch (ví nguồn) - Tạo 2 bản ghi cho 2 bên
             WalletTransaction fromTransaction = WalletTransaction.builder()
@@ -358,7 +369,9 @@ public class WalletServiceImpl implements WalletService {
                     .amount(amount.negate()) // Ghi số âm cho giao dịch rút
                     // .currency(lockedFromWallet.getCurrency()) // Bỏ qua nếu entity WalletTransaction không có
                     .transactionType(WalletTransactionType.valueOf(type)) // Chuyển String sang Enum
-                    .description(description)
+                    .description(debitDescription)
+                    .balanceBefore(fromBefore)
+                    .balanceAfter(fromAfter)
                     // .status("COMPLETED") // Bỏ qua nếu entity không có
                     .createdAt(LocalDateTime.now()) // Dùng createdAt nếu entity có
                     .build();
@@ -370,7 +383,9 @@ public class WalletServiceImpl implements WalletService {
                     .amount(amount) // Ghi số dương cho giao dịch nạp
                     // .currency(lockedToWallet.getCurrency())
                     .transactionType(WalletTransactionType.valueOf(type))
-                    .description(description)
+                    .description(creditDescription)
+                    .balanceBefore(fromBefore)
+                    .balanceAfter(fromAfter)
                     // .status("COMPLETED")
                     .createdAt(LocalDateTime.now())
                     .build();

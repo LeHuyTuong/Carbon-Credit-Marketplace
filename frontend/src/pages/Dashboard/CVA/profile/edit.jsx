@@ -27,7 +27,7 @@ const EditProfileCVA = () => {
     severity: "success",
   });
 
-  // ===== Fetch data when component mounts =====
+  //  Fetch data when component mounts 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -51,7 +51,7 @@ const EditProfileCVA = () => {
     setCva({ ...cva, [e.target.name]: e.target.value });
   };
 
-  // ===== Upload new avatar =====
+  // Upload new avatar 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -59,7 +59,7 @@ const EditProfileCVA = () => {
     }
   };
 
-  // ===== Save profile =====
+  //  Save profile 
   const handleSave = async () => {
   try {
     const formData = new FormData();

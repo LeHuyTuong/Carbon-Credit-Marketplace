@@ -1,4 +1,3 @@
-// ===================== useSnackbar.js =====================
 import { useState, useCallback } from "react";
 import CustomSnackbar from "@/components/SnackBar/CustomSnackbar.jsx";
 
