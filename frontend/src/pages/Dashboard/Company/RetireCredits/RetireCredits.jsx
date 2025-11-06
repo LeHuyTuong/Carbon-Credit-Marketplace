@@ -42,13 +42,13 @@ export default function RetireCredits() {
   }, [toast.show]);
 
   //chọn/ bỏ chọn credit theo batch
-  const handleSelect = (batchCode, batchId, creditIds) => {
+  const handleSelect = (batchCode, batchId) => {
     setSelectedList((prev) => {
       const exists = prev.find((x) => x.batchCode === batchCode);
       if (exists) {
         return prev.filter((x) => x.batchCode !== batchCode);
       } else {
-        return [...prev, { batchCode, batchId, creditIds, quantity: 1 }];
+        return [...prev, { batchCode, batchId, quantity: 1 }];
       }
     });
   };
@@ -75,7 +75,7 @@ export default function RetireCredits() {
         return (
           !x.quantity ||
           x.quantity <= 0 ||
-          x.quantity > (found?.availableAmount || 0)
+          x.quantity > (found?.totalAvailableAmount || 0)
         );
       });
       if (invalid) {
@@ -191,15 +191,13 @@ export default function RetireCredits() {
                         <input
                           type="checkbox"
                           checked={isSelected(b.batchCode)}
-                          onChange={() =>
-                            handleSelect(b.batchCode, b.batchId, b.creditIds)
-                          }
+                          onChange={() => handleSelect(b.batchCode, b.batchId)}
                         />
                       </td>
                       <td>{b.batchCode}</td>
                       <td>{b.projectTitle}</td>
                       <td>{b.vintageYear}</td>
-                      <td>{b.availableAmount}</td>
+                      <td>{b.totalAvailableAmount}</td>
                       <td>
                         <Form.Control
                           type="number"
