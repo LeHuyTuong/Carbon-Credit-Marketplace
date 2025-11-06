@@ -42,7 +42,6 @@ const CvaTeam = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "#", width: 60 },
     { field: "cvaId", headerName: "ID", width: 80 },
     { field: "name", headerName: "Name", flex: 1 },
     { field: "email", headerName: "Email", flex: 1.2 },

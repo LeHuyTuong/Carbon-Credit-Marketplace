@@ -64,9 +64,7 @@ const ViewReport = () => {
     };
     fetchReport();
   }, [id]);
-
-
-
+  
   const handleApproval = async (isApproved) => {
     try {
       const res = await approveReportByAdmin(id, isApproved, note);

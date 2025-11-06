@@ -420,11 +420,11 @@ public class MyCreditServiceImpl implements MyCreditService {
         Company company = companyRepo.findById(companyId)
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
 
-        log.info("[RETIRE] Starting batch retire - batchId={}, companyId={}, quantity={}",
-                request.getBatchId(), companyId, request.getQuantity());
+        log.info("[RETIRE] Starting batch retire - batchCode={}, companyId={}, quantity={}",
+                request.getBatchCode(), companyId, request.getQuantity());
 
         // B1: Tìm batch
-        CreditBatch batch = batchRepo.findById(request.getBatchId())
+        CreditBatch batch = batchRepo.findByBatchCodeAndCompany_Id(request.getBatchCode(), companyId)
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
 
         // B2: Lấy tất cả credits trong batch

@@ -84,7 +84,7 @@ export default function Login() {
   const handleGoogleLogin = () => {
     const backend =
       import.meta.env.MODE === "development"
-        ? "http://localhost:8082"
+        ? "http://163.61.111.120:8082"
         : "https://carbonx.io.vn";
     window.location.href = `${backend}/oauth2/authorization/google`;
   };

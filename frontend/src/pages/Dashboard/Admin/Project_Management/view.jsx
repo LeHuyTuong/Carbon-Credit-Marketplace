@@ -21,6 +21,7 @@ import "dayjs/locale/en";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 
 const ViewProject = () => {
@@ -33,9 +34,8 @@ const ViewProject = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -87,19 +87,13 @@ const ViewProject = () => {
       const res = await updateProjectById(formData.projectid, payload);
       if (res?.responseStatus?.responseCode === "00000000") {
         setIsEditing(false);
-        setSnackbarMessage("Update successfully!");
-        setSnackbarSeverity("success");
-        setOpenSnackbar(true);
+        showSnackbar("success", "Update successfully!");
       } else {
-        setSnackbarMessage(res?.responseStatus?.responseMessage || "Update failed!");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
+        showSnackbar("error", res?.responseStatus?.responseMessage || "Update failed!");
       }
     } catch (err) {
       console.error("Error updating project:", err);
-      setSnackbarMessage("Error updating project!");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
+      showSnackbar("error", "Error updating project!");
     } finally {
       setUpdateLoading(false);
     }
@@ -147,7 +141,7 @@ const ViewProject = () => {
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
-            spacing={4} // 👉 tăng khoảng cách giữa các cột
+            spacing={4} // tăng khoảng cách giữa các cột
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
@@ -161,7 +155,7 @@ const ViewProject = () => {
               },
             }}
           >
-            {/* ===== COLUMN 1 ===== */}
+            {/* COLUMN 1  */}
             <Grid item xs={12} md={4}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 General Info
@@ -205,7 +199,7 @@ const ViewProject = () => {
               )}
             </Grid>
 
-            {/* ===== COLUMN 2 ===== */}
+            {/* COLUMN 2  */}
             <Grid item xs={12} md={4}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 Technical Info
@@ -216,17 +210,23 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={formData.starteddate ? dayjs(formData.starteddate) : null}
+                  format="DD/MM/YYYY"
+                  value={formData.starteddate ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      starteddate: date ? date.format("YYYY-MM-DD") : "",
+                      starteddate: date ? date.format("DD/MM/YYYY") : "",
                     }))
                   }
                   sx={{ width: "100%" }}
                 />
+
               ) : (
-                <Typography mb={2}>{formData.starteddate || "—"}</Typography>
+                <Typography mb={2}>
+                  {formData.starteddate
+                    ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
+                    : "—"}
+                </Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -234,17 +234,23 @@ const ViewProject = () => {
               </Typography>
               {isEditing ? (
                 <DatePicker
-                  value={formData.enddate ? dayjs(formData.enddate) : null}
+                  format="DD/MM/YYYY"
+                  value={formData.enddate ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
                   onChange={(date) =>
                     setFormData((prev) => ({
                       ...prev,
-                      enddate: date ? date.format("YYYY-MM-DD") : "",
+                      enddate: date ? date.format("DD/MM/YYYY") : "",
                     }))
                   }
                   sx={{ width: "100%" }}
                 />
+
               ) : (
-                <Typography mb={2}>{formData.enddate || "—"}</Typography>
+                <Typography mb={2}>
+                  {formData.enddate
+                    ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
+                    : "—"}
+                </Typography>
               )}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -368,12 +374,7 @@ const ViewProject = () => {
           </Button>
         </Box>
       </Paper>
-
-      <Snackbar open={openSnackbar} autoHideDuration={2500} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: "100%" }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };

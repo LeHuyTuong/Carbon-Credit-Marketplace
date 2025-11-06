@@ -107,7 +107,19 @@ const ViewCredit = () => {
             <Typography>{creditData.residualTco2e}</Typography>
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Issued Day:</Typography>
-            <Typography>{new Date(creditData.issuedAt).toLocaleString()}</Typography>
+            <Typography>
+              {creditData.issuedAt
+                ? (() => {
+                  const date = new Date(creditData.issuedAt);
+                  const day = String(date.getDate()).padStart(2, "0");
+                  const month = String(date.getMonth() + 1).padStart(2, "0");
+                  const year = date.getFullYear();
+                  const time = date.toLocaleTimeString();
+                  return `${day}/${month}/${year}, ${time}`;
+                })()
+                : "N/A"}
+            </Typography>
+
 
             <Typography variant="h6" color={colors.grey[100]} mt={2}>Status:</Typography>
             <Typography sx={{ color, fontWeight: 600, textTransform: "capitalize" }}>
