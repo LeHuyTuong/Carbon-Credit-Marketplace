@@ -28,11 +28,11 @@ const ApplicationView = () => {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        console.log("📡 Fetching application with ID:", id);
+        console.log(" Fetching application with ID:", id);
         const res = await getProjectApplicationByIdForCVA(id);
-        console.log("🔍 Raw API response:", res);
+        console.log(" Raw API response:", res);
 
-        // 🔸 API chuẩn trả về responseData chứa dữ liệu
+        //  API chuẩn trả về responseData chứa dữ liệu
         const code = res?.responseStatus?.responseCode;
         if (code === "200" || code === "00000000") {
           const data =
@@ -56,7 +56,7 @@ const ApplicationView = () => {
           });
         }
       } catch (error) {
-        console.error("❌ Error fetching detail:", error);
+        console.error(" Error fetching detail:", error);
         setSnackbar({
           open: true,
           message: "Không thể tải chi tiết đăng ký.",
@@ -70,7 +70,7 @@ const ApplicationView = () => {
     fetchDetail();
   }, [id]);
 
-  // 🔹 Loading
+  //  Loading
   if (loading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
@@ -78,7 +78,7 @@ const ApplicationView = () => {
       </Box>
     );
 
-  // 🔹 Không có dữ liệu
+  //  Không có dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -91,7 +91,7 @@ const ApplicationView = () => {
       </Box>
     );
 
-  // 🔹 UI chính
+  //  UI chính
   return (
     <Box m="20px">
       <Header
@@ -136,7 +136,7 @@ const ApplicationView = () => {
                 fontWeight: 500,
               }}
             >
-              📎 View Attached Documents
+               View Attached Documents
             </a>
           </Box>
         ) : (

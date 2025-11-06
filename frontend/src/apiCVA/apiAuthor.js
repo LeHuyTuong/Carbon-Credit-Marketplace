@@ -109,7 +109,7 @@ export const apiKYCCVA = async (formData) => {
     const code = data.responseStatus.responseCode || ""
     const message = data.responseStatus.responseMessage || "Unknown KYC error"
 
-    if (code === "200" || code === "SUCCESS") {
+    if (code !== "00000000") {
       return data.responseData || {}
     }
 
