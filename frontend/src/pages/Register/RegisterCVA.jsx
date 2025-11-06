@@ -13,13 +13,13 @@ import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { apiRegister, verifyOTP } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
-import { useNavigate } from "react-router-dom"; // ✅ thêm để điều hướng
+import { useNavigate } from "react-router-dom"; //  thêm để điều hướng
 
 const CVARegisterWithOTP = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { login } = useAuth();
-    const navigate = useNavigate(); // ✅ khởi tạo hook điều hướng
+    const navigate = useNavigate(); //  khởi tạo hook điều hướng
 
     const [form, setForm] = useState({ email: "", password: "", rePassword: "" });
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -93,15 +93,15 @@ const CVARegisterWithOTP = () => {
                 otpCode: otpStr,
             });
 
-            // ✅ gọi đúng API verify OTP
+            //  gọi đúng API verify OTP
             const res = await verifyOTP({ email: form.email, otpCode: otpStr });
 
             if (!res?.jwt) throw new Error("Invalid OTP response");
 
-            // ✅ Đăng nhập tạm hoặc lưu session
+            //  Đăng nhập tạm hoặc lưu session
             login({ ...res.user, role: "CVA" }, res.jwt, true);
 
-            // ✅ Điều hướng sang trang login
+            //  Điều hướng sang trang login
             navigate("/cva/carbonX/mkp/login");
 
             // Nếu muốn reload trang cứng, dùng dòng này thay vì navigate():
@@ -138,7 +138,7 @@ const CVARegisterWithOTP = () => {
                     backgroundColor: colors.primary[500],
                 }}
             >
-                {/* STEP 1️⃣: Đăng ký tài khoản */}
+                {/* STEP 1: Đăng ký tài khoản */}
                 {step === "register" && (
                     <>
                         <Box
@@ -238,7 +238,7 @@ const CVARegisterWithOTP = () => {
                     </>
                 )}
 
-                {/* STEP 2️⃣: Nhập OTP */}
+                {/* STEP 2️: Nhập OTP */}
                 {step === "otp" && (
                     <>
                         <Box

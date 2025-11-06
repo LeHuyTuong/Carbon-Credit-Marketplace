@@ -16,7 +16,7 @@ import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect } from "react";
 import { getUserByEmail } from "@/apiAdmin/userAdmin.js";
 
-// ===================== ROLE MAPPING =====================
+// ROLE MAPPING 
 const ACCESS_TO_ROLE = {
   ev_owner: "EV_OWNER",
   company: "COMPANY",
@@ -36,7 +36,7 @@ const ViewUser = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ===================== FETCH USER =====================
+  //  FETCH USER 
   useEffect(() => {
     async function fetchUser() {
       setLoading(true);
@@ -91,7 +91,7 @@ const ViewUser = () => {
   if (loading) return <Typography>Loading...</Typography>;
   if (!user) return <Typography>User not found</Typography>;
 
-  // ===================== UI =====================
+  // UI 
   return (
     <Box m="20px">
       <Header title="USER DETAILS" subtitle="View user information" />
