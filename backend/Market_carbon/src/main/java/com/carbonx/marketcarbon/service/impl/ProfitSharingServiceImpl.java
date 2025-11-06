@@ -140,6 +140,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // 2. Lấy ví của công ty (Không nằm trong TX)
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
 
+            if(companyWallet.getBalance().compareTo(request.getTotalMoneyToDistribute()) <= 0){
+                throw new AppException(ErrorCode.WALLET_IS_NOT_ENOUGH_MONEY);
+            }
+
             // 3. Lấy danh sách EmissionReport
             List<EmissionReport> reportsToProcess = new ArrayList<>();
 
