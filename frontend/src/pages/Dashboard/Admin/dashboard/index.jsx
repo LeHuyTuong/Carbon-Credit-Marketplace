@@ -12,7 +12,9 @@ import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import ProgressCircle from "@/components/Chart/ProgressCircle.jsx";
 import { useEffect, useState } from "react";
-import { countVehicle, getWithdrawlHistoryByAdmin, countWalletTransactions,countUsers } from "@/apiAdmin/apiDashboard.js";
+import { countVehicle, getWithdrawlHistoryByAdmin, countWalletTransactions, countUsers } from "@/apiAdmin/apiDashboard.js";
+import { fetchMonthlyCreditStatus, fetchDashboardReport } from "@/apiCVA/dashboardCVA.js";
+
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -23,8 +25,23 @@ const Dashboard = () => {
   const [walletTransactionCount, setWalletTransactionCount] = useState(0);
   const [withdrawHistory, setWithdrawHistory] = useState([]);
   const [userCount, setUserCount] = useState(0);
+  const [monthlyCreditStatus, setMonthlyCreditStatus] = useState([]);
+  const [reportCount, setReportCount] = useState(null); // <-- thêm state cho Reports
+
 
   useEffect(() => {
+    const token = localStorage.getItem("token"); // Lấy token
+
+    // Fetch Reports count
+    const fetchReports = async () => {
+      try {
+        const total = await fetchDashboardReport(token);
+        setReportCount(total ?? 0);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        setReportCount(0);
+      }
+    };
     // Fetch electric vehicles
     const fetchElectricVehicleCount = async () => {
       try {
@@ -40,16 +57,29 @@ const Dashboard = () => {
 
     // Fetch wallet transactions
     const fetchWalletTransactionCount = async () => {
-  try {
-    const count = await countWalletTransactions({
-      requestTrace: "dashboard-wallet-transactions",
-      requestDateTime: new Date().toISOString(),
-    });
-    setWalletTransactionCount(Number(count) || 0);
-  } catch (error) {
-    console.error("Error fetching wallet transaction count:", error);
-  }
-};
+      try {
+        const count = await countWalletTransactions({
+          requestTrace: "dashboard-wallet-transactions",
+          requestDateTime: new Date().toISOString(),
+        });
+        setWalletTransactionCount(Number(count) || 0);
+      } catch (error) {
+        console.error("Error fetching wallet transaction count:", error);
+      }
+    };
+
+    //api barchart
+    const fetchCreditStatus = async () => {
+      try {
+        const token = localStorage.getItem("token"); // or wherever your auth token is
+        const data = await fetchMonthlyCreditStatus(token);
+        setMonthlyCreditStatus(data);
+      } catch (error) {
+        console.error("Error fetching monthly credit status:", error);
+      }
+    };
+
+    fetchCreditStatus();
 
 
     // Fetch withdrawal history
@@ -82,6 +112,7 @@ const Dashboard = () => {
     fetchWalletTransactionCount();
     fetchWithdrawHistory();
     fetchUserCount();
+    fetchReports();
   }, []);
 
   return (
@@ -108,12 +139,12 @@ const Dashboard = () => {
           justifyContent="center"
         >
           <StatBox
-            title="1,254"
+            title={reportCount?.toLocaleString() ?? "0"} // <-- dùng state mới
             subtitle="Reports"
             icon={<AssessmentOutlinedIcon sx={{ color: colors.greenAccent[600], fontSize: "26px" }} />}
           />
         </Box>
-        
+
         {/* Withdrawal transactions card with live data */}
         <Box
           gridColumn="span 3"
@@ -159,7 +190,7 @@ const Dashboard = () => {
         </Box>
 
         {/* ROW 2 */}
-        <Box
+        {/* <Box
           gridColumn="span 8"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
@@ -183,11 +214,11 @@ const Dashboard = () => {
           <Box height="250px" m="-20px 0 0 0">
             <LineChart isDashboard={true} />
           </Box>
-        </Box>
+        </Box> */}
 
         {/* Recent Transactions / Withdrawal History */}
         <Box
-          gridColumn="span 4"
+          gridColumn="span 6"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
           overflow="auto"
@@ -261,8 +292,8 @@ const Dashboard = () => {
           </Box>
         </Box> */}
 
-        {/* <Box
-          gridColumn="span 4"
+        <Box
+          gridColumn="span 6"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
         >
@@ -270,9 +301,10 @@ const Dashboard = () => {
             Credit Status
           </Typography>
           <Box height="250px" mt="-20px">
-            <BarChart isDashboard={true} />
+            <BarChart isDashboard={true} data={monthlyCreditStatus} />
           </Box>
-        </Box> */}
+        </Box>
+
 
         {/* <Box
           gridColumn="span 4"
