@@ -124,20 +124,46 @@ export default function WalletHistory() {
                   "SELL_CARBON_CREDIT",
                   "ISSUE_CREDIT",
                 ];
-                const expenseTypes = ["WITHDRAWAL", "BUY_CARBON_CREDIT"];
+                const expenseTypes = [
+                  "WITHDRAWAL",
+                  "BUY_CARBON_CREDIT",
+                  "PROFIT_SHARING",
+                ];
                 const isIncome = incomeTypes.includes(tx.transactionType);
                 const isExpense = expenseTypes.includes(tx.transactionType);
-                const typeClass = isIncome
-                  ? "text-success"
-                  : isExpense
-                  ? "text-warning"
-                  : "text-info";
+                //TYPE COLOR (text of transactionType)
+                let typeClass = "text-info"; // base blue
+
+                if (isIncome) typeClass = "text-success";
+                if (isExpense) typeClass = "text-warning";
+
+                //blue text
+                if (
+                  tx.transactionType === "PROFIT_SHARING" ||
+                  tx.transactionType === "ISSUE_CREDIT"
+                ) {
+                  typeClass = "text-info";
+                }
+
+                //AMOUNT COLOR
                 const amountClass = isIncome
                   ? "text-success"
                   : isExpense
                   ? "text-danger"
                   : "text-light";
-                const prefix = isIncome ? "+" : isExpense ? "-" : "";
+
+                let prefix = "";
+
+                if (isIncome) {
+                  prefix = "+";
+                } else if (isExpense) {
+                  prefix = "-";
+                }
+
+                // Profit Sharing → expense nhưng ko hiển thị dấu trừ
+                if (tx.transactionType === "PROFIT_SHARING") {
+                  prefix = "";
+                }
 
                 //nếu là ISSUE_CREDIT thì hiển thị credits thay vì USD
                 const unit =
@@ -156,9 +182,21 @@ export default function WalletHistory() {
                         {parseVNTime(tx.createdAt)}
                       </div>
                     </div>
-                    <span className={`fw-bold ${amountClass}`}>
-                      {`${prefix}${tx.amount} ${unit}`}
-                    </span>
+                    <div className="text-end">
+                      <div className={`fw-bold ${amountClass}`}>
+                        {`${prefix}${tx.amount} ${unit}`}
+                      </div>
+
+                      <div className="small text-light">
+                        <span className="opacity-75">Before:</span>{" "}
+                        {tx.balanceBefore}
+                      </div>
+
+                      <div className="small text-light">
+                        <span className="opacity-75">After:</span>{" "}
+                        {tx.balanceAfter}
+                      </div>
+                    </div>
                   </div>
                 );
               }}

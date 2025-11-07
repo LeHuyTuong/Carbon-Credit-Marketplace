@@ -44,35 +44,58 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public CreditInventorySummaryResponse getMyInventorySummary() {
         Long companyId = currentCompanyId();
 
+        // 1. Query SUM(amount) cho các trạng thái (trừ EXPIRED)
         var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED);
         var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED);
         var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED);
 
-        // Chỉ số phụ (không cộng vào total)
+        // 2. Query COUNT(id) riêng cho RETIRED
+        long retiredCount = creditRepo.countByCompanyIdAndStatus(companyId, CreditStatus.RETIRED);
+
+        // 3. Query chỉ số phụ (ISSUED 30 ngày)
         OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(30);
         long issuedVirtual = creditRepo.sumRecentlyIssued(companyId, cutoffDate);
 
-        long available = 0, reserved = 0, sold = 0, retired = 0;
+        // 4. Khởi tạo các biến đếm
+        long available = 0;
+        long listed = 0; // 'reserved' trong DTO  map 'LISTED'
+        long sold = 0;
+
+        // Tạo một List mới
         List<StatusCount> byStatus = new ArrayList<>();
 
+        // 5. Xử lý kết quả từ SUM(amount)
         for (Object[] row : byStatusRaw) {
             String status = String.valueOf(row[0]);
             long sum = ((Number) row[1]).longValue();
 
+            boolean addToList = true;
+
+            //  'reserved' là 'LISTED'
             switch (status) {
                 case "AVAILABLE" -> available = sum;
-                case "RESERVED"  -> reserved  = sum;
-                case "SOLD"      -> sold      = sum;
-                case "RETIRED"   -> retired   = sum;
+                case "LISTED"    -> listed = sum;
+                case "SOLD"      -> sold = sum;
+                case "RETIRED"   -> addToList = false; // bỏ qua  (vì SUM(amount) = 0)
             }
 
+            if (addToList) {
+                byStatus.add(StatusCount.builder()
+                        .status(status)
+                        .count(sum) // 'count' ở đây là SUM(amount)
+                        .build());
+            }
+        }
+
+        // 6. Thêm thủ công số lượng RETIRED (đã đếm bằng COUNT)
+        if (retiredCount > 0) {
             byStatus.add(StatusCount.builder()
-                    .status(status)
-                    .count(sum)
+                    .status("RETIRED")
+                    .count(retiredCount) // 'count' ở đây là COUNT(id)
                     .build());
         }
 
-        // Thêm "ISSUED" (30 ngày gần nhất) như CHỈ SỐ PHỤ (không cộng vào total)
+        // 7. Thêm chỉ số phụ ISSUED (không cộng vào total)
         if (issuedVirtual > 0) {
             byStatus.add(StatusCount.builder()
                     .status("ISSUED")
@@ -80,8 +103,10 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
+        // 8. Total chỉ tính 'available'
         long total = available;
 
+        // 9. Xử lý byProject (Giữ nguyên)
         List<ProjectCount> byProject = new ArrayList<>();
         for (Object[] row : byProjectRaw) {
             byProject.add(ProjectCount.builder()
@@ -91,6 +116,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
+        // 10. Xử lý byVintage (Giữ nguyên)
         List<VintageCount> byVintage = new ArrayList<>();
         for (Object[] row : byVintageRaw) {
             Integer vintageYear = row[0] != null ? ((Number) row[0]).intValue() : null;
@@ -101,13 +127,14 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
+        // 11. Trả về Response
         return CreditInventorySummaryResponse.builder()
                 .total(total)
-                .issued(issuedVirtual)     // chỉ số phụ
+                .issued(issuedVirtual)
                 .available(available)
-                .reserved(reserved)
+                .reserved(listed)
                 .sold(sold)
-                .retired(retired)
+                .retired(retiredCount)
                 .byStatus(byStatus)
                 .byProject(byProject)
                 .byVintage(byVintage)

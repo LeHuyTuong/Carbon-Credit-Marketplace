@@ -232,34 +232,8 @@ export default function useWalletData() {
   const fetchRetirableCredits = async () => {
     try {
       setLoading(true);
-      const res = await apiFetch("/api/v1/my/credits/retirable", { method: "GET" });
-      const list = res?.response || [];
-
-      // chỉ lấy AVAILABLE Va TRADED
-      const availableList = list.filter(c => c.status === "AVAILABLE" || c.status === "TRADED");
-
-      // nhóm theo batchCode
-      const grouped = Object.values(
-        availableList.reduce((acc, c) => {
-          if (!acc[c.batchCode]) {
-            acc[c.batchCode] = {
-              batchCode: c.batchCode,
-              projectTitle: c.projectTitle,
-              vintageYear: c.vintageYear,
-              projectId: c.projectId,
-              availableAmount: 0,
-              expiryDate: c.expiryDate,
-              issuedAt: c.issuedAt,
-              creditIds: [],
-            };
-          }
-          acc[c.batchCode].availableAmount += c.availableAmount || 0;
-          acc[c.batchCode].creditIds.push(c.id);
-          return acc;
-        }, {})
-      );
-
-      return grouped;
+      const res = await apiFetch("/api/v1/my/credits/retirable-batches", { method: "GET" });
+      return res?.response || [];
     } catch (err) {
       console.error("Failed to fetch retirable credits:", err);
       return [];
@@ -277,21 +251,18 @@ export default function useWalletData() {
       const results = [];
 
       for (const item of retireList) {
-        const { creditIds = [], quantity } = item;
+        const { batchCode , quantity } = item;
 
-        // Chỉ lấy đúng số lượng cần retire
-        const idsToRetire = creditIds.slice(0, quantity);
-
-        if (!idsToRetire.length) continue;
-
-        for (const id of idsToRetire) {
-          console.log(`Retiring creditId: ${id}`);
-          const res = await apiFetch(`/api/v1/my/credits/${id}/retire`, {
+          const res = await apiFetch(`/api/v1/my/credits/retire`, {
             method: "POST",
-            body: { creditId: id, quantity: 1 },
+            body: {
+              data: {
+                batchCode: item.batchCode,
+                quantity: quantity
+              }
+            }
           });
           results.push(res?.response);
-        }
       }
 
       return results;

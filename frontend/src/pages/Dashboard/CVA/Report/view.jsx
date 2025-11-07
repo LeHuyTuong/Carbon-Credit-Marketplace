@@ -38,6 +38,8 @@ const ViewReport = ({ report: initialReport }) => {
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
+  const [openAttachment, setOpenAttachment] = useState(false);
+
 
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
@@ -288,13 +290,13 @@ const ViewReport = ({ report: initialReport }) => {
                 <Typography variant="h6" mt={2}>Submission Date:</Typography>
                 <Typography>{report.submittedAt}</Typography>
                 <Typography variant="h6" mt={2}>Attachment:</Typography>
-                {report.uploadStorageUrl ? (
+                {report.uploadOriginalFilename ? (
                   <Button
                     variant="outlined"
                     color="info"
                     onClick={() => window.open(report.uploadStorageUrl, "_blank")}
                   >
-                    Download File
+                      Download
                   </Button>
                 ) : (
                   <Typography>—</Typography>

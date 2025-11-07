@@ -172,7 +172,7 @@ export default function Order() {
                 <h3 className="fw-bold mb-3 d-flex align-items-center gap-2">
                   <FaShoppingCart color="green" /> Buy Carbon Credits
                 </h3>
-                <p className="text-muted mb-4">
+                <p className="text-muted mb-4" style={{ lineHeight: "1" }}>
                   Finalize your purchase for <strong>{credit.title}</strong>.
                 </p>
 
@@ -220,7 +220,7 @@ export default function Order() {
                   <ul className="mb-3">
                     <li>
                       Payment processed securely via{" "}
-                      <strong>Stripe or VNPAY</strong>.
+                      <strong>Stripe or Paypal</strong>.
                     </li>
                     <li>
                       Purchased credits are{" "}
@@ -228,7 +228,8 @@ export default function Order() {
                     </li>
                     <li>
                       Review your purchases under{" "}
-                      <strong>“Purchases History”</strong>.
+                      <strong>“Purchases History”</strong> in Wallet or{" "}
+                      <strong>"Orders"</strong>.
                     </li>
                     <li>
                       All credits are <strong>verified by CarbonX</strong> for

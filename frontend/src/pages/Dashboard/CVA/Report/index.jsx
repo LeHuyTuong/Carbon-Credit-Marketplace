@@ -42,7 +42,7 @@ const ReportListCVA = () => {
   }, [page, pageSize]);
 
   const columns = [
-    { field: "id", headerName: "", width: 80 },
+    { field: "id", headerName: "Report ID", width: 80 },
     { field: "sellerName", headerName: "Seller Name", flex: 1 },
     { field: "projectName", headerName: "Project Name", flex: 1 },
     { field: "period", headerName: "Period", flex: 1 },

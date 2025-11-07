@@ -47,7 +47,6 @@ const CompanyTeam = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "No.", width: 80 },
     { field: "companyId", headerName: "Company ID", width: 120 },
     { field: "companyName", headerName: "Company Name", flex: 1 },
     { field: "businessLicense", headerName: "Business License", flex: 1 },

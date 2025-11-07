@@ -7,12 +7,11 @@ const AdminDataGrid = ({ rows, columns, getRowId }) => {
       rows={rows}
       columns={columns}
       getRowId={getRowId}
-      checkboxSelection
       pagination
       initialState={{
         pagination: { paginationModel: { pageSize:  10, page: 0 } },
       }}
-      pageSizeOptions={[10, 20, 50]}
+      pageSizeOptions={[ 10, 20, 50]}
       sx={{
         "& .MuiDataGrid-footerContainer": {
           display: "flex",

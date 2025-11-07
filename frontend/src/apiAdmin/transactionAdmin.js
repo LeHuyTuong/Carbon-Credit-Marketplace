@@ -36,6 +36,9 @@ export const processWithdrawal = async (id, accept) => {
 
 export const getPaymentDetails = async () => {
   const res = await apiFetch("/api/v1/paymentDetails", { method: "GET" });
-  return res?.response || [];
+  // Một số server trả về object chứ không phải array
+  const response = res?.response;
+  return Array.isArray(response) ? response : response ? [response] : [];
 };
+
 

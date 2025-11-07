@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Box } from "@mui/material";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useTheme } from "@mui/material";
@@ -8,6 +7,8 @@ import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiAdmin/companyAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
+import dayjs from "dayjs";
+
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -31,7 +32,6 @@ const ApplicationList = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 0.3 },
     { field: "projectId", headerName: "Project ID", flex: 0.5 },
     {
       field: "projectTitle",
@@ -48,10 +48,11 @@ const ApplicationList = () => {
       renderCell: (params) => {
         const value = params?.row?.status || "unknown";
         const colorMap = {
-          CVA_APPROVED: "#42A5F5",
-          ADMIN_APPROVED: "#4CAF50",
-          ADMIN_REJECTED: "#E53935",
+          CVA_APPROVED: colors.blueAccent[500],
+          ADMIN_APPROVED: colors.greenAccent[500],
+          ADMIN_REJECTED: colors.redAccent[500],
           CVA_REJECTED: "#FFB300",
+          UNDER_REVIEW: colors.grey[500],
         };
         const color = colorMap[value.toUpperCase()] || "#E0E0E0";
 
@@ -97,8 +98,18 @@ const ApplicationList = () => {
       flex: 1.2,
       renderCell: (params) => {
         const date = params?.value ? new Date(params.value) : null;
-        return date ? date.toLocaleString() : "N/A";
+        if (!date) return "N/A";
+
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+
+        // giữ nguyên phần giờ phút giây mặc định
+        const time = date.toLocaleTimeString();
+
+        return `${day}/${month}/${year}, ${time}`;
       },
+
     },
     {
       field: "action",

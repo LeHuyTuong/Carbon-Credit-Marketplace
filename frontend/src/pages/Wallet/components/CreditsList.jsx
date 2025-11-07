@@ -54,7 +54,7 @@ export default function CreditsList({ credits = [] }) {
             items={credits}
             itemsPerPage={5}
             renderEmpty={() => (
-              <p className="text-muted mb-0">No credit data available</p>
+              <p className="text-light mb-0">No credit data available</p>
             )}
             renderRow={(item) =>
               isPurchased ? (

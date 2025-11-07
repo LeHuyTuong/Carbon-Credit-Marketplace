@@ -30,8 +30,6 @@ export default function CreditDetailCard({ credit }) {
               style={{
                 objectFit: "cover",
                 objectPosition: "center",
-                borderTopLeftRadius: "12px",
-                borderBottomLeftRadius: "12px",
               }}
             />
           </div>
@@ -41,7 +39,7 @@ export default function CreditDetailCard({ credit }) {
         <Col md={7}>
           <Card.Body className="p-4">
             <h3 className="fw-bold text-dark mb-2">{credit.title}</h3>
-            <p className="text-muted mb-3">
+            <p className="text-muted mb-3" style={{ lineHeight: "1.2" }}>
               Sold by <strong>{credit.seller}</strong>
             </p>
 
@@ -77,7 +75,10 @@ export default function CreditDetailCard({ credit }) {
               </Col>
             </Row>
 
-            <p className="text-secondary small mb-0">
+            <p
+              className="text-secondary small mb-0"
+              style={{ lineHeight: "1.4" }}
+            >
               {credit.description ||
                 "This carbon credit supports EV charging infrastructure to offset emissions from electric vehicles."}
             </p>
