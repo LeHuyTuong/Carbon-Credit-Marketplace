@@ -10,8 +10,6 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -200,24 +198,6 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
             "t.order.carbonCredit.batch.id = :batchId AND " +
             "t.transactionType = 'BUY_CARBON_CREDIT')")
     List<CarbonCredit> findAllOwnedByBatch(@Param("batchId") Long batchId, @Param("companyId") Long companyId);
-    @Query("SELECT COUNT(c) FROM CarbonCredit c")
-    long countAllCredits();
-
-    @Query(value = """
-    SELECT
-        MONTHNAME(c.created_at) AS month,
-        SUM(CASE WHEN c.status = 'LISTED' THEN 1 ELSE 0 END) AS listed,
-        SUM(CASE WHEN c.status = 'SOLD' THEN 1 ELSE 0 END) AS sold,
-        SUM(CASE WHEN c.status = 'TRADED' THEN 1 ELSE 0 END) AS traded,
-        SUM(CASE WHEN c.status = 'RETIRED' THEN 1 ELSE 0 END) AS retired,
-        SUM(CASE WHEN c.status = 'PENDING' THEN 1 ELSE 0 END) AS pending,
-        SUM(CASE WHEN c.status IN ('ISSUE', 'ISSUED', 'AVAILABLE') THEN 1 ELSE 0 END) AS active,
-        SUM(CASE WHEN c.status = 'EXPIRED' THEN 1 ELSE 0 END) AS revoked
-    FROM carbon_credits c
-    GROUP BY MONTH(c.created_at), MONTHNAME(c.created_at)
-    ORDER BY MONTH(c.created_at)
-""", nativeQuery = true)
-    List<Object[]> countMonthlyCreditStatusNative();
 
 
     /**

@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -37,6 +35,4 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     );
 
     Optional<Company> findByCompanyNameIgnoreCase(String name);
-    @Query("SELECT COUNT(c) FROM Company c")
-    long countAllCompanies();
 }

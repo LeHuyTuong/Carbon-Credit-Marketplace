@@ -29,12 +29,15 @@ import java.time.LocalDate;
         @FileSize(max = 55242880, message = "Logo file must not exceed 50MB")
         private MultipartFile logo;
 
+        @NotBlank(message = "Commitments must not be blank")
         @Size(max = 2000, message = "Commitments must be at most 2000 characters")
         private String commitments;
 
+        @NotBlank(message = "Technical indicators must not be blank")
         @Size(max = 2000, message = "Technical indicators must be at most 2000 characters")
         private String technicalIndicators;
 
+        @NotBlank(message = "Measurement method must not be blank")
         @Size(max = 2000, message = "Measurement method must be at most 2000 characters")
         private String measurementMethod;
 

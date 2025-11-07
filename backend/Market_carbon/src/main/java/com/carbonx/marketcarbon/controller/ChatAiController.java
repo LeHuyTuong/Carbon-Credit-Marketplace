@@ -28,5 +28,6 @@ public class ChatAiController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Lỗi: " + e.getMessage());
         }
+
     }
 }
