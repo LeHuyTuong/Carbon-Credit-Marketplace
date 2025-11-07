@@ -102,11 +102,11 @@ const ViewUserCVA = () => {
     }
   };
 
-  if (loading) return <Typography>Loading...</Typography>;
-  if (!user) return <Typography>No CVA KYC profile found.</Typography>;
+  if (loading) return <Typography sx={{ marginLeft: "290px" }}>Loading...</Typography>;
+  if (!user) return <Typography sx={{ marginLeft: "290px" }}>No CVA KYC profile found.</Typography>;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header
         title="CVA KYC PROFILE"
         subtitle="View or update your KYC information"

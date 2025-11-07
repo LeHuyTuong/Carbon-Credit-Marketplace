@@ -129,7 +129,7 @@ const TransactionAdmin = () => {
   ];
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="WITHDRAWAL TRANSACTIONS" subtitle="List of Withdrawal Requests" />
       <Box
         m="40px 0 0 0"

@@ -108,7 +108,7 @@ const EvOwnerTeam = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="EV OWNERS" subtitle="Managing EV Owner KYC Profiles" />
       <Box
         m="40px 0 0 0"

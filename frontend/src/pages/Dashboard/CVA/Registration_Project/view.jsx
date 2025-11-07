@@ -93,7 +93,7 @@ const ApplicationView = () => {
 
   //  UI chính
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header
         title="APPLICATION DETAIL"
         subtitle={`Application ID: ${application.applicationId || id}`}

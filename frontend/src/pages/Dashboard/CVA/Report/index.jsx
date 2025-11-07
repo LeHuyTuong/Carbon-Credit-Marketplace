@@ -107,7 +107,7 @@ const ReportListCVA = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "280px" }} className="actionadmin">
       <Header title="CVA REPORTS" subtitle="Managing CVA Reports" />
       <Box
         m="40px 0 0 0"

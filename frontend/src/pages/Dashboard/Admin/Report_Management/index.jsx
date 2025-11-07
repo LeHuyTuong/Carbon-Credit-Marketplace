@@ -78,9 +78,13 @@ const ReportsList = () => {
       flex: 1,
       renderCell: ({ row: { status } }) => {
         const statusColorMap = {
-          SUBMITTED: colors.blueAccent[500],
-          APPROVED: colors.greenAccent[500],
-          REJECTED: colors.redAccent[500],
+          SUBMITTED: colors.grey[500],
+          CVA_APPROVED: colors.blueAccent[500],
+          ADMIN_APPROVED: colors.greenAccent[500],
+          CVA_REJECTED: colors.redAccent[500],
+          ADMIN_REJECTED: colors.redAccent[500],
+          CREDIT_ISSUE: colors.primary[100],
+          PAID_OUT: "#FFCC66"
         };
         return (
           <Box
@@ -121,7 +125,7 @@ const ReportsList = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="REPORTS" subtitle="List of all submitted reports" />
       <Box
         m="40px 0 0 0"

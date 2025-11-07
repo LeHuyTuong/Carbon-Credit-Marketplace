@@ -61,7 +61,7 @@ const ViewEV = () => {
     );
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header
         title="EV DETAILS"
         subtitle="View electric vehicle information"

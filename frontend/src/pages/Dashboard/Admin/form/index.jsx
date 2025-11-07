@@ -108,7 +108,7 @@ const RegisterForm = () => {
   const seconds = timer % 60;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="REGISTER USER" subtitle="Create a new account" />
 
       <Formik

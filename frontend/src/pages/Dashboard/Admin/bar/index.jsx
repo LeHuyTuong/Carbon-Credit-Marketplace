@@ -4,7 +4,7 @@ import BarChart from "@/components/Chart/BarChart.jsx";
 
 const Bar = () => {
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="Bar Chart" subtitle="Simple Credit Status Bar Chart" />
       <Box height="75vh">
         <BarChart />

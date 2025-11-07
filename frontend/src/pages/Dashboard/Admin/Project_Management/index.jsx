@@ -143,7 +143,7 @@ const ListProjects = () => {
 
   //  Render Component 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="PROJECTS" subtitle="List of all registered projects" />
         <Button

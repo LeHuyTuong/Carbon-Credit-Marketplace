@@ -122,7 +122,7 @@ const ViewEvOwner = () => {
 
   // UI
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="EV OWNER DETAILS" subtitle="View or edit your profile information" />
 
       <Paper

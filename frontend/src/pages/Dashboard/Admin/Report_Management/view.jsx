@@ -115,7 +115,7 @@ const ViewReport = () => {
   if (!report) return <Typography m={3}>Report not found.</Typography>;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="REPORT DETAILS" subtitle="Final approval for this report" />
 
       <Paper

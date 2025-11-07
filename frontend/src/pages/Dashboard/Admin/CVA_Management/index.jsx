@@ -92,7 +92,7 @@ const CvaTeam = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="CVA KYC PROFILES" subtitle="Managing CVA Verification Profiles" />
       <Box
         m="40px 0 0 0"
