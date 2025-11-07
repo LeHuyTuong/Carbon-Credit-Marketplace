@@ -233,7 +233,7 @@ export default function RetireCredits() {
 
       {toast.show && (
         <div
-          className={`alert alert-${toast.type} position-fixed bottom-0 end-0 m-4 shadow`}
+          className={`alert alert-${toast.type} position-fixed top-center m-4 shadow`}
           style={{ minWidth: "300px", zIndex: 100 }}
         >
           {toast.msg}

@@ -87,7 +87,7 @@ export default function Marketplace() {
                   <h5 className="card-title mb-2 text-dark fw-bold">
                     {c.title}
                   </h5>
-                  <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div className="d-flex justify-content-between align-items-center mb-0">
                     <span className="price-tag fw-bold">${c.price}</span>
                     <span className="text-muted small">
                       <strong>Available:</strong> {c.quantity}
@@ -97,7 +97,7 @@ export default function Marketplace() {
                     <strong>Seller:</strong> {c.seller}
                   </p>
                   <p className="text-muted small mb-2">
-                    Expires on: {c.expiresAt}
+                    <strong>Expires on:</strong> {c.expiresAt}
                   </p>
                   <button
                     className="btn-primary btn-buy mt-3 w-100"
