@@ -46,7 +46,6 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Project Information (Admin only)")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Void>> update(
