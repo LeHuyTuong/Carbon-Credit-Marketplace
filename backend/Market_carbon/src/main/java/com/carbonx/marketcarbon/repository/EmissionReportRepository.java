@@ -45,4 +45,22 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     @EntityGraph(attributePaths = {"details"})
     Optional<EmissionReport> findByIdWithDetails(@Param("id") Long id);
 
+    // Tổng số report
+    @Query("SELECT COUNT(e) FROM EmissionReport e")
+    long countAllReports();
+
+    // Đếm report theo tháng (cho dashboard chart)
+    @Query(value = """
+        SELECT 
+            MONTHNAME(e.created_at) AS month,
+            SUM(CASE WHEN e.status IN ('CVA_APPROVED', 'ADMIN_APPROVED', 'CREDIT_ISSUED', 'APPROVED', 'PAID_OUT') THEN 1 ELSE 0 END) AS approved,
+            SUM(CASE WHEN e.status IN ('DRAFT', 'SUBMITTED') THEN 1 ELSE 0 END) AS pending,
+            SUM(CASE WHEN e.status IN ('CVA_REJECTED', 'ADMIN_REJECTED', 'REJECTED') THEN 1 ELSE 0 END) AS rejected
+        FROM emission_reports e
+        GROUP BY MONTH(e.created_at), MONTHNAME(e.created_at)
+        ORDER BY MONTH(e.created_at)
+    """, nativeQuery = true)
+    List<Object[]> countMonthlyReportStatusNative();
+
+
 }

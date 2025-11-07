@@ -35,4 +35,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     );
 
     Optional<Company> findByCompanyNameIgnoreCase(String name);
+
+    @Query("SELECT COUNT(c) FROM Company c")
+    long countAllCompanies();
 }
