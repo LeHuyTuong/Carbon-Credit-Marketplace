@@ -62,5 +62,6 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     """, nativeQuery = true)
     List<Object[]> countMonthlyReportStatusNative();
 
+    Optional<EmissionReport> findTopBySeller_IdOrderByCreatedAtDesc(Long companyId);
 
 }
