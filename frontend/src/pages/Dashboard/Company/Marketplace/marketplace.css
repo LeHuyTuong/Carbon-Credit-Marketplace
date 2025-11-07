@@ -50,12 +50,14 @@
 }
 
 .project-card {
-  max-width: 280px;
-  margin: 0 auto;
+  width: 280px;            /* cố định chiều rộng */
+  height: 420px;           /* cố định chiều cao toàn card */
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .project-card:hover {
@@ -63,9 +65,8 @@
   box-shadow: 0 0 12px rgba(0, 255, 120, 0.3);
 }
 
-
 .card-img-container {
-  height: 135px;
+  height: 150px;    
   overflow: hidden;
 }
 
@@ -76,20 +77,23 @@
 }
 
 .card-body {
-  padding: 1.25rem 1.5rem !important; /* ép ghi đè Bootstrap */
-  background: #fff;
+  flex: 1;                 /* chiếm phần còn lại của card */
+  padding: 1rem 1.2rem !important;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-between; /* giữ nút Buy Now luôn dính đáy */
 }
 
+/* tối ưu text, tránh tràn, tránh đẩy layout */
 .card-title {
-  margin-bottom: 0.75rem;
-  line-height: 1.4;
+  height: 30px;            /* chốt chiều cao tiêu đề */
+  overflow: hidden;
 }
 
 .card-body p {
-  margin-bottom: 0.4rem;
+  margin-bottom: 4px;
+  height: 18px;            /* giữ dòng văn bản đều nhau */
+  overflow: hidden;
 }
 
 .d-flex {
