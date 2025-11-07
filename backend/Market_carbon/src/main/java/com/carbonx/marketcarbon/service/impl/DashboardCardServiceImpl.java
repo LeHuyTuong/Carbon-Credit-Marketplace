@@ -69,8 +69,7 @@ public class DashboardCardServiceImpl implements DashboardCardService {
                     ((Number) row[3]).longValue(),
                     ((Number) row[4]).longValue(),
                     ((Number) row[5]).longValue(),
-                    ((Number) row[6]).longValue(),
-                    ((Number) row[7]).longValue()
+                    ((Number) row[6]).longValue()
             ));
         }
         return result;

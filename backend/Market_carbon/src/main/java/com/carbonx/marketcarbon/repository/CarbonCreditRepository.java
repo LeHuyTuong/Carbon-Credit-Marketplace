@@ -223,4 +223,25 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     long countByCompanyIdAndStatus(@Param("companyId") Long companyId,
                                    @Param("status") CreditStatus status);
 
+
+    // Tổng số credit
+    @Query("SELECT COUNT(c) FROM CarbonCredit c")
+    long countAllCredits();
+
+    // Đếm credit theo trạng thái/tháng
+    @Query(value = """
+        SELECT 
+            MONTHNAME(c.created_at) AS month,
+            SUM(CASE WHEN c.status = 'LISTED' THEN 1 ELSE 0 END) AS listed,
+            SUM(CASE WHEN c.status = 'SOLD' THEN 1 ELSE 0 END) AS sold,
+            SUM(CASE WHEN c.status = 'TRADED' THEN 1 ELSE 0 END) AS traded,
+            SUM(CASE WHEN c.status = 'RETIRED' THEN 1 ELSE 0 END) AS retired,
+            SUM(CASE WHEN c.status = 'PENDING' THEN 1 ELSE 0 END) AS pending,
+            SUM(CASE WHEN c.status IN ('ISSUE', 'ISSUED', 'AVAILABLE') THEN 1 ELSE 0 END) AS active
+        FROM carbon_credits c
+        GROUP BY MONTH(c.created_at), MONTHNAME(c.created_at)
+        ORDER BY MONTH(c.created_at)
+    """, nativeQuery = true)
+    List<Object[]> countMonthlyCreditStatusNative();
+
 }

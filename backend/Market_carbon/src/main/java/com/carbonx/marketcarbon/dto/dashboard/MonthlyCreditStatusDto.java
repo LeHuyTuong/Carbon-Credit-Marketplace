@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonthlyCreditStatusDto {
-    private String month;  // ví dụ "Jan", "Feb", ...
+    private String month;
     private long listed;
     private long sold;
     private long traded;
     private long retired;
     private long pending;
-    private long active;   // tổng hợp: ISSUE + ISSUED
-    private long revoke;   // EXPIRED
+    private long active;
 }
