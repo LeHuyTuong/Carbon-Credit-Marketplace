@@ -101,6 +101,24 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get all KYC users", description = "View list of all KYC user profiles (for ADMIN or CVA)")
+    @GetMapping("/listEvowner")
+    public ResponseEntity<TuongCommonResponse<List<KycResponse>>> getAllKYCUsers(
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        // Gọi service để lấy danh sách
+        List<KycResponse> kycList = kycService.getAllKYCUser();
+
+        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        TuongCommonResponse<List<KycResponse>> response = new TuongCommonResponse<>(trace, now, rs, kycList);
+
+        return ResponseEntity.ok(response);
+    }
+
 
     @Operation(summary = "Create KYC for Company", description = "Create KYC profile for the company of current user")
     @PostMapping("/company")
