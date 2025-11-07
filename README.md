@@ -18,8 +18,6 @@
 
 ---
 # 🌿 Full Project Documentation (CarbonX Version)
-# Carbon Credit Marketplace (Spring Boot + React)
-
 ## [Documentations](https://drive.google.com/drive/u/1/folders/1V0FyoZw_b9KMyj4aiCg9Z2sy7t4khyE-)
 ## 🌳 Project Overview
 Carbon Credit Marketplace is a platform enabling Electric Vehicle (EV) owners, companies, and administrators to manage, trade, retire, and audit carbon credits.  
