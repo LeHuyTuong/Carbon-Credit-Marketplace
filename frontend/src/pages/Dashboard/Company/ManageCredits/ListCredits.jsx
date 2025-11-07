@@ -181,6 +181,21 @@ export default function ListCredits() {
     try {
       setLoading(true);
 
+      // edit: chỉ update price, không check balance
+      if (editData) {
+        await updateListing(editData.id, {
+          pricePerCredit: values.pricePerCredit,
+        });
+
+        showToast("Credit updated successfully!");
+        setShow(false);
+        setEditData(null);
+
+        await fetchCredits();
+        return;
+      }
+
+      //list
       const selectedCreditObj = userCredits.find(
         (c) => c.id === values.selectedCredit
       );
