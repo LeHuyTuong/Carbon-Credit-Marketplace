@@ -214,4 +214,13 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
             @Param("companyId") Long companyId
     );
 
+    @Query("""
+        SELECT COUNT(c.id)
+        FROM CarbonCredit c
+        WHERE c.company.id = :companyId
+          AND c.status = :status
+    """)
+    long countByCompanyIdAndStatus(@Param("companyId") Long companyId,
+                                   @Param("status") CreditStatus status);
+
 }
