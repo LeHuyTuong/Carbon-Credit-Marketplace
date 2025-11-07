@@ -63,7 +63,7 @@ const AdminProfile = ({ onClose }) => {
   };
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="ADMIN PROFILE" subtitle="View Administrator Information" />
 
       {/* ===== 1. PROFILE OVERVIEW ===== */}

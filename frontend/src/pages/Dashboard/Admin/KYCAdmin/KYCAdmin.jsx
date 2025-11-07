@@ -46,16 +46,26 @@ const AdminKYC = () => {
   };
 
   //  Custom English validation
-  const validate = () => {
+    const validate = () => {
     const newErrors = {};
     Object.entries(form).forEach(([key, value]) => {
       if (!value && key !== "email" && key !== "role") {
         newErrors[key] = "Please fill out this field.";
       }
     });
+
+    // Kiểm tra định dạng ngày sinh dd/mm/yyyy
+    if (form.dob) {
+      const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+      if (!dateRegex.test(form.dob)) {
+        newErrors.dob = "Date of Birth must be in dd/mm/yyyy format.";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
 
   //  Handle Submit
   const handleSubmit = async (e) => {

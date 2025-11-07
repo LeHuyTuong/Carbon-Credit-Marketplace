@@ -124,7 +124,7 @@ const EditProfile = ({ onAvatarUpdated }) => {
   };
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="EDIT PROFILE" subtitle="Update Administrator Information" />
 
       <Paper

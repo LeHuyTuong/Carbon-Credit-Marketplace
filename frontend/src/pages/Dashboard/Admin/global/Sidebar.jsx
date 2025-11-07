@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
-import { Box, IconButton, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/theme";
@@ -14,14 +14,11 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import CorporateFareOutlinedIcon from "@mui/icons-material/CorporateFareOutlined";
 import ElectricCarOutlinedIcon from "@mui/icons-material/ElectricCarOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
-import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import { checkKYCAdmin } from "@/apiAdmin/apiLogin.js"; 
+import { checkKYCAdmin } from "@/apiAdmin/apiLogin.js";
+
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -44,49 +41,29 @@ const Sidebar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState(location.pathname);
-
   const [adminInfo, setAdminInfo] = useState({ name: "", role: "" });
 
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const token = localStorage.getItem("admin_token");
+        if (!token) throw new Error("No admin token found!");
 
+        const kycData = await checkKYCAdmin();
+        const role = localStorage.getItem("admin_role") || "Admin";
+        const name = kycData?.name || "Unknown";
 
-  //  Fetch KYC Info khi component load
-useEffect(() => {
-  const fetchAdminData = async () => {
-    try {
-      const token = localStorage.getItem("admin_token");
-      if (!token) throw new Error("No admin token found!");
+        setAdminInfo({ name, role });
+      } catch (err) {
+        console.error("Failed to fetch admin data:", err.message);
+        setAdminInfo({ name: "Unknown", role: "Admin" });
+      }
+    };
 
-      //  Fetch KYC info để lấy name
-      const kycData = await checkKYCAdmin();
+    fetchAdminData();
+  }, []);
 
-      //  Lấy role từ localStorage (đã lưu khi login)
-      const role = localStorage.getItem("admin_role") || "Admin";
-
-      //  Lấy tên admin từ KYC response
-      const name = kycData?.name || "Unknown";
-
-      setAdminInfo({
-        name,
-        role,
-      });
-
-      console.log(" Admin Info:", name, "| Role:", role);
-      console.log(" KYC Data:", kycData);
-    } catch (err) {
-      console.error(" Failed to fetch admin data:", err.message);
-      setAdminInfo({ name: "Unknown", role: "Admin" });
-    }
-  };
-
-  fetchAdminData();
-}, []);
-
-
-
-
-  // Cập nhật khi URL đổi (hoặc reload)
   useEffect(() => {
     setSelected(location.pathname);
   }, [location]);
@@ -94,6 +71,11 @@ useEffect(() => {
   return (
     <Box
       sx={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        height: "100vh",
+        zIndex: 100,
         "& .pro-sidebar-inner": {
           background: `${colors.primary[400]} !important`,
         },
@@ -111,65 +93,57 @@ useEffect(() => {
         },
       }}
     >
-      <ProSidebar collapsed={isCollapsed}>
+      <ProSidebar collapsed={false}>
         <Menu iconShape="square">
-          {/* LOGO AND MENU ICON */}
+          {/* LOGO AND HEADER */}
           <MenuItem
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
             style={{
               margin: "10px 0 20px 0",
               color: colors.grey[100],
             }}
           >
-            {!isCollapsed && (
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                ml="15px"
-              >
-                <Typography variant="h3" color={colors.grey[100]}>
-                  ADMIN
-                </Typography>
-                <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
-                  <MenuOutlinedIcon />
-                </IconButton>
-              </Box>
-            )}
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              ml="15px"
+            >
+              <Typography variant="h3" color={colors.grey[100]}>
+                ADMIN PAGE
+              </Typography>
+            </Box>
           </MenuItem>
 
-          {!isCollapsed && (
-            <Box mb="25px">
-              <Box display="flex" justifyContent="center" alignItems="center">
-                <AdminPanelSettings
-                  sx={{
-                    fontSize: "100px",
-                    color: colors.greenAccent[500],
-                    cursor: "pointer",
-                    backgroundColor: colors.primary[400],
-                    borderRadius: "50%",
-                    padding: "10px",
-                  }}
-                />
-              </Box>
-              <Box textAlign="center">
-                <Typography
-                  variant="h2"
-                  color={colors.grey[100]}
-                  fontWeight="bold"
-                  sx={{ m: "10px 0 0 0" }}
-                >
-                  {adminInfo.name || "Loading..."}
-                </Typography>
-                <Typography variant="h5" color={colors.greenAccent[500]}>
-                  {adminInfo.role || "Admin"}
-                </Typography>
-              </Box>
+          <Box mb="25px">
+            <Box display="flex" justifyContent="center" alignItems="center">
+              <AdminPanelSettings
+                sx={{
+                  fontSize: "100px",
+                  color: colors.greenAccent[500],
+                  cursor: "pointer",
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "50%",
+                  padding: "10px",
+                }}
+              />
             </Box>
-          )}
+            <Box textAlign="center">
+              <Typography
+                variant="h2"
+                color={colors.grey[100]}
+                fontWeight="bold"
+                sx={{ m: "10px 0 0 0" }}
+              >
+                {adminInfo.name || "Loading..."}
+              </Typography>
+              <Typography variant="h5" color={colors.greenAccent[500]}>
+                {adminInfo.role || "Admin"}
+              </Typography>
+            </Box>
+          </Box>
 
-          <Box paddingLeft={isCollapsed ? undefined : "10%"}>
+          {/* MENU ITEMS */}
+          <Box paddingLeft="10%">
             <Item
               title="Dashboard"
               to="/admin/dashboard"
@@ -185,13 +159,13 @@ useEffect(() => {
             >
               Data
             </Typography>
-            <Item
+            {/* <Item
               title="Manage Users"
               to="/admin/user_management"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
-            />
+            /> */}
             <Item
               title="Manage EV Owners"
               to="/admin/ev_owner_management"
@@ -256,7 +230,7 @@ useEffect(() => {
               setSelected={setSelected}
             />
 
-            <Typography
+            {/* <Typography
               variant="h6"
               color={colors.grey[300]}
               sx={{ m: "15px 0 5px 20px" }}
@@ -270,7 +244,6 @@ useEffect(() => {
               selected={selected}
               setSelected={setSelected}
             />
-            
 
             <Typography
               variant="h6"
@@ -299,8 +272,7 @@ useEffect(() => {
               icon={<TimelineOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
-            />
-            
+            /> */}
           </Box>
         </Menu>
       </ProSidebar>

@@ -77,15 +77,15 @@ const ViewCompanyKYC = () => {
 
   if (loading)
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+      <Box display="flex" sx={{ marginLeft: "290px" }} justifyContent="center" alignItems="center" height="60vh">
         <CircularProgress />
       </Box>
     );
 
-  if (!profile) return <Typography>No company KYC data found.</Typography>;
+  if (!profile) return <Typography sx={{ marginLeft: "290px" }}>No company KYC data found.</Typography>;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="COMPANY KYC PROFILE" subtitle="View or edit your company verification information" />
 
       <Paper

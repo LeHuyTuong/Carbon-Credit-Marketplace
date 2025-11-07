@@ -64,7 +64,7 @@ const ViewCredit = () => {
   const color = colorMap[status] || colors.grey[300];
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px",maxWidth: "1000px",width: "100%", }}>
       <Header title="CREDIT DETAIL" subtitle={`Details of ${creditData.batchCode}`} />
 
       <Paper
