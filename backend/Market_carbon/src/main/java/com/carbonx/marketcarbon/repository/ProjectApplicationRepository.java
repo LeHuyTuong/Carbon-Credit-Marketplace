@@ -7,7 +7,11 @@ import com.carbonx.marketcarbon.model.ProjectApplication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface ProjectApplicationRepository extends JpaRepository<ProjectApplication, Long> {
@@ -20,9 +24,13 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
     Page<ProjectApplication> findByStatus(ApplicationStatus status, Pageable pageable);
     boolean existsByCompanyIdAndProjectId(Long companyId, Long projectId);
     boolean existsByCompanyAndProjectAndStatusIn(
-            Company company,
+            Company company ,
             Project project,
             List<ApplicationStatus> statuses
     );
+
+    @Query("SELECT COUNT(p) FROM ProjectApplication p")
+    long countAllProjects();
+
 
 }

@@ -81,6 +81,7 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .build();
 
         applicationRepository.save(app);
+
         return ProjectApplicationResponse.fromEntity(app);
     }
 
