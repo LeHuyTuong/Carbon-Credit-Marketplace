@@ -229,47 +229,21 @@ public class MyCreditServiceImpl implements MyCreditService {
     }
 
     /**
-     * Tính available cho LISTING (có thể list)
-     */
-    private BigDecimal getAvailableForListing(CarbonCredit credit) {
-        if (credit == null) return BigDecimal.ZERO;
-
-        BigDecimal available = credit.getCarbonCredit();
-        if (available != null && available.compareTo(BigDecimal.ZERO) > 0) {
-            return available;
-        }
-
-        BigDecimal amount = credit.getAmount();
-        BigDecimal listed = safe(credit.getListedAmount());
-
-        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal remaining = amount.subtract(listed);
-            return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
-        }
-
-        return BigDecimal.ZERO;
-    }
-
-
-    /**
      * Tính available cho RETIRE (chỉ retire phần chưa list)
-     * available_for_retire = carbonCredit - listedAmount
      */
     private BigDecimal getAvailableForRetire(CarbonCredit credit) {
         if (credit == null) return BigDecimal.ZERO;
 
-        BigDecimal available = credit.getCarbonCredit();
-        if (available == null) available = BigDecimal.ZERO;
+        // số lượng "available" (chưa list).
+        // (Ví dụ: total 12, listed 2, thì carbonCredit = 10)
+        BigDecimal freeAmount = credit.getCarbonCredit(); // Lấy 10.00
 
-        BigDecimal listed = credit.getListedAmount();
-        if (listed == null) listed = BigDecimal.ZERO;
+        if (freeAmount == null) freeAmount = BigDecimal.ZERO;
 
-        // RETIRE chỉ được retire phần chưa list
-        BigDecimal freeAmount = available.subtract(listed);
+        log.debug("[RETIRE-CHECK] Credit {} - available (carbonCredit field)={}, free={}",
+                credit.getId(), credit.getCarbonCredit(), freeAmount);
 
-        log.debug("[RETIRE-CHECK] Credit {} - available={}, listed={}, free={}",
-                credit.getId(), available, listed, freeAmount);
-
+        // Trả về 10.00
         return freeAmount.compareTo(BigDecimal.ZERO) > 0 ? freeAmount : BigDecimal.ZERO;
     }
 
@@ -340,42 +314,6 @@ public class MyCreditServiceImpl implements MyCreditService {
                 .sorted(Comparator.comparing(RetirableBatchResponse::getBatchCode,
                         Comparator.nullsLast(String::compareTo)))
                 .toList();
-    }
-
-    /**
-     * Kiểm tra xem tín chỉ có phải mua từ marketplace không
-     */
-    private boolean isMarketplacePurchase(CarbonCredit credit) {
-        // Kiểm tra các giao dịch mua cho tín chỉ này
-        return walletTransactionRepository
-                .countByOrderCarbonCreditIdAndTransactionType(
-                        credit.getId(), WalletTransactionType.BUY_CARBON_CREDIT) > 0;
-    }
-
-    /**
-     * Tính toán số lượng tín chỉ có sẵn để retire
-     */
-    private BigDecimal getAvailableAmount(CarbonCredit credit) {
-        if (credit == null) {
-            return BigDecimal.ZERO;
-        }
-
-        // Ưu tiên lấy từ field carbonCredit (đây là available quantity)
-        BigDecimal available = credit.getCarbonCredit();
-        if (available != null && available.compareTo(BigDecimal.ZERO) > 0) {
-            return available;
-        }
-
-        //amount - listed
-        BigDecimal amount = credit.getAmount();
-        BigDecimal listed = credit.getListedAmount() != null ? credit.getListedAmount() : BigDecimal.ZERO;
-        if (amount != null) {
-            BigDecimal remaining = amount.subtract(listed);
-            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
-            }
-        }
-        return BigDecimal.ZERO;
     }
 
     /**
@@ -552,25 +490,6 @@ public class MyCreditServiceImpl implements MyCreditService {
                 .toList();
     }
 
-
-    //  helper cập nhật status
-    private void updateCreditStatus(CarbonCredit credit) {
-        BigDecimal available = safe(credit.getCarbonCredit());
-        BigDecimal listed = safe(credit.getListedAmount());
-
-        if (credit.getStatus() == CreditStatus.EXPIRED) {
-            return; // Đã hết hạn
-        }
-
-        if (available.compareTo(BigDecimal.ZERO) == 0 && listed.compareTo(BigDecimal.ZERO) == 0) {
-            credit.setStatus(CreditStatus.RETIRED);
-        } else if (listed.compareTo(BigDecimal.ZERO) > 0) {
-            credit.setStatus(CreditStatus.LISTED);
-        } else {
-            // (available > 0 && listed == 0)
-            credit.setStatus(CreditStatus.AVAILABLE);
-        }
-    }
 
     /**
      * Hậu xử lý sau khi retire thành công:
