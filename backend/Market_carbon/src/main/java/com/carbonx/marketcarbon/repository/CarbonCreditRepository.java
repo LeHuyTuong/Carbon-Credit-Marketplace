@@ -149,8 +149,8 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 
     // Query tối ưu để tìm credit phù hợp
     @Query(nativeQuery = true, value =
-            "SELECT c.* FROM carbon_credit c " +
-                    "LEFT JOIN credit_batch b ON c.batch_id = b.id " +
+            "SELECT c.* FROM carbon_credits c " +
+                    "LEFT JOIN credit_batches b ON c.batch_id = b.id " +
                     "WHERE (c.company_id = :companyId) AND " +
                     "((c.id = :creditId) OR (c.source_credit_id = :creditId) OR (b.id = :creditId)) AND " +
                     "((c.carbon_credit >= :requiredAmount) OR (:requiredAmount IS NULL)) " +
@@ -198,5 +198,20 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
             "t.order.carbonCredit.batch.id = :batchId AND " +
             "t.transactionType = 'BUY_CARBON_CREDIT')")
     List<CarbonCredit> findAllOwnedByBatch(@Param("batchId") Long batchId, @Param("companyId") Long companyId);
+
+
+    /**
+     * Tìm credits THUỘC BATCH GỐC (không phải credits đã mua)
+     */
+    @Query("""
+    SELECT c FROM CarbonCredit c
+    WHERE c.batch.id = :batchId
+    AND c.company.id = :companyId
+    AND c.sourceCredit IS NULL
+    """)
+    List<CarbonCredit> findOriginalCreditsByBatchAndCompany(
+            @Param("batchId") Long batchId,
+            @Param("companyId") Long companyId
+    );
 
 }

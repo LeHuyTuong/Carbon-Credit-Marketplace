@@ -55,7 +55,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
     }
 
-
     @Override
     @Transactional
     public MarketplaceListingResponse listCreditsForSale(CreditListingRequest request) {
@@ -70,8 +69,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
 
-        // TIỀN XỬ LÝ - AUTO BATCH DETECTION
-        // Nếu request có carbonCreditId nhưng không có batchId
+        // ============================================
+        //  AUTO BATCH DETECTION
+        // ============================================
+        // B2 Nếu request có carbonCreditId nhưng KHÔNG có batchId
         if (request.getCarbonCreditId() != null && request.getBatchId() == null) {
             log.info("[AUTO-BATCH] Checking if carbonCreditId={} needs batch grouping for quantity={}",
                     request.getCarbonCreditId(), request.getQuantity());
@@ -91,7 +92,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 // Bước 3: Kiểm tra xem credit có thuộc batch không
                 CreditBatch batch = targetCredit.getBatch();
 
-                // Bước 4: NẾU credit đơn lẻ không đủ SỐ LƯỢNG VÀ thuộc về một batch
+                // Bước 4: NẾU credit đơn lẻ KHÔNG ĐỦ SỐ LƯỢNG VÀ thuộc về một batch
                 if (singleCreditAvailable.compareTo(request.getQuantity()) < 0 && batch != null) {
                     log.info("[AUTO-BATCH] Credit {} insufficient (available={} < requested={}). " +
                                     "Checking batch {}...",
@@ -99,8 +100,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                             request.getQuantity(), batch.getId());
 
                     // Bước 4.1: Tính tổng available của toàn bộ batch
+                    // 2.1 Lấy các credit còn khả dụng VÀ thuộc sở hữu của công ty
                     List<CarbonCredit> batchCredits = batch.getCarbonCredit().stream()
-                            .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                            .filter(c ->
+                                    (c.getStatus() == CreditStatus.AVAILABLE || c.getStatus() == CreditStatus.TRADED)
+                            )
                             .filter(c -> c.getCompany().getId().equals(sellerCompany.getId()))
                             .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                             .toList();
@@ -114,11 +118,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
                     // Bước 4.2: NẾU batch đủ số lượng → CHUYỂN REQUEST SANG BATCH MODE
                     if (totalBatchAvailable.compareTo(request.getQuantity()) >= 0) {
-                        log.info("[AUTO-BATCH]  Batch {} has enough credits. " +
+                        log.info("[AUTO-BATCH] Batch {} has enough credits. " +
                                         "Redirecting request from carbonCreditId={} to batchId={}",
                                 batch.getId(), request.getCarbonCreditId(), batch.getId());
 
-                        // FIX: Sửa request để dùng logic batch
+                        //  Sửa request để dùng logic batch
                         request.setBatchId(batch.getId());
                         request.setCarbonCreditId(null); // Clear carbonCreditId
 
@@ -153,13 +157,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             CreditBatch batch = creditBatchRepository.findById(request.getBatchId())
                     .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
 
-            if (!batch.getCompany().getId().equals(sellerCompany.getId())) {
-                throw new AppException(ErrorCode.COMPANY_NOT_OWN);
-            }
-
             // 2.1 Lấy các credit còn AVAILABLE và còn available > 0
             List<CarbonCredit> credits = batch.getCarbonCredit().stream()
-                    .filter(c -> c.getStatus() == CreditStatus.AVAILABLE)
+                    .filter(c ->
+                            (c.getStatus() == CreditStatus.AVAILABLE || c.getStatus() == CreditStatus.TRADED)
+                    )
+                    .filter(c -> c.getCompany().getId().equals(sellerCompany.getId()))
                     .filter(c -> availableOf(c).compareTo(BigDecimal.ZERO) > 0)
                     .toList();
 
@@ -242,10 +245,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 return buildListingResponse(updatedListing);
             }
 
-            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU
+            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
             MarketPlaceListing listing = MarketPlaceListing.builder()
                     .company(sellerCompany)
-                    .carbonCredit(credits.get(0)) // link đại diện
+                    .carbonCredit(credits.get(0)) // link đại diện theo schema hiện tại
                     .quantity(request.getQuantity())
                     .pricePerCredit(request.getPricePerCredit())
                     .originalQuantity(request.getQuantity())
@@ -261,14 +264,13 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             return buildListingResponse(saved);
         }
 
-        // B3: Logic xử lý single credit (GIỮ NGUYÊN CODE CŨ)
+        // B3: Logic xử lý single credit (GIỮ NGUYÊN CODE CŨ từ dòng 249 đến hết)
         log.info("[SINGLE-MODE] Processing single credit listing - carbonCreditId={}",
                 request.getCarbonCreditId());
 
         CarbonCredit creditToSell = resolveOwnedCredit(
                 request.getCarbonCreditId(), sellerCompany, request.getQuantity());
 
-        // ... (giữ nguyên phần còn lại từ dòng 204 đến hết)
         BigDecimal availableQuantity = getAvailableCreditAmount(creditToSell);
 
         if (availableQuantity.compareTo(request.getQuantity()) < 0) {
@@ -540,89 +542,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         log.info("Deleted MarketPlaceListing {}", listing.getId());
 
         return response;
-    }
-
-    // hàm này sẽ hoàn lại tín chỉ carbon khi delete không list nữa
-    private BigDecimal restoreBatchCredits(CreditBatch batch, Company company, BigDecimal quantityToRestore) {
-        BigDecimal remaining = safe(quantityToRestore);
-        if (batch == null || remaining.compareTo(BigDecimal.ZERO) <= 0) {
-            return remaining;
-        }
-
-        // tìm carbon credit
-        List<CarbonCredit> batchCredits = carbonCreditRepository
-                .findByBatch_IdAndCompany_Id(batch.getId(), company.getId());
-
-        if (batchCredits.isEmpty()) {
-            return remaining;
-        }
-
-        boolean hasChanges = false;
-
-        // lấy từng cái một
-        for (CarbonCredit credit : batchCredits) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
-                break;
-            }
-
-            // check xem có lỗi không tránh bị null
-            BigDecimal listedAmount = safe(credit.getListedAmount());
-            if (listedAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            BigDecimal restore = listedAmount.min(remaining);
-            if (restore.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            BigDecimal available = safe(credit.getCarbonCredit());
-            BigDecimal updatedListed = listedAmount.subtract(restore);
-            BigDecimal updatedAvailable = available.add(restore);
-
-            // set lại status
-            credit.setCarbonCredit(updatedAvailable);
-            credit.setListedAmount(updatedListed);
-            credit.setAmount(updatedAvailable.add(updatedListed));
-            updateCreditStatus(credit, updatedAvailable, updatedListed);
-
-            remaining = remaining.subtract(restore);
-            hasChanges = true;
-        }
-
-        if (hasChanges) {
-            carbonCreditRepository.saveAll(batchCredits);
-        }
-
-        return remaining;
-    }
-
-    private BigDecimal restoreSingleCredit(CarbonCredit carbonCredit, BigDecimal quantityToRestore) {
-        if (carbonCredit == null) {
-            return safe(quantityToRestore);
-        }
-
-        BigDecimal remaining = safe(quantityToRestore);
-        BigDecimal listedAmount = safe(carbonCredit.getListedAmount());
-        BigDecimal available = safe(carbonCredit.getCarbonCredit());
-
-        BigDecimal restore = listedAmount.min(remaining);
-        if (restore.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal updatedListed = listedAmount.subtract(restore);
-            BigDecimal updatedAvailable = available.add(restore);
-
-            carbonCredit.setCarbonCredit(updatedAvailable);
-            carbonCredit.setListedAmount(updatedListed);
-            carbonCredit.setAmount(updatedAvailable.add(updatedListed));
-            updateCreditStatus(carbonCredit, updatedAvailable, updatedListed);
-
-            carbonCreditRepository.save(carbonCredit);
-            return remaining.subtract(restore);
-        }
-
-        updateCreditStatus(carbonCredit, available, listedAmount);
-        carbonCreditRepository.save(carbonCredit);
-        return remaining;
     }
 
     private void updateCreditStatus(CarbonCredit credit, BigDecimal available, BigDecimal listed) {
