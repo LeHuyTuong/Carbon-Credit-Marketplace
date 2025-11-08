@@ -16,6 +16,7 @@ import {
   updateApplicationDecision,
 } from "@/apiAdmin/companyAdmin.js";
 import Header from "@/components/Chart/Header";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 const ApplicationEdit = () => {
   const { id } = useParams();
@@ -30,12 +31,7 @@ const ApplicationEdit = () => {
     finalReviewNote: "",
     applicationDocsUrl: "",
   });
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
   // Map status từ API
   const mapStatus = (status) => {
     switch (status) {
@@ -77,11 +73,7 @@ const ApplicationEdit = () => {
         }
       } catch (error) {
         console.error("Error fetching application:", error);
-        setSnackbar({
-          open: true,
-          message: "Failed to fetch application.",
-          severity: "error",
-        });
+        showSnackbar("error", "Failed to fetch application.");
       } finally {
         setLoading(false);
       }
@@ -110,22 +102,14 @@ const ApplicationEdit = () => {
 
       const code = result?.responseStatus?.responseCode;
       if (code === "200" || code === "00000000") {
-        setSnackbar({
-          open: true,
-          message: "Updated successfully!",
-          severity: "success",
-        });
+        showSnackbar("success", "Updated successfully!");
         setTimeout(() => navigate("/admin/company_management"), 1000);
       } else {
         throw new Error(result?.responseStatus?.responseMessage);
       }
     } catch (error) {
       console.error("Update failed:", error);
-      setSnackbar({
-        open: true,
-        message: "Application submission failed. Please check your data.",
-        severity: "error",
-      });
+      showSnackbar("error", "Application submission failed. Please check your data.");
     }
   };
 
@@ -241,16 +225,7 @@ const ApplicationEdit = () => {
         </Box>
       </Paper>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity={snackbar.severity} variant="filled">
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {SnackbarComponent}
     </Box>
   );
 };

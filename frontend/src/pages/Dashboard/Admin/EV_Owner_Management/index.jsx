@@ -79,7 +79,7 @@ const EvOwnerTeam = () => {
     {
       field: "email",
       headerName: "Email",
-      flex: 1,
+      flex: 0.5,
       minWidth: 220,
     },
     { field: "phone", headerName: "Phone", width: 140 },

@@ -93,14 +93,14 @@ const Topbar = () => {
           )}
         </IconButton>
 
-        {/* Notification */}
+        {/* Notification
         <Box sx={{ position: "relative" }}>
           <IconButton ref={anchorNotif} onClick={handleToggleNotif}>
             <Badge badgeContent={unread} color="primary">
               <NotificationsOutlinedIcon />
             </Badge>
           </IconButton>
-        </Box>
+        </Box> */}
 
         {/* Profile */}
         <Box sx={{ flexShrink: 0, ml: 1 }}>
