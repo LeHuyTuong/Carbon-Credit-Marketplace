@@ -72,7 +72,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         // ============================================
         //  AUTO BATCH DETECTION
         // ============================================
-        // B2 Nếu request có carbonCreditId nhưng KHÔNG có batchId
+        // B2 Nếu request có carbonCreditId nhưng ko có batchId
         if (request.getCarbonCreditId() != null && request.getBatchId() == null) {
             log.info("[AUTO-BATCH] Checking if carbonCreditId={} needs batch grouping for quantity={}",
                     request.getCarbonCreditId(), request.getQuantity());
@@ -92,7 +92,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 // Bước 3: Kiểm tra xem credit có thuộc batch không
                 CreditBatch batch = targetCredit.getBatch();
 
-                // Bước 4: NẾU credit đơn lẻ KHÔNG ĐỦ SỐ LƯỢNG VÀ thuộc về một batch
+                // Bước 4: nếu credit đơn lẻ ko đủ amount và thuộc về một batch
                 if (singleCreditAvailable.compareTo(request.getQuantity()) < 0 && batch != null) {
                     log.info("[AUTO-BATCH] Credit {} insufficient (available={} < requested={}). " +
                                     "Checking batch {}...",
@@ -100,7 +100,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                             request.getQuantity(), batch.getId());
 
                     // Bước 4.1: Tính tổng available của toàn bộ batch
-                    // 2.1 Lấy các credit còn khả dụng VÀ thuộc sở hữu của công ty
+                    // 2.1  Lọc lấy các credit còn khả dụng và thuộc sở hữu của công ty
                     List<CarbonCredit> batchCredits = batch.getCarbonCredit().stream()
                             .filter(c ->
                                     (c.getStatus() == CreditStatus.AVAILABLE || c.getStatus() == CreditStatus.TRADED)
@@ -116,7 +116,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     log.info("[AUTO-BATCH] Batch {} has {} credits with total available={}",
                             batch.getId(), batchCredits.size(), totalBatchAvailable);
 
-                    // Bước 4.2: NẾU batch đủ số lượng → CHUYỂN REQUEST SANG BATCH MODE
+                    // Bước 4.2: nếu  batch đủ số lượng chuyển sang list theo batch
                     if (totalBatchAvailable.compareTo(request.getQuantity()) >= 0) {
                         log.info("[AUTO-BATCH] Batch {} has enough credits. " +
                                         "Redirecting request from carbonCreditId={} to batchId={}",
@@ -129,7 +129,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                         log.info("[AUTO-BATCH] Request updated: batchId={}, carbonCreditId=null",
                                 request.getBatchId());
                     } else {
-                        // Batch cũng không đủ → Vẫn báo lỗi như cũ
+                        // Batch cũng không đủ thì báo lỗi
                         log.warn("[AUTO-BATCH] Batch {} also insufficient " +
                                         "(total={} < requested={}). Will fail with AMOUNT_IS_NOT_ENOUGH",
                                 batch.getId(), totalBatchAvailable, request.getQuantity());
@@ -139,7 +139,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     log.info("[AUTO-BATCH] Credit {} has enough available={}. Using single-credit mode.",
                             targetCredit.getId(), singleCreditAvailable);
                 } else if (batch == null) {
-                    // Credit không thuộc batch nào → Không thể gộp
+                    // Credit không thuộc batch nào thì không thể nộp
                     log.warn("[AUTO-BATCH] Credit {} has no batch. Cannot group credits.",
                             targetCredit.getId());
                 }
@@ -148,9 +148,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                         request.getCarbonCreditId(), sellerCompany.getId());
             }
         }
-        // KẾT THÚC LOGIC TIỀN XỬ LÝ
 
-        // B2: Nếu request có batchId (bao gồm cả request đã được sửa ở trên)
+        // B2: Nếu request có batchId
         if (request.getBatchId() != null) {
             log.info("[BATCH-MODE] Processing batch listing - batchId={}", request.getBatchId());
 
@@ -245,7 +244,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 return buildListingResponse(updatedListing);
             }
 
-            // 2.5 Tạo listing tổng theo SỐ LƯỢNG YÊU CẦU (không đếm số record)
+            // 2.5 Tạo listing tổng theo số lượng yêu cầu (không đếm số record)
             MarketPlaceListing listing = MarketPlaceListing.builder()
                     .company(sellerCompany)
                     .carbonCredit(credits.get(0)) // link đại diện theo schema hiện tại
@@ -264,7 +263,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             return buildListingResponse(saved);
         }
 
-        // B3: Logic xử lý single credit (GIỮ NGUYÊN CODE CŨ từ dòng 249 đến hết)
+        // B3: Logic xử lý single credit
         log.info("[SINGLE-MODE] Processing single credit listing - carbonCreditId={}",
                 request.getCarbonCreditId());
 
@@ -332,7 +331,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
 
         // Nếu không tìm thấy listing hiện có, tạo mới
-        // B6 : Cập nhật số lượng tín chỉ niêm yết và số lượng còn lại (giữ nguyên code cũ)
+        // B6 : Cập nhật số lượng tín chỉ niêm yết và số lượng còn lại
         BigDecimal currentListedAmount = creditToSell.getListedAmount() != null
                 ? creditToSell.getListedAmount()
                 : BigDecimal.ZERO;

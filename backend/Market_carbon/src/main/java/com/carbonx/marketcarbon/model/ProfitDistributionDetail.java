@@ -40,7 +40,7 @@ public class ProfitDistributionDetail extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal creditAmount;
 
-    // Trạng thái (ví dụ: SUCCESS, FAILED) - dùng String đơn giản
+    // Trạng thái
     @Column(nullable = false)
     private String status;
 
