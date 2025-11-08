@@ -29,7 +29,6 @@ import { ColorModeContext, useMode } from "../themeCVA.js";
 import Calendar from "../pages/Dashboard/CVA/calendar/Calendar.jsx";
 //  import css admin riêng
 import "../admin.css";
-import AIReportInsightPanel from "../components/AI/AIInsightPanel.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useLocation } from "react-router-dom";
 
@@ -101,9 +100,6 @@ function App() {
             </Routes>
           </main>
         </div>
-        {user?.role === "CVA" && showAI && (
-          <AIReportInsightPanel show={true} onClose={() => {}} report={null} />
-        )}
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
