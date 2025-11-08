@@ -254,12 +254,6 @@ export default function Register() {
               )}
             </Formik>
 
-            <div className="text-center text-muted my-3">— or —</div>
-
-            <button type="button" className="btn btn-outline-secondary w-100">
-              Sign up with Google
-            </button>
-
             <p className="mt-3 text-center mb-0">
               Already have an account? <Link to="/login">Login</Link>
             </p>
