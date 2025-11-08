@@ -98,7 +98,7 @@ const Topbar = () => {
         </IconButton>
 
         {/* NOTIFICATION */}
-        <Box sx={{ position: "relative" }}>
+        {/* <Box sx={{ position: "relative" }}>
           <IconButton ref={anchorNotif} onClick={handleToggleNotif}>
             <Badge badgeContent={unread} color="primary">
               <NotificationsOutlinedIcon />
@@ -151,7 +151,7 @@ const Topbar = () => {
               </Transitions>
             )}
           </Popper>
-        </Box>
+        </Box> */}
 
         {/* PROFILE */}
         <Box sx={{ flexShrink: 0, ml: 1 }}>
