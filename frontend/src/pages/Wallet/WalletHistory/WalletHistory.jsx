@@ -129,41 +129,45 @@ export default function WalletHistory() {
                   "BUY_CARBON_CREDIT",
                   "PROFIT_SHARING",
                 ];
-                const isIncome = incomeTypes.includes(tx.transactionType);
-                const isExpense = expenseTypes.includes(tx.transactionType);
-                //TYPE COLOR (text of transactionType)
-                let typeClass = "text-info"; // base blue
+                // logic màu số tiền và prefix cho PROFIT_SHARING dựa vào dấu amount
+                let isIncome = incomeTypes.includes(tx.transactionType);
+                let isExpense = expenseTypes.includes(tx.transactionType);
 
-                if (isIncome) typeClass = "text-success";
-                if (isExpense) typeClass = "text-warning";
+                // Nếu là profit sharing → override theo dấu amount
+                if (tx.transactionType === "PROFIT_SHARING") {
+                  if (tx.amount >= 0) {
+                    isIncome = true; // màu xanh + prefix +
+                    isExpense = false;
+                  } else {
+                    isIncome = false;
+                    isExpense = true; // màu đỏ + prefix -
+                  }
+                }
+                // Màu chữ của transactionType
+                let typeClass = "text-info"; // mặc định xanh dương
 
-                //blue text
+                // PROFIT_SHARING và ISSUE_CREDIT luôn xanh dương
                 if (
                   tx.transactionType === "PROFIT_SHARING" ||
                   tx.transactionType === "ISSUE_CREDIT"
                 ) {
                   typeClass = "text-info";
+                } else {
+                  // income → xanh lá
+                  if (isIncome) typeClass = "text-success";
+                  // expense → vàng (theo logic cũ bạn dùng text-warning)
+                  if (isExpense) typeClass = "text-warning";
                 }
 
-                //AMOUNT COLOR
+                // Màu số tiền
                 const amountClass = isIncome
                   ? "text-success"
                   : isExpense
                   ? "text-danger"
                   : "text-light";
 
-                let prefix = "";
-
-                if (isIncome) {
-                  prefix = "+";
-                } else if (isExpense) {
-                  prefix = "-";
-                }
-
-                // Profit Sharing → expense nhưng ko hiển thị dấu trừ
-                if (tx.transactionType === "PROFIT_SHARING") {
-                  prefix = "";
-                }
+                // Prefix: BE không trả dấu nên front tự thêm
+                const prefix = isIncome ? "+" : isExpense ? "-" : "";
 
                 //nếu là ISSUE_CREDIT thì hiển thị credits thay vì USD
                 const unit =
