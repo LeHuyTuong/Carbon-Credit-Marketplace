@@ -96,44 +96,45 @@ export default function ReportDetail() {
             <h3 className="fw-bold mb-3">Detail Report</h3>
             <Row className="g-3">
               <Col md={6}>
-                <p>
+                <p className="mb-3" style={{ lineHeight: "1" }}>
                   <strong>Project:</strong> {report.projectName}
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Seller:</strong> {report.sellerName}
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Period:</strong> {report.period}
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Total Energy:</strong> {report.totalEnergy} kWh
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Total CO₂:</strong> {report.totalCo2} kg
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Vehicles:</strong> {report.vehicleCount}
                 </p>
               </Col>
               <Col md={6}>
-                <p>
+                <p className="mb-3" style={{ lineHeight: "1" }}>
                   <strong>Status:</strong>{" "}
                   <Badge bg="info">{report.status}</Badge>
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Submitted At:</strong>{" "}
                   {new Date(report.submittedAt).toLocaleString("vi-VN", {
                     timeZone: "Asia/Ho_Chi_Minh",
                     hour12: false,
                   })}
                 </p>
-                <p>
+                <p className="mb-3">
                   <strong>Source:</strong> {report.source}
                 </p>
-                <p>
+                <p className="mb-1">
                   <strong>Uploaded File:</strong>
                 </p>
                 <a
+                  className="d-block mb-3"
                   href={report.uploadStorageUrl}
                   target="_blank"
                   rel="noopener noreferrer"

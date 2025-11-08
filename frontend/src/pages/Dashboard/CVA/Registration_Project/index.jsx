@@ -122,7 +122,7 @@ const ApplicationList = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header
         title="APPLICATIONS"
         subtitle="List of Pending CVA Project Applications"

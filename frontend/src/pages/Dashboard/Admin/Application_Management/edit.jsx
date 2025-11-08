@@ -156,7 +156,7 @@ const ApplicationEdit = () => {
 
   // Giao diện form chính
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
       </Box>

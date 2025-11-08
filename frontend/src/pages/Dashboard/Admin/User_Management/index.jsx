@@ -66,7 +66,7 @@ const Team = () => {
   }, []);
 
   const columns = [
-    { field: "userid", headerName: "User ID" },
+    { field: "userid", headerName: "User ID",flex: 1 },
     { field: "email", headerName: "Email", flex: 1 },
     {
       field: "status",
@@ -95,7 +95,7 @@ const Team = () => {
       renderCell: ({ row: { access } }) => {
         const config = accessConfig[access?.toUpperCase()] || {};
         return (
-          <Box display="flex" alignItems="center" justifyContent="center" width="100%" height="100%">
+          <Box display="flex" alignItems="center" justifyContent="left" width="100%" height="100%">
             <Box
               display="flex"
               alignItems="center"
@@ -119,20 +119,6 @@ const Team = () => {
       },
     },
     {
-      field: "balance",
-      headerName: "Wallet Balance",
-      flex: 1,
-      renderCell: ({ row }) => <Box
-       sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "left",
-              width: "100%",
-              height: "100%",
-            }}
-      ><Typography>{row.balance} ₫</Typography></Box>,
-    },
-    {
       field: "action",
       headerName: "Action",
       flex: 0.8,
@@ -147,7 +133,7 @@ const Team = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="USERS" subtitle="Managing the Users" />
       <Box
         m="40px 0 0 0"

@@ -81,7 +81,7 @@ const EVList = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="ELECTRIC VEHICLES" subtitle="List of electric vehicles" />
 
       <Box

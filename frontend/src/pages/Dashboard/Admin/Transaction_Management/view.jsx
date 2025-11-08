@@ -110,7 +110,7 @@ const ViewTransaction = () => {
   const paymentInfo = trx.paymentDetails || {};
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="TRANSACTION DETAIL" subtitle="Withdrawal request details" />
 
       <Box
@@ -163,7 +163,7 @@ const ViewTransaction = () => {
             </Typography>
           )}
 
-          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
+          {/* <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
 
           <Typography variant="subtitle1" color={colors.blueAccent[300]}>
             Payment Details
@@ -178,7 +178,7 @@ const ViewTransaction = () => {
             <b>Bank Code:</b> {paymentInfo.bankCode || "N/A"}
           </Typography>
 
-          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
+          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} /> */}
 
           <Typography variant="subtitle1" color={colors.blueAccent[300]}>
             User Info

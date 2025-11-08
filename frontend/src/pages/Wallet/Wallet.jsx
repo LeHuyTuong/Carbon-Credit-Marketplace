@@ -359,6 +359,8 @@ export default function Wallet() {
               type: "success",
             });
             await fetchWallet();
+            nav("/wallet", { replace: true });
+
             setShowShareModal(false);
           } catch (err) {
             setToast({

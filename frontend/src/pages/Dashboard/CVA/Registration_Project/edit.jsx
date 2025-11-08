@@ -81,7 +81,7 @@ const ApplicationEdit = () => {
   //  Loading
   if (loading)
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
+      <Box display="flex" sx={{ marginLeft: "290px" }} justifyContent="center" alignItems="center" height="70vh">
         <CircularProgress />
       </Box>
     );
@@ -89,7 +89,7 @@ const ApplicationEdit = () => {
   //  Không có dữ liệu
   if (!application)
     return (
-      <Box textAlign="center" mt={5}>
+      <Box textAlign="center" sx={{ marginLeft: "290px" }} mt={5}>
         <Typography variant="h6" color="error">
           Application not found.
         </Typography>
@@ -106,7 +106,7 @@ const ApplicationEdit = () => {
   const status = application.status;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header
         title="CVA DECISION"
         subtitle={`ID: ${application.id || application.applicationId}`}

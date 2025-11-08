@@ -88,12 +88,12 @@ const ViewUser = () => {
     fetchUser();
   }, [email]);
 
-  if (loading) return <Typography>Loading...</Typography>;
-  if (!user) return <Typography>User not found</Typography>;
+  if (loading) return <Typography sx={{ marginLeft: "290px" }}>Loading...</Typography>;
+  if (!user) return <Typography sx={{ marginLeft: "290px" }}>User not found</Typography>;
 
   // UI 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="USER DETAILS" subtitle="View user information" />
       <Paper
         elevation={2}

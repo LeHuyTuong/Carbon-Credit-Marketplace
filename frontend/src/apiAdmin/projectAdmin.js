@@ -21,25 +21,35 @@ export async function getProjectById(id) {
   });
 }
 // Cập nhật project theo id
+
 export const updateProjectById = async (id, payload) => {
   try {
     const formData = new FormData();
 
-    // append tất cả key/value trong payload
+    // Append all text + file fields
     Object.entries(payload).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value);
       }
     });
 
+    const token = localStorage.getItem("accessToken");
+
     const res = await fetch(`/api/v1/projects/${id}`, {
       method: "PUT",
-      body: formData, // gửi form-data
+      body: formData,
       headers: {
+        Authorization: `Bearer ${token}`,
         "X-Request-Trace": payload.requestTrace || `trace_${Date.now()}`,
         "X-Request-DateTime": payload.requestDateTime || new Date().toISOString(),
       },
     });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Update failed:", res.status, errorText);
+      throw new Error(`HTTP ${res.status}: ${errorText}`);
+    }
 
     return await res.json();
   } catch (err) {
@@ -47,6 +57,5 @@ export const updateProjectById = async (id, payload) => {
     throw err;
   }
 };
-
 
 

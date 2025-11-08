@@ -1,58 +1,44 @@
 import { ResponsiveLine } from "@nivo/line";
 import { useTheme } from "@mui/material";
 import { tokens } from "@/theme";
-import { mockLineData as data } from "@/data/mockData";
-const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
+
+const LineChart = ({ series = [], isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // Hàm xác định màu theo id của series
+  const getSeriesColor = (serie) => {
+    switch (serie.id) {
+      case "Approved":
+        return colors.greenAccent[500]; // xanh lá
+      case "Pending":
+        return colors.blueAccent[500]; // xanh dương
+      case "Rejected":
+        return colors.redAccent[500]; // đỏ
+      default:
+        return colors.grey[500];
+    }
+  };
+
   return (
     <ResponsiveLine
-      data={data}
+      data={series}
+      colors={getSeriesColor} // <-- dùng hàm để set màu
       theme={{
         axis: {
-          domain: {
-            line: {
-              stroke: colors.grey[100],
-            },
-          },
-          legend: {
-            text: {
-              fill: colors.grey[100],
-            },
-          },
+          domain: { line: { stroke: colors.grey[100] } },
+          legend: { text: { fill: colors.grey[100] } },
           ticks: {
-            line: {
-              stroke: colors.grey[100],
-              strokeWidth: 1,
-            },
-            text: {
-              fill: colors.grey[100],
-            },
+            line: { stroke: colors.grey[100], strokeWidth: 1 },
+            text: { fill: colors.grey[100] },
           },
         },
-        legends: {
-          text: {
-            fill: colors.grey[100],
-          },
-        },
-        tooltip: {
-          container: {
-            color: colors.primary[500],
-          },
-        },
+        legends: { text: { fill: colors.grey[100] } },
+        tooltip: { container: { color: colors.primary[500] } },
       }}
-      colors={{ datum: "color" }} // added
       margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
       xScale={{ type: "point" }}
-      yScale={{
-        type: "linear",
-        min: "auto",
-        max: "auto",
-        stacked: false,
-        reverse: false,
-      }}
-      yFormat=" >-.2f"
+      yScale={{ type: "linear", min: 0, max: "auto", stacked: false }}
       curve="catmullRom"
       axisTop={null}
       axisRight={null}
@@ -61,17 +47,17 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
         tickSize: 0,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "month", // added
+        legend: isDashboard ? undefined : "month",
         legendOffset: 36,
         legendPosition: "middle",
       }}
       axisLeft={{
         orient: "left",
-        tickValues: 5, // added
+        tickValues: 5,
         tickSize: 3,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "report", // added
+        legend: isDashboard ? undefined : "report",
         legendOffset: -40,
         legendPosition: "middle",
       }}
@@ -98,15 +84,7 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
           symbolSize: 12,
           symbolShape: "circle",
           symbolBorderColor: "rgba(0, 0, 0, .5)",
-          effects: [
-            {
-              on: "hover",
-              style: {
-                itemBackground: "rgba(0, 0, 0, .03)",
-                itemOpacity: 1,
-              },
-            },
-          ],
+          effects: [{ on: "hover", style: { itemBackground: "rgba(0, 0, 0, .03)", itemOpacity: 1 } }],
         },
       ]}
     />

@@ -84,7 +84,7 @@ const NewProjectForm = () => {
   };
 
   return (
-    <Box m={2}>
+    <Box m={2} sx={{ marginLeft: "290px" }}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Header title="CREATE PROJECT" subtitle="Create a new carbon project" />
