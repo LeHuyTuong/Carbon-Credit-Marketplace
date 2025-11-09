@@ -7,7 +7,6 @@ import { Link } from "react-router-dom";
 import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiAdmin/companyAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
-import dayjs from "dayjs";
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

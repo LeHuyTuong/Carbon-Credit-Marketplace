@@ -7,8 +7,6 @@ import {
   Button,
   TextField,
   MenuItem,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -32,23 +30,6 @@ const ApplicationEdit = () => {
     applicationDocsUrl: "",
   });
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  // Map status từ API
-  const mapStatus = (status) => {
-    switch (status) {
-      case "ADMIN_APPROVED":
-        return "APPROVED";
-      case "ADMIN_REJECTED":
-        return "REJECTED";
-      case "NEEDS_REVISION":
-        return "NEEDS_REVISION";
-      case "UNDER_REVIEW":
-        return "UNDER_REVIEW";
-      case "CVA_REJECTED":
-        return "CVA_REJECTED"; // Thêm mapping này
-      default:
-        return "SUBMITTED";
-    }
-  };
 
   // Fetch dữ liệu
   useEffect(() => {
@@ -63,7 +44,7 @@ const ApplicationEdit = () => {
           setFormData({
             projectTitle: appData.projectTitle || "",
             companyName: appData.companyName || "",
-            status: mapStatus(appData.status),
+            status: appData.status,
             reviewNote: appData.reviewNote || "",
             finalReviewNote: appData.finalReviewNote || "",
             applicationDocsUrl: appData.applicationDocsUrl || "",
@@ -165,17 +146,19 @@ const ApplicationEdit = () => {
         <TextField
           select
           label="Status"
-          value={formData.status}
+          value={formData.status || ""}
           onChange={(e) => handleChange("status", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
         >
-          <MenuItem value="SUBMITTED">Submitted</MenuItem>
-          <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
-          <MenuItem value="NEEDS_REVISION">Needs Revision</MenuItem>
-          <MenuItem value="APPROVED">Approved</MenuItem>
-          <MenuItem value="REJECTED">Rejected</MenuItem>
-          <MenuItem value="CVA_REJECTED">CVA Rejected</MenuItem>
+          {/* Nếu status hiện tại không phải hai giá trị này, hiển thị dòng readonly */}
+          {!["ADMIN_APPROVED", "ADMIN_REJECTED"].includes(formData.status) && (
+            <MenuItem value={formData.status} disabled  style={{ display: "none" }}>
+              {formData.status}
+            </MenuItem>
+          )}
+          <MenuItem value="ADMIN_APPROVED">ADMIN_APPROVED</MenuItem>
+          <MenuItem value="ADMIN_REJECTED">ADMIN_REJECTED</MenuItem>
         </TextField>
 
         <TextField

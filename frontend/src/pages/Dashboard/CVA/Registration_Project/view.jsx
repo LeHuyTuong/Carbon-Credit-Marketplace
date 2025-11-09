@@ -11,13 +11,15 @@ import {
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
+import { getCompanyKYCProfile } from "@/apiCVA/registrationCVA.js"; // 
 import Header from "@/components/Chart/Header";
 
 const ApplicationView = () => {
-  const { id } = useParams(); // ← id lấy từ route: /cva/view_registration_project/:id
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [application, setApplication] = useState(null);
+  const [kyc, setKyc] = useState(null); //  thêm state để lưu thông tin KYC
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -28,38 +30,43 @@ const ApplicationView = () => {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        console.log(" Fetching application with ID:", id);
-        const res = await getProjectApplicationByIdForCVA(id);
-        console.log(" Raw API response:", res);
+        console.log("Fetching application with ID:", id);
+        const [appRes, kycRes] = await Promise.all([
+          getProjectApplicationByIdForCVA(id),
+          getCompanyKYCProfile(), //  fetch song song cho nhanh
+        ]);
 
-        //  API chuẩn trả về responseData chứa dữ liệu
-        const code = res?.responseStatus?.responseCode;
-        if (code === "200" || code === "00000000") {
-          const data =
-            res?.responseData ||
-            res?.response ||
-            res; // fallback nếu backend trả khác format
-          if (data) {
-            setApplication(data);
-          } else {
+        console.log("Application Response:", appRes);
+        console.log("Company KYC Response:", kycRes);
+
+        // --- Xử lý application ---
+        const appCode = appRes?.responseStatus?.responseCode;
+        if (appCode === "200" || appCode === "00000000") {
+          const data = appRes?.responseData || appRes?.response || appRes;
+          if (data) setApplication(data);
+          else
             setSnackbar({
               open: true,
               message: "Không tìm thấy dữ liệu trong phản hồi.",
               severity: "warning",
             });
-          }
         } else {
           setSnackbar({
             open: true,
-            message: `API trả về lỗi code ${code}`,
+            message: `Lỗi lấy dữ liệu Application (code ${appCode})`,
             severity: "error",
           });
         }
+
+        // --- Xử lý KYC ---
+        if (kycRes?.id) setKyc(kycRes);
+        else console.warn(" Không có dữ liệu KYC hoặc chưa KYC.");
+
       } catch (error) {
-        console.error(" Error fetching detail:", error);
+        console.error("Error fetching details:", error);
         setSnackbar({
           open: true,
-          message: "Không thể tải chi tiết đăng ký.",
+          message: "Không thể tải dữ liệu chi tiết hoặc KYC.",
           severity: "error",
         });
       } finally {
@@ -99,16 +106,17 @@ const ApplicationView = () => {
         subtitle={`Application ID: ${application.applicationId || id}`}
       />
 
+      {/* Application Info  */}
       <Paper sx={{ p: 3, mt: 2, borderRadius: 3, boxShadow: 3 }}>
         <Typography variant="h6" gutterBottom>
           {application.projectTitle || "Untitled Project"}
         </Typography>
         <Divider sx={{ mb: 2 }} />
 
-        <Typography> <b>Project ID:</b> {application.projectId || "—"}</Typography>
-        <Typography> <b>Company ID:</b> {application.companyId || "—"}</Typography>
-        <Typography> <b>Company Name:</b> {application.companyName || "—"}</Typography>
-        <Typography> <b>Status:</b> {application.status || "—"}</Typography>
+        <Typography><b>Project ID:</b> {application.projectId || "—"}</Typography>
+        <Typography><b>Company ID:</b> {application.companyId || "—"}</Typography>
+        <Typography><b>Company Name:</b> {application.companyName || "—"}</Typography>
+        <Typography><b>Status:</b> {application.status || "—"}</Typography>
 
         <Typography mt={2}>
           <b>Review Note:</b> {application.reviewNote || "N/A"}
@@ -121,13 +129,12 @@ const ApplicationView = () => {
           <b>Submitted At:</b>{" "}
           {application.submittedAt
             ? new Date(application.submittedAt).toLocaleDateString("vi-VN", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
             : "N/A"}
         </Typography>
-
 
         {application.applicationDocsUrl ? (
           <Box mt={2}>
@@ -148,6 +155,29 @@ const ApplicationView = () => {
           <Typography mt={2} color="text.secondary">
             No documents attached
           </Typography>
+        )}
+
+        {/* Company KYC Info  */}
+        {kyc && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" gutterBottom>
+              Company KYC Profile
+            </Typography>
+            <Typography><b>KYC ID:</b> {kyc.id}</Typography>
+            <Typography><b>Company Name:</b> {kyc.companyName}</Typography>
+            <Typography><b>Business License:</b> {kyc.businessLicense}</Typography>
+            <Typography><b>Tax Code:</b> {kyc.taxCode}</Typography>
+            <Typography><b>Address:</b> {kyc.address}</Typography>
+            <Typography>
+              <b>Created At:</b>{" "}
+              {new Date(kyc.createAt).toLocaleString("vi-VN")}
+            </Typography>
+            <Typography>
+              <b>Updated At:</b>{" "}
+              {new Date(kyc.updatedAt).toLocaleString("vi-VN")}
+            </Typography>
+          </>
         )}
 
         <Box mt={4} display="flex" gap={2}>
