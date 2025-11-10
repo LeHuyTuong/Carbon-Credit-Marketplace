@@ -127,12 +127,12 @@ const ApplicationView = () => {
             </Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
-              Review Note:
+              Review Note Of CVA:
             </Typography>
             <Typography mb={2}>{application.reviewNote || "N/A"}</Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
-              Final Review Note:
+              Final Review Note Of Admin:
             </Typography>
             <Typography mb={2}>{application.finalReviewNote || "N/A"}</Typography>
 

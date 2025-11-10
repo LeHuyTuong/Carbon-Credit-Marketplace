@@ -54,7 +54,14 @@ const ApplicationEdit = () => {
         }
       } catch (error) {
         console.error("Error fetching application:", error);
-        showSnackbar("error", "Failed to fetch application.");
+
+        const message =
+          error?.response?.data?.responseStatus?.responseDesc ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to fetch application.";
+
+        showSnackbar("error", message);
       } finally {
         setLoading(false);
       }
@@ -90,7 +97,14 @@ const ApplicationEdit = () => {
       }
     } catch (error) {
       console.error("Update failed:", error);
-      showSnackbar("error", "Application submission failed. Please check your data.");
+
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Application submission failed. Please check your data.";
+
+      showSnackbar("error", message);
     }
   };
 
@@ -151,9 +165,9 @@ const ApplicationEdit = () => {
           fullWidth
           sx={{ mt: 2 }}
         >
-          {/* Nếu status hiện tại không phải hai giá trị này, hiển thị dòng readonly */}
+          {/* Nếu status hiện tại không phải hai giá trị này, hiển thị dòng readonly,không hiển thị trong dropdown */}
           {!["ADMIN_APPROVED", "ADMIN_REJECTED"].includes(formData.status) && (
-            <MenuItem value={formData.status} disabled  style={{ display: "none" }}>
+            <MenuItem value={formData.status} disabled style={{ display: "none" }}>
               {formData.status}
             </MenuItem>
           )}

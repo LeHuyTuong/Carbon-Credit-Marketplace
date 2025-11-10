@@ -54,6 +54,6 @@ export async function updateApplicationDecision(applicationId, payload) {
   );
 }
 //lấy từng company kyc profile
-export async function getCompanyKYCProfile() {
-  return apiFetch("/api/v1/kyc/company", "GET");
+export async function getCompanyKYCProfile(companyId) {
+  return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
 }

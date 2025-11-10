@@ -8,10 +8,10 @@ import {
   Snackbar,
   Alert,
   Divider,
+  Grid,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjectApplicationByIdForCVA } from "@/apiCVA/registrationCVA.js";
-import { getCompanyKYCProfile } from "@/apiCVA/registrationCVA.js"; // 
+import { getProjectApplicationByIdForCVA, getCompanyKYCProfile } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
 
 const ApplicationView = () => {
@@ -19,7 +19,7 @@ const ApplicationView = () => {
   const navigate = useNavigate();
 
   const [application, setApplication] = useState(null);
-  const [kyc, setKyc] = useState(null); //  thêm state để lưu thông tin KYC
+  const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -30,26 +30,13 @@ const ApplicationView = () => {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        console.log("Fetching application with ID:", id);
-        const [appRes, kycRes] = await Promise.all([
-          getProjectApplicationByIdForCVA(id),
-          getCompanyKYCProfile(), //  fetch song song cho nhanh
-        ]);
-
-        console.log("Application Response:", appRes);
-        console.log("Company KYC Response:", kycRes);
-
-        // --- Xử lý application ---
+        const appRes = await getProjectApplicationByIdForCVA(id);
         const appCode = appRes?.responseStatus?.responseCode;
+        let appData = null;
+
         if (appCode === "200" || appCode === "00000000") {
-          const data = appRes?.responseData || appRes?.response || appRes;
-          if (data) setApplication(data);
-          else
-            setSnackbar({
-              open: true,
-              message: "Không tìm thấy dữ liệu trong phản hồi.",
-              severity: "warning",
-            });
+          appData = appRes?.responseData || appRes?.response || appRes;
+          setApplication(appData);
         } else {
           setSnackbar({
             open: true,
@@ -58,10 +45,10 @@ const ApplicationView = () => {
           });
         }
 
-        // --- Xử lý KYC ---
-        if (kycRes?.id) setKyc(kycRes);
-        else console.warn(" Không có dữ liệu KYC hoặc chưa KYC.");
-
+        if (appData?.companyId) {
+          const kycRes = await getCompanyKYCProfile(appData.companyId);
+          if (kycRes?.id) setKyc(kycRes);
+        }
       } catch (error) {
         console.error("Error fetching details:", error);
         setSnackbar({
@@ -77,15 +64,13 @@ const ApplicationView = () => {
     fetchDetail();
   }, [id]);
 
-  //  Loading
   if (loading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="70vh">
-        <CircularProgress />
+        <CircularProgress size={60} thickness={4} />
       </Box>
     );
 
-  //  Không có dữ liệu
   if (!application)
     return (
       <Box textAlign="center" mt={5}>
@@ -98,97 +83,112 @@ const ApplicationView = () => {
       </Box>
     );
 
-  //  UI chính
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
+    <Box m="20px" sx={{ marginLeft: "290px"}}>
       <Header
         title="APPLICATION DETAIL"
         subtitle={`Application ID: ${application.applicationId || id}`}
       />
 
-      {/* Application Info  */}
-      <Paper sx={{ p: 3, mt: 2, borderRadius: 3, boxShadow: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {application.projectTitle || "Untitled Project"}
+      <Paper
+        sx={{
+          p: 4,
+          mt: 3,
+          borderRadius: 3,
+          boxShadow: 4,
+          backgroundColor: "#fafafa",
+        }}
+      >
+        {/* Application Info */}
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: "bold", mb: 2, color: "#1976d2", fontSize: "1.2rem" }}
+        >
+          Application Information
         </Typography>
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: 3 }} />
 
-        <Typography><b>Project ID:</b> {application.projectId || "—"}</Typography>
-        <Typography><b>Company ID:</b> {application.companyId || "—"}</Typography>
-        <Typography><b>Company Name:</b> {application.companyName || "—"}</Typography>
-        <Typography><b>Status:</b> {application.status || "—"}</Typography>
+        <Grid container spacing={10}>
+          <Grid item xs={12} sm={6}>
+            <Typography sx={{ fontSize: "1rem" }}><b>Project Title:</b> {application.projectTitle || "Untitled Project"}</Typography>
+            <Typography sx={{ fontSize: "1rem" }}><b>Project ID:</b> {application.projectId || "—"}</Typography>
+            <Typography sx={{ fontSize: "1rem" }}><b>Status:</b> {application.status || "—"}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography sx={{ fontSize: "1rem" }}><b>Company Name:</b> {application.companyName || "—"}</Typography>
+            <Typography sx={{ fontSize: "1rem" }}><b>Company ID:</b> {application.companyId || "—"}</Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Submitted At:</b>{" "}
+              {application.submittedAt
+                ? new Date(application.submittedAt).toLocaleDateString("vi-VN")
+                : "N/A"}
+            </Typography>
+          </Grid>
+        </Grid>
 
-        <Typography mt={2}>
+        <Typography mt={2} sx={{ fontSize: "1rem" }}>
           <b>Review Note:</b> {application.reviewNote || "N/A"}
         </Typography>
-        <Typography>
+        <Typography sx={{ fontSize: "1rem" }}>
           <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
-        </Typography>
-
-        <Typography mt={2}>
-          <b>Submitted At:</b>{" "}
-          {application.submittedAt
-            ? new Date(application.submittedAt).toLocaleDateString("vi-VN", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })
-            : "N/A"}
         </Typography>
 
         {application.applicationDocsUrl ? (
           <Box mt={2}>
-            <a
+            <Button
               href={application.applicationDocsUrl}
               target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: "#1976d2",
-                textDecoration: "underline",
-                fontWeight: 500,
-              }}
+              variant="outlined"
+              sx={{ textTransform: "none", fontSize: "1rem" }}
             >
               View Attached Documents
-            </a>
+            </Button>
           </Box>
         ) : (
-          <Typography mt={2} color="text.secondary">
+          <Typography mt={2} color="text.secondary" sx={{ fontSize: "1rem" }}>
             No documents attached
           </Typography>
         )}
 
-        {/* Company KYC Info  */}
+        {/* KYC Info */}
         {kyc && (
           <>
-            <Divider sx={{ my: 3 }} />
-            <Typography variant="h6" gutterBottom>
-              Company KYC Profile
+            <Divider sx={{ my: 4 }} />
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: "bold", mb: 2, color: "#388e3c", fontSize: "1.2rem" }}
+            >
+              Company Registration
             </Typography>
-            <Typography><b>KYC ID:</b> {kyc.id}</Typography>
-            <Typography><b>Company Name:</b> {kyc.companyName}</Typography>
-            <Typography><b>Business License:</b> {kyc.businessLicense}</Typography>
-            <Typography><b>Tax Code:</b> {kyc.taxCode}</Typography>
-            <Typography><b>Address:</b> {kyc.address}</Typography>
-            <Typography>
-              <b>Created At:</b>{" "}
-              {new Date(kyc.createAt).toLocaleString("vi-VN")}
-            </Typography>
-            <Typography>
-              <b>Updated At:</b>{" "}
-              {new Date(kyc.updatedAt).toLocaleString("vi-VN")}
-            </Typography>
+
+            <Grid container spacing={19}>
+              <Grid item xs={12} sm={6}>
+                <Typography sx={{ fontSize: "1rem" }}><b>KYC ID:</b> {kyc.id}</Typography>
+                <Typography sx={{ fontSize: "1rem" }}><b>Company Name:</b> {kyc.companyName}</Typography>
+                <Typography sx={{ fontSize: "1rem" }}><b>Tax Code:</b> {kyc.taxCode}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography sx={{ fontSize: "1rem" }}><b>Business License:</b> {kyc.businessLicense}</Typography>
+                <Typography sx={{ fontSize: "1rem" }}><b>Address:</b> {kyc.address}</Typography>
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Created At:</b>{" "}
+                  {new Date(kyc.createAt).toLocaleString("vi-VN")}
+                </Typography>
+              </Grid>
+            </Grid>
           </>
         )}
 
-        <Box mt={4} display="flex" gap={2}>
+        <Box mt={5} display="flex" gap={2} justifyContent="flex-end"  width="100%">
           <Button
             variant="contained"
             color="primary"
+            size="large"
             onClick={() => navigate(`/cva/edit_registration_project/${id}`)}
           >
             Edit
           </Button>
-          <Button variant="outlined" onClick={() => navigate(-1)}>
+          <Button variant="outlined" size="large" onClick={() => navigate(-1)}>
             Back
           </Button>
         </Box>

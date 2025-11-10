@@ -132,3 +132,8 @@ export const getReportDetails = async (
     empty: true,
   };
 };
+
+//lấy từng company kyc profile
+export async function getCompanyKYCProfile(companyId) {
+  return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
+}
