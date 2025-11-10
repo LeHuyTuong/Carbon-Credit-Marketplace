@@ -14,6 +14,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getProjectApplicationByIdForCVA, getCompanyKYCProfile } from "@/apiCVA/registrationCVA.js";
 import Header from "@/components/Chart/Header";
 
+
 const ApplicationView = () => {
   const { id } = useParams();
   const navigate = useNavigate();

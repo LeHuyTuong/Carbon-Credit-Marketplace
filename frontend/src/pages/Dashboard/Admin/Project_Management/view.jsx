@@ -162,11 +162,11 @@ const ViewProject = () => {
   return (
     <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
-      <Paper elevation={3} sx={{ p: 3, mt: 3, backgroundColor: colors.primary[400] }}>
+      <Paper elevation={3} sx={{ p: 3, mt: 3, width: "100%", backgroundColor: colors.primary[400] }}>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
-            spacing={20} // tăng khoảng cách giữa các cột
+            spacing={3} // tăng khoảng cách giữa các cột
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
@@ -181,7 +181,7 @@ const ViewProject = () => {
             }}
           >
             {/* COLUMN 1  */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} sx={{ minWidth: 0 }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 General Info
               </Typography>
@@ -227,7 +227,7 @@ const ViewProject = () => {
                   sx={{ mb: 2 }}
                 />
               ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap",overflowWrap: "break-word", }}>
                   {formData.shortdescription || "—"}
                 </Typography>
               )}

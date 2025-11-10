@@ -45,6 +45,8 @@ const ApplicationEdit = () => {
             projectTitle: appData.projectTitle || "",
             companyName: appData.companyName || "",
             status: appData.status,
+            cvaReviewerName: appData.cvaReviewerName || "",
+            adminReviewerName: appData.adminReviewerName || "",
             reviewNote: appData.reviewNote || "",
             finalReviewNote: appData.finalReviewNote || "",
             applicationDocsUrl: appData.applicationDocsUrl || "",
@@ -79,7 +81,7 @@ const ApplicationEdit = () => {
   const handleUpdate = async () => {
     try {
       const payload = {
-        approved: formData.status === "APPROVED",
+        approved: formData.status === "ADMIN_APPROVED",
         note: formData.finalReviewNote || "No note provided",
       };
 
@@ -140,13 +142,15 @@ const ApplicationEdit = () => {
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
       </Box>
 
-      <Paper sx={{ p: 3, mt: 2 }}>
+      <Paper sx={{ p: 3, mt: 1 }}>
         <TextField
           label="Project Title"
           value={formData.projectTitle}
           onChange={(e) => handleChange("projectTitle", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
@@ -155,6 +159,8 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("companyName", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
@@ -175,19 +181,41 @@ const ApplicationEdit = () => {
           <MenuItem value="ADMIN_REJECTED">ADMIN_REJECTED</MenuItem>
         </TextField>
 
+
         <TextField
-          label="Review Note"
-          value={formData.reviewNote}
+          label="Verfication by CVA"
+          value={formData.cvaReviewerName || "N/A"}
+          onChange={(e) => handleChange("cvaReviewerName", e.target.value)}
+          fullWidth
+          sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
+        />
+
+        <TextField
+          label="Review Note Of CVA"
+          value={formData.reviewNote || "N/A"}
           onChange={(e) => handleChange("reviewNote", e.target.value)}
           fullWidth
           multiline
           rows={3}
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
-          label="Final Review Note"
+          label="Review by Admin"
+          value={formData.adminReviewerName || "N/A"}
+          onChange={(e) => handleChange("adminReviewerName", e.target.value)}
+          fullWidth
+          sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
+        />
+
+        <TextField
+          label="Final Review Note Of Admin"
           value={formData.finalReviewNote}
           onChange={(e) => handleChange("finalReviewNote", e.target.value)}
           fullWidth
@@ -203,6 +231,7 @@ const ApplicationEdit = () => {
           fullWidth
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <Box mt={3} display="flex" gap={2}>
