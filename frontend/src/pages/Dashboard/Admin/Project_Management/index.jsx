@@ -48,20 +48,41 @@ const ListProjects = () => {
       headerName: "Project Name",
       flex: 1.2,
       renderCell: (params) => (
-        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+            textAlign: "left",
+          }}
+        >
           {params.value}
-        </Box>
+        </Typography>
       ),
-
     },
     {
       field: "shortdescription",
       headerName: "Description",
       flex: 1.5,
       renderCell: (params) => (
-        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.2,
+            textAlign: "left",
+          }}
+        >
           {params.value}
-        </Box>
+        </Typography>
       ),
 
     },
@@ -70,9 +91,20 @@ const ListProjects = () => {
       headerName: "Commitments",
       flex: 1.5,
       renderCell: (params) => (
-        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.2,
+            textAlign: "left",
+          }}
+        >
           {params.value}
-        </Box>
+        </Typography>
       ),
 
     },
@@ -81,9 +113,20 @@ const ListProjects = () => {
       headerName: "Measurement Method",
       flex: 1.5,
       renderCell: (params) => (
-        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.2,
+            textAlign: "left",
+          }}
+        >
           {params.value}
-        </Box>
+        </Typography>
       ),
 
     },
@@ -92,9 +135,20 @@ const ListProjects = () => {
       headerName: "Technical Indicators",
       flex: 1.5,
       renderCell: (params) => (
-        <Box sx={{ whiteSpace: "normal", overflow: "visible", lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.2,
+            textAlign: "left",
+          }}
+        >
           {params.value}
-        </Box>
+        </Typography>
       ),
 
     },

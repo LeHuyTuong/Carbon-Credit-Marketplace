@@ -488,7 +488,6 @@ const ViewReport = ({ report: initialReport }) => {
               <Table size="small" sx={{ mt: 1 }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>ID</TableCell>
                     <TableCell>Name</TableCell>
                     <TableCell>Score</TableCell>
                     <TableCell>Message</TableCell>

@@ -2,9 +2,10 @@
 import { DataGrid } from "@mui/x-data-grid";
 
 const AdminDataGrid = ({ rows, columns, getRowId }) => {
+    const displayRows = Array.isArray(rows) ? [...rows].reverse() : [];
   return (
     <DataGrid
-      rows={rows}
+      rows={displayRows}
       columns={columns}
       getRowId={getRowId}
       pagination
