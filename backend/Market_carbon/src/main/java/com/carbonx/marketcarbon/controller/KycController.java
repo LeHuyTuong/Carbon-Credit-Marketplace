@@ -155,7 +155,16 @@ public class KycController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
+    @Operation(
+            summary = "Get Company KYC by ID (Admin/CVA)",
+            description = "Allow ADMIN or CVA to retrieve KYC information of any company by its ID"
+    )
+    @GetMapping("/{companyId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
+    public ResponseEntity<KycCompanyResponse> getCompanyInfoById(@PathVariable Long companyId) {
+        return ResponseEntity.ok(kycService.getByCompanyIdForAdminOrCva(companyId));
+    }
+
     @Operation(summary = "Get Company KYC", description = "Get KYC profile of the current user's company")
     @GetMapping("/company")
     public ResponseEntity<TuongCommonResponse<KycCompanyResponse>> getKycCompany(

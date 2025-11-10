@@ -33,7 +33,7 @@ public class ProjectApplicationController {
     @PostMapping
     public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> submitApplication(
             @RequestParam("projectId") Long projectId,
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
@@ -43,6 +43,11 @@ public class ProjectApplicationController {
         String now = (requestDateTime != null && !requestDateTime.isBlank())
                 ? requestDateTime
                 : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        if (file == null || file.isEmpty()) {
+            TuongResponseStatus rs = new TuongResponseStatus("400", "File is required");
+            return ResponseEntity.badRequest().body(new TuongCommonResponse<>(trace, now, rs, null));
+        }
 
         ProjectApplicationResponse data = projectApplicationService.submit(projectId, file);
 

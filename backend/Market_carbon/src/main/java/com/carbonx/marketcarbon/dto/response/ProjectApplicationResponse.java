@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Data
 @Builder
@@ -27,7 +26,22 @@ public class ProjectApplicationResponse {
     private String applicationDocsUrl;
     private LocalDateTime submittedAt;
 
+    //  Thêm hai trường hiển thị tên người duyệt
+    private String cvaReviewerName;
+    private String adminReviewerName;
+
     public static ProjectApplicationResponse fromEntity(ProjectApplication app) {
+        String cvaName = null;
+        String adminName = null;
+
+        if (app.getReviewer() != null) {
+            cvaName = app.getReviewer().getDisplayName();
+        }
+
+        if (app.getFinalReviewer() != null) {
+            adminName = app.getFinalReviewer().getDisplayName();
+        }
+
         return ProjectApplicationResponse.builder()
                 .id(app.getId())
                 .projectId(app.getProject().getId())
@@ -40,7 +54,9 @@ public class ProjectApplicationResponse {
                 .applicationDocsUrl(app.getApplicationDocsUrl())
                 .applicationDocsPath(app.getApplicationDocsPath())
                 .submittedAt(app.getSubmittedAt())
+                //  Gán thêm
+                .cvaReviewerName(cvaName)
+                .adminReviewerName(adminName)
                 .build();
     }
 }
-

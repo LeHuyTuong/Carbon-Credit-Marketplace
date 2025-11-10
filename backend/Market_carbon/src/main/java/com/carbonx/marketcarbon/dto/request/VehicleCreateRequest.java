@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.common.annotation.PlateNumber;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class VehicleCreateRequest {
@@ -20,5 +21,8 @@ public class VehicleCreateRequest {
 
     @NotNull(message = "Company ID is required")
     private Long companyId;
+
+    @NotNull(message = "Document file is required")
+    private MultipartFile documentFile;
 
 }

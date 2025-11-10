@@ -17,29 +17,33 @@ import java.time.LocalDate;
 @Data
     public class ProjectRequest {
 
-        @NotBlank(message = "Title must not be blank")
-        @Size(max = 100, message = "Title must be at most 100 characters")
-        private String title;
+    @NotBlank(message = "Title must not be blank")
+    @Size(max = 100, message = "Title must be at most 100 characters")
+    private String title;
 
-        @NotBlank(message = "Description must not be blank")
-        @Size(max = 255, message = "Description must be at most 255 characters")
-        private String description;
+    @NotBlank(message = "Description must not be blank")
+    @Size(max = 255, message = "Description must be at most 255 characters")
+    private String description;
 
+    @NotNull(message = "Logo file is required")
+    @FileSize(max = 55242880, message = "Logo file must not exceed 50MB")
+    private MultipartFile logo;
 
-        @FileSize(max = 55242880, message = "Logo file must not exceed 50MB")
-        private MultipartFile logo;
+    @NotBlank(message = "Commitments must not be blank")
+    @Size(max = 2000, message = "Commitments must be at most 2000 characters")
+    private String commitments;
 
-        @Size(max = 2000, message = "Commitments must be at most 2000 characters")
-        private String commitments;
+    @NotBlank(message = "Technical indicators must not be blank")
+    @Size(max = 2000, message = "Technical indicators must be at most 2000 characters")
+    private String technicalIndicators;
 
-        @Size(max = 2000, message = "Technical indicators must be at most 2000 characters")
-        private String technicalIndicators;
+    @NotBlank(message = "Measurement method must not be blank")
+    @Size(max = 2000, message = "Measurement method must be at most 2000 characters")
+    private String measurementMethod;
 
-        @Size(max = 2000, message = "Measurement method must be at most 2000 characters")
-        private String measurementMethod;
-
-        @FileSize(max = 55242880, message = "legalDocsFile file must not exceed 50MB")
-        private MultipartFile  legalDocsFile;
+    @NotNull(message = "Legal documents file is required")
+    @FileSize(max = 55242880, message = "Legal documents file must not exceed 50MB")
+    private MultipartFile legalDocsFile;
 
 
         private BigDecimal emissionFactorKgPerKwh;

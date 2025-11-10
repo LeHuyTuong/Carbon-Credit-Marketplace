@@ -27,6 +27,8 @@ public interface KycService {
 
     KycCompanyResponse getByCompanyId();
 
+    KycCompanyResponse getByCompanyIdForAdminOrCva(Long companyId);
+
     List<KycCompanyResponse> getAllKYCCompany();
 
     Long createCva(KycCvaRequest req);

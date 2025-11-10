@@ -51,6 +51,7 @@ public enum ErrorCode {
     CREDIT_NOT_FOUND(404, "Credit not found", HttpStatus.NOT_FOUND),
     INVALID_INPUT(400, "Invalid request input", HttpStatus.BAD_REQUEST),
     INVALID_CREDIT_STATUS(400, "Invalid credit status", HttpStatus.BAD_REQUEST),
+    MISSING_FILE(404, "Document file is required", HttpStatus.NOT_FOUND),
 
     // ==== VALIDATION & STATE ====
     INVALID_STATUS(400, "Invalid application status.", HttpStatus.BAD_REQUEST),

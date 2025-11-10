@@ -56,7 +56,7 @@ public class EmissionReport {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "verified_by_cva_id")
-     Cva verifiedByCva;
+    Cva verifiedByCva;
 
     @Column(columnDefinition = "text")
     String comment;
@@ -101,6 +101,12 @@ public class EmissionReport {
 
     @Column(name = "verification_comment", columnDefinition = "text")
     String verificationComment;
+
+    @Column(name = "verified_by_cva_name", length = 128)
+    String verifiedByCvaName;
+
+    @Column(name = "admin_approved_by_name", length = 128)
+    String adminApprovedByName;
 
     @PrePersist
     void prePersist() {

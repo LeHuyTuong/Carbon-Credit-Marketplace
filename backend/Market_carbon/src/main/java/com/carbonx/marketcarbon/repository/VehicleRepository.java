@@ -48,5 +48,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Optional<Vehicle> findByPlateNumberWithDetails(String plateNumber);
 
     long countByCompany_Id(Long companyId);
+    List<Vehicle> findByCompany_Id(Long companyId);
+
 
 }
