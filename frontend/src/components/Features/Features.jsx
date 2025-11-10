@@ -75,7 +75,7 @@ export default function Features() {
         className="features-section reveal"
       >
         <div className="container" id="register">
-          <h2 className="section-title text-center text-dark mb-3">
+          <h2 className="section-title text-center text-dark mb-5 mt-2">
             CHOOSE CARBON PROJECTS
           </h2>
           {/* hiển thị cảnh báo nếu user không phải company */}
@@ -92,7 +92,7 @@ export default function Features() {
               itemsPerPage={3}
               renderItem={(proj) => (
                 <div className="col-md-4" key={`admin-${proj.id}`}>
-                  <div className="card h-100 overflow-hidden position-relative shadow-sm border-0">
+                  <div className="card h-100 position-relative shadow-sm border-0">
                     {/* IMAGE */}
                     <div className="bg-image hover-overlay">
                       <img
@@ -122,10 +122,10 @@ export default function Features() {
 
                     {/* CONTENT */}
                     <div className="card-body d-flex flex-column">
-                      <h5 className="card-title fw-semibold text-dark">
+                      <h5 className="card-title-f fw-bold text-dark">
                         {proj.title || "Untitled Project"}
                       </h5>
-                      <p className="card-text flex-grow-1 text-muted">
+                      <p className="card-text flex-grow-1 fw-semibold text-muted">
                         {proj.description?.substring(0, 160) ||
                           "No description provided."}
                         {proj.description?.length > 160 && "..."}

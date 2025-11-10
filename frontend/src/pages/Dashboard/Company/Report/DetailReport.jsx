@@ -90,58 +90,89 @@ export default function ReportDetail() {
             borderRadius: "15px",
             background: "rgba(255,255,255,0.9)",
             backdropFilter: "blur(10px)",
+            marginTop: "-50px",
           }}
         >
           <Card.Body>
             <h3 className="fw-bold mb-3">Detail Report</h3>
             <Row className="g-3">
               <Col md={6}>
-                <p className="mb-3" style={{ lineHeight: "1" }}>
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Project:</strong> {report.projectName}
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Seller:</strong> {report.sellerName}
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Period:</strong> {report.period}
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Total Energy:</strong> {report.totalEnergy} kWh
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Total CO₂:</strong> {report.totalCo2} kg
                 </p>
-                <p className="mb-3">
-                  <strong>Vehicles:</strong> {report.vehicleCount}
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
+                  <strong>Vehicles:</strong> {report.vehicleCount} vehicles
                 </p>
               </Col>
               <Col md={6}>
-                <p className="mb-3" style={{ lineHeight: "1" }}>
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Status:</strong>{" "}
                   <Badge bg="info">{report.status}</Badge>
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Submitted At:</strong>{" "}
                   {new Date(report.submittedAt).toLocaleString("vi-VN", {
                     timeZone: "Asia/Ho_Chi_Minh",
                     hour12: false,
                   })}
                 </p>
-                <p className="mb-3">
+                <p
+                  className="mb-3"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Source:</strong> {report.source}
                 </p>
-                <p className="mb-1">
+                <p
+                  className="mb-1"
+                  style={{ height: "1.5rem", fontSize: "1rem" }}
+                >
                   <strong>Uploaded File:</strong>
                 </p>
                 <a
-                  className="d-block mb-3"
+                  className="d-block mb-2"
                   href={report.uploadStorageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {report.uploadOriginalFilename}
                 </a>
-                <p className="mt-2">
+                <p>
                   <strong>Rows:</strong> {report.uploadRows} |{" "}
                   <strong>Size:</strong>{" "}
                   {(report.uploadSizeBytes / 1024).toFixed(1)} KB

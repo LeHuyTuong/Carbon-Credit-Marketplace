@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import "./manage.css";
-import { Button, Modal, Form, Toast, ToastContainer } from "react-bootstrap";
+import {
+  Button,
+  Modal,
+  Form,
+  Toast,
+  ToastContainer,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import useReveal from "../../../../hooks/useReveal";
@@ -20,6 +28,10 @@ const schema = Yup.object().shape({
   brand: Yup.string().required("Brand is required"),
   model: Yup.string().required("Model is required"),
   company: Yup.string().required("Company is required"),
+  acceptRules: Yup.boolean().oneOf(
+    [true],
+    "You must accept the credit-sharing rules"
+  ),
 });
 
 export default function Manage() {
@@ -28,6 +40,7 @@ export default function Manage() {
   const [editData, setEditData] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // chứa vehicle muốn xóa
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   //state hiển thị thông báo (Toast)
   const [toast, setToast] = useState({
@@ -42,6 +55,7 @@ export default function Manage() {
   //lấy danh sách xe và gắn tên công ty tương ứng
   const fetchVehicles = async () => {
     try {
+      setLoading(true);
       //lấy song song danh sách xe và danh sách công ty được duyệt
       const [vehicleRes, companies] = await Promise.all([
         getVehicles(),
@@ -62,6 +76,9 @@ export default function Manage() {
       setVehicles(mappedVehicles);
     } catch (err) {
       console.error("Error loading list vehicles:", err.message);
+      setVehicles([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,6 +129,7 @@ export default function Manage() {
         model: values.model,
         brand: values.brand,
         companyId: Number(values.company), //đổi từ string sang số
+        documentFile: values.image,
       };
 
       //nếu có editData -> cập nhật, ngược lại -> tạo mới
@@ -181,6 +199,7 @@ export default function Manage() {
               <th>Brand</th>
               <th>Model</th>
               <th>Company</th>
+              <th>Document</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -195,6 +214,23 @@ export default function Manage() {
                   <td>{row.brand}</td>
                   <td>{row.model}</td>
                   <td>{row.companyName}</td>
+                  <td>
+                    {row.documentUrl ? (
+                      <a
+                        href={row.documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={row.documentUrl}
+                          alt="doc"
+                          style={{ width: "60px", borderRadius: "4px" }}
+                        />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="action-buttons">
                     <button
                       className="action-btn edit"
@@ -261,6 +297,7 @@ export default function Manage() {
 //modal thêm/sửa xe
 function VehicleModal({ show, onHide, data, onSubmit }) {
   const [companies, setCompanies] = useState([]);
+  const [preview, setPreview] = useState(null);
 
   //giá trị khởi tạo cho form
   const initialValues = {
@@ -268,6 +305,8 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     brand: data?.brand ?? "",
     model: data?.model ?? "",
     company: data?.companyId ?? "",
+    image: null,
+    acceptRules: false,
   };
 
   //lấy danh sách công ty được duyệt khi mở modal
@@ -282,6 +321,18 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     };
     fetchCompanies();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  useEffect(() => {
+    if (!show) setPreview(null);
+  }, [show]);
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -382,11 +433,137 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                   {errors.company}
                 </Form.Control.Feedback>
               </Form.Group>
+
+              {/* trường upload ảnh/tài liệu xe */}
+              <Form.Group className="mb-3" controlId="formDocument">
+                <Form.Label>Vehicle Document / Image</Form.Label>
+                <Form.Control
+                  type="file"
+                  name="image"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.currentTarget.files[0];
+                    if (file) {
+                      // Lưu file vào formik
+                      handleChange({
+                        target: { name: "image", value: file },
+                      });
+
+                      // Tạo URL preview ảnh
+                      setPreview(URL.createObjectURL(file));
+                    } else {
+                      setPreview(null);
+                    }
+                  }}
+                />
+                {preview && (
+                  <div className="mt-2">
+                    {values.image?.type === "application/pdf" ? (
+                      <a
+                        href={preview}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View PDF
+                      </a>
+                    ) : (
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        style={{
+                          width: "100px",
+                          height: "auto",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {!preview && data?.documentUrl && (
+                  <div className="mt-2">
+                    <a
+                      href={data.documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={data.documentUrl}
+                        alt="Vehicle Document"
+                        style={{
+                          width: "100px",
+                          height: "auto",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    </a>
+                  </div>
+                )}
+              </Form.Group>
             </Modal.Body>
+
+            {/* checkbox chấp nhận quy tắc chia tiền */}
+            <Form.Group
+              className="mb-3"
+              controlId="formTerms"
+              style={{ marginLeft: "17px" }}
+            >
+              <Form.Check
+                type="checkbox"
+                name="acceptRules"
+                checked={values.acceptRules || false}
+                onChange={handleChange}
+                isInvalid={touched.acceptRules && !!errors.acceptRules}
+                label={
+                  <>
+                    I accept the{" "}
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={
+                        <Tooltip id="tooltip-rules">
+                          When you agree with the company's credit-sharing
+                          policy, you’ll receive{" "}
+                          <strong>≈ $0.019 (₫500)</strong> for each kWh you
+                          contribute.
+                        </Tooltip>
+                      }
+                    >
+                      <span
+                        className="text-primary"
+                        style={{
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                        }}
+                      >
+                        credit-sharing rules
+                      </span>
+                    </OverlayTrigger>
+                  </>
+                }
+              />
+
+              {/*hiển thị lỗi*/}
+              {touched.acceptRules && errors.acceptRules && (
+                <div
+                  className="text-danger mt-1"
+                  style={{ fontSize: "0.875rem", marginLeft: "1.8rem" }}
+                >
+                  {errors.acceptRules}
+                </div>
+              )}
+            </Form.Group>
 
             {/* nút hành động */}
             <Modal.Footer>
-              <Button variant="secondary" onClick={onHide}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPreview(null);
+                  onHide();
+                }}
+              >
                 Close
               </Button>
               <Button type="submit" variant="primary">

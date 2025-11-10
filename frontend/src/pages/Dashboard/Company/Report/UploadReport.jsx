@@ -50,6 +50,7 @@ export default function UploadReport() {
         uploadOriginalFilename: r.uploadOriginalFilename,
         uploadStorageUrl: r.uploadStorageUrl,
         status: r.status,
+        waitingFor: r.waitingFor,
         submittedAt: r.submittedAt,
       }));
 
@@ -197,50 +198,54 @@ export default function UploadReport() {
               <th>Project</th>
               <th>File Name</th>
               <th>Status</th>
+              <th>Waiting Status</th>
               <th>Submitted At</th>
               <th>Actions</th>
             </tr>
           </thead>
-          {/* dùng component phân trang */}
-          <PaginatedTable
-            items={reports}
-            itemsPerPage={5}
-            renderRow={(r, index) => (
-              <tr key={r.id}>
-                <td>{index + 1}</td>
-                <td>{r.projectName}</td>
-                <td>
-                  <a
-                    href={r.uploadStorageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {r.uploadOriginalFilename || "—"}
-                  </a>
-                </td>
-                <td>
-                  <span className={`status-badge ${r.status?.toLowerCase()}`}>
-                    {r.status}
-                  </span>
-                </td>
-                <td>
-                  {new Date(r.submittedAt + "Z").toLocaleString("vi-VN", {
-                    timeZone: "Asia/Ho_Chi_Minh",
-                    hour12: false,
-                  })}
-                </td>
-                <td className="action-buttons">
-                  <button
-                    className="action-btn view"
-                    title="View Details"
-                    onClick={() => nav(`/detail-report/${r.id}`)}
-                  >
-                    <i className="bi bi-eye"></i>
-                  </button>
-                </td>
-              </tr>
-            )}
-          />
+          <tbody>
+            {/* dùng component phân trang */}
+            <PaginatedTable
+              items={reports}
+              itemsPerPage={5}
+              renderRow={(r, index) => (
+                <tr key={r.id}>
+                  <td>{index + 1}</td>
+                  <td className="fw-bold">{r.projectName}</td>
+                  <td>
+                    <a
+                      href={r.uploadStorageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {r.uploadOriginalFilename || "—"}
+                    </a>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${r.status?.toLowerCase()}`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="text-muted">{r?.waitingFor}</td>
+                  <td>
+                    {new Date(r.submittedAt + "Z").toLocaleString("vi-VN", {
+                      timeZone: "Asia/Ho_Chi_Minh",
+                      hour12: false,
+                    })}
+                  </td>
+                  <td className="action-buttons">
+                    <button
+                      className="action-btn view"
+                      title="View Details"
+                      onClick={() => nav(`/detail-report/${r.id}`)}
+                    >
+                      <i className="bi bi-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              )}
+            />
+          </tbody>
         </table>
       </div>
 

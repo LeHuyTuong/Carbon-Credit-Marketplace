@@ -61,6 +61,7 @@ import "react-toastify/dist/ReactToastify.css";
 import AdminApp from "./AdminApp.jsx";
 //  import AdminApp
 import CVAApp from "./CVAApp.jsx";
+import EvOwnersList from "../pages/Dashboard/Company/EVOwners/EVOwnersList.jsx";
 
 function Layout() {
   return (
@@ -169,6 +170,7 @@ export default function App() {
         <Route path="/detail-credit/:id" element={<CreditDetail />} />
         <Route path="/wallet/credits/:id" element={<CreditBatchDetail />} />
         <Route path="/retired-history" element={<RetiredHistory />} />
+        <Route path="/list-EVOwners" element={<EvOwnersList />} />
         <Route
           path="/view-registered-project/:id"
           element={<ViewRegisteredProject />}
