@@ -251,12 +251,31 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
     private ProjectApplicationResponse toResponse(ProjectApplication a) {
         String cvaName = null;
         String adminName = null;
+        String waitingFor = null;
 
         if (a.getReviewer() != null) {
             cvaName = a.getReviewer().getDisplayName();
         }
         if (a.getFinalReviewer() != null) {
             adminName = a.getFinalReviewer().getDisplayName();
+        }
+
+        // xác định “đang chờ ai duyệt”
+        switch (a.getStatus()) {
+            case UNDER_REVIEW ->
+                    waitingFor = "Waiting for CVA review — please wait until the CVA completes the evaluation.";
+            case CVA_APPROVED ->
+                    waitingFor = "Waiting for Admin approval — your application has passed the CVA review and is now pending final approval from the Admin.";
+            case CVA_REJECTED ->
+                    waitingFor = "Rejected by CVA — please review the CVA’s feedback, make corrections, and resubmit your application.";
+            case ADMIN_APPROVED ->
+                    waitingFor = "Approved by Admin — your application is complete. You can now join the project and upload emission reports for credit issuance.";
+            case ADMIN_REJECTED ->
+                    waitingFor = "Rejected by Admin — please review the Admin’s feedback, update your documents or data, and resubmit if applicable.";
+            case NEEDS_REVISION ->
+                    waitingFor = "Requires revision and resubmission — please update the required sections and upload the revised documents.";
+            default ->
+                    waitingFor = "Unknown status — please contact system support or the CVA team for clarification.";
         }
 
         return ProjectApplicationResponse.builder()
@@ -273,6 +292,8 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .submittedAt(a.getSubmittedAt())
                 .cvaReviewerName(cvaName)
                 .adminReviewerName(adminName)
+                .waitingFor(waitingFor)
                 .build();
     }
+
 }

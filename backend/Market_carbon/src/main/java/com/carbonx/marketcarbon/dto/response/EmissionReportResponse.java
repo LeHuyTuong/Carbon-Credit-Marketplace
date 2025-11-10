@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.dto.response;
 
+import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.carbonx.marketcarbon.model.EmissionReport;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
@@ -56,7 +57,27 @@ public class EmissionReportResponse {
     BigDecimal avgEf;
     BigDecimal avgCo2PerVehicle;
 
+
+    String waitingFor;
+
     public static EmissionReportResponse from(EmissionReport r) {
+        String waitingFor;
+
+        switch (r.getStatus()) {
+            case SUBMITTED ->
+                    waitingFor = "Waiting for CVA review — please wait until the CVA evaluates your emission report.";
+            case CVA_APPROVED ->
+                    waitingFor = "Waiting for Admin approval — your report has been approved by the CVA and is now pending Admin confirmation.";
+            case CVA_REJECTED ->
+                    waitingFor = "Rejected by CVA — please review the CVA’s feedback, correct your data, and re-upload your report.";
+            case ADMIN_APPROVED ->
+                    waitingFor = "Approved by Admin — your emission report is fully approved. You can now proceed to credit issuance.";
+            case ADMIN_REJECTED ->
+                    waitingFor = "Rejected by Admin — please review the Admin’s feedback, update your report, and resubmit.";
+            default ->
+                    waitingFor = "Unknown status — please contact support or the CVA team for clarification.";
+        }
+
         return EmissionReportResponse.builder()
                 .id(r.getId())
                 .sellerId(r.getSeller().getId())
@@ -91,6 +112,8 @@ public class EmissionReportResponse {
                 .approvedAt(r.getApprovedAt())
                 .adminComment(r.getComment())
                 .adminApprovedByName(r.getAdminApprovedByName())
+
+                .waitingFor(waitingFor)
                 .build();
     }
 

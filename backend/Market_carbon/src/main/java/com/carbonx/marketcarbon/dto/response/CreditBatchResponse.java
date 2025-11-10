@@ -28,6 +28,9 @@ public class CreditBatchResponse {
 
     String certificateUrl;
 
+    private Long reportId;
+    private String reportPeriod;
+
 
     public static CreditBatchResponse from(CreditBatch entity) {
         return CreditBatchResponse.builder()
@@ -44,6 +47,8 @@ public class CreditBatchResponse {
                 .status(entity.getStatus())
                 .issuedAt(entity.getIssuedAt())
                 .certificateUrl(entity.getCertificate() != null ? entity.getCertificate().getCertificateUrl() : null)
+                .reportId(entity.getReport() != null ? entity.getReport().getId() : null)
+                .reportPeriod(entity.getReport() != null ? entity.getReport().getPeriod() : null)
                 .build();
     }
 }

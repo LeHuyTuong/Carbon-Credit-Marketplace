@@ -379,6 +379,8 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .issuedAt(b.getIssuedAt())
                 // Links cho FE
                 .certificateUrl(cert != null ? cert.getCertificateUrl() : null)
+                .reportId(b.getReport() != null ? b.getReport().getId() : null)
+                .reportPeriod(b.getReport() != null ? b.getReport().getPeriod() : null)
                 .build();
 
     }
