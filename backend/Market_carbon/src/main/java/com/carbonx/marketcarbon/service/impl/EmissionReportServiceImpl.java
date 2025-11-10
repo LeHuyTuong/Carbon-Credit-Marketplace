@@ -50,6 +50,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     private final AiScoringService aiScoringService;
     private final CvaRepository cvaRepository;
     private final ReportNotificationService notificationService;
+    private final AdminRepository adminRepository;
 
     // Hệ số phát thải mặc định nếu CSV không có cột CO2
     private static final BigDecimal DEFAULT_EF_KG_PER_KWH = new BigDecimal("0.4");
@@ -227,7 +228,14 @@ public class EmissionReportServiceImpl implements EmissionReportService {
     }
     @Override
     public Page<EmissionReportResponse> listReportsForCva(Pageable pageable) {
-        return reportRepository.findBySourceIgnoreCaseAndStatus("CSV", EmissionStatus.SUBMITTED, pageable)
+        // CVA có thể xem cả 3 trạng thái
+        List<EmissionStatus> statuses = List.of(
+                EmissionStatus.SUBMITTED,
+                EmissionStatus.CVA_APPROVED,
+                EmissionStatus.CVA_REJECTED
+        );
+
+        return reportRepository.findBySourceIgnoreCaseAndStatusIn("CSV", statuses, pageable)
                 .map(EmissionReportResponse::from);
     }
 
@@ -272,6 +280,7 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         report.setComment(comment);
         report.setStatus(approved ? EmissionStatus.CVA_APPROVED : EmissionStatus.CVA_REJECTED);
         report.setUpdatedAt(LocalDateTime.now());
+        report.setVerifiedByCvaName(cva.getOrganization());
         reportRepository.save(report);
 
         try {
@@ -296,37 +305,37 @@ public class EmissionReportServiceImpl implements EmissionReportService {
 
     @Override
     public EmissionReportResponse adminApproveReport(Long reportId, boolean approved, String note) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new AppException(ErrorCode.ADMIN_NOT_FOUND);
+
+        Admin admin = adminRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.ADMIN_NOT_FOUND));
+
         EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
-
-        EmissionStatus currentStatus = report.getStatus();
-        if (!(currentStatus == EmissionStatus.CVA_APPROVED ||
-                currentStatus == EmissionStatus.ADMIN_APPROVED ||
-                currentStatus == EmissionStatus.ADMIN_REJECTED)) {
-            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
-        }
 
         report.setApprovedAt(LocalDateTime.now());
         report.setComment(note);
         report.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.ADMIN_REJECTED);
+        report.setUpdatedAt(LocalDateTime.now());
+        report.setAdminApprovedByName(admin.getDisplayName());
         reportRepository.save(report);
 
-
-        try {
-            String companyEmail = report.getSeller().getUser().getEmail();
-            notificationService.sendAdminDecision(
-                    companyEmail,
-                    report.getSeller().getCompanyName(),
-                    report.getId(),
-                    report.getProject().getTitle(),
-                    "Admin",
-                    approved,
-                    note
-            );
-            log.info("[EMAIL] Admin decision email sent to {}", companyEmail);
-        } catch (Exception e) {
-            log.warn("[EMAIL] Failed to send Admin decision email: {}", e.getMessage());
-        }
+        notificationService.sendAdminDecision(
+                report.getSeller().getUser().getEmail(),
+                report.getSeller().getCompanyName(),
+                report.getId(),
+                report.getProject().getTitle(),
+                admin.getDisplayName(),
+                approved,
+                note
+        );
 
         return EmissionReportResponse.from(report);
     }

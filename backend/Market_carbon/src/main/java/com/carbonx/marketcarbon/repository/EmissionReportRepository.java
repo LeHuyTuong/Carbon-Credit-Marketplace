@@ -64,4 +64,11 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
 
     Optional<EmissionReport> findTopBySeller_IdOrderByCreatedAtDesc(Long companyId);
 
+    Page<EmissionReport> findBySourceIgnoreCaseAndStatusIn(
+            String source,
+            List<EmissionStatus> statuses,
+            Pageable pageable
+    );
+
+
 }

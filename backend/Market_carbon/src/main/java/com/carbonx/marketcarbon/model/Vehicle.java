@@ -24,8 +24,10 @@ public class Vehicle extends BaseEntity {
     @Column(length = 128, nullable = false)
     private String model;
 
+    private String documentUrl;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "ev_owner_id", nullable = false)
     @JsonIgnoreProperties({"vehicles", "hibernateLazyInitializer", "handler"})
     private EVOwner evOwner;
 
@@ -33,4 +35,5 @@ public class Vehicle extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     @JsonIgnoreProperties({"vehicles", "hibernateLazyInitializer", "handler"})
     private Company company;
+
 }

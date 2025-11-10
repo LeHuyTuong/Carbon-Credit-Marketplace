@@ -233,7 +233,15 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .orElseThrow(() -> new AppException(ErrorCode.CVA_NOT_FOUND));
 
         // Lấy tất cả hồ sơ đang chờ CVA duyệt
-        List<ProjectApplication> pending = applicationRepository.findByStatusOrderBySubmittedAtDesc(ApplicationStatus.UNDER_REVIEW);
+        List<ApplicationStatus> visibleStatuses = List.of(
+                ApplicationStatus.UNDER_REVIEW,
+                ApplicationStatus.CVA_APPROVED,
+                ApplicationStatus.CVA_REJECTED
+        );
+
+        List<ProjectApplication> pending = applicationRepository
+                .findByStatusInOrderBySubmittedAtDesc(visibleStatuses);
+
 
         return pending.stream()
                 .map(this::toResponse)
@@ -241,6 +249,16 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
     }
 
     private ProjectApplicationResponse toResponse(ProjectApplication a) {
+        String cvaName = null;
+        String adminName = null;
+
+        if (a.getReviewer() != null) {
+            cvaName = a.getReviewer().getDisplayName();
+        }
+        if (a.getFinalReviewer() != null) {
+            adminName = a.getFinalReviewer().getDisplayName();
+        }
+
         return ProjectApplicationResponse.builder()
                 .id(a.getId())
                 .projectId(a.getProject().getId())
@@ -251,7 +269,10 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
                 .reviewNote(a.getReviewNote())
                 .finalReviewNote(a.getFinalReviewNote())
                 .applicationDocsUrl(a.getApplicationDocsUrl())
+                .applicationDocsPath(a.getApplicationDocsPath())
                 .submittedAt(a.getSubmittedAt())
+                .cvaReviewerName(cvaName)
+                .adminReviewerName(adminName)
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.dto.request;
 import com.carbonx.marketcarbon.common.annotation.PlateNumber;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class VehicleUpdateRequest {
@@ -19,4 +20,6 @@ public class VehicleUpdateRequest {
 
     @NotNull(message = "companyId can not null ")
     private Long companyId;
+
+    private MultipartFile documentFile;
 }

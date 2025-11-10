@@ -187,63 +187,63 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         sseService.sendNotificationToUser(company.getUser().getId(), message);
 
         // ------------------ CERTIFICATE ------------------
-        String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
+            String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
 
-        CreditCertificate cert = CreditCertificate.builder()
-                .batch(batch)
-                .certificateCode(certificateCode)
-                .issuedTo(company.getCompanyName())
-                .issuedEmail(company.getUser().getEmail())
-                .verifyUrl("https://verify.carbonx.io/" + certificateCode)
-                .qrCodeUrl("https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
-                        java.net.URLEncoder.encode("https://verify.carbonx.io/" + certificateCode,
-                                java.nio.charset.StandardCharsets.UTF_8))
-                .registry("CarbonX Internal Registry")
-                .standard("ISO 14064-2 aligned")
-                .methodology("EV Charging Emission Reduction Methodology v1.0")
-                .build();
-        cert = certificateRepo.save(cert);
+            CreditCertificate cert = CreditCertificate.builder()
+                    .batch(batch)
+                    .certificateCode(certificateCode)
+                    .issuedTo(company.getCompanyName())
+                    .issuedEmail(company.getUser().getEmail())
+                    .verifyUrl("https://verify.carbonx.io/" + certificateCode)
+                    .qrCodeUrl("https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+                            java.net.URLEncoder.encode("https://verify.carbonx.io/" + certificateCode,
+                                    java.nio.charset.StandardCharsets.UTF_8))
+                    .registry("CarbonX Internal Registry")
+                    .standard("ISO 14064-2 aligned")
+                    .methodology("EV Charging Emission Reduction Methodology v1.0")
+                    .build();
+            cert = certificateRepo.save(cert);
 
-        String validatedBy = "CVA Organization";
-        if (report.getVerifiedAt() != null && report.getVerifiedByCva() != null)
-            validatedBy = report.getVerifiedByCva().getDisplayName();
+            String validatedBy = "CVA Organization";
+            if (report.getVerifiedAt() != null && report.getVerifiedByCva() != null)
+                validatedBy = report.getVerifiedByCva().getDisplayName();
 
-        CertificateData data = CertificateData.builder()
-                .creditsCount(batch.getCreditsCount())
-                .totalTco2e(result.getTotalTco2e().doubleValue())
-                .retired(false)
-                .projectTitle(project.getTitle())
-                .companyName(company.getCompanyName())
-                .status("ISSUED")
-                .vintageYear(year)
-                .batchCode(batchCode)
-                .serialPrefix(prefix)
-                .serialFrom(String.format("%06d", range.from()))
-                .serialTo(String.format("%06d", range.to()))
-                .certificateCode(certificateCode)
-                .standard("CarbonX Internal Registry • ISO 14064-2 & GHG Protocol")
-                .methodology("EV Charging Emission Reduction Methodology v1.0")
-                .projectId("PRJ-" + project.getId())
-                .issuedAt(batch.getIssuedAt().toLocalDate().toString())
-                .issuerName("CarbonX Marketplace")
-                .issuerTitle("Authorized Signatory")
-                .issuerSignatureUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/ch%E1%BB%AF+k%C3%AD+CarbonX.jpg")
-                .leftLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
-                .rightLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
-                .verifiedBy(validatedBy)
-                .qrCodeUrl(cert.getQrCodeUrl())
-                .verifyUrl(cert.getVerifyUrl())
-                .build();
+            CertificateData data = CertificateData.builder()
+                    .creditsCount(batch.getCreditsCount())
+                    .totalTco2e(result.getTotalTco2e().doubleValue())
+                    .retired(false)
+                    .projectTitle(project.getTitle())
+                    .companyName(company.getCompanyName())
+                    .status("ISSUED")
+                    .vintageYear(year)
+                    .batchCode(batchCode)
+                    .serialPrefix(prefix)
+                    .serialFrom(String.format("%06d", range.from()))
+                    .serialTo(String.format("%06d", range.to()))
+                    .certificateCode(certificateCode)
+                    .standard("CarbonX Internal Registry • ISO 14064-2 & GHG Protocol")
+                    .methodology("EV Charging Emission Reduction Methodology v1.0")
+                    .projectId("PRJ-" + project.getId())
+                    .issuedAt(batch.getIssuedAt().toLocalDate().toString())
+                    .issuerName("CarbonX Marketplace")
+                    .issuerTitle("Authorized Signatory")
+                    .issuerSignatureUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/ch%E1%BB%AF+k%C3%AD+CarbonX.jpg")
+                    .leftLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
+                    .rightLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
+                    .verifiedBy(validatedBy)
+                    .qrCodeUrl(cert.getQrCodeUrl())
+                    .verifyUrl(cert.getVerifyUrl())
+                    .build();
 
-        StorageService.StoredObject stored = certificatePdfService.generateAndUploadPdf(data);
-        String pdfUrl = stored.url(); // URL S3 public/presigned
+            StorageService.StoredObject stored = certificatePdfService.generateAndUploadPdf(data);
+            String pdfUrl = stored.url(); // URL S3 public/presigned
 
-        // LƯU URL S3 vào certificate
-        cert.setCertificateUrl(pdfUrl);
-        certificateRepo.save(cert);
+            // LƯU URL S3 vào certificate
+            cert.setCertificateUrl(pdfUrl);
+            certificateRepo.save(cert);
 
-        batch.setCertificate(cert);
-        batchRepo.save(batch);
+            batch.setCertificate(cert);
+            batchRepo.save(batch);
 
         // Tải bytes để đính kèm email
         byte[] pdf;

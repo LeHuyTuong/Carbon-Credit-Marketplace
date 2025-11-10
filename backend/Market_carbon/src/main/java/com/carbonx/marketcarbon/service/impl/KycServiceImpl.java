@@ -17,6 +17,7 @@ import com.carbonx.marketcarbon.service.KycService;
 import com.carbonx.marketcarbon.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -185,6 +186,22 @@ public class KycServiceImpl implements KycService {
         if (company == null) {
             throw new ResourceNotFoundException(Translator.toLocale("company.not.found"));
         }
+
+        return KycCompanyResponse.builder()
+                .id(company.getId())
+                .businessLicense(company.getBusinessLicense())
+                .taxCode(company.getTaxCode())
+                .companyName(company.getCompanyName())
+                .address(company.getAddress())
+                .createAt(company.getCreateAt())
+                .updatedAt(company.getUpdatedAt())
+                .build();
+    }
+
+    @Override
+    public KycCompanyResponse getByCompanyIdForAdminOrCva(Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException(Translator.toLocale("company.not.found")));
 
         return KycCompanyResponse.builder()
                 .id(company.getId())

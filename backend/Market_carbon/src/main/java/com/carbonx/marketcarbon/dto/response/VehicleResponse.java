@@ -12,6 +12,7 @@ public class VehicleResponse {
     private String brand;
     private String model;
     private Long companyId;
+    private String documentUrl;
 
     //VehicleResponse.from(Vehicle vehicle)
     // là static factory method để map 1 entity Vehicle → DTO VehicleResponse bằng builder.
@@ -22,6 +23,7 @@ public class VehicleResponse {
                 .brand(vehicle.getBrand())
                 .model(vehicle.getModel())
                 .companyId(vehicle.getCompany() != null ? vehicle.getCompany().getId() : null)
+                .documentUrl(vehicle.getDocumentUrl())
                 .build();
     }
     //Cắt vòng lặp serialize (không trả nguyên Company) và

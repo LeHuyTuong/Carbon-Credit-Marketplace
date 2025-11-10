@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service;
 
 
 
+import com.carbonx.marketcarbon.dto.response.CompanyVehicleSummaryResponse;
 import com.carbonx.marketcarbon.dto.response.VehicleResponse;
 import com.carbonx.marketcarbon.model.Vehicle;
 import com.carbonx.marketcarbon.dto.request.VehicleCreateRequest;
@@ -17,6 +18,8 @@ public interface VehicleService {
      List<VehicleResponse> getOwnerVehicles();
 
      long countMyVehicles();
+
+     public List<CompanyVehicleSummaryResponse> getCompanyVehicleSummary();
 
 }
 

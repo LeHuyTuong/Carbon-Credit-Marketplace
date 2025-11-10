@@ -43,10 +43,12 @@ public class EmissionReportResponse {
     String verificationComment;
     String verifiedBy;
     LocalDateTime verifiedAt;
+    String verifiedByCvaName;
 
     // Admin approval
     LocalDateTime approvedAt;
     String adminComment;
+    String adminApprovedByName;
 
     // Optional metrics
     Integer zeroEnergyRows;
@@ -84,9 +86,11 @@ public class EmissionReportResponse {
                 .verificationComment(r.getVerificationComment())
                 .verifiedBy(r.getVerifiedByCva() != null ? r.getVerifiedByCva().getEmail() : null)
                 .verifiedAt(r.getVerifiedAt())
+                .verifiedByCvaName(r.getVerifiedByCvaName())
 
                 .approvedAt(r.getApprovedAt())
                 .adminComment(r.getComment())
+                .adminApprovedByName(r.getAdminApprovedByName())
                 .build();
     }
 
