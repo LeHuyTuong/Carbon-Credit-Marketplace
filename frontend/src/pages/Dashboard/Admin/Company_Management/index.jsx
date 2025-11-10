@@ -16,26 +16,34 @@ const CompanyTeam = () => {
     async function fetchCompanies() {
       try {
         const response = await getAllCompanyKYCProfiles();
-        console.log(" API Company KYC Response:", response);
+        console.log("API Company KYC Response:", response);
 
         const list = Array.isArray(response?.response)
           ? response.response
           : [];
 
-        const mapped = list.map((c, index) => ({
-          id: index + 1,
-          companyId: c.id,
-          businessLicense: c.businessLicense || "N/A",
-          taxCode: c.taxCode || "N/A",
-          companyName: c.companyName || "N/A",
-          address: c.address || "N/A",
-          createdAt: c.createAt
-            ? new Date(c.createAt).toLocaleString()
-            : "—",
-          updatedAt: c.updatedAt
-            ? new Date(c.updatedAt).toLocaleString()
-            : "—",
-        }));
+        const mapped = list.map((c, index) => {
+          const formatDate = (dateString) => {
+            if (!dateString) return "—";
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            const time = date.toLocaleTimeString();
+            return `${day}/${month}/${year}, ${time}`;
+          };
+
+          return {
+            id: index + 1,
+            companyId: c.id,
+            businessLicense: c.businessLicense || "N/A",
+            taxCode: c.taxCode || "N/A",
+            companyName: c.companyName || "N/A",
+            address: c.address || "N/A",
+            createdAt: formatDate(c.createAt),
+            updatedAt: formatDate(c.updatedAt),
+          };
+        });
 
         setData(mapped);
       } catch (err) {
@@ -51,29 +59,52 @@ const CompanyTeam = () => {
     { field: "companyName", headerName: "Company Name", flex: 1 },
     { field: "businessLicense", headerName: "Business License", flex: 1 },
     { field: "taxCode", headerName: "Tax Code", flex: 1 },
-    { field: "address", headerName: "Address", flex: 1.2 },
-    { field: "createdAt", headerName: "Created At", flex: 1 },
-    { field: "updatedAt", headerName: "Updated At", flex: 1 },
     {
-      field: "action",
-      headerName: "Action",
-      flex: 0.6,
+      field: "address",
+      headerName: "Address",
+      flex: 1.2,
       renderCell: (params) => (
-        <div className="cellAction">
-          <Link
-            to={`/admin/companies_view/${params.row.companyId}`}
-            style={{ textDecoration: "none" }}
-          >
-            <div className="viewButton">View</div>
-          </Link>
-        </div>
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+            textAlign: "left",
+          }}
+        >
+          {params.value}
+        </Typography>
       ),
     },
+    { field: "createdAt", headerName: "Created At", flex: 1 },
+    { field: "updatedAt", headerName: "Updated At", flex: 1 },
+    // {
+    //   field: "action",
+    //   headerName: "Action",
+    //   flex: 0.6,
+    //   renderCell: (params) => (
+    //     <div className="cellAction">
+    //       <Link
+    //         to={`/admin/companies_view/${params.row.companyId}`}
+    //         style={{ textDecoration: "none" }}
+    //       >
+    //         <div className="viewButton">View</div>
+    //       </Link>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
-      <Header title="COMPANY KYC PROFILES" subtitle="Managing registered companies" />
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
+      <Header
+        title="COMPANY KYC PROFILES"
+        subtitle="Managing registered companies"
+      />
       <Box
         m="40px 0 0 0"
         height="75vh"

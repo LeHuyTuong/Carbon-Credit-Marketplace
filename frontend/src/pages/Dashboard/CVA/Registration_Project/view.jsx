@@ -93,7 +93,7 @@ const ApplicationView = () => {
 
   //  UI chính
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header
         title="APPLICATION DETAIL"
         subtitle={`Application ID: ${application.applicationId || id}`}
@@ -111,18 +111,23 @@ const ApplicationView = () => {
         <Typography> <b>Status:</b> {application.status || "—"}</Typography>
 
         <Typography mt={2}>
-           <b>Review Note:</b> {application.reviewNote || "N/A"}
+          <b>Review Note:</b> {application.reviewNote || "N/A"}
         </Typography>
         <Typography>
-           <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
+          <b>Final Review Note:</b> {application.finalReviewNote || "N/A"}
         </Typography>
 
         <Typography mt={2}>
-           <b>Submitted At:</b>{" "}
+          <b>Submitted At:</b>{" "}
           {application.submittedAt
-            ? new Date(application.submittedAt).toLocaleString()
+            ? new Date(application.submittedAt).toLocaleDateString("vi-VN", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })
             : "N/A"}
         </Typography>
+
 
         {application.applicationDocsUrl ? (
           <Box mt={2}>
@@ -136,7 +141,7 @@ const ApplicationView = () => {
                 fontWeight: 500,
               }}
             >
-               View Attached Documents
+              View Attached Documents
             </a>
           </Box>
         ) : (

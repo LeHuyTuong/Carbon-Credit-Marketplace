@@ -17,42 +17,6 @@ export default function Navbar() {
   const ddItemCls = ({ isActive }) =>
     `dropdown-item ${isActive ? "active" : ""}`;
 
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-  // nếu chưa đăng nhập hoặc không có token thì thoát
-  if (!isAuthenticated || !token) return;
-
-  // nếu là admin thì KHÔNG mở SSE (vì API /notifications chỉ cho user)
-  if (user?.role === "ADMIN") return;
-
-  const eventSource = new EventSourcePolyfill(
-    "http://163.61.111.120:8082/api/v1/notifications",
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        withCredentials: true,
-      },
-    }
-  );
-
-  eventSource.onmessage = (event) => {
-    const msg = event.data || "New notification";
-    console.log("Notification:", msg);
-
-    setNotifications((prev) => [{ message: msg, time: new Date() }, ...prev]);
-    setUnreadCount((count) => count + 1);
-  };
-
-  eventSource.onerror = (err) => {
-    console.error("SSE error:", err);
-    eventSource.close();
-  };
-
-  return () => eventSource.close();
-}, [isAuthenticated, token, user?.role]);
-
   return (
     <nav className="navbar navbar-expand-lg fixed-top bg-dark bg-opacity-25 navbar-dark">
       <div className="container-xxl">
@@ -152,71 +116,6 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/*btn bell */}
-                <li className="nav-item dropdown">
-                  <a
-                    href="#"
-                    className="nav-link p-0 dropdown-toggle no-caret"
-                    id="notifDropdown"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="Notifications"
-                  >
-                    <span className="icon-btn position-relative">
-                      <i className="bi bi-bell"></i>
-                      {unreadCount > 0 && (
-                        <span
-                          className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                          style={{ fontSize: "0.7rem" }}
-                        >
-                          {unreadCount}
-                        </span>
-                      )}
-                    </span>
-                  </a>
-
-                  <ul
-                    className="dropdown-menu dropdown-menu-end"
-                    aria-labelledby="notifDropdown"
-                    style={{
-                      minWidth: "250px",
-                      maxHeight: "300px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {notifications.length === 0 ? (
-                      <li>
-                        <span className="dropdown-item-text text-muted small">
-                          No new notifications
-                        </span>
-                      </li>
-                    ) : (
-                      notifications.map((n, idx) => (
-                        <li key={idx} className="dropdown-item small">
-                          {n.message}
-                          <div
-                            className="text-muted"
-                            style={{ fontSize: "0.7rem" }}
-                          >
-                            {n.time.toLocaleTimeString()}
-                          </div>
-                        </li>
-                      ))
-                    )}
-                    {notifications.length > 0 && (
-                      <li>
-                        <button
-                          className="dropdown-item text-center text-primary small"
-                          onClick={() => setUnreadCount(0)}
-                        >
-                          Mark all as read
-                        </button>
-                      </li>
-                    )}
-                  </ul>
-                </li>
-
                 <li className="nav-item dropdown">
                   <a
                     href="#"

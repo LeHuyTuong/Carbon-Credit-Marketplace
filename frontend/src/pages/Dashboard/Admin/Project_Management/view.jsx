@@ -36,7 +36,7 @@ const ViewProject = () => {
   const [updateLoading, setUpdateLoading] = useState(false);
   const { showSnackbar, SnackbarComponent } = useSnackbar();
 
-
+  //API FETCH
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -53,8 +53,15 @@ const ViewProject = () => {
             measurementmethod: project.measurementMethod || "",
             emissionFactor: project.emissionFactorKgPerKwh || "",
             logo: project.logo || "",
-            legaldocurl: project.legalDocsFile || "",
+            legaldocurl: Array.isArray(project.legalDocsFile)
+              ? project.legalDocsFile
+              : project.legalDocsFile
+                ? [project.legalDocsFile]
+                : [],
             status: project.status || "OPEN",
+            commitments: project.commitments || "",
+            technicalIndicators: project.technicalIndicators || "",
+
           });
         }
       } catch (err) {
@@ -80,8 +87,15 @@ const ViewProject = () => {
         measurementMethod: formData.measurementmethod,
         emissionFactorKgPerKwh: parseFloat(formData.emissionFactor) || 0,
         logo: formData.logo || "",
-        legalDocsFile: formData.legaldocurl || "",
+        legaldocurl: Array.isArray(formData.legalDocsFile)
+          ? formData.legalDocsFile
+          : formData.legalDocsFile
+            ? [formData.legalDocsFile]
+            : [],
         status: formData.status,
+        commitments: formData.commitments,
+        technicalIndicators: formData.technicalIndicators,
+
       };
 
       const res = await updateProjectById(formData.projectid, payload);
@@ -99,7 +113,6 @@ const ViewProject = () => {
     }
   };
 
-  const handleCloseSnackbar = () => setOpenSnackbar(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,12 +121,16 @@ const ViewProject = () => {
   };
 
   const handleFileUpload = (e, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      const fakeURL = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, [field]: fakeURL }));
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const newFiles = files.map((file) => URL.createObjectURL(file));
+      setFormData((prev) => ({
+        ...prev,
+        [field]: [...(prev[field] || []), ...newFiles],
+      }));
     }
   };
+
 
   if (loading)
     return (
@@ -135,13 +152,13 @@ const ViewProject = () => {
     );
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
       <Paper elevation={3} sx={{ p: 3, mt: 3, backgroundColor: colors.primary[400] }}>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
-            spacing={4} // tăng khoảng cách giữa các cột
+            spacing={20} // tăng khoảng cách giữa các cột
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
@@ -160,17 +177,23 @@ const ViewProject = () => {
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 General Info
               </Typography>
-
+             
+              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 65 }}>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Project ID:
               </Typography>
               <Typography mb={2}>{formData.projectid}</Typography>
+              </Box>
 
+              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 100 }}>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Project Name:
               </Typography>
               {isEditing ? (
                 <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
                   name="projectname"
                   value={formData.projectname}
                   onChange={handleChange}
@@ -180,17 +203,20 @@ const ViewProject = () => {
                   {formData.projectname}
                 </Typography>
               )}
+              </Box>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Description:
               </Typography>
               {isEditing ? (
                 <TextField
+                  fullWidth
                   multiline
                   rows={3}
                   name="shortdescription"
                   value={formData.shortdescription}
                   onChange={handleChange}
+                  sx={{ mb: 2 }}
                 />
               ) : (
                 <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
@@ -228,7 +254,8 @@ const ViewProject = () => {
                     : "—"}
                 </Typography>
               )}
-
+              
+              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 60 }}>
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 End Date:
               </Typography>
@@ -252,6 +279,8 @@ const ViewProject = () => {
                     : "—"}
                 </Typography>
               )}
+              </Box>
+
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Measurement Method:
@@ -272,9 +301,48 @@ const ViewProject = () => {
                   {formData.measurementmethod || "—"}
                 </Typography>
               )}
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Commitments:
+              </Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  name="commitments"
+                  value={formData.commitments}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                  {formData.commitments || "—"}
+                </Typography>
+              )}
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Technical Indicators:
+              </Typography>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  name="technicalIndicators"
+                  value={formData.technicalIndicators}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              ) : (
+                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                  {formData.technicalIndicators || "—"}
+                </Typography>
+              )}
+
             </Grid>
 
-            {/* ===== COLUMN 3 ===== */}
+            {/*  COLUMN 3  */}
             <Grid item xs={12} md={4}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 Documents & Status
@@ -302,32 +370,91 @@ const ViewProject = () => {
                     Upload Logo
                     <input hidden type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "logo")} />
                   </Button>
+
+                  {/* Hiển thị preview nhỏ */}
+                  {formData.logo && (
+                    <Box mt={1} display="flex" justifyContent="center">
+                      <img
+                        src={Array.isArray(formData.logo) ? formData.logo[0] : formData.logo}
+                        alt="Logo Preview"
+                        style={{
+                          width: 80,
+                          height: 80,
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    </Box>
+                  )}
                 </Box>
-              ) : formData.logo ? (
-                <Button variant="contained" color="info" size="small" onClick={() => window.open(formData.logo, "_blank")}>
-                  View Logo
-                </Button>
               ) : (
-                <Typography mb={2}>—</Typography>
+                formData.logo ? (
+                  <Button
+                    variant="contained"
+                    color="info"
+                    size="small"
+                    onClick={() => window.open(Array.isArray(formData.logo) ? formData.logo[0] : formData.logo, "_blank")}
+                  >
+                    View Logo
+                  </Button>
+                ) : (
+                  <Typography mb={2}>—</Typography>
+                )
               )}
+
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Legal Docs:
               </Typography>
+
               {isEditing ? (
                 <Box mb={2}>
-                  <Button variant="contained" component="label" color="secondary" fullWidth>
-                    Upload Document
-                    <input hidden type="file" accept=".pdf,.doc,.docx" onChange={(e) => handleFileUpload(e, "legaldocurl")} />
+                  <Button
+                    variant="contained"
+                    component="label"
+                    color="secondary"
+                    fullWidth
+                  >
+                    Upload Document(s)
+                    <input
+                      hidden
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => handleFileUpload(e, "legaldocurl")}
+                    />
                   </Button>
+
+                  {/* Hiển thị danh sách file vừa upload */}
+                  {formData.legaldocurl?.length > 0 && (
+                    <Box mt={1}>
+                      {formData.legaldocurl.map((url, idx) => (
+                        <Typography key={idx} variant="body2" sx={{ color: "#aaa" }}>
+                          Document {idx + 1} ready to upload
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
                 </Box>
-              ) : formData.legaldocurl ? (
-                <Button variant="contained" color="secondary" size="small" onClick={() => window.open(formData.legaldocurl, "_blank")}>
-                  View Document
-                </Button>
+              ) : formData.legaldocurl?.length > 0 ? (
+                <Box mb={2} display="flex" flexDirection="column" gap={1}>
+                  {formData.legaldocurl.map((url, idx) => (
+                    <Button
+                      key={idx}
+                      variant="contained"
+                      color="secondary"
+                      size="small"
+                      onClick={() => window.open(url, "_blank")}
+                    >
+                      View Document {idx + 1}
+                    </Button>
+                  ))}
+                </Box>
               ) : (
                 <Typography mb={2}>—</Typography>
               )}
+
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Status:

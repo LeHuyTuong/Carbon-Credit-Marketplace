@@ -1,135 +1,152 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import {
+  Box,
+  Typography,
+  useTheme,
+  CircularProgress,
+  Alert,
+  Chip,
+} from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "@/styles/actionadmin.scss";
-import { getCurrentKycProfile } from "@/apiAdmin/ev_ownerAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
+import { listEvOwners } from "@/apiAdmin/ev_ownerAdmin.js"; // gọi API list
 
 const EvOwnerTeam = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [data, setData] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
 
   useEffect(() => {
-    async function fetchEvOwners() {
+    (async () => {
       try {
-        const response = await getCurrentKycProfile();
-        const kycData = response?.responseData;
-        if (!kycData) throw new Error("No KYC data found");
+        setLoading(true);
+        setErr(null);
 
-        // Chuẩn hóa dữ liệu để hiển thị trong DataGrid
-        const users = Array.isArray(kycData)
-          ? kycData.map((u, index) => ({
-              id: index + 1,
-              userid: u.id ?? "-",
-              email: u.email ?? "-",
-              status: u.status?.toLowerCase() === "active" ? "active" : "inactive",
-              access: "EV_OWNER",
-              balance: u.wallet?.balance ?? 0,
-            }))
-          : [
-              {
-                id: 1,
-                userid: kycData.id ?? "-",
-                email: kycData.email ?? "-",
-                status: kycData.status?.toLowerCase() === "active" ? "active" : "inactive",
-                access: "EV_OWNER",
-                balance: kycData.wallet?.balance ?? 0,
-              },
-            ];
+        // Gọi API backend
+        const raw = await listEvOwners();
+        const arr = Array.isArray(raw)
+          ? raw
+          : raw?.response ??
+          raw?.responseData ??
+          raw?.data ??
+          raw?.items ??
+          raw?.content ??
+          [];
 
-        setData(users);
-      } catch (err) {
-        console.error("Error fetching EV Owner KYC:", err);
+        // Chuẩn hoá dữ liệu
+        const normalized = arr.map((u, idx) => ({
+          id: u.userId ?? idx + 1,
+          userid: u.userId ?? "-",
+          name: u.name ?? "-",
+          email: u.email ?? "-",
+          phone: u.phone ?? "-",
+          gender: u.gender ?? "-",
+          country: u.country ?? "-",
+          documentNumber: u.documentNumber ?? "-",
+          birthday: u.birthday
+            ? (() => {
+              const d = new Date(u.birthday);
+              const day = String(d.getDate()).padStart(2, "0");
+              const month = String(d.getMonth() + 1).padStart(2, "0");
+              const year = d.getFullYear();
+              return `${day}/${month}/${year}`;
+            })()
+            : "-",
+
+          address: u.address ?? "-",
+          status: "active", // mặc định active
+        }));
+
+        setRows(normalized);
+      } catch (e) {
+        console.error("Error fetching EV Owner list:", e);
+        setErr(e?.message || "Failed to load EV owners");
+        setRows([]);
+      } finally {
+        setLoading(false);
       }
-    }
-
-    fetchEvOwners();
+    })();
   }, []);
 
+  //  Cấu hình các cột hiển thị
   const columns = [
-    { field: "userid", headerName: "User ID" },
-    { field: "email", headerName: "Email", flex: 1 },
+    { field: "userid", headerName: "User ID", width: 100 },
+    { field: "name", headerName: "Full Name", width: 160 },
+    {
+      field: "email",
+      headerName: "Email",
+      flex: 0.5,
+      minWidth: 220,
+    },
+    { field: "phone", headerName: "Phone", width: 140 },
+    { field: "gender", headerName: "Gender", width: 110 },
+    { field: "country", headerName: "Country", width: 130 },
+    { field: "documentNumber", headerName: "CCCD", width: 160 },
+    { field: "birthday", headerName: "Birthday", width: 130 },
     {
       field: "status",
-      headerName: "Account Status",
-      flex: 1,
-      renderCell: ({ row: { status } }) => (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "left",
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <Typography color={status === "active" ? "green" : "red"} fontWeight="600">
-            {status === "active" ? "Active" : "Inactive"}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      field: "balance",
-      headerName: "Wallet Balance",
-      flex: 1,
+      headerName: "Status",
+      width: 120,
       renderCell: ({ row }) => (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "left",
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <Typography>{row.balance} ₫</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: "action",
-      headerName: "Action",
-      flex: 0.8,
-      renderCell: (params) => (
-        <div className="cellAction">
-          <Link
-            to={`/admin/ev_owner_view/${params.row.email}`}
-            style={{ textDecoration: "none" }}
-          >
-            <div className="viewButton">View</div>
-          </Link>
-        </div>
+        <Chip
+          size="small"
+          label={row.status === "active" ? "Active" : "Inactive"}
+          color={row.status === "active" ? "success" : "default"}
+          variant={row.status === "active" ? "filled" : "outlined"}
+        />
       ),
     },
   ];
 
+  //  Render UI
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="EV OWNERS" subtitle="Managing EV Owner KYC Profiles" />
-      <Box
-        m="40px 0 0 0"
-        height="75vh"
-        sx={{
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: "none",
-          },
-          "& .MuiDataGrid-virtualScroller": {
-            backgroundColor: colors.primary[400],
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "none",
-            backgroundColor: colors.blueAccent[700],
-          },
-        }}
-      >
-        <AdminDataGrid rows={data} columns={columns} getRowId={(r) => r.id} />
-      </Box>
+
+      {loading && (
+        <Box mt={3} display="flex" alignItems="center" gap={1}>
+          <CircularProgress size={22} />
+          <Typography>Loading EV owners…</Typography>
+        </Box>
+      )}
+
+      {err && (
+        <Box mt={2}>
+          <Alert severity="error">{String(err)}</Alert>
+        </Box>
+      )}
+
+      {!loading && !err && (
+        <Box
+          m="40px 0 0 0"
+          height="75vh"
+          sx={{
+            "& .MuiDataGrid-root": { border: "none" },
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: colors.blueAccent[700],
+              borderBottom: "none",
+            },
+            "& .MuiDataGrid-virtualScroller": {
+              backgroundColor: colors.primary[400],
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "none",
+              backgroundColor: colors.blueAccent[700],
+            },
+          }}
+        >
+          <AdminDataGrid
+            rows={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            disableRowSelectionOnClick
+          />
+        </Box>
+      )}
     </Box>
   );
 };

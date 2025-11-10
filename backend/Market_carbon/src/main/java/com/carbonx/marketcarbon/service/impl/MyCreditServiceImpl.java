@@ -253,7 +253,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         Long companyId = currentCompanyId();
         log.info("[DEBUG] getMyRetirableCredits (grouped by Batch) - companyId={}", companyId);
 
-        // B1: Lấy TẤT CẢ tín chỉ CỦA BẠN (ĐÚNG)
+        // B1: Lấy tất cả tín chỉ
         List<CarbonCredit> allCredits = creditRepo.findByCompanyId(companyId);
 
         // B2: Lọc tín chỉ CÓ THỂ RETIRE
@@ -268,31 +268,28 @@ public class MyCreditServiceImpl implements MyCreditService {
                     }
 
                     // Lọc 2: Phải có số lượng khả dụng (chưa niêm yết)
-                    BigDecimal freeQty = getAvailableForRetire(credit); //
+                    BigDecimal freeQty = getAvailableForRetire(credit);
                     if (freeQty.compareTo(BigDecimal.ZERO) <= 0) {
-                        // (Tín chỉ 165, 166 sẽ bị loại ở đây - ĐÚNG)
                         log.debug("[RETIRE-FILTER] Credit {} skipped: no free amount (Avail: {}, Listed: {})",
                                 credit.getId(), credit.getCarbonCredit(), credit.getListedAmount());
                         return false;
                     }
 
-                    // Lọc 3: Tín chỉ phải thuộc về 1 lô (để nhóm)
+                    // Lọc 3: Tín chỉ phải thuộc về 1 lô
                     if (credit.getBatch() == null) {
                         log.warn("[RETIRE-FILTER] Credit {} skipped: Data error - No batch associated.", credit.getId());
                         return false;
                     }
-
-                    // (Tín chỉ 164, 188, 189, 250, 251 sẽ vượt qua)
                     return true;
                 })
                 .toList();
 
         log.info("[DEBUG] Found {} retirable credits (non-listed, non-expired) from {} total credits",
-                retirableCredits.size(), allCredits.size()); // Log này sẽ là 5 tín chỉ
+                retirableCredits.size(), allCredits.size());
 
-        // B3: Nhóm các tín chỉ (ĐÃ ĐÚNG) theo Lô
+        // B3: Nhóm các tín chỉ theo Lô
         Map<CreditBatch, List<CarbonCredit>> creditsByBatch = retirableCredits.stream()
-                .collect(Collectors.groupingBy(CarbonCredit::getBatch)); //
+                .collect(Collectors.groupingBy(CarbonCredit::getBatch));
 
         // B4: Tính tổng và tạo Response
         return creditsByBatch.entrySet().stream()
@@ -302,7 +299,7 @@ public class MyCreditServiceImpl implements MyCreditService {
 
                     // Tính tổng số lượng CÓ THỂ RETIRE trong lô này
                     BigDecimal totalFreeInBatch = creditsInBatch.stream()
-                            .map(this::getAvailableForRetire) //
+                            .map(this::getAvailableForRetire)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     log.debug("[BATCH-{}] Total free (not listed): {} from {} credits",
@@ -368,7 +365,7 @@ public class MyCreditServiceImpl implements MyCreditService {
                 request.getBatchCode(), companyId, request.getQuantity());
 
         // B1: Chỉ tìm batch bằng batchCode
-        CreditBatch batch = batchRepo.findByBatchCode(request.getBatchCode()) // <--- SỬA DÒNG NÀY
+        CreditBatch batch = batchRepo.findByBatchCode(request.getBatchCode())
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
         // B2: Lấy tất cả credits trong batch
         List<CarbonCredit> allCreditsInBatch = creditRepo.findByBatch_IdAndCompany_Id(batch.getId(), companyId);

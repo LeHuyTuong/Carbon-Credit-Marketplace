@@ -4,7 +4,7 @@ import LineChart from "@/components/Chart/LineChart.jsx";
 
 const Line = () => {
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="Line Chart" subtitle="Simple Status Line Chart Of The Reports" />
       <Box height="75vh">
         <LineChart />

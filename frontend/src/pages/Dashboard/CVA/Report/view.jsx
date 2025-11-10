@@ -38,8 +38,6 @@ const ViewReport = ({ report: initialReport }) => {
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const [openAttachment, setOpenAttachment] = useState(false);
-
 
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
@@ -208,14 +206,14 @@ const ViewReport = ({ report: initialReport }) => {
 
   if (loading)
     return (
-      <Box m="20px" display="flex" justifyContent="center" alignItems="center" height="70vh">
+      <Box m="20px" sx={{ marginLeft: "290px" }} display="flex" justifyContent="center" alignItems="center" height="70vh">
         <CircularProgress color="info" />
       </Box>
     );
 
   if (!report)
     return (
-      <Box m="20px" textAlign="center">
+      <Box m="20px" sx={{ marginLeft: "290px" }} >
         <Typography variant="h4" color={colors.grey[100]}>
           Report data not available
         </Typography>
@@ -228,48 +226,19 @@ const ViewReport = ({ report: initialReport }) => {
   const statusColor = colorMap[report.status] || colors.grey[300];
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }} textAlign="left" >
       <Header title="REPORT DETAIL" subtitle={`Details of Report ${report.id}`} />
       <Grid container spacing={2}>
         {/* LEFT: formula image */}
-        <Grid item xs={12} sm={6}>
+        {/* <Grid item xs={12} sm={6}>
           <Box display="flex" flexDirection="column" alignItems="center">
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => setShowFormula((prev) => !prev)}
-              sx={{ mb: 2 }}
-            >
-              {showFormula ? "Close Formula" : "Open Formula"}
-            </Button>
-            {showFormula && (
-              <Box
-                sx={{
-                  width: "100%",
-                  height: "70vh",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  boxShadow: 2,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  backgroundColor: colors.primary[500],
-                }}
-              >
-                <img
-                  src={FormulaImage}
-                  alt="Formula"
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                />
-              </Box>
-            )}
           </Box>
-        </Grid>
+        </Grid> */}
 
         {/* RIGHT: report info */}
         <Grid item xs={12} sm={6}>
-          <Paper elevation={4} sx={{ backgroundColor: colors.primary[400], p: 3, borderRadius: 2 }}>
-            <Grid container spacing={2}>
+          <Paper elevation={4} sx={{ backgroundColor: colors.primary[400], p: 3, borderRadius: 2, maxWidth: "1000px", width: "100%" }}>
+            <Grid container spacing={20}>
               <Grid item xs={12} sm={6}>
                 <Typography variant="h6">Report ID:</Typography>
                 <Typography>{report.id}</Typography>
@@ -288,7 +257,19 @@ const ViewReport = ({ report: initialReport }) => {
                 <Typography variant="h6">Total CO₂:</Typography>
                 <Typography>{report.totalCo2}</Typography>
                 <Typography variant="h6" mt={2}>Submission Date:</Typography>
-                <Typography>{report.submittedAt}</Typography>
+                <Typography>
+                  {report.submittedAt
+                    ? new Date(report.submittedAt).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })
+                    : "—"}
+                </Typography>
+
                 <Typography variant="h6" mt={2}>Attachment:</Typography>
                 {report.uploadOriginalFilename ? (
                   <Button
@@ -296,7 +277,7 @@ const ViewReport = ({ report: initialReport }) => {
                     color="info"
                     onClick={() => window.open(report.uploadStorageUrl, "_blank")}
                   >
-                      Download
+                    Download
                   </Button>
                 ) : (
                   <Typography>—</Typography>

@@ -133,7 +133,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
-        // 1. Tạo và lưu sự kiện chia lợi nhuận (Tự commit)
+        // 1. Tạo và lưu sự kiện chia lợi nhuận
         ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
 
         try {
@@ -150,11 +150,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // Công ty muốn chia cho 1 report cụ thể
             if (request.getEmissionReportId() != null) {
 
-                // ================== SỬA LỖI LAZY INIT ==================
-                // Dùng hàm mới `findByIdWithDetails` để load cả 'details'
+                // sử dụng detail để tránh lỗi lazy init
                 EmissionReport report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
-                // =======================================================
 
                 if (report.getStatus() != EmissionStatus.CREDIT_ISSUED ) {
                     throw new AppException(ErrorCode.EMISSION_REPORT_NOT_APPROVED);
@@ -175,7 +173,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             Set<String> registeredPlates = vehicleRepository.findAllRegisteredPlateNumbers();
             log.info("Find {} PlateNumber is register ", registeredPlates.size());
 
-            // 6. (Bước 1 & 2) Phân loại và Tổng hợp đóng góp TỪ TẤT CẢ CÁC REPORT
+            // 6. (Bước 1 & 2) Phân loại và Tổng hợp đóng góp
             Map<Long, ContributionData> evOwnerContributions = new HashMap<>();
             BigDecimal totalEnergyFromRegistered = BigDecimal.ZERO;
             BigDecimal totalEnergyFromUnregistered = BigDecimal.ZERO;
@@ -184,7 +182,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             BigDecimal totalCreditsAll = BigDecimal.ZERO; // Tổng tín chỉ
 
             for (EmissionReport report : reportsToProcess) {
-                // Vòng lặp này (trước đây là line 174) sẽ không còn lỗi "no Session"
                 for (EmissionReportDetail detail : report.getDetails()) {
 
                     BigDecimal energy = detail.getTotalEnergy();
@@ -193,31 +190,40 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     }
 
                     BigDecimal creditContribution = resolveCreditContribution(detail, energy);
-                    totalCreditsAll = totalCreditsAll.add(creditContribution); // TÍNH TỔNG
+                    totalCreditsAll = totalCreditsAll.add(creditContribution); // sum
 
-                    if (registeredPlates.contains(detail.getVehiclePlate())) {
+                    if (registeredPlates.contains(detail.getVehiclePlate())) {// nếu xe có tồn tại
+
+                        // B1 lấy xe
                         Vehicle vehicle = vehicleRepository.findByPlateNumberWithDetails(detail.getVehiclePlate()).orElse(null);
                         if (vehicle != null && vehicle.getEvOwner() != null) {
+                            // B2 lấy ev owner
                             Long evOwnerId = vehicle.getEvOwner().getId();
-
+                            //B3 lấy contribution cũ
                             ContributionData contribution = evOwnerContributions.computeIfAbsent(evOwnerId, ContributionData::new);
+                            // Add thêm thông tin đetail vào trong contribution
                             contribution.addContribution(energy, creditContribution, detail);
 
+                            // số năng lượng được add vào
                             totalEnergyFromRegistered = totalEnergyFromRegistered.add(energy);
+                            // số tín chỉ được add
                             totalCreditsFromRegistered = totalCreditsFromRegistered.add(creditContribution);
                         }
                     } else {
+                        // nếu mà không thấy có xe tồn tại trên hệ thống thì cộng cho Compnany
                         totalEnergyFromUnregistered = totalEnergyFromUnregistered.add(energy);
                         totalCreditsFromUnregistered = totalCreditsFromUnregistered.add(creditContribution);
                     }
                 }
             }
-
+            // đã xác định xong số tín chỉ và năng lượng tổng
 
             log.info("Total energy contribution (Registered): {} kWh. (Unregistered): {} kWh.", totalEnergyFromRegistered, totalEnergyFromUnregistered);
             log.info("Total credit contribution (Registered): {}. (Unregistered): {}.", totalCreditsFromRegistered, totalCreditsFromUnregistered);
 
+            // lấy % số tiền chia từ request
             BigDecimal sharePercent = request.getCompanySharePercent().divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP);
+            // lấy tiền chia từ request
             BigDecimal requestedProfitBase = request.getTotalMoneyToDistribute();
             BigDecimal poolToShare = requestedProfitBase.multiply(sharePercent).setScale(2, RoundingMode.HALF_UP);
 
@@ -233,13 +239,17 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             List<OwnerPayoutData> payoutPlan = new ArrayList<>();
             BigDecimal totalMoneyToPayout = BigDecimal.ZERO;
 
-            for (ContributionData contribution : evOwnerContributions.values()) {
+            // tìm những data đã được đóng góp từ ev owner
+            // vòng for để tính toán số lượng tiền và năng lượng
+            for (ContributionData contribution : evOwnerContributions.values()) { // lấy từ ev owner
                 if (contribution.getTotalCreditContribution().compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
-
+                // phần trăm được share
                 BigDecimal ownerSharePercent = contribution.getTotalCreditContribution().divide(totalCreditsAll, 10, RoundingMode.HALF_UP);
+                // số tiền cần share
                 BigDecimal moneyToPay = poolToShare.multiply(ownerSharePercent).setScale(2, RoundingMode.HALF_UP);
+
 
                 if (moneyToPay.compareTo(BigDecimal.ZERO) > 0) {
                     payoutPlan.add(new OwnerPayoutData(
@@ -250,7 +260,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     ));
                     totalMoneyToPayout = totalMoneyToPayout.add(moneyToPay);
                 }
-            } // HẾT VÒNG LẶP TÍNH TOÁN
+            } // vòng lặp tính toán
 
             // 7.2 KIỂM TRA TỔNG TIỀN (1 LẦN)
             if (totalMoneyToPayout.compareTo(BigDecimal.ZERO) <= 0) {
@@ -286,9 +296,8 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             distributionEvent.setDescription(descriptionBuilder.toString());
             profitDistributionRepository.save(distributionEvent);
 
-            // 7.4 Dùng VÒNG LẶP FOR TUẦN TỰ (Bỏ CompletableFuture)
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
-
+            // vòng lặp xử lý thanh toan sau khi đã có đầy đủ contribution
             for (OwnerPayoutData payout : payoutPlan) {
                 // Gọi hàm tuần tự (nó là public và @Transactional(REQUIRES_NEW))
                 processPayoutForOwner(distributionEvent, payout, companyWallet);
@@ -347,6 +356,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             log.info("Wallet for EVOwner ID {} not found. Generated new wallet.", payout.getEvOwnerId());
         }
 
+        // tạo detail profit sharing
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(event);
         detail.setEvOwner(owner);

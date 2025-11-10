@@ -193,14 +193,7 @@ export default function App() {
           element={<AdminChangePassword />}
         />
         <Route path="/cva/carbonX/mkp/register" element={<RegisterCVA />} />
-        <Route
-          path="/cva/otp"
-          element={
-            
-              <OTPCVA/>
-            
-          }
-        />
+        <Route path="/cva/otp" element={<OTPCVA />} />
         <Route path="/cva/carbonX/mkp/login" element={<LoginCVA />} />
         <Route
           path="/cva/kyc"

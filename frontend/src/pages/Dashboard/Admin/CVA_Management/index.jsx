@@ -74,25 +74,25 @@ const CvaTeam = () => {
 
     { field: "createdAt", headerName: "Created At", flex: 1 },
     { field: "updatedAt", headerName: "Updated At", flex: 1 },
-    {
-      field: "action",
-      headerName: "Action",
-      flex: 0.7,
-      renderCell: (params) => (
-        <div className="cellAction">
-          <Link
-            to={`/admin/cva_view/${params.row.email}`}
-            style={{ textDecoration: "none" }}
-          >
-            <div className="viewButton">View</div>
-          </Link>
-        </div>
-      ),
-    },
+    // {
+    //   field: "action",
+    //   headerName: "Action",
+    //   flex: 0.7,
+    //   renderCell: (params) => (
+    //     <div className="cellAction">
+    //       <Link
+    //         to={`/admin/cva_view/${params.row.email}`}
+    //         style={{ textDecoration: "none" }}
+    //       >
+    //         <div className="viewButton">View</div>
+    //       </Link>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="CVA KYC PROFILES" subtitle="Managing CVA Verification Profiles" />
       <Box
         m="40px 0 0 0"

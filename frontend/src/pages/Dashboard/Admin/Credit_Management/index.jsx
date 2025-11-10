@@ -221,7 +221,7 @@ const CreditsList = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="CREDITS" subtitle="List of Carbon Credits in the System" />
       <Box
         m="40px 0 0 0"

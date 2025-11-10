@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
-import { Box, IconButton, Typography, useTheme, CircularProgress } from "@mui/material";
+import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/themeCVA";
@@ -8,7 +8,6 @@ import SecurityIcon from "@mui/icons-material/Security";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
-import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 
 // Component menu item
@@ -18,7 +17,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 
   return (
     <MenuItem
-      active={selected === to} //so sánh theo đường dẫn
+      active={selected === to}
       style={{ color: colors.grey[100] }}
       onClick={() => setSelected(to)}
       icon={icon}
@@ -33,18 +32,13 @@ const Sidebar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const location = useLocation();
+  const [selected, setSelected] = useState(location.pathname);
+  const [kycInfo, setKycInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selected, setSelected] = useState(location.pathname); // lưu trực tiếp đường dẫn
-
-  // Khi đổi route (ví dụ reload/hoặc chuyển trang) cập nhật selected
   useEffect(() => {
     setSelected(location.pathname);
   }, [location.pathname]);
-
-  // KYC API
-  const [kycInfo, setKycInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchKYC = async () => {
@@ -60,7 +54,6 @@ const Sidebar = () => {
     fetchKYC();
   }, []);
 
-  // Định nghĩa danh sách menu 1 chỗ
   const menuItems = [
     { title: "Dashboard", to: "/cva/dashboard", icon: <HomeOutlinedIcon /> },
     { section: "Data" },
@@ -71,6 +64,11 @@ const Sidebar = () => {
   return (
     <Box
       sx={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        height: "100vh",
+        zIndex: 100,
         "& .pro-sidebar-inner": {
           background: `${colors.primary[400]} !important`,
         },
@@ -81,76 +79,67 @@ const Sidebar = () => {
           padding: "5px 35px 5px 20px !important",
         },
         "& .pro-inner-item:hover": {
-          color: "#86fbdcff !important",
+          color: "#868dfb !important",
         },
         "& .pro-menu-item.active": {
-          color: "#68fa80ff !important",
+          color: "#6870fa !important",
         },
       }}
     >
-      <ProSidebar collapsed={isCollapsed}>
+      <ProSidebar collapsed={false}>
         <Menu iconShape="square">
           {/* Header */}
           <MenuItem
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
             style={{
               margin: "10px 0 20px 0",
               color: colors.grey[100],
             }}
           >
-            {!isCollapsed && (
-              <Box display="flex" justifyContent="space-between" alignItems="center" ml="15px">
-                <Typography variant="h3" color={colors.grey[100]}>
-                  Verification
-                </Typography>
-                <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
-                  <MenuOutlinedIcon />
-                </IconButton>
-              </Box>
-            )}
+            <Box display="flex" justifyContent="center" alignItems="center" ml="15px">
+              <Typography variant="h3" color={colors.grey[100]}>
+                Verification
+              </Typography>
+            </Box>
           </MenuItem>
 
           {/* Avatar */}
-          {!isCollapsed && (
-            <Box mb="25px">
-              <Box display="flex" justifyContent="center" alignItems="center">
-                <SecurityIcon
-                  sx={{
-                    fontSize: "100px",
-                    color: colors.greenAccent[500],
-                    cursor: "pointer",
-                    backgroundColor: colors.primary[400],
-                    borderRadius: "50%",
-                    padding: "10px",
-                  }}
-                />
-              </Box>
-
-              <Box textAlign="center" sx={{ mt: 2 }}>
-                {loading ? (
-                  <CircularProgress size={28} color="inherit" />
-                ) : (
-                  <>
-                    <Typography
-                      variant="h2"
-                      color={colors.grey[100]}
-                      fontWeight="bold"
-                      sx={{ m: "10px 0 0 0" }}
-                    >
-                      {kycInfo?.name || "Unknown User"}
-                    </Typography>
-                    <Typography variant="h5" color={colors.greenAccent[500]}>
-                      {kycInfo?.positionTitle || kycInfo?.organization || "CVA"}
-                    </Typography>
-                  </>
-                )}
-              </Box>
+          <Box mb="25px">
+            <Box display="flex" justifyContent="center" alignItems="center">
+              <SecurityIcon
+                sx={{
+                  fontSize: "100px",
+                  color: colors.greenAccent[500],
+                  cursor: "pointer",
+                  backgroundColor: colors.primary[400],
+                  borderRadius: "50%",
+                  padding: "10px",
+                }}
+              />
             </Box>
-          )}
+
+            <Box textAlign="center" sx={{ mt: 2 }}>
+              {loading ? (
+                <CircularProgress size={28} color="inherit" />
+              ) : (
+                <>
+                  <Typography
+                    variant="h2"
+                    color={colors.grey[100]}
+                    fontWeight="bold"
+                    sx={{ m: "10px 0 0 0" }}
+                  >
+                    {kycInfo?.name || "Unknown User"}
+                  </Typography>
+                  <Typography variant="h5" color={colors.greenAccent[500]}>
+                    {kycInfo?.positionTitle || kycInfo?.organization || "CVA"}
+                  </Typography>
+                </>
+              )}
+            </Box>
+          </Box>
 
           {/* Menu items */}
-          <Box paddingLeft={isCollapsed ? undefined : "10%"}>
+          <Box paddingLeft="10%">
             {menuItems.map((item, idx) =>
               item.section ? (
                 <Typography

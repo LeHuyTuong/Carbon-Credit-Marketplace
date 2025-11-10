@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box,Typography } from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useTheme } from "@mui/material";
@@ -8,7 +8,6 @@ import "@/styles/actionadmin.scss";
 import { getProjectApplications } from "@/apiAdmin/companyAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
 import dayjs from "dayjs";
-
 const ApplicationList = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -36,8 +35,23 @@ const ApplicationList = () => {
     {
       field: "projectTitle",
       headerName: "Project Title",
-      flex: 1,
-      cellClassName: "name-column--cell",
+      flex: 1.2,
+      renderCell: (params) => (
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+            textAlign: "left",
+          }}
+        >
+          {params.value || "N/A"}
+        </Typography>
+      ),
     },
     { field: "companyId", headerName: "Company ID", flex: 0.6 },
     { field: "companyName", headerName: "Company Name", flex: 1 },
@@ -129,7 +143,7 @@ const ApplicationList = () => {
   ];
 
   return (
-    <Box m="20px" className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header
         title="APPLICATIONS"
         subtitle="List of Submitted Project Applications"

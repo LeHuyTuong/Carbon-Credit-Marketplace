@@ -56,6 +56,28 @@ const ViewReport = () => {
           setApproved(false);
           setIssued(false);
         }
+        //test nếu sai
+        // const rawStatus = (data.status || "").trim().toUpperCase();
+
+        // switch (rawStatus) {
+        //   case "ADMIN_APPROVED":
+        //     setApproved(true);
+        //     setIssued(false);
+        //     break;
+        //   case "ISSUED":
+        //     setApproved(true);
+        //     setIssued(true);
+        //     break;
+        //   case "REJECTED":
+        //     setApproved(false);
+        //     setIssued(false);
+        //     break;
+        //   default:
+        //     setApproved(false);
+        //     setIssued(false);
+        //     break;
+        // }
+
       } catch (err) {
         console.error("Error fetching report:", err);
       } finally {
@@ -64,7 +86,7 @@ const ViewReport = () => {
     };
     fetchReport();
   }, [id]);
-  
+
   const handleApproval = async (isApproved) => {
     try {
       const res = await approveReportByAdmin(id, isApproved, note);
@@ -115,7 +137,7 @@ const ViewReport = () => {
   if (!report) return <Typography m={3}>Report not found.</Typography>;
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="REPORT DETAILS" subtitle="Final approval for this report" />
 
       <Paper
