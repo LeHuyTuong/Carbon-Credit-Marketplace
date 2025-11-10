@@ -29,6 +29,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
 
+    // 🔹 Lấy companyId của user hiện tại
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepo.findByEmail(email);
@@ -44,58 +45,55 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public CreditInventorySummaryResponse getMyInventorySummary() {
         Long companyId = currentCompanyId();
 
-        // 1. Query SUM(amount) cho các trạng thái (trừ EXPIRED)
+        //  Query SUM(amount) cho các trạng thái (trừ EXPIRED)
         var byStatusRaw = creditRepo.sumAmountByStatusExcluding(companyId, CreditStatus.EXPIRED);
         var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED);
         var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED);
 
-        // 2. Query COUNT(id) riêng cho RETIRED
+        //  COUNT(id) riêng cho RETIRED
         long retiredCount = creditRepo.countByCompanyIdAndStatus(companyId, CreditStatus.RETIRED);
 
-        // 3. Query chỉ số phụ (ISSUED 30 ngày)
+        //  ISSUED trong 30 ngày gần nhất
         OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(30);
         long issuedVirtual = creditRepo.sumRecentlyIssued(companyId, cutoffDate);
 
-        // 4. Khởi tạo các biến đếm
+        //  Biến đếm
         long available = 0;
-        long listed = 0; // 'reserved' trong DTO  map 'LISTED'
+        long listed = 0; // reserved
         long sold = 0;
 
-        // Tạo một List mới
         List<StatusCount> byStatus = new ArrayList<>();
 
-        // 5. Xử lý kết quả từ SUM(amount)
+        //  Phân loại theo trạng thái
         for (Object[] row : byStatusRaw) {
             String status = String.valueOf(row[0]);
             long sum = ((Number) row[1]).longValue();
-
             boolean addToList = true;
 
-            //  'reserved' là 'LISTED'
             switch (status) {
                 case "AVAILABLE" -> available = sum;
                 case "LISTED"    -> listed = sum;
                 case "SOLD"      -> sold = sum;
-                case "RETIRED"   -> addToList = false; // bỏ qua  (vì SUM(amount) = 0)
+                case "RETIRED"   -> addToList = false;
             }
 
             if (addToList) {
                 byStatus.add(StatusCount.builder()
                         .status(status)
-                        .count(sum) // 'count' ở đây là SUM(amount)
+                        .count(sum)
                         .build());
             }
         }
 
-        // 6. Thêm thủ công số lượng RETIRED (đã đếm bằng COUNT)
+        //  Thêm RETIRED riêng
         if (retiredCount > 0) {
             byStatus.add(StatusCount.builder()
                     .status("RETIRED")
-                    .count(retiredCount) // 'count' ở đây là COUNT(id)
+                    .count(retiredCount)
                     .build());
         }
 
-        // 7. Thêm chỉ số phụ ISSUED (không cộng vào total)
+        //  Thêm ISSUED (30 ngày gần đây)
         if (issuedVirtual > 0) {
             byStatus.add(StatusCount.builder()
                     .status("ISSUED")
@@ -103,10 +101,10 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
-        // 8. Total chỉ tính 'available'
-        long total = available;
+        //  Tính BUYED = tổng tín chỉ được mua từ công ty khác
+        long buyed = creditRepo.sumBuyedAmount(companyId);
 
-        // 9. Xử lý byProject (Giữ nguyên)
+        //  byProject
         List<ProjectCount> byProject = new ArrayList<>();
         for (Object[] row : byProjectRaw) {
             byProject.add(ProjectCount.builder()
@@ -116,7 +114,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
-        // 10. Xử lý byVintage (Giữ nguyên)
+        //  byVintage
         List<VintageCount> byVintage = new ArrayList<>();
         for (Object[] row : byVintageRaw) {
             Integer vintageYear = row[0] != null ? ((Number) row[0]).intValue() : null;
@@ -127,9 +125,9 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                     .build());
         }
 
-        // 11. Trả về Response
+        //  Trả về DTO
         return CreditInventorySummaryResponse.builder()
-                .total(total)
+                .buyed(buyed)
                 .issued(issuedVirtual)
                 .available(available)
                 .reserved(listed)
@@ -146,5 +144,4 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     public long getMyAvailableBalance() {
         return creditRepo.sumAmountByCompany_IdAndStatus(currentCompanyId(), CreditStatus.AVAILABLE);
     }
-
 }

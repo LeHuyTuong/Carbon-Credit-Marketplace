@@ -6,12 +6,12 @@ import java.util.List;
 
 @Builder
 public record CreditInventorySummaryResponse(
-        long total,
-        long issued,
-        long available,
-        long reserved,
-        long sold,
-        long retired,
+        long buyed,        //  tổng tín chỉ đã mua
+        long issued,       // tín chỉ do mình phát hành
+        long available,    // đang còn trong kho
+        long reserved,     // đang niêm yết
+        long sold,         // đã bán
+        long retired,      // đã nghỉ hưu
         List<StatusCount> byStatus,
         List<ProjectCount> byProject,
         List<VintageCount> byVintage

@@ -244,4 +244,14 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
     """, nativeQuery = true)
     List<Object[]> countMonthlyCreditStatusNative();
 
+    @Query("""
+    SELECT COALESCE(SUM(c.amount), 0)
+    FROM CarbonCredit c
+    JOIN c.sourceCredit sc
+    WHERE c.company.id = :companyId
+      AND sc.company.id <> :companyId
+      AND c.status <> com.carbonx.marketcarbon.common.CreditStatus.EXPIRED
+""")
+    long sumBuyedAmount(@Param("companyId") Long companyId);
+
 }

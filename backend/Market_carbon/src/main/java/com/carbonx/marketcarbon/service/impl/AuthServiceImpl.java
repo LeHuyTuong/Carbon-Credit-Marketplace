@@ -70,13 +70,13 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
 
-        String subject = "Xác thực tài khoản - CarbonX";
+        String subject = "Account Verification - CarbonX";
         String content = String.format(
-                "<p>Xin chào %s,</p>" +
-                        "<p>Cảm ơn bạn đã đăng ký. Vui lòng sử dụng mã OTP sau để xác nhận tài khoản:</p>" +
+                "<p>Hello %s,</p>" +
+                        "<p>Thank you for registering. Please use the following OTP code to verify your account:</p>" +
                         "<h2>%s</h2>" +
-                        "<p>Mã OTP sẽ hết hạn sau 5 phút.</p>" +
-                        "<p>Trân trọng,<br/>CarbonX Team</p>",
+                        "<p>The OTP will expire in 5 minutes.</p>" +
+                        "<p>Best regards,<br/>CarbonX Team</p>",
                 newUser.getEmail(), otp
         );
 
