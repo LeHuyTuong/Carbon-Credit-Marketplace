@@ -6,8 +6,6 @@ import {
   Grid,
   TextField,
   Paper,
-  Snackbar,
-  Alert,
   useTheme,
   CircularProgress,
   MenuItem,
@@ -66,6 +64,13 @@ const ViewProject = () => {
         }
       } catch (err) {
         console.error("Error fetching project:", err);
+
+        const message =
+          err?.response?.data?.responseStatus?.responseDesc ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to fetch project.";
+        showSnackbar("error", message);
       } finally {
         setLoading(false);
       }
@@ -106,8 +111,11 @@ const ViewProject = () => {
         showSnackbar("error", res?.responseStatus?.responseMessage || "Update failed!");
       }
     } catch (err) {
-      console.error("Error updating project:", err);
-      showSnackbar("error", "Error updating project!");
+      err?.response?.data?.responseStatus?.responseDesc ||
+        err?.response?.data?.responseStatus?.responseMessage ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Error updating project!";
     } finally {
       setUpdateLoading(false);
     }
@@ -154,11 +162,11 @@ const ViewProject = () => {
   return (
     <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
-      <Paper elevation={3} sx={{ p: 3, mt: 3, backgroundColor: colors.primary[400] }}>
+      <Paper elevation={3} sx={{ p: 3, mt: 3, width: "100%", backgroundColor: colors.primary[400] }}>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
-            spacing={20} // tăng khoảng cách giữa các cột
+            spacing={3} // tăng khoảng cách giữa các cột
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
@@ -173,36 +181,36 @@ const ViewProject = () => {
             }}
           >
             {/* COLUMN 1  */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} sx={{ minWidth: 0 }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 General Info
               </Typography>
-             
+
               <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 65 }}>
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Project ID:
-              </Typography>
-              <Typography mb={2}>{formData.projectid}</Typography>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Project ID:
+                </Typography>
+                <Typography mb={2}>{formData.projectid}</Typography>
               </Box>
 
               <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 100 }}>
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Project Name:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  name="projectname"
-                  value={formData.projectname}
-                  onChange={handleChange}
-                />
-              ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                  {formData.projectname}
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Project Name:
                 </Typography>
-              )}
+                {isEditing ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    name="projectname"
+                    value={formData.projectname}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                    {formData.projectname}
+                  </Typography>
+                )}
               </Box>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -219,7 +227,7 @@ const ViewProject = () => {
                   sx={{ mb: 2 }}
                 />
               ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap",overflowWrap: "break-word", }}>
                   {formData.shortdescription || "—"}
                 </Typography>
               )}
@@ -254,31 +262,31 @@ const ViewProject = () => {
                     : "—"}
                 </Typography>
               )}
-              
-              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 60 }}>
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                End Date:
-              </Typography>
-              {isEditing ? (
-                <DatePicker
-                  format="DD/MM/YYYY"
-                  value={formData.enddate ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
-                  onChange={(date) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      enddate: date ? date.format("DD/MM/YYYY") : "",
-                    }))
-                  }
-                  sx={{ width: "100%" }}
-                />
 
-              ) : (
-                <Typography mb={2}>
-                  {formData.enddate
-                    ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
-                    : "—"}
+              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 60 }}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  End Date:
                 </Typography>
-              )}
+                {isEditing ? (
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={formData.enddate ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
+                    onChange={(date) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        enddate: date ? date.format("DD/MM/YYYY") : "",
+                      }))
+                    }
+                    sx={{ width: "100%" }}
+                  />
+
+                ) : (
+                  <Typography mb={2}>
+                    {formData.enddate
+                      ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
+                      : "—"}
+                  </Typography>
+                )}
               </Box>
 
 

@@ -24,6 +24,9 @@ const ViewCredit = () => {
   const [creditData, setCreditData] = useState(null);
   const [status, setStatus] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
 
   useEffect(() => {
     const fetchCredit = async () => {
@@ -34,6 +37,16 @@ const ViewCredit = () => {
         setStatus(data?.status || "");
       } catch (err) {
         console.error("Error fetching issued credit:", err);
+
+        const message =
+          err?.response?.data?.responseStatus?.responseDesc ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to fetch credit data.";
+
+        setOpenSnackbar(true);
+        setSnackbarMessage(message);
+        setSnackbarSeverity("error");
       }
     };
     fetchCredit();
@@ -64,7 +77,7 @@ const ViewCredit = () => {
   const color = colorMap[status] || colors.grey[300];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px",maxWidth: "1000px",width: "100%", }}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1000px", width: "100%", }}>
       <Header title="CREDIT DETAIL" subtitle={`Details of ${creditData.batchCode}`} />
 
       <Paper
@@ -157,14 +170,19 @@ const ViewCredit = () => {
 
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
-          Status updated successfully!
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
         </Alert>
       </Snackbar>
+
     </Box>
   );
 };

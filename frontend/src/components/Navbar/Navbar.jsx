@@ -161,6 +161,14 @@ export default function Navbar() {
                         </li>
                         <li>
                           <NavLink
+                            to="/list-EVOwners"
+                            className="dropdown-item"
+                          >
+                            EV Owners
+                          </NavLink>
+                        </li>
+                        <li>
+                          <NavLink
                             to="/purchase-history"
                             className="dropdown-item"
                           >

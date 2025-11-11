@@ -97,7 +97,7 @@ const Sidebar = () => {
           >
             <Box display="flex" justifyContent="center" alignItems="center" ml="15px">
               <Typography variant="h3" color={colors.grey[100]}>
-                Verification
+                CVA PAGE
               </Typography>
             </Box>
           </MenuItem>

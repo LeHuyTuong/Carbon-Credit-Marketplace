@@ -21,10 +21,13 @@ export const approveReportByAdmin = async (reportId, approved, note = "") => {
     method: "PUT",
   });
 };
-// reportAdmin.js
+// reportAdmin
 export const getReportByIdAdmin = async (id) => {
   return await apiFetch(`/api/v1/reports/${id}`, {
     method: "GET",
   });
 };
-
+//lấy từng company kyc profile
+export async function getCompanyKYCProfile(companyId) {
+  return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
+}

@@ -75,7 +75,7 @@ export default function Marketplace() {
         ) : (
           <PaginatedList
             items={credits}
-            itemsPerPage={3} //3 card mỗi trang
+            itemsPerPage={8} //8 card mỗi trang
             useGrid
             renderItem={(c) => (
               <div className="project-card" key={c.id}>
@@ -93,7 +93,10 @@ export default function Marketplace() {
                       <strong>Available:</strong> {c.quantity}
                     </span>
                   </div>
-                  <p className="text-muted small mb-1">
+                  <p
+                    className="text-muted small mb-1"
+                    style={{ height: "1.2rem" }}
+                  >
                     <strong>Seller:</strong> {c.seller}
                   </p>
                   <p className="text-muted small mb-2">
