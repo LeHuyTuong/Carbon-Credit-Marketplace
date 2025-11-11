@@ -32,7 +32,7 @@ public interface EmailService {
                                   String periodLabel,
                                   BigDecimal totalEnergyKWh,
                                   BigDecimal totalCredits,
-                                  BigDecimal amountVND,
+                                  BigDecimal amountUsd,
                                   List<VehiclePayoutRow> perVehicle,
                                   String distributionReference,
                                   Long companyId,
@@ -45,7 +45,7 @@ public interface EmailService {
                                           int ownersPaid,
                                           BigDecimal totalEnergy,
                                           BigDecimal totalCredits,
-                                          BigDecimal totalPayoutVND,
+                                          BigDecimal totalPayoutUsd,
                                           boolean scaledByCap,
                                           Long companyId,
                                           String distributionReference);
@@ -54,7 +54,7 @@ public interface EmailService {
                             String vehicleNameOrModel,
                             BigDecimal energyKWh,
                             BigDecimal credits,
-                            BigDecimal amountVND) {
+                            BigDecimal amountUsd) {
     }
 }
 

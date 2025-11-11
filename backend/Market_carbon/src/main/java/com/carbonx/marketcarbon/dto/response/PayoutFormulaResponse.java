@@ -14,4 +14,5 @@ public class PayoutFormulaResponse {
     private final BigDecimal minPayout;
     private final BigDecimal unitPricePerKwh;
     private final BigDecimal unitPricePerCredit;
+    private final String currency;
 }

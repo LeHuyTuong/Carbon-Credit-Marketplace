@@ -16,7 +16,8 @@ public class ProfitDistributionSummaryItemResponse {
     private final long vehiclesCount;
     private final BigDecimal energyKwh;
     private final BigDecimal credits;
-    private final BigDecimal amountVnd;
+    private final BigDecimal amountUsd;
+    private final String currency;
     private final String status;
 
     public static ProfitDistributionSummaryItemResponse of(Long ownerId,
@@ -26,7 +27,8 @@ public class ProfitDistributionSummaryItemResponse {
                                                            long vehiclesCount,
                                                            BigDecimal energyKwh,
                                                            BigDecimal credits,
-                                                           BigDecimal amountVnd,
+                                                           BigDecimal amountUsd,
+                                                           String  currency,
                                                            String status) {
         return new ProfitDistributionSummaryItemResponse(ownerId,
                 ownerName,
@@ -35,7 +37,8 @@ public class ProfitDistributionSummaryItemResponse {
                 vehiclesCount,
                 energyKwh,
                 credits,
-                amountVnd,
+                amountUsd,
+                currency,
                 status);
     }
 }

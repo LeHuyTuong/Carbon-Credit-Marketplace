@@ -40,6 +40,11 @@ public class ProfitSharingProperties {
                 .map(Policy::getMinPayout)
                 .orElse(defaultPolicy.getMinPayout());
 
+        String currency = Optional.ofNullable(override)
+                .map(Policy::getCurrency)
+                .filter(value -> !value.isBlank())
+                .orElse(defaultPolicy.getCurrency());
+
         PricingMode pricingMode;
         BigDecimal effectiveUnitPrice;
         if (unitPricePerKwh != null) {
@@ -56,7 +61,8 @@ public class ProfitSharingProperties {
                 unitPricePerKwh,
                 unitPricePerCredit,
                 minPayout,
-                effectiveUnitPrice);
+                effectiveUnitPrice,
+                currency);
     }
 
     @Data
@@ -64,6 +70,7 @@ public class ProfitSharingProperties {
         private BigDecimal unitPricePerKwh;
         private BigDecimal unitPricePerCredit;
         private BigDecimal minPayout;
+        private String currency = "USD";
     }
 
     public enum PricingMode {
@@ -78,17 +85,20 @@ public class ProfitSharingProperties {
         private final BigDecimal unitPricePerCredit;
         private final BigDecimal minPayout;
         private final BigDecimal unitPrice;
+        private final String currency;
 
         private ResolvedPolicy(PricingMode pricingMode,
                                BigDecimal unitPricePerKwh,
                                BigDecimal unitPricePerCredit,
                                BigDecimal minPayout,
-                               BigDecimal unitPrice) {
+                               BigDecimal unitPrice
+        ,String currency) {
             this.pricingMode = pricingMode;
             this.unitPricePerKwh = scale(unitPricePerKwh);
             this.unitPricePerCredit = scale(unitPricePerCredit);
             this.minPayout = scale(minPayout);
             this.unitPrice = scale(unitPrice);
+            this.currency = currency == null ? "USD" : currency.trim().toUpperCase();
         }
 
         private BigDecimal scale(BigDecimal value) {
