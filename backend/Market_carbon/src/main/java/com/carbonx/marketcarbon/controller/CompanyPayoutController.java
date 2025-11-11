@@ -82,20 +82,34 @@ public class CompanyPayoutController {
             @RequestParam(defaultValue = "0") int page,
             @Min(1) @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "ownerName,asc") String sort,
+            @RequestParam(defaultValue = "CREDITS") String formula,
+            @RequestParam(required = false) BigDecimal pricePerCredit,
+            @RequestParam(required = false) BigDecimal kwhToCreditFactor,
+            @RequestParam(required = false) BigDecimal ownerSharePct,
             @RequestParam(defaultValue = "2") int scale,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
+        // buoc 1: tao trace mac dinh neu client khong gui len
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        // buoc 2: xac dinh thoi diem hien tai neu khong nhan duoc header
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        // buoc 3: goi service tinh payout va phan trang theo bao cao duoc chon
         CompanyReportOwnersResponse data = companyPayoutQueryService.listCompanyOwnersForReport(
                 reportId,
                 page,
                 size,
                 sort,
+                formula,
+                pricePerCredit,
+                kwhToCreditFactor,
+                ownerSharePct,
                 scale);
+        // buoc 4: khoi tao status mac dinh thanh cong
         TuongResponseStatus status = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        // buoc 5: dong goi ket qua vao dinh dang chung cua he thong
         TuongCommonResponse<CompanyReportOwnersResponse> response =
                 new TuongCommonResponse<>(trace, now, status, data);
+        // buoc 6: tra ve http 200 kem trang du lieu
         return ResponseEntity.ok(response);
     }
 
