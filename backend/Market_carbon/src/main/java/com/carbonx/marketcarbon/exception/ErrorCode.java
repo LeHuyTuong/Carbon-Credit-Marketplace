@@ -59,6 +59,7 @@ public enum ErrorCode {
     INVALID_STATUS_TRANSITION1(400, "Cannot approve report with status ", HttpStatus.BAD_REQUEST),
     VEHICLE_PLATE_EXISTS(409, "Vehicle plate already exists.", HttpStatus.CONFLICT),
     REPORT_NOT_FOUND(404, "Report not found.", HttpStatus.NOT_FOUND),
+    POLICY_NOT_ACCEPTED(400, "You must accept the payout policy before adding this vehicle.", HttpStatus.BAD_REQUEST),
     REPORT_INVALID_STATE(409, "Report is already closed.", HttpStatus.CONFLICT),
     INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED.", HttpStatus.BAD_REQUEST),
     DUPLICATE_RESOURCE(409, "Duplicate resource.", HttpStatus.CONFLICT),

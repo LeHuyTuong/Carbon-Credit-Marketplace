@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ProfitDistributionDetail extends BaseEntity {
 
-    @Id  // <--- KHÓA CHÍNH (PRIMARY KEY) NẰM Ở ĐÂY
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -39,6 +39,9 @@ public class ProfitDistributionDetail extends BaseEntity {
     // Số tín chỉ nhận được
     @Column(nullable = false)
     private BigDecimal creditAmount;
+
+    @Column(name = "energy_amount", nullable = false)
+    private BigDecimal energyAmount;
 
     // Trạng thái
     @Column(nullable = false)
