@@ -357,6 +357,47 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         return newCredits.get(0);
     }
 
+    @Override
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public CreditBatchResponse previewIssueForReport(Long reportId) {
+        EmissionReport report = reportRepo.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        if (report.getStatus() != EmissionStatus.ADMIN_APPROVED)
+            throw new AppException(ErrorCode.REPORT_NOT_APPROVED);
+
+        if (batchRepo.findByReportId(reportId).isPresent())
+            throw new AppException(ErrorCode.CREDIT_ALREADY_ISSUED);
+
+        Company company = companyRepository.findById(report.getSeller().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        Project project = projectRepository.findById(report.getProject().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+        var result = creditFormula.compute(report, project);
+        if (result.getCreditsCount() <= 0)
+            throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
+
+        int year = Integer.parseInt(report.getPeriod().substring(0, 4));
+        String companyCode = CodeGenerator.slug3WithId(company.getCompanyName(), "COMP", company.getId());
+        String projectCode = CodeGenerator.slug3WithId(project.getTitle(), "PRJ", project.getId());
+        String prefix = year + "-" + companyCode + "-" + projectCode + "-";
+
+        return CreditBatchResponse.builder()
+                .reportId(report.getId())
+                .reportPeriod(report.getPeriod())
+                .companyName(company.getCompanyName())
+                .projectTitle(project.getTitle())
+                .vintageYear(year)
+                .creditsCount(result.getCreditsCount())
+                .totalTco2e(result.getTotalTco2e())
+                .residualTco2e(result.getResidualTco2e())
+                .reportFileName(report.getUploadOriginalFilename())
+                .status("PREVIEW")
+                .build();
+    }
+
     private CreditBatchResponse toResponse(CreditBatch b, CreditCertificate cert) {
         String viewUrl = (frontendBaseUrl != null)
                 ? (frontendBaseUrl.endsWith("/") ? frontendBaseUrl + "credits/" + b.getId()
@@ -381,6 +422,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                 .certificateUrl(cert != null ? cert.getCertificateUrl() : null)
                 .reportId(b.getReport() != null ? b.getReport().getId() : null)
                 .reportPeriod(b.getReport() != null ? b.getReport().getPeriod() : null)
+                .reportFileName(b.getReport() != null ? b.getReport().getUploadOriginalFilename() : null)
                 .build();
 
     }

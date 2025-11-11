@@ -19,7 +19,9 @@ public record CreditBatchLiteResponse(
         BigDecimal residualTco2e,
         String status,
         LocalDateTime issuedAt,
-        LocalDate expiresAt
+        LocalDate expiresAt,
+        String reportFileName,
+        String reportPeriod
 ) {
     public static CreditBatchLiteResponse from(CreditBatch b) {
         return CreditBatchLiteResponse.builder()
@@ -34,6 +36,12 @@ public record CreditBatchLiteResponse(
                 .status(b.getStatus())
                 .issuedAt(b.getIssuedAt())
                 .expiresAt(b.getExpiresAt())
+                .reportFileName(
+                        b.getReport() != null ? b.getReport().getUploadOriginalFilename() : null
+                )
+                .reportPeriod(
+                        b.getReport() != null ? b.getReport().getPeriod() : null
+                )
                 .build();
     }
 }
