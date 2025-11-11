@@ -130,7 +130,7 @@ public class MyCreditServiceImpl implements MyCreditService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        // 🔹 Lấy toàn bộ danh sách (không phân trang)
+        //  Lấy toàn bộ danh sách (không phân trang)
         List<CarbonCredit> credits = creditRepo.findAll(spec);
         log.info("[DEBUG] Credits found = {}", credits.size());
 

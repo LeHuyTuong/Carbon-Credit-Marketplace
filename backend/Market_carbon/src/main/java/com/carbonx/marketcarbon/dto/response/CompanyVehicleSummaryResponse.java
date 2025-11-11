@@ -24,5 +24,6 @@ public class CompanyVehicleSummaryResponse {
         private String plateNumber;
         private String brand;
         private String model;
+        private String documentFile;
     }
 }

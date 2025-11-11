@@ -18,4 +18,6 @@ public interface CreditIssuanceService {
                                   BigDecimal quantity,
                                   BigDecimal pricePerUnit,
                                   String issuedBy);
+
+    public CreditBatchResponse previewIssueForReport(Long reportId);
 }

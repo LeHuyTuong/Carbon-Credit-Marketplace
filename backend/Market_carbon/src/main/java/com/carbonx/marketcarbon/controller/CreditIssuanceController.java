@@ -26,6 +26,20 @@ public class CreditIssuanceController {
 
     private final CreditIssuanceService creditIssuanceService;
 
+    @Operation(summary = "[ADMIN] Preview credits before issuance")
+    @GetMapping("/preview/{reportId}")
+    public ResponseEntity<TuongCommonResponse<CreditBatchResponse>> preview(
+            @PathVariable Long reportId
+    ) {
+        CreditBatchResponse data = creditIssuanceService.previewIssueForReport(reportId);
+        return ResponseEntity.ok(new TuongCommonResponse<>(
+                UUID.randomUUID().toString(),
+                OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Preview calculated successfully"),
+                data
+        ));
+    }
+
     @Operation(summary = "Issue carbon credits for an approved emission report (Admin only)")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/issue")
