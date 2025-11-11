@@ -125,6 +125,7 @@ export default function ListProjects() {
                   <th>#</th>
                   <th>Project Title</th>
                   <th>Status</th>
+                  <th>Waiting Status</th>
                   <th>Submitted At</th>
                   <th>Review Note</th>
                   <th>Action</th>
@@ -153,6 +154,8 @@ export default function ListProjects() {
                         {a.status.replaceAll("_", " ")}
                       </span>
                     </td>
+
+                    <td className="text-muted">{a.waitingFor}</td>
 
                     <td className="text-muted">
                       {a.submittedAt

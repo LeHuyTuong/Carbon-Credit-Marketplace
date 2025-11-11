@@ -74,10 +74,15 @@ const NewProjectForm = () => {
         );
       }
     } catch (error) {
-      showSnackbar(
-        "error",
-        error.message || "Failed to create project. Please try again."
-      );
+      console.error("Error creating project:", error);
+
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to create project. Please try again.";
+
+      showSnackbar("error", message);
     } finally {
       setLoading(false);
     }

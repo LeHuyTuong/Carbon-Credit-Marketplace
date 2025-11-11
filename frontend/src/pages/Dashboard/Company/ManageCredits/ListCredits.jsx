@@ -135,7 +135,10 @@ export default function ListCredits() {
         id: item.listingId,
         title: item.projectTitle || "Unnamed Project",
         price: item.pricePerCredit,
-        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        listedQuantity: item.originalQuantity,
+        soldQuantity: item.soldQuantity,
+        availableQuantity: item.quantity,
         seller: item.sellerCompanyName,
         expiresAt: item.expiresAt || null,
       }));
@@ -308,8 +311,11 @@ export default function ListCredits() {
               <tr>
                 <th>#</th>
                 <th>Title</th>
-                <th>Price ($)</th>
-                <th>Quantity</th>
+                <th>Price Per Credit ($)</th>
+                <th>Total Price ($)</th>
+                <th>Listed Quantity</th>
+                <th>Sold Quantity</th>
+                <th>Available Quantity</th>
                 <th>Seller</th>
                 <th>Expires At</th>
                 <th>Actions</th>
@@ -323,7 +329,10 @@ export default function ListCredits() {
                   <td>{index + 1}</td>
                   <td>{row.title}</td>
                   <td>${row.price}</td>
-                  <td>{row.quantity}</td>
+                  <td>${row.totalPrice}</td>
+                  <td>{row.listedQuantity}</td>
+                  <td>{row.soldQuantity}</td>
+                  <td>{row.availableQuantity}</td>
                   <td>{row.seller}</td>
                   <td>
                     {row.expiresAt

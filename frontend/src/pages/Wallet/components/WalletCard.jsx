@@ -9,7 +9,7 @@ export default function WalletCard({
   loading,
 }) {
   //tỉ giá quy đổi
-  const exchangeRate = 27400;
+  const exchangeRate = 26000;
 
   return (
     <div className="wallet-card glass-card text-center p-4 mb-5">
