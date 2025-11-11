@@ -53,7 +53,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .minPayout(policy.getMinPayout())
                 .unitPricePerKwh(policy.getUnitPricePerKwh())
                 .unitPricePerCredit(policy.getUnitPricePerCredit())
-                .currency(policy.getCurrency())
                 .build();
     }
 
@@ -113,10 +112,14 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                                                                   int page,
                                                                   int size,
                                                                   String sort,
+                                                                  String formula,
+                                                                  BigDecimal pricePerCreditOverride,
+                                                                  BigDecimal kwhToCreditFactorOverride,
+                                                                  BigDecimal ownerSharePctOverride,
                                                                   int scale) {
-        // buoc 1: xac thuc va lay company tu user dang nhap
+        // B1: xac thuc va lay company tu user dang nhap
         Company company = requireCompanyAccess();
-        // buoc 2: chuan hoa tham so phan trang va scale dau vao
+        // B2: chuan hoa tham so phan trang va scale dau vao
         if (page < 0) {
             page = 0;
         }
@@ -127,23 +130,32 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
             throw new BadRequestException("Scale must be between 0 and 6");
         }
 
-        // buoc 3: doc chinh sach co ban tu config de lam gia tri fallback
+        // B3: doc chinh sach co ban tu config de lam gia tri fallback
         ProfitSharingProperties.ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
+        FormulaMode formulaMode = FormulaMode.from(formula);
 
+        BigDecimal pricePerCredit = resolvePricePerCredit(pricePerCreditOverride, policy);
+        BigDecimal ownerSharePct = resolveOwnerSharePct(ownerSharePctOverride);
+        BigDecimal kwhToCreditFactor = resolveKwhToCreditFactor(kwhToCreditFactorOverride);
+
+        // B4: validate cac tham so cong thuc truoc khi tinh toan
+        validateFormulaParameters(formulaMode, pricePerCredit, kwhToCreditFactor, ownerSharePct);
+
+        // B5: dam bao report ton tai va thuoc ve company dang dang nhap
         EmissionReport report = emissionReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Emission report not found"));
         if (report.getSeller() == null || !Objects.equals(report.getSeller().getId(), company.getId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
-        // buoc 6: lay chi tiet report va gom dong gop theo chu xe
+        // B6: lay chi tiet report va gom dong gop theo chu xe
         List<EmissionReportDetail> details = emissionReportDetailRepository.findByReport_Id(reportId);
         Map<Long, OwnerAggregation> aggregationMap = buildOwnerAggregations(company.getId(), details);
         List<OwnerAggregation> relevantAggregations = aggregationMap.values().stream()
                 .filter(OwnerAggregation::hasContribution)
                 .toList();
         if (relevantAggregations.isEmpty()) {
-            // buoc 6.1: tra ve trang rong va tong bang 0 neu khong co dong gop
+            // B6.1: tra ve trang rong va tong bang 0 neu khong co dong gop
             PageResponse<List<CompanyPayoutSummaryItemResponse>> emptyPage = PageResponse.<List<CompanyPayoutSummaryItemResponse>>builder() // <-- SỬA
                     .pageNo(page)
                     .pageSize(size)
@@ -158,16 +170,14 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     .totalEnergyKwh(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP))
                     .totalCredits(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP))
                     .ownersCount(0)
-                    .currency(policy.getCurrency())
                     .build();
-
             return CompanyReportOwnersResponse.builder()
                     .page(emptyPage)
                     .summary(emptySummary)
                     .build();
         }
 
-        // buoc 7: tinh toan payout cho tung chu xe va cong don tong
+        // B7: tinh toan payout cho tung chu xe va cong don tong
         List<OwnerPayoutView> ownerViews = new ArrayList<>();
         BigDecimal grandTotalPayout = BigDecimal.ZERO;
         BigDecimal totalEnergy = BigDecimal.ZERO;
@@ -176,31 +186,26 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         for (OwnerAggregation aggregation : aggregationMap.values()) {
             BigDecimal energy = aggregation.getEnergy().setScale(6, RoundingMode.HALF_UP);
             BigDecimal credits = aggregation.getCredits().setScale(6, RoundingMode.HALF_UP);
-
-            // TÍNH TOÁN PAYOUT CHUẨN THEO CHÍNH SÁCH
-            BigDecimal payout = computePolicyPayout(policy, energy, credits, scale);
-
-            if (policy.getMinPayout() != null && payout.compareTo(policy.getMinPayout()) < 0) {
-                continue;
-            }
-
-            ownerViews.add(new OwnerPayoutView(aggregation, energy, credits, payout, policy.getCurrency()));
+            BigDecimal payout = computePayout(energy, credits, formulaMode, pricePerCredit, kwhToCreditFactor, ownerSharePct, scale);
+            ownerViews.add(new OwnerPayoutView(aggregation, energy, credits, payout));
             grandTotalPayout = grandTotalPayout.add(payout);
             totalEnergy = totalEnergy.add(energy);
             totalCredits = totalCredits.add(credits);
         }
 
-        // buoc 8: sap xep danh sach theo truong duoc yeu cau
+        // B8: sap xep danh sach theo truong duoc yeu cau
         ownerViews.sort(resolveComparator(sort));
 
-        // buoc 9: ap dung phan trang tren danh sach da sap xep
+        // B9: ap dung phan trang tren danh sach da sap xep
         int totalOwners = ownerViews.size();
         int fromIndex = Math.min(page * size, totalOwners);
         int toIndex = Math.min(fromIndex + size, totalOwners);
         List<OwnerPayoutView> pageSlice = ownerViews.subList(fromIndex, toIndex);
 
-        List<CompanyPayoutSummaryItemResponse> pageItems = pageSlice.stream()
-                .map(view -> view.toResponse(scale))
+        // THAY ĐỔI 1: Thay đổi kiểu của pageItems
+        // List<CompanyEVOwnerSummaryResponse> pageItems = pageSlice.stream() // <--- Dòng cũ
+        List<CompanyPayoutSummaryItemResponse> pageItems = pageSlice.stream() // <--- Dòng mới
+                .map(view -> view.toResponse(scale)) // Phương thức toResponse() cũng sẽ được sửa (ở bước 2)
                 .toList();
 
         BigDecimal pageTotalPayout = pageSlice.stream()
@@ -211,8 +216,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         int totalPages = size == 0 ? 0 : (int) Math.ceil(totalOwners / (double) size);
 
         // THAY ĐỔI 2: PageResponse cũng phải thay đổi kiểu
-
-        PageResponse<List<CompanyPayoutSummaryItemResponse>> pageResponse = PageResponse.<List<CompanyPayoutSummaryItemResponse>>builder()
+        PageResponse<List<CompanyPayoutSummaryItemResponse>> pageResponse = PageResponse.<List<CompanyPayoutSummaryItemResponse>>builder() // <--- Dòng mới
                 .pageNo(page)
                 .pageSize(size)
                 .totalPages(totalPages)
@@ -226,7 +230,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .totalEnergyKwh(totalEnergy.setScale(6, RoundingMode.HALF_UP))
                 .totalCredits(totalCredits.setScale(6, RoundingMode.HALF_UP))
                 .ownersCount(totalOwners)
-                .currency(policy.getCurrency())
                 .build();
 
         return CompanyReportOwnersResponse.builder()
@@ -243,8 +246,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         if (!Objects.equals(distribution.getCompanyUser().getId(), company.getUser().getId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
-        String currency = profitSharingProperties.resolveForCompany(company.getId()).getCurrency();
 
         List<ProfitDistributionDetail> details = profitDistributionDetailRepository
                 .findByDistributionIdWithOwner(distributionId);
@@ -281,12 +282,9 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     .energyKwh(energy) // <--- Lỗi (2.1) của bạn bây giờ đã được sửa vì builder này có 'energyKwh'
                     .credits(credits)
                     .amountUsd(amount) // <--- Trường này cũng có trong builder đúng
-                    .currency(currency)
                     .status(detail.getStatus()) // <--- Trường này cũng có trong builder đúng
                     .build());
         }
-
-        totalPayout = totalPayout.setScale(2, RoundingMode.HALF_UP);
 
         return CompanyPayoutSummaryResponse.builder()
                 .items(items)
@@ -294,20 +292,18 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .totalEnergyKwh(totalEnergy)
                 .totalCredits(totalCredits)
                 .grandTotalPayout(totalPayout)
-                .currency(currency)
-                .pageTotalPayout(totalPayout)
                 .build();
     }
 
     private Map<Long, OwnerAggregation> buildOwnerAggregations(Company company, String period) {
         List<EmissionReportDetail> details = emissionReportDetailRepository
                 .findByCompanyIdAndPeriod(company.getId(), period);
-        // buoc 2: gom dong gop tu danh sach chi tiet vua doc
+        // B2: gom dong gop tu danh sach chi tiet vua doc
         return buildOwnerAggregations(company.getId(), details);
     }
 
     private Map<Long, OwnerAggregation> buildOwnerAggregations(Long companyId, List<EmissionReportDetail> details) {
-        // buoc 1: tao context gom map chu xe va map bien so
+        // B1: tao context gom map chu xe va map bien so
         OwnerAggregationContext context = prepareOwnerAggregation(companyId);
         if (details == null || details.isEmpty()) {
             return context.getOwnersById();
@@ -335,7 +331,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
     }
 
     private OwnerAggregationContext prepareOwnerAggregation(Long companyId) {
-        // buoc 1: lay danh sach xe thuoc company kem thong tin chu xe
+        // B1: lay danh sach xe thuoc company kem thong tin chu xe
         List<Vehicle> vehicles = vehicleRepository.findByCompanyId(companyId);
         Map<Long, OwnerAggregation> ownersById = new HashMap<>();
         Map<String, OwnerAggregation> ownersByPlate = new HashMap<>();
@@ -370,41 +366,92 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
 
     private BigDecimal resolveCredits(EmissionReportDetail detail, BigDecimal fallbackEnergy) {
         if (detail.getCo2Kg() != null && detail.getCo2Kg().compareTo(BigDecimal.ZERO) > 0) {
-            return detail.getCo2Kg().setScale( 6, RoundingMode.HALF_UP);
+            return detail.getCo2Kg().divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
         }
         if (fallbackEnergy != null && fallbackEnergy.compareTo(BigDecimal.ZERO) > 0) {
             return fallbackEnergy.multiply(DEFAULT_EMISSION_FACTOR)
-                    .setScale( 6, RoundingMode.HALF_UP);
+                    .divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
         }
-        return BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP);
+        return BigDecimal.ZERO;
     }
 
-    /**
-     * TÍNH TOÁN PAYOUT CHUẨN (LOGIC CỐT LÕI)
-     * Tính toán số tiền payout (chi phí) dựa trên chính sách cố định.
-     */
-    private BigDecimal computePolicyPayout(ProfitSharingProperties.ResolvedPolicy policy,
-                                           BigDecimal energy,
-                                           BigDecimal credits,
-                                           int scale) {
-        ProfitSharingProperties.PricingMode pricingMode = policy.getPricingMode();
-        BigDecimal rate;
-
-        // Logic 1: Nếu chính sách trả theo KWH
-        if (pricingMode == ProfitSharingProperties.PricingMode.KWH) {
-            rate = Optional.ofNullable(policy.getUnitPricePerKwh())
-                    .orElseThrow(() -> new BadRequestException("Unit price per kWh is not configured"));
-            return energy.multiply(rate).setScale(scale, RoundingMode.HALF_UP);
+    private BigDecimal resolvePricePerCredit(BigDecimal override, ProfitSharingProperties.ResolvedPolicy policy) {
+        // B1: uu tien gia tri override neu client truyen len
+        if (override != null) {
+            return override;
         }
+        // B2: su dung don gia credit tu policy neu co
+        if (policy.getUnitPricePerCredit() != null) {
+            return policy.getUnitPricePerCredit();
+        }
+        // B3: fallback sang don gia hieu luc
+        return Optional.ofNullable(policy.getUnitPrice())
+                .orElseThrow(() -> new BadRequestException("Price per credit is not configured"));
+    }
 
-        // Logic 2: Nếu chính sách trả theo CREDIT
-        rate = Optional.ofNullable(policy.getUnitPricePerCredit())
-                .orElseThrow(() -> new BadRequestException("Unit price per credit is not configured"));
-        return credits.multiply(rate).setScale(scale, RoundingMode.HALF_UP);
+    private BigDecimal resolveOwnerSharePct(BigDecimal override) {
+        // B1: neu client truyen len thi dung gia tri do
+        if (override != null) {
+            return override;
+        }
+        // B2: mac dinh 100% chia cho chu xe
+        return BigDecimal.ONE;
+    }
+
+    private BigDecimal resolveKwhToCreditFactor(BigDecimal override) {
+        // B1: neu client override thi dung gia tri do
+        if (override != null) {
+            return override;
+        }
+        // B2: mac dinh dung he so phat thai co ban chia 1000 de doi sang credit
+        return DEFAULT_EMISSION_FACTOR.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
+    }
+
+    private void validateFormulaParameters(FormulaMode mode,
+                                           BigDecimal pricePerCredit,
+                                           BigDecimal kwhToCreditFactor,
+                                           BigDecimal ownerSharePct) {
+        // B1: gia credit phai lon hon 0
+        if (pricePerCredit == null || pricePerCredit.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("pricePerCredit must be greater than zero");
+        }
+        // B2: ti le chia cho chu xe phai trong khoang [0,1]
+        if (ownerSharePct == null
+                || ownerSharePct.compareTo(BigDecimal.ZERO) < 0
+                || ownerSharePct.compareTo(BigDecimal.ONE) > 0) {
+            throw new BadRequestException("ownerSharePct must be between 0 and 1");
+        }
+        // B3: neu tinh theo energy thi he so quy doi phai > 0
+        if (mode == FormulaMode.ENERGY) {
+            if (kwhToCreditFactor == null || kwhToCreditFactor.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BadRequestException("kwhToCreditFactor must be greater than zero when formula is ENERGY");
+            }
+        }
+    }
+
+    private BigDecimal computePayout(BigDecimal energy,
+                                     BigDecimal credits,
+                                     FormulaMode formulaMode,
+                                     BigDecimal pricePerCredit,
+                                     BigDecimal kwhToCreditFactor,
+                                     BigDecimal ownerSharePct,
+                                     int scale) {
+        // B1: tinh gia tri credit can nhan theo mode
+        BigDecimal base;
+        if (formulaMode == FormulaMode.CREDITS) {
+            base = credits.multiply(pricePerCredit);
+        } else {
+            base = energy.multiply(kwhToCreditFactor)
+                    .multiply(pricePerCredit);
+        }
+        // B2: ap dung ty le chia cho chu xe
+        BigDecimal payout = base.multiply(ownerSharePct);
+        // B3: chuan hoa scale theo tham so dau vao
+        return payout.setScale(scale, RoundingMode.HALF_UP);
     }
 
     private Comparator<OwnerPayoutView> resolveComparator(String sort) {
-        // buoc 1: mac dinh sap xep theo ten chu xe tang dan
+        // B1: mac dinh sap xep theo ten chu xe tang dan
         String field = "ownerName";
         String direction = "asc";
         if (StringUtils.hasText(sort)) {
@@ -434,6 +481,22 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         return comparator;
     }
 
+    private enum FormulaMode {
+        CREDITS,
+        ENERGY;
+
+        private static FormulaMode from(String value) {
+            if (!StringUtils.hasText(value)) {
+                return CREDITS;
+            }
+            try {
+                return FormulaMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException("Unsupported formula mode: " + value);
+            }
+        }
+    }
+
     @Getter
     private static class OwnerAggregationContext {
         private final Map<Long, OwnerAggregation> ownersById;
@@ -452,18 +515,15 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         private final BigDecimal energy;
         private final BigDecimal credits;
         private final BigDecimal payout;
-        private final String currency;
 
         private OwnerPayoutView(OwnerAggregation aggregation,
                                 BigDecimal energy,
                                 BigDecimal credits,
-                                BigDecimal payout,
-                                String currency) {
+                                BigDecimal payout) {
             this.aggregation = aggregation;
             this.energy = energy;
             this.credits = credits;
             this.payout = payout;
-            this.currency = currency;
         }
         // Dòng mới:
         private CompanyPayoutSummaryItemResponse toResponse(int payoutScale) {
@@ -473,10 +533,9 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     .email(aggregation.getEmail())
                     .phone(aggregation.getPhone())
                     .vehiclesCount(aggregation.getVehiclesCount())
-                    .energyKwh(energy) // Đổi từ totalEnergyKwh
-                    .credits(credits)  // Đổi từ totalCredits
+                    .energyKwh(energy)
+                    .credits(credits)
                     .amountUsd(payout.setScale(payoutScale, RoundingMode.HALF_UP))
-                    .currency(currency)
                     .status("PREVIEW")
                     .build();
         }
