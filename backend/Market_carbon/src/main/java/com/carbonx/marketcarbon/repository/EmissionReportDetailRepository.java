@@ -16,6 +16,7 @@ public interface EmissionReportDetailRepository extends JpaRepository<EmissionRe
     // (tuỳ chọn) thêm tìm kiếm theo biển số
     Page<EmissionReportDetail> findByReport_IdAndVehiclePlateContainingIgnoreCase(
             Long reportId, String q, Pageable pageable);
+    List<EmissionReportDetail> findByCompanyIdAndPeriod(Long companyId, String period);
     List<EmissionReportDetail> findByReport(EmissionReport report);
     @Query("""
 SELECT COUNT(DISTINCT d2.report.id)

@@ -4,4 +4,5 @@ import com.carbonx.marketcarbon.model.User;
 
 public interface ReportService {
      byte[] generatePdf(User user) ;
+     byte[] exportCompanyPayoutXlsx(Long distributionId);
 }
