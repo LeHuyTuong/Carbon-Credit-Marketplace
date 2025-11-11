@@ -74,7 +74,13 @@ const RegisterForm = () => {
       showSnackbar("info", "Registration successful! Please verify OTP.");
     } catch (error) {
       console.error(" Register failed:", error);
-      showSnackbar("error", "Failed to register account!");
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to register account!";
+
+      showSnackbar("error", message);
     }
   };
 
@@ -99,8 +105,15 @@ const RegisterForm = () => {
         showSnackbar("error", "Invalid OTP or verification failed!");
       }
     } catch (error) {
-      console.error(" OTP verify failed:", error);
-      showSnackbar("error", "Error verifying OTP!");
+      console.error("OTP verify failed:", error);
+
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error verifying OTP!";
+
+      showSnackbar("error", message);
     }
   };
 

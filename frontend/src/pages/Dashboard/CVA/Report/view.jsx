@@ -26,6 +26,7 @@ import {
   verifyReportCVA,
   getReportById,
   getReportDetails,
+  getCompanyKYCProfile
 } from "@/apiCVA/reportCVA.js";
 import FormulaImage from "@/assets/z7155603890092_2ed7af1b23662f3986de0fc7dce736af.jpg";
 import { analyzeReportByAI, analyzeReportData } from "@/apiCVA/aiCVA.js";
@@ -38,7 +39,7 @@ const ViewReport = ({ report: initialReport }) => {
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-
+  const [companyProfile, setCompanyProfile] = useState(null);
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
   const [loading, setLoading] = useState(!initialReport);
@@ -101,6 +102,22 @@ const ViewReport = ({ report: initialReport }) => {
       }
     }
   }, [id, report]);
+
+  // Load KYC profile của công ty gửi report
+  useEffect(() => {
+    if (report?.sellerId) {
+      (async () => {
+        try {
+          const data = await getCompanyKYCProfile(report.sellerId);
+          setCompanyProfile(data);
+        } catch (err) {
+          console.error("Failed to fetch company KYC profile:", err);
+          showSnackbar("error", "Failed to load company profile!");
+        }
+      })();
+    }
+  }, [report?.sellerId]);
+
 
   // Update status 
   const handleUpdate = async (approved) => {
@@ -286,6 +303,30 @@ const ViewReport = ({ report: initialReport }) => {
                 <Typography sx={{ color: statusColor, fontWeight: 600 }}>
                   {report.status?.replace("_", " ")}
                 </Typography>
+                {/* Company KYC Profile */}
+                {companyProfile && (
+                  <Box mt={3} p={2} border="1px solid #ccc" borderRadius={2}>
+                    <Typography variant="h6" gutterBottom>
+                      Company KYC Profile
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Company Name:</strong> {companyProfile.companyName}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Business License:</strong> {companyProfile.businessLicense}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Tax Code:</strong> {companyProfile.taxCode}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Address:</strong> {companyProfile.address}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Created At:</strong>{" "}
+                      {new Date(companyProfile.createAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                )}
 
                 {report.status === "REJECTED" && (
                   <Box mt={2}>
@@ -488,7 +529,6 @@ const ViewReport = ({ report: initialReport }) => {
               <Table size="small" sx={{ mt: 1 }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>ID</TableCell>
                     <TableCell>Name</TableCell>
                     <TableCell>Score</TableCell>
                     <TableCell>Message</TableCell>

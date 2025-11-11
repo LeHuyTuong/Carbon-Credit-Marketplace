@@ -1,4 +1,3 @@
-// src/apiCVA/reportCVA.js
 import { apiFetch } from "@/utils/apiFetch";
 
 /**
@@ -102,7 +101,7 @@ export const getReportDetails = async (
       totalElements: res.length,
       number: 0,
       size: res.length,
-first: true,
+      first: true,
       last: true,
       totalPages: 1,
       numberOfElements: res.length,
@@ -133,3 +132,8 @@ first: true,
     empty: true,
   };
 };
+
+//lấy từng company kyc profile
+export async function getCompanyKYCProfile(companyId) {
+  return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
+}

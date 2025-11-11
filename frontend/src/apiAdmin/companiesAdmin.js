@@ -16,10 +16,13 @@ export const getAllCompanyKYCProfiles = async () => {
     throw error;
   }
 };
+
+//lấy từng company kyc profile
 export async function getCompanyKYCProfile() {
   return apiFetch("/api/v1/kyc/company", "GET");
 }
 
+//cập nhật company kyc profile
 export async function updateCompanyKYCProfile(data) {
   return apiFetch("/api/v1/kyc/company", "PUT", {
     data,

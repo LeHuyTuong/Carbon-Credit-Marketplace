@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service;
 import jakarta.mail.MessagingException;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,37 @@ public interface EmailService {
     String renderWithdrawalFailedEmail(Map<String, Object> variables);
     String renderReportCvaDecisionEmail(Map<String, Object> vars);
     String renderReportAdminDecisionEmail(Map<String, Object> vars);
+
+    void sendPayoutSuccessToOwner(String toEmail,
+                                  String ownerName,
+                                  String companyName,
+                                  String periodLabel,
+                                  BigDecimal totalEnergyKWh,
+                                  BigDecimal totalCredits,
+                                  BigDecimal amountUsd,
+                                  List<VehiclePayoutRow> perVehicle,
+                                  String distributionReference,
+                                  Long companyId,
+                                  String reportReference,
+                                  BigDecimal minPayout);
+
+    void sendDistributionSummaryToCompany(String toEmail,
+                                          String companyName,
+                                          String periodLabel,
+                                          int ownersPaid,
+                                          BigDecimal totalEnergy,
+                                          BigDecimal totalCredits,
+                                          BigDecimal totalPayoutUsd,
+                                          boolean scaledByCap,
+                                          Long companyId,
+                                          String distributionReference);
+
+    record VehiclePayoutRow(String plate,
+                            String vehicleNameOrModel,
+                            BigDecimal energyKWh,
+                            BigDecimal credits,
+                            BigDecimal amountUsd) {
+    }
 }
 
 

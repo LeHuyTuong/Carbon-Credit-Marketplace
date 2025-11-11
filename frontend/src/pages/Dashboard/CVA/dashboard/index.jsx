@@ -164,9 +164,6 @@ const Dashboard = () => {
                   {totalReports.toLocaleString()}
                 </Typography>
               </Box>
-              <IconButton>
-                <DownloadOutlinedIcon sx={{ fontSize: 26, color: colors.blueAccent[500] }} />
-              </IconButton>
             </Box>
             <Box height="250px" m="-20px 0 0 0">
               <LineChart isDashboard series={reportSeries} />

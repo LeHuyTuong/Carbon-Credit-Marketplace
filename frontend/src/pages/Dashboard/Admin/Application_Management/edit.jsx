@@ -7,8 +7,6 @@ import {
   Button,
   TextField,
   MenuItem,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -32,23 +30,6 @@ const ApplicationEdit = () => {
     applicationDocsUrl: "",
   });
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  // Map status từ API
-  const mapStatus = (status) => {
-    switch (status) {
-      case "ADMIN_APPROVED":
-        return "APPROVED";
-      case "ADMIN_REJECTED":
-        return "REJECTED";
-      case "NEEDS_REVISION":
-        return "NEEDS_REVISION";
-      case "UNDER_REVIEW":
-        return "UNDER_REVIEW";
-      case "CVA_REJECTED":
-        return "CVA_REJECTED"; // Thêm mapping này
-      default:
-        return "SUBMITTED";
-    }
-  };
 
   // Fetch dữ liệu
   useEffect(() => {
@@ -63,7 +44,9 @@ const ApplicationEdit = () => {
           setFormData({
             projectTitle: appData.projectTitle || "",
             companyName: appData.companyName || "",
-            status: mapStatus(appData.status),
+            status: appData.status,
+            cvaReviewerName: appData.cvaReviewerName || "",
+            adminReviewerName: appData.adminReviewerName || "",
             reviewNote: appData.reviewNote || "",
             finalReviewNote: appData.finalReviewNote || "",
             applicationDocsUrl: appData.applicationDocsUrl || "",
@@ -73,7 +56,14 @@ const ApplicationEdit = () => {
         }
       } catch (error) {
         console.error("Error fetching application:", error);
-        showSnackbar("error", "Failed to fetch application.");
+
+        const message =
+          error?.response?.data?.responseStatus?.responseDesc ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to fetch application.";
+
+        showSnackbar("error", message);
       } finally {
         setLoading(false);
       }
@@ -91,7 +81,7 @@ const ApplicationEdit = () => {
   const handleUpdate = async () => {
     try {
       const payload = {
-        approved: formData.status === "APPROVED",
+        approved: formData.status === "ADMIN_APPROVED",
         note: formData.finalReviewNote || "No note provided",
       };
 
@@ -109,7 +99,14 @@ const ApplicationEdit = () => {
       }
     } catch (error) {
       console.error("Update failed:", error);
-      showSnackbar("error", "Application submission failed. Please check your data.");
+
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Application submission failed. Please check your data.";
+
+      showSnackbar("error", message);
     }
   };
 
@@ -145,13 +142,15 @@ const ApplicationEdit = () => {
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
       </Box>
 
-      <Paper sx={{ p: 3, mt: 2 }}>
+      <Paper sx={{ p: 3, mt: 1 }}>
         <TextField
           label="Project Title"
           value={formData.projectTitle}
           onChange={(e) => handleChange("projectTitle", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
@@ -160,37 +159,63 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("companyName", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
           select
           label="Status"
-          value={formData.status}
+          value={formData.status || ""}
           onChange={(e) => handleChange("status", e.target.value)}
           fullWidth
           sx={{ mt: 2 }}
         >
-          <MenuItem value="SUBMITTED">Submitted</MenuItem>
-          <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
-          <MenuItem value="NEEDS_REVISION">Needs Revision</MenuItem>
-          <MenuItem value="APPROVED">Approved</MenuItem>
-          <MenuItem value="REJECTED">Rejected</MenuItem>
-          <MenuItem value="CVA_REJECTED">CVA Rejected</MenuItem>
+          {/* Nếu status hiện tại không phải hai giá trị này, hiển thị dòng readonly,không hiển thị trong dropdown */}
+          {!["ADMIN_APPROVED", "ADMIN_REJECTED"].includes(formData.status) && (
+            <MenuItem value={formData.status} disabled style={{ display: "none" }}>
+              {formData.status}
+            </MenuItem>
+          )}
+          <MenuItem value="ADMIN_APPROVED">ADMIN_APPROVED</MenuItem>
+          <MenuItem value="ADMIN_REJECTED">ADMIN_REJECTED</MenuItem>
         </TextField>
 
+
         <TextField
-          label="Review Note"
-          value={formData.reviewNote}
+          label="Verfication by CVA"
+          value={formData.cvaReviewerName || "N/A"}
+          onChange={(e) => handleChange("cvaReviewerName", e.target.value)}
+          fullWidth
+          sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
+        />
+
+        <TextField
+          label="Review Note Of CVA"
+          value={formData.reviewNote || "N/A"}
           onChange={(e) => handleChange("reviewNote", e.target.value)}
           fullWidth
           multiline
           rows={3}
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <TextField
-          label="Final Review Note"
+          label="Review by Admin"
+          value={formData.adminReviewerName || "N/A"}
+          onChange={(e) => handleChange("adminReviewerName", e.target.value)}
+          fullWidth
+          sx={{ mt: 2 }}
+          InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
+        />
+
+        <TextField
+          label="Final Review Note Of Admin"
           value={formData.finalReviewNote}
           onChange={(e) => handleChange("finalReviewNote", e.target.value)}
           fullWidth
@@ -206,6 +231,7 @@ const ApplicationEdit = () => {
           fullWidth
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
+          inputProps={{ style: { cursor: "pointer" } }}
         />
 
         <Box mt={3} display="flex" gap={2}>

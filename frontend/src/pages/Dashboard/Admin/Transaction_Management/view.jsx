@@ -29,32 +29,39 @@ const ViewTransaction = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const fetchTransaction = async () => {
-    try {
-      const list = await getWithdrawalsAdmin();
-      const transaction = list.find((t) => t.id.toString() === id);
+    const fetchTransaction = async () => {
+      try {
+        const list = await getWithdrawalsAdmin();
+        const transaction = list.find((t) => t.id.toString() === id);
 
-      if (transaction) {
-        const paymentRes = await getPaymentDetails();
-        // Lọc theo p.user?.id thay vì p.userId
-        const userPayment = paymentRes.find(
-          (p) => p.user?.id === transaction.user?.id
-        );
+        if (transaction) {
+          const paymentRes = await getPaymentDetails();
+          // Lọc theo p.user?.id thay vì p.userId
+          const userPayment = paymentRes.find(
+            (p) => p.user?.id === transaction.user?.id
+          );
 
-        transaction.paymentDetails = userPayment || null;
-        setTrx(transaction);
-      } else {
-        setTrx(null);
+          transaction.paymentDetails = userPayment || null;
+          setTrx(transaction);
+        } else {
+          setTrx(null);
+        }
+      } catch (error) {
+        console.error("Fetch transaction error:", error);
+
+        const message =
+          error?.response?.data?.responseStatus?.responseDesc ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to load transaction data.";
+
+        showSnackbar("error", message);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(error);
-      showSnackbar("error", "Failed to load transaction data.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchTransaction();
-}, [id]);
+    };
+    fetchTransaction();
+  }, [id]);
 
 
 
@@ -70,8 +77,15 @@ const ViewTransaction = () => {
           : "Withdrawal rejected successfully!"
       );
     } catch (error) {
-      console.error(error);
-      showSnackbar("error", "Failed to process transaction.");
+      console.error("Process transaction error:", error);
+
+      const message =
+        error?.response?.data?.responseStatus?.responseDesc ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to process transaction.";
+
+      showSnackbar("error", message);
     }
   };
 

@@ -1,11 +1,9 @@
 import { apiFetch } from "@/utils/apiFetch";
 
-/**
- * 
- */
+// Lấy danh sách project applications
 export const getProjectApplications = async () => {
   try {
-    const res = await apiFetch("/api/v1/project-applications/pending-cva");
+    const res = await apiFetch("/api/v1/project-applications");
     console.log("Raw API response:", res);
 
     const code = res?.responseStatus?.responseCode;
@@ -54,4 +52,8 @@ export async function updateApplicationDecision(applicationId, payload) {
       },
     }
   );
+}
+//lấy từng company kyc profile
+export async function getCompanyKYCProfile(companyId) {
+  return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
 }

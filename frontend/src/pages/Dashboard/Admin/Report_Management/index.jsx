@@ -1,5 +1,4 @@
 import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
@@ -53,7 +52,23 @@ const ReportsList = () => {
   const columns = [
     { field: "id", headerName: "ID", flex: 0.5 },
     { field: "sellerName", headerName: "Company", flex: 1 },
-    { field: "projectName", headerName: "Project", flex: 1 },
+    { field: "projectName", headerName: "Project", flex: 1, renderCell: (params) => (
+        <Typography
+          variant="body2"
+          sx={{
+            display: "flex",
+            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            height: "100%",
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            lineHeight: 1.4,
+            textAlign: "left",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ), 
+    },
     { field: "period", headerName: "Reporting Period", flex: 1 },
     { field: "vehicleCount", headerName: "Vehicle Count", flex: 0.8 },
     { field: "totalEnergy", headerName: "Total Energy", flex: 1 },

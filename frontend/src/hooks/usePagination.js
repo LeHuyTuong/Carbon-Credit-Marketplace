@@ -1,10 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 export default function usePagination(items = [], itemsPerPage = 5) {
     // Trang hiện tại (bắt đầu từ 1)
     const [currentPage, setCurrentPage] = useState(1);
   // Tổng số trang = làm tròn lên tổng item / item mỗi trang
   const totalPages = Math.ceil(items.length / itemsPerPage);
+
+  // Reset lại về trang đầu khi danh sách thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items]);
 
   // Dữ liệu của trang hiện tại
   const currentItems = useMemo(() => {

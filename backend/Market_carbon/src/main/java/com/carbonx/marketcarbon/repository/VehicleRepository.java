@@ -23,7 +23,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     Optional<Vehicle> findByCompanyIdAndPlateNumberIgnoreCase(Long companyId, String plateNumber);
 
+    @EntityGraph(attributePaths = {"evOwner", "evOwner.user"})
     List<Vehicle> findByCompanyId(Long companyId);
+
+    long countByEvOwner_IdAndCompany_Id(Long evOwnerId, Long companyId);
+
 
     // Company
     Page<Vehicle> findByCompany_Id(Long userId, Pageable pageable);

@@ -112,28 +112,39 @@ const ApplicationEdit = () => {
         subtitle={`ID: ${application.id || application.applicationId}`}
       />
 
-      <Paper sx={{ p: 3, mt: 2 }}>
+      <Paper
+        sx={{
+          p: 4,
+          mt: 3,
+          borderRadius: 3,
+          boxShadow: 4,
+          backgroundColor: "#fafafa",
+          fontSize: "1rem", // chữ trong Typography, Button vẫn to
+          "& .MuiInputBase-input": { fontSize: "1rem" }, // chữ trong ô input
+          "& .MuiInputLabel-root": { fontSize: "1rem" }, // chữ label
+
+        }}>
         {/* Thông tin chỉ đọc */}
         <TextField
           label="Project Title"
           value={application.projectTitle || ""}
           fullWidth
           InputProps={{ readOnly: true }}
-          sx={{ mt: 2 }}
+          sx={{ mt: 2 }} //khoảng cách giữa các ô input
         />
         <TextField
           label="Company Name"
           value={application.companyName || ""}
           fullWidth
           InputProps={{ readOnly: true }}
-          sx={{ mt: 2 }}
+          sx={{ mt: 4 }}
         />
         <TextField
           label="Current Status"
           value={status}
           fullWidth
           InputProps={{ readOnly: true }}
-          sx={{ mt: 2 }}
+          sx={{ mt: 4 }}
         />
 
         {/*  Ghi chú quyết định */}
@@ -144,17 +155,17 @@ const ApplicationEdit = () => {
           fullWidth
           multiline
           rows={3}
-          sx={{ mt: 2 }}
+          sx={{ mt: 4 }}
         />
 
         {/* Chỉ hiển thị nút duyệt khi đang UNDER_REVIEW */}
         {status === "UNDER_REVIEW" ? (
           <Box mt={3} display="flex" gap={2}>
             <Button variant="contained" color="success" onClick={() => handleDecision(true)}>
-              Approve
+              Approved
             </Button>
             <Button variant="contained" color="error" onClick={() => handleDecision(false)}>
-              Reject
+              Rejected
             </Button>
             <Button
               variant="outlined"
@@ -173,7 +184,7 @@ const ApplicationEdit = () => {
 
       {/*  Snackbar */}
       {SnackbarComponent}
-    </Box>
+    </Box >
   );
 };
 

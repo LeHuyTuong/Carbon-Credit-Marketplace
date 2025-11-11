@@ -105,8 +105,15 @@ const ViewReport = () => {
 
       if (isApproved) setApproved(true);
     } catch (err) {
-      console.error(err);
-      showSnackbar("error", "Failed to update report status!");
+      console.error("Approval error:", err);
+
+      const message =
+        err?.response?.data?.responseStatus?.responseDesc ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to update report status!";
+
+      showSnackbar("error", message);
     }
   };
 
@@ -125,8 +132,14 @@ const ViewReport = () => {
         navigate("/admin/credit_management");
       }, 1000);
     } catch (err) {
-      console.error(err);
-      showSnackbar("error", "Failed to issue credits!");
+      console.error("Issue credit error:", err);
+
+      const message =
+        err?.response?.data?.responseStatus?.responseDesc ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to issue credits!";
+      showSnackbar("error", message);
     } finally {
       // Không reset issuing nếu đã issued (để nút biến mất)
       if (!issued) setIssuing(false);
