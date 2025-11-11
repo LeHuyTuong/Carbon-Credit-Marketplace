@@ -15,6 +15,7 @@ public class CompanyPayoutSummaryItemResponse {
     private final long vehiclesCount;
     private final BigDecimal energyKwh;
     private final BigDecimal credits;
-    private final BigDecimal amountVnd;
+    private final BigDecimal amountUsd;
+    private final String currency;
     private final String status;
 }

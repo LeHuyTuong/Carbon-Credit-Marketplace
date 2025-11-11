@@ -193,7 +193,7 @@ public class EmailServiceImpl implements EmailService {
                                          String periodLabel,
                                          BigDecimal totalEnergyKWh,
                                          BigDecimal totalCredits,
-                                         BigDecimal amountVND,
+                                         BigDecimal amountUsd,
                                          List<VehiclePayoutRow> perVehicle,
                                          String distributionReference,
                                          Long companyId,
@@ -209,7 +209,7 @@ public class EmailServiceImpl implements EmailService {
         }
 
         String subject = String.format("[CarbonX] Payout tháng %s từ %s", periodLabel, companyName);
-        String body = buildOwnerBody(ownerName, companyName, periodLabel, totalEnergyKWh, totalCredits, amountVND,
+        String body = buildOwnerBody(ownerName, companyName, periodLabel, totalEnergyKWh, totalCredits, amountUsd,
                 perVehicle, distributionReference, companyId, reportReference, minPayout);
 
         sendPlainTextEmail(toEmail, subject, body);
@@ -223,7 +223,7 @@ public class EmailServiceImpl implements EmailService {
                                                  int ownersPaid,
                                                  BigDecimal totalEnergy,
                                                  BigDecimal totalCredits,
-                                                 BigDecimal totalPayoutVND,
+                                                 BigDecimal totalPayoutUsd,
                                                  boolean scaledByCap,
                                                  Long companyId,
                                                  String distributionReference) {
@@ -242,7 +242,7 @@ public class EmailServiceImpl implements EmailService {
                 .append("Tổng số EV Owner đã được thanh toán: ").append(ownersPaid).append("\n")
                 .append("Tổng năng lượng: ").append(formatDecimal(totalEnergy)).append(" kWh\n")
                 .append("Tổng tín chỉ: ").append(formatDecimal(totalCredits)).append(" tCO₂e\n")
-                .append("Tổng số tiền đã chi: ").append(formatCurrency(totalPayoutVND)).append(" VND\n\n");
+                .append("Tổng số tiền đã chi: ").append(formatCurrency(totalPayoutUsd)).append(" USD\n\n");
 
         if (scaledByCap) {
             body.append("Lưu ý: Số tiền payout đã được điều chỉnh theo tổng ngân sách được đặt trong kỳ này.\n\n");
@@ -279,7 +279,7 @@ public class EmailServiceImpl implements EmailService {
                                   String periodLabel,
                                   BigDecimal totalEnergyKWh,
                                   BigDecimal totalCredits,
-                                  BigDecimal amountVND,
+                                  BigDecimal amountUsd,
                                   List<VehiclePayoutRow> perVehicle,
                                   String distributionReference,
                                   Long companyId,
@@ -290,7 +290,7 @@ public class EmailServiceImpl implements EmailService {
                 .append("Tổng năng lượng bạn đã đóng góp trong kỳ ").append(periodLabel).append(": ")
                 .append(formatDecimal(totalEnergyKWh)).append(" kWh\n")
                 .append("Tổng tín chỉ (credits): ").append(formatDecimal(totalCredits)).append(" tCO₂e\n")
-                .append("Số tiền nhận trong kỳ: ").append(formatCurrency(amountVND)).append(" VND\n\n");
+                .append("Số tiền nhận trong kỳ: ").append(formatCurrency(amountUsd)).append(" USD\n\n");
 
         if (perVehicle != null && !perVehicle.isEmpty()) {
             body.append("Biển số | Tên xe | kWh | Credits | Số tiền (VND)\n");
@@ -300,7 +300,7 @@ public class EmailServiceImpl implements EmailService {
                             safe(row.vehicleNameOrModel()),
                             formatDecimal(row.energyKWh()),
                             formatDecimal(row.credits()),
-                            formatCurrency(row.amountVND())))
+                            formatCurrency(row.amountUsd())))
                     .collect(Collectors.joining("\n"));
             body.append(rows).append("\n\n");
         }
@@ -313,7 +313,7 @@ public class EmailServiceImpl implements EmailService {
         if (minPayout != null) {
             body.append("Lưu ý: Các khoản payout dưới ")
                     .append(formatCurrency(minPayout))
-                    .append(" VND sẽ được cộng dồn sang kỳ sau theo chính sách hiện hành.\n");
+                    .append(" USD sẽ được cộng dồn sang kỳ sau theo chính sách hiện hành.\n");
         }
 
         return body.toString();
@@ -323,7 +323,7 @@ public class EmailServiceImpl implements EmailService {
         if (value == null) {
             return "0";
         }
-        return formatNumber(value, 0);
+        return formatNumber(value, 2);
     }
 
     private String formatDecimal(BigDecimal value) {

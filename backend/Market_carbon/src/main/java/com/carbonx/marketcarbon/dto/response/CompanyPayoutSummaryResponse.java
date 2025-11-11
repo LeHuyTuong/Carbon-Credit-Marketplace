@@ -17,5 +17,5 @@ public class CompanyPayoutSummaryResponse {
     private final BigDecimal totalEnergyKwh;
     private final BigDecimal totalCredits;
     private final long ownersCount;
-
+    private final String currency;
 }

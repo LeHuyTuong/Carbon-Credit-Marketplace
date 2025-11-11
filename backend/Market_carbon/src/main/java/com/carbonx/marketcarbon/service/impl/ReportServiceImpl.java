@@ -31,7 +31,7 @@ import java.util.List;
 public class ReportServiceImpl implements ReportService {
 
     private static final String[] HEADER = new String[] {
-            "Owner Name", "Email", "#Vehicles", "Energy (kWh)", "Credits", "Amount (VND)", "Status"
+            "Owner Name", "Email", "#Vehicles", "Energy (kWh)", "Credits", "Amount (USD)", "Status"
     };
 
     private final CompanyPayoutQueryService companyPayoutQueryService;
@@ -121,7 +121,7 @@ public class ReportServiceImpl implements ReportService {
                 row.createCell(2).setCellValue(item.getVehiclesCount());
                 setNumericCell(row, 3, item.getEnergyKwh());
                 setNumericCell(row, 4, item.getCredits());
-                setNumericCell(row, 5, item.getAmountVnd());
+                setNumericCell(row, 5, item.getAmountUsd());
                 row.createCell(6).setCellValue(safe(item.getStatus()));
             }
 

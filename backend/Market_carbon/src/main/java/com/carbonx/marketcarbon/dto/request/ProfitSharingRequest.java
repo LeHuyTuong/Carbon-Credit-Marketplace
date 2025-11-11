@@ -21,8 +21,6 @@ public class ProfitSharingRequest {
     //  Chỉ chia lợi nhuận cho 1 report cụ thể
     private Long emissionReportId;
 
-    private BigDecimal totalMoneyCap; // Tổng lợi nhuận (VND) công ty muốn sử dụng làm cơ sở chia sẻ
-
     @NotNull(message = "Mô tả không được để trống")
     private String description;
 

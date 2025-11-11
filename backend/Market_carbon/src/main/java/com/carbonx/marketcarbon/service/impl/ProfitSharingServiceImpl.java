@@ -38,8 +38,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ProfitSharingServiceImpl implements ProfitSharingService {
 
-    private static final BigDecimal KG_PER_CREDIT = new BigDecimal("1000");
-    private static final BigDecimal DEFAULT_EMISSION_FACTOR = new BigDecimal("0.4");
+    private static final BigDecimal DEFAULT_EMISSION_FACTOR = new BigDecimal("0.6");
 
     private final EmissionReportRepository emissionReportRepository;
     private final VehicleRepository vehicleRepository;
@@ -111,14 +110,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             this.creditContribution = creditContribution;
             this.energyContribution = energyContribution;
             this.rawPayoutAmount = rawPayoutAmount.setScale(2, RoundingMode.HALF_UP);
-            this.payoutAmount = this.rawPayoutAmount;
-        }
-
-        private void applyScaling(BigDecimal ratio) {
-            this.payoutAmount = this.rawPayoutAmount.multiply(ratio).setScale(2, RoundingMode.HALF_UP);
-        }
-
-        private void resetToRaw() {
             this.payoutAmount = this.rawPayoutAmount;
         }
     }
@@ -217,6 +208,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             BigDecimal totalRawPayout = BigDecimal.ZERO;
 
             for (ContributionData contribution : evOwnerContributions.values()) {
+                // TÍNH TOÁN PAYOUT CHUẨN (KHÔNG CHIA %)
                 BigDecimal rawPayout = calculateRawPayout(contribution, policy);
                 if (rawPayout.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
@@ -244,23 +236,14 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 return;
             }
 
-            BigDecimal totalPayoutFinal = totalRawPayout.setScale(2, RoundingMode.HALF_UP);
-            BigDecimal cap = request.getTotalMoneyCap();
-            if (cap != null && cap.compareTo(BigDecimal.ZERO) > 0 && totalRawPayout.compareTo(cap) > 0) {
-                BigDecimal ratio = cap.divide(totalRawPayout, 6, RoundingMode.HALF_UP);
-                totalPayoutFinal = BigDecimal.ZERO;
-                for (OwnerPayoutData payout : payoutPlan) {
-                    payout.applyScaling(ratio);
-                    totalPayoutFinal = totalPayoutFinal.add(payout.getPayoutAmount());
-                }
-                totalPayoutFinal = totalPayoutFinal.setScale(2, RoundingMode.HALF_UP);
-            } else {
-                payoutPlan.forEach(OwnerPayoutData::resetToRaw);
-            }
+            // TỔNG TIỀN TRẢ = TỔNG PAYOUT (KHÔNG CÓ CAP)
+            BigDecimal finalTotal = totalRawPayout.setScale(2, RoundingMode.HALF_UP);
 
-            validateCompanyBalance(companyWallet, totalPayoutFinal);
+            // KIỂM TRA VÍ CÔNG TY VỚI TỔNG SỐ TIỀN PHẢI TRẢ
+            validateCompanyBalance(companyWallet, finalTotal);
 
-            distributionEvent.setTotalMoneyDistributed(totalPayoutFinal);
+            // LƯU TỔNG SỐ TIỀN PHẢI TRẢ
+            distributionEvent.setTotalMoneyDistributed(finalTotal);
             distributionEvent.setTotalCreditsDistributed(totalCreditsForDistribution.setScale(6, RoundingMode.HALF_UP));
 
             StringBuilder descriptionBuilder = new StringBuilder(request.getDescription());
@@ -269,14 +252,12 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (policy.getMinPayout() != null) {
                 descriptionBuilder.append(" | Min payout: ").append(policy.getMinPayout().toPlainString());
             }
-            if (cap != null && cap.compareTo(BigDecimal.ZERO) > 0) {
-                descriptionBuilder.append(" | Cap: ").append(cap.toPlainString());
-            }
             distributionEvent.setDescription(descriptionBuilder.toString());
             profitDistributionRepository.save(distributionEvent);
 
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
             for (OwnerPayoutData payout : payoutPlan) {
+                // THỰC THI CHUYỂN TIỀN
                 processPayoutForOwner(distributionEvent, payout, companyWallet);
             }
 
@@ -342,12 +323,13 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(event);
         detail.setEvOwner(owner);
-        detail.setMoneyAmount(payout.getPayoutAmount());
+        detail.setMoneyAmount(payout.getPayoutAmount()); // SỐ TIỀN CHUẨN
         detail.setCreditAmount(payout.getCreditContribution());
         detail.setEnergyAmount(payout.getEnergyContribution());
 
         try {
             if (payout.getPayoutAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // CHUYỂN TIỀN CHUẨN
                 walletService.transferFunds(
                         threadSafeCompanyWallet,
                         ownerWallet,
@@ -444,12 +426,18 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         emissionReportRepository.saveAll(freshReports);
     }
 
+    /**
+     * TÍNH TOÁN PAYOUT CHUẨN (LOGIC CỐT LÕI)
+     * Tính toán số tiền payout (chi phí) dựa trên chính sách cố định.
+     */
     private BigDecimal calculateRawPayout(ContributionData contribution, ResolvedPolicy policy) {
+        // Logic 1: Nếu chính sách trả theo KWH
         if (policy.getPricingMode() == PricingMode.KWH && policy.getUnitPricePerKwh() != null) {
             return contribution.getTotalEnergyContribution()
                     .multiply(policy.getUnitPricePerKwh())
                     .setScale(2, RoundingMode.HALF_UP);
         }
+        // Logic 2: Nếu chính sách trả theo CREDIT
         return contribution.getTotalCreditContribution()
                 .multiply(policy.getUnitPricePerCredit())
                 .setScale(2, RoundingMode.HALF_UP);
@@ -466,15 +454,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         return plate == null ? null : plate.replaceAll("\\s+", "").toUpperCase();
     }
 
+    /**
+     * KIỂM TRA VÍ CÔNG TY
+     * Đảm bảo công ty có đủ tiền để trả tổng chi phí (finalTotal).
+     */
     private void validateCompanyBalance(Wallet companyWallet, BigDecimal requiredAmount) throws WalletException {
         if (requiredAmount == null) return;
 
         Wallet freshWallet = walletRepository.findById(companyWallet.getId())
                 .orElseThrow(() -> new WalletException("Wallet not found during validation"));
 
+        // SO SÁNH SỐ DƯ VÍ VỚI TỔNG TIỀN PHẢI TRẢ
         if (freshWallet.getBalance().compareTo(requiredAmount) < 0) {
             log.warn("Insufficient funds: Wallet {} has {} but requires {}",
                     freshWallet.getId(), freshWallet.getBalance(), requiredAmount);
+            // NÉM LỖI CHUẨN
             throw new AppException(ErrorCode.WALLET_INSUFFICIENT_FUNDS);
         }
     }
@@ -483,11 +477,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         if (detail == null) return BigDecimal.ZERO;
         BigDecimal co2Kg = detail.getCo2Kg();
         if (co2Kg != null && co2Kg.compareTo(BigDecimal.ZERO) > 0) {
-            return co2Kg.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
+            return co2Kg.setScale( 6, RoundingMode.HALF_UP);
         }
         if (fallbackEnergy != null && fallbackEnergy.compareTo(BigDecimal.ZERO) > 0) {
-            return fallbackEnergy.multiply(DEFAULT_EMISSION_FACTOR).divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
+            return fallbackEnergy.multiply(DEFAULT_EMISSION_FACTOR).setScale( 6, RoundingMode.HALF_UP);
         }
-        return BigDecimal.ZERO;
+        return BigDecimal.ZERO.setScale(6,RoundingMode.HALF_UP);
     }
 }
