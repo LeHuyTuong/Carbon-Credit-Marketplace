@@ -101,6 +101,13 @@ export async function apiFetch(path, options = {}) {
 
   //gọi api
   const res = await fetch(url, config);
+
+  //nếu cần tải file Excel → không parse JSON
+  if (options.responseType === "blob") {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.blob(); //đọc dữ liệu dạng file nhị phân
+  }
+
   //parse json an toàn tránh crash khi be ko trả json
   const data = await res.json().catch(() => ({}));
 
