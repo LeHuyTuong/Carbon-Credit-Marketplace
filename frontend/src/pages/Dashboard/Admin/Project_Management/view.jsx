@@ -189,14 +189,14 @@ const ViewProject = () => {
                 General Info
               </Typography>
 
-              <Box mb={2}>
+              <Box mb={1}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project ID:
                 </Typography>
                 <Typography>{formData.projectid}</Typography>
               </Box>
 
-              <Box mb={2}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project Name:
                 </Typography>
@@ -210,11 +210,30 @@ const ViewProject = () => {
                     onChange={handleChange}
                   />
                 ) : (
-                  <Typography>{formData.projectname || "—"}</Typography>
+                  <TextField
+                    value={formData.projectname || "N/A"}
+                    multiline
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    inputProps={{ style: { cursor: "pointer" } }}
+                    variant="outlined"
+                    size="small"
+                    minRows={1}
+                    sx={{
+                      mb: 2,
+                      backgroundColor: "rgba(255,255,255,0.08)",
+                      borderRadius: "8px",
+                      "& .MuiInputBase-input.Mui-disabled": {
+                        WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                      },
+                    }}
+                  />
                 )}
               </Box>
 
-              <Box mb={2}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Description:
                 </Typography>
@@ -292,7 +311,7 @@ const ViewProject = () => {
                 )}
               </Box>
 
-              <Box mb={2}>
+              <Box mb={4}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   End Date:
                 </Typography>
