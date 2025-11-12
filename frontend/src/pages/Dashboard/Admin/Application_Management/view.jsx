@@ -265,7 +265,7 @@ const ApplicationView = () => {
             </Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
-              Verification by CVA:
+              Verified by CVA:
             </Typography>
             <Typography mb={2}>{application.cvaReviewerName || "N/A"}</Typography>
 

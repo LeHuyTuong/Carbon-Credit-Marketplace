@@ -155,7 +155,7 @@ const ReportView = () => {
                             inputProps={{ style: { cursor: "pointer" } }}
                             variant="outlined"
                             size="small"
-                            minRows={3.5}
+                            minRows={1}
                             sx={{
                                 mb: 2,
                                 backgroundColor: "rgba(255,255,255,0.08)",
@@ -293,10 +293,7 @@ const ReportView = () => {
                         </Typography>
                         <Typography mb={2}>{report.aiPreNotes || "N/A"}</Typography> */}
 
-                        <Typography variant="h6" fontWeight="600" gutterBottom>
-                            Verification Score:
-                        </Typography>
-                        <Typography mb={2}>{report.verificationScore || "N/A"}</Typography>
+                        
 
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Verified By:

@@ -31,3 +31,12 @@ export const getReportByIdAdmin = async (id) => {
 export async function getCompanyKYCProfile(companyId) {
   return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
 }
+
+// Xem trước thông tin tín chỉ (preview credits) theo reportId
+export const getCreditPreviewByReportId = async (reportId) => {
+  if (!reportId) throw new Error("reportId is required");
+
+  return apiFetch(`/api/v1/credits/preview/${reportId}`, {
+    method: "GET",
+  });
+};
