@@ -54,6 +54,40 @@ export default function PayoutOwnerDetail() {
     }
   };
 
+  //API xuất dữ liệu payout ra file excel
+  const handleExportExcel = async () => {
+    try {
+      setLoading(true); // bật trạng thái loading để disable UI
+
+      // sử dụng apiFetch với responseType: "blob" để nhận về file thay vì JSON
+      const blob = await apiFetch(
+        `/api/v1/companies/payouts/${id}/export.xlsx`,
+        {
+          method: "GET",
+          responseType: "blob", //yêu cầu trả về blob
+        }
+      );
+
+      // tạo URL tạm trong bộ nhớ trình duyệt để truy cập blob
+      const url = window.URL.createObjectURL(blob);
+      //tạo thẻ <a> ẩn để kích hoạt hành động tải xuống
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payout_${id}.xlsx`; // đặt tên file tải về
+      document.body.appendChild(a);
+      a.click(); // mô phỏng hành động click tải file
+      a.remove(); // xóa thẻ a sau khi tải
+
+      //giải phóng bộ nhớ tạm (blob URL)
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      toast.error("Export failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   //tự động call api khi có id or đổi mode
   useEffect(() => {
     if (id) fetchPayoutOwners();
@@ -94,12 +128,29 @@ export default function PayoutOwnerDetail() {
             : "Payout Review by EV Owner"}
         </h1>
 
-        {/*Mô tả phụ thuộc mode*/}
-        <p className="text-light mb-4">
-          {mode === "preview"
-            ? `Simulated distribution for emission report #${id}.`
-            : `Official distribution record for payout #${id}.`}
-        </p>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          {/*Mô tả phụ thuộc mode*/}
+          <p className="text-light mb-4">
+            {mode === "preview"
+              ? `Simulated distribution for emission report #${id}.`
+              : `Official distribution record for payout #${id}.`}
+          </p>
+
+          {/*nút export file excel */}
+          {mode === "review" && (
+            <div className="d-flex justify-content-center mb-3">
+              <Button
+                variant="primary"
+                onClick={handleExportExcel}
+                disabled={loading}
+                className="fw-semibold shadow-sm d-flex align-items-center"
+              >
+                <i class="bi bi-download me-2"></i>
+                {loading ? "Exporting..." : "Export to Excel"}
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/*Trạng thái đang tải*/}
         {loading ? (
@@ -116,7 +167,7 @@ export default function PayoutOwnerDetail() {
           <>
             {/*Thông tin tổng hợp payout*/}
             {summary && (
-              <div className="d-flex justify-content-center">
+              <div className="d-flex justify-content-center align-items-start">
                 <div
                   className="text-dark border rounded p-3 mb-2 bg-white shadow-sm"
                   style={{
@@ -154,7 +205,7 @@ export default function PayoutOwnerDetail() {
                       </span>
                       <small className="text-muted">
                         {owner.email} | Payout:{" "}
-                        {owner.amountUsd.toLocaleString("vi-VN")}₫
+                        {owner.amountUsd.toLocaleString("vi-VN")}$
                       </small>
                     </div>
                   </Accordion.Header>

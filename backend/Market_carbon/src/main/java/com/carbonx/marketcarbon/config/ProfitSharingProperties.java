@@ -1,4 +1,5 @@
 package com.carbonx.marketcarbon.config;
+
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,9 @@ public class ProfitSharingProperties {
             throw new IllegalStateException("Default profit sharing policy must be configured");
         }
         Policy override = companyId != null ? overrides.get(companyId) : null;
+        String source = override != null ? String.format("overrides[%d]", companyId) : "defaultPolicy";
+
+
         BigDecimal unitPricePerKwh = override != null && override.getUnitPricePerKwh() != null
                 ? override.getUnitPricePerKwh()
                 : defaultPolicy.getUnitPricePerKwh();
@@ -61,7 +65,9 @@ public class ProfitSharingProperties {
             throw new IllegalStateException("Profit sharing policy must define either kWh or credit unit price");
         }
 
-        return new ResolvedPolicy(pricingMode,
+        return new ResolvedPolicy(
+                source,
+                pricingMode,
                 unitPricePerKwh,
                 unitPricePerCredit,
                 minPayout,
@@ -74,7 +80,7 @@ public class ProfitSharingProperties {
     public static class Policy {
         private BigDecimal unitPricePerKwh;
         private BigDecimal unitPricePerCredit;
-        private BigDecimal  minPayout;
+        private BigDecimal minPayout;
         private BigDecimal ownerSharePct;
         private String currency = "USD";
     }
@@ -86,6 +92,7 @@ public class ProfitSharingProperties {
 
     @Getter
     public static class ResolvedPolicy {
+        private String source;
         private final PricingMode pricingMode;
         private final BigDecimal unitPricePerKwh;
         private final BigDecimal unitPricePerCredit;
@@ -94,13 +101,16 @@ public class ProfitSharingProperties {
         private final String currency;
         private final BigDecimal ownerSharePct;
 
-        private ResolvedPolicy(PricingMode pricingMode,
-                               BigDecimal unitPricePerKwh,
-                               BigDecimal unitPricePerCredit,
-                               BigDecimal minPayout,
-                               BigDecimal unitPrice,
-                                BigDecimal ownerSharePct
-        ,String currency) {
+        private ResolvedPolicy(
+                String source,
+                PricingMode pricingMode,
+                BigDecimal unitPricePerKwh,
+                BigDecimal unitPricePerCredit,
+                BigDecimal minPayout,
+                BigDecimal unitPrice,
+                BigDecimal ownerSharePct
+                , String currency) {
+            this.source = source;
             this.pricingMode = pricingMode;
             this.unitPricePerKwh = scale(unitPricePerKwh);
             this.unitPricePerCredit = scale(unitPricePerCredit);

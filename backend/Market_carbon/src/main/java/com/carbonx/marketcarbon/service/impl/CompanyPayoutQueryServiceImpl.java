@@ -46,6 +46,16 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         Company company = requireCompanyAccess();
         // B2: doc chinh sach chia loi nhuan tu config theo company
         ProfitSharingProperties.ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
+        log.info("Preview Policy for companyId={}: source={}, pricingMode={}, unitPricePerKwh={}, unitPricePerCredit={}, unitPrice={}, ownerSharePct={}, minPayout={}, currency={}",
+                company.getId(),
+                policy.getSource(),
+                policy.getPricingMode(),
+                policy.getUnitPricePerKwh(),
+                policy.getUnitPricePerCredit(),
+                policy.getUnitPrice(),
+                policy.getOwnerSharePct(),
+                policy.getMinPayout(),
+                policy.getCurrency());
         // B3: dong goi du lieu thanh response gui ve frontend
         return PayoutFormulaResponse.builder()
                 .pricingMode(policy.getPricingMode())
@@ -184,7 +194,8 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         BigDecimal totalEnergy = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
 
-        for (OwnerAggregation aggregation : aggregationMap.values()) {
+        //Chỉ lặp qua những người có đóng góp (relevantAggregations)
+        for (OwnerAggregation aggregation : relevantAggregations) {
             BigDecimal energy = aggregation.getEnergy().setScale(6, RoundingMode.HALF_UP);
             BigDecimal credits = aggregation.getCredits().setScale(6, RoundingMode.HALF_UP);
             BigDecimal payout = computePayout(energy, credits, formulaMode, pricePerCredit, kwhToCreditFactor, ownerSharePct, scale);
@@ -240,48 +251,59 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
     @Override
     public CompanyPayoutSummaryResponse  getDistributionSummary( Long distributionId) {
         Company company = requireCompanyAccess();
+
+        // B1  tìm data có thông tin của một đợt chia lợi nhuận tổng thể
         ProfitDistribution distribution = profitDistributionRepository.findById(distributionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profit distribution not found"));
         if (!Objects.equals(distribution.getCompanyUser().getId(), company.getUser().getId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
+        //B2 tìm data có thông tin chi tiết từng khoản thanh toán cho mỗi EV Owner
         List<ProfitDistributionDetail> details = profitDistributionDetailRepository
                 .findByDistributionIdWithOwner(distributionId);
 
-        List<CompanyPayoutSummaryItemResponse> items = new ArrayList<>(); // <--- Sửa
+        // new ra 1 list để cứa thông tin trả về của từng ev owner
+        List<CompanyPayoutSummaryItemResponse> items = new ArrayList<>();
 
         BigDecimal totalEnergy = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
         BigDecimal totalPayout = BigDecimal.ZERO;
         long ownersPaid = 0;
 
+        //B3 móc từng data chi tiết ra
         for (ProfitDistributionDetail detail : details) {
             if (detail.getEvOwner() == null) {
                 continue;
             }
+            // đếm số xe
             long vehiclesCount = vehicleRepository.countByEvOwner_IdAndCompany_Id(detail.getEvOwner().getId(), company.getId());
+            // lấy thng tin từng xe
             BigDecimal energy = optional(detail.getEnergyAmount(), 6);
-            BigDecimal credits = optional(detail.getCreditAmount(), 6);
+            BigDecimal creditsKg = optional(detail.getCreditAmount(), 6);
+            // SỬA LỖI: Chia cho 1000 để ra tCO2e (credits)
+            BigDecimal creditsTCO2e = creditsKg.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
+
             BigDecimal amount = optional(detail.getMoneyAmount(), 2);
 
+            //add vào tổng số đóng góp ể trẻ v cho compnay
             totalEnergy = totalEnergy.add(energy);
-            totalCredits = totalCredits.add(credits);
+            totalCredits = totalCredits.add(creditsTCO2e);
             totalPayout = totalPayout.add(amount);
             if ("SUCCESS".equalsIgnoreCase(detail.getStatus())) {
                 ownersPaid++;
             }
 
-            items.add(CompanyPayoutSummaryItemResponse.builder() // <--- Sửa
+            items.add(CompanyPayoutSummaryItemResponse.builder()
                     .ownerId(detail.getEvOwner().getId())
                     .ownerName(detail.getEvOwner().getName())
                     .email(detail.getEvOwner().getEmail())
                     .phone(detail.getEvOwner().getPhone())
                     .vehiclesCount(vehiclesCount)
-                    .energyKwh(energy) // <--- Lỗi (2.1) của bạn bây giờ đã được sửa vì builder này có 'energyKwh'
-                    .credits(credits)
-                    .amountUsd(amount) // <--- Trường này cũng có trong builder đúng
-                    .status(detail.getStatus()) // <--- Trường này cũng có trong builder đúng
+                    .energyKwh(energy)
+                    .credits(creditsTCO2e)
+                    .amountUsd(amount)
+                    .status(detail.getStatus())
                     .build());
         }
 
@@ -289,7 +311,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .items(items)
                 .ownersCount(ownersPaid)
                 .totalEnergyKwh(totalEnergy)
-                .totalCredits(totalCredits)
+                .totalCredits(totalCredits.setScale(6, RoundingMode.HALF_UP))
                 .grandTotalPayout(totalPayout)
                 .build();
     }

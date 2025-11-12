@@ -128,7 +128,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         Company company = companyRepository.findByUserId(companyUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
         ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
-
+        log.info("Execution Policy for companyId={}: source={}, pricingMode={}, unitPricePerKwh={}, unitPricePerCredit={}, unitPrice={}, ownerSharePct={}, minPayout={}, currency={}",
+                company.getId(),
+                policy.getSource(),
+                policy.getPricingMode(),
+                policy.getUnitPricePerKwh(),
+                policy.getUnitPricePerCredit(),
+                policy.getUnitPrice(),
+                policy.getOwnerSharePct(),
+                policy.getMinPayout(),
+                policy.getCurrency());
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
         // 1. Tạo và lưu sự kiện chia lợi nhuận
         ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);

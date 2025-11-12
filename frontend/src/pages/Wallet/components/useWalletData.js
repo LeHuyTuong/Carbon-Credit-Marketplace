@@ -71,7 +71,13 @@ export default function useWalletData() {
           : "Not Issued",
       }));
 
-      setIssuedCredits(mapped);
+      const sorted = mapped.sort((a, b) => {
+        const d1 = new Date(a.issuedAt);
+        const d2 = new Date(b.issuedAt);
+        return d2-d1;
+      })
+
+      setIssuedCredits(sorted);
     } catch (err) {
       console.error("Failed to fetch issued credits:", err);
     } finally {

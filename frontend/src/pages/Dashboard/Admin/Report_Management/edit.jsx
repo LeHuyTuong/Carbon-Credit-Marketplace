@@ -15,9 +15,16 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { useEffect, useState } from "react";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { approveReportByAdmin, getReportByIdAdmin } from "@/apiAdmin/reportAdmin.js";
+import { approveReportByAdmin, getReportByIdAdmin, getCreditPreviewByReportId, } from "@/apiAdmin/reportAdmin.js";
 import { issueCredits } from "@/apiAdmin/creditAdmin.js";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+
 
 const ViewReport = () => {
   const theme = useTheme();
@@ -29,6 +36,12 @@ const ViewReport = () => {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const { showSnackbar, SnackbarComponent } = useSnackbar();
+
+  const [openPreview, setOpenPreview] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [creditAmount, setCreditAmount] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
 
 
   //  State điều khiển hiển thị nút
@@ -87,6 +100,27 @@ const ViewReport = () => {
     fetchReport();
   }, [id]);
 
+  const handleOpenPreview = async () => {
+    try {
+      setLoadingPreview(true);
+      const res = await getCreditPreviewByReportId(id);
+      const data = res.response || res.responseData || res;
+
+      setPreviewData(data);
+      setCreditAmount(data.creditsCount || 0);
+      setOpenPreview(true);
+    } catch (err) {
+      console.error("Preview error:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to load credit preview!";
+      showSnackbar("error", message);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   const handleApproval = async (isApproved) => {
     try {
       const res = await approveReportByAdmin(id, isApproved, note);
@@ -121,30 +155,30 @@ const ViewReport = () => {
 
   const handleIssueCredit = async () => {
     try {
-      setIssuing(true); // disable nút
+      setIssuing(true);
       showSnackbar("info", "Issuing credits... please wait (about 8 seconds)");
-      await issueCredits(id);
+      await issueCredits(id, creditAmount);
       showSnackbar("success", "Credits issued successfully!");
-      setIssued(true); // ẩn nút vĩnh viễn sau khi cấp thành công
+      setIssued(true);
+      setReport((prev) => ({
+        ...prev,
+        status: "CREDIT_ISSUED",
+      }));
+      setOpenPreview(false);
 
-      // Chuyển trang nhẹ sau 1s
-      setTimeout(() => {
-        navigate("/admin/credit_management");
-      }, 1000);
+      setTimeout(() => navigate("/admin/credit_management"), 1000);
     } catch (err) {
       console.error("Issue credit error:", err);
-
       const message =
-        err?.response?.data?.responseStatus?.responseDesc ||
         err?.response?.data?.message ||
         err?.message ||
         "Failed to issue credits!";
       showSnackbar("error", message);
     } finally {
-      // Không reset issuing nếu đã issued (để nút biến mất)
       if (!issued) setIssuing(false);
     }
   };
+
 
   if (loading) return <Typography m={3}>Loading...</Typography>;
   if (!report) return <Typography m={3}>Report not found.</Typography>;
@@ -217,8 +251,8 @@ const ViewReport = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
-              label="Vehicle Count"
-              value={report.vehicleCount || 0}
+              label="Verified by CVA"
+              value={report.verifiedByCvaName || ""}
               fullWidth
               InputProps={{ readOnly: true }}
             />
@@ -239,7 +273,7 @@ const ViewReport = () => {
               fullWidth
               multiline
               rows={3}
-              placeholder="Enter note (required if rejecting)"
+              placeholder="Enter note for approval/rejection..."
             />
           </Grid>
         </Grid>
@@ -251,14 +285,14 @@ const ViewReport = () => {
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/admin/report_management")}
+            onClick={() => navigate(`/admin/view_report/${report.id}`)}
             sx={{
               borderColor: colors.blueAccent[400],
               color: colors.blueAccent[400],
               textTransform: "none",
             }}
           >
-            Back to List
+            Back to View
           </Button>
 
           <Box display="flex" gap={2}>
@@ -291,17 +325,68 @@ const ViewReport = () => {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={handleIssueCredit}
-                disabled={issuing}
+                onClick={handleOpenPreview}
+                disabled={loadingPreview}
                 sx={{ textTransform: "none" }}
               >
-                {issuing ? "Processing..." : "Issue Credit"}
+                {loadingPreview ? "Loading Preview..." : "Issue Credit"}
               </Button>
+
             )}
 
           </Box>
         </Box>
       </Paper>
+      {/* Dialog Preview Credit */}
+      <Dialog open={openPreview} onClose={() => setOpenPreview(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Credit Preview</DialogTitle>
+        <DialogContent>
+          {previewData ? (
+            <Box display="flex" flexDirection="column" gap={2} mt={1}>
+              <TextField
+                label="Batch Code"
+                value={previewData.batchCode || ""}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              <TextField
+                label="Vintage Year"
+                value={previewData.vintageYear || ""}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              <TextField
+                label="Total tCO₂e"
+                value={previewData.totalTco2e || ""}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
+              <TextField
+                label="Credits to Issue"
+                type="number"
+                value={creditAmount}
+                onChange={(e) => setCreditAmount(e.target.value)}
+                fullWidth
+              />
+            </Box>
+          ) : (
+            <Typography>Loading preview data...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPreview(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleIssueCredit}
+            color="primary"
+            variant="contained"
+            disabled={issuing}
+          >
+            {issuing ? "Processing..." : "Confirm Issue"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       {SnackbarComponent}
