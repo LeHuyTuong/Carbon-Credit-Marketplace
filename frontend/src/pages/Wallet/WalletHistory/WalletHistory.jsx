@@ -185,6 +185,29 @@ export default function WalletHistory() {
                       <div className="small text-light">
                         {parseVNTime(tx.createdAt)}
                       </div>
+
+                      {/*nếu là Profit Sharing → show nút View Details */}
+                      {tx.transactionType === "PROFIT_SHARING" &&
+                        (() => {
+                          //tìm pattern "(distribution id)" trong description
+                          const match = tx.description?.match(
+                            /\(distribution\s+#(\d+)\)/i
+                          );
+                          const distId = match ? match[1] : null;
+
+                          return (
+                            distId && (
+                              <Button
+                                variant="outline-info"
+                                size="sm"
+                                className="mt-2"
+                                onClick={() => nav(`/payout/review/${distId}`)}
+                              >
+                                View Payout Details
+                              </Button>
+                            )
+                          );
+                        })()}
                     </div>
                     <div className="text-end">
                       <div className={`fw-bold ${amountClass}`}>

@@ -10,7 +10,7 @@ import useReveal from "../../hooks/useReveal";
 import CreditsList from "./components/CreditsList";
 import CreditSummaryCard from "./components/CreditSummaryCard";
 import { useAuth } from "../../context/AuthContext";
-import ChooseReportModal from "./components/ChooseReportModal";
+import ShareProfit from "./components/ShareProfit";
 
 export default function Wallet() {
   const nav = useNavigate();
@@ -49,6 +49,7 @@ export default function Wallet() {
   const [activeTab, setActiveTab] = React.useState("issued");
   const [showShareModal, setShowShareModal] = useState(false);
   const [approvedReports, setApprovedReports] = useState([]);
+  const [savedModalState, setSavedModalState] = useState(null);
 
   //khi trở lại từ Order.jsx với state.refreshCredits
   useEffect(() => {
@@ -62,6 +63,15 @@ export default function Wallet() {
 
   //load trang: check nếu có order_id & payment_id
   useEffect(() => {
+    const fetchAll = async () => {
+      await Promise.all([
+        fetchWallet(),
+        fetchIssuedCredits(),
+        fetchPurchasedCredits(),
+        fetchSummary(),
+      ]);
+    };
+
     const params = new URLSearchParams(location.search);
     const orderId = params.get("order_id");
     const paymentId = params.get("payment_id");
@@ -75,29 +85,34 @@ export default function Wallet() {
       console.warn("Token is not ready, delay confirm...");
       const timer = setTimeout(() => {
         if (orderId) confirmDeposit(orderId, paymentId || "");
-        else {
-          fetchWallet();
-          fetchIssuedCredits();
-          fetchPurchasedCredits();
-          fetchSummary();
-        }
+        else fetchAll();
       }, 1000);
       return () => clearTimeout(timer);
     }
 
-    if (orderId) confirmDeposit(orderId, paymentId || "");
-    else {
-      fetchWallet();
-      fetchIssuedCredits();
-      fetchPurchasedCredits();
-      fetchSummary();
+    if (orderId) {
+      confirmDeposit(orderId, paymentId || "");
+    } else {
+      fetchAll();
     }
   }, [location.search]);
 
   //khi ví có ID -> lấy lịch sử giao dịch
   useEffect(() => {
-    if (wallet?.id) fetchTransactions();
+    if (!wallet?.id || transactions.length > 0) return;
+    fetchTransactions();
   }, [wallet]);
+
+  useEffect(() => {
+    // Khi quay lại từ trang preview
+    if (location.state?.fromModal) {
+      setShowShareModal(true);
+      setSavedModalState(location.state.modalState);
+
+      // Xóa state để không trigger lại khi reload
+      nav("/wallet", { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   //handle add money
   const handleDepositSubmit = async (values) => {
@@ -344,9 +359,11 @@ export default function Wallet() {
         setShowPaymentToast={setShowPaymentToast}
         nav={nav}
       />
-      <ChooseReportModal
+      {/* Share Profit modal */}
+      <ShareProfit
         show={showShareModal}
         onHide={() => setShowShareModal(false)}
+        initialData={savedModalState}
         onConfirm={async (data) => {
           try {
             const res = await shareProfit({
@@ -360,7 +377,6 @@ export default function Wallet() {
             });
             await fetchWallet();
             nav("/wallet", { replace: true });
-
             setShowShareModal(false);
           } catch (err) {
             setToast({

@@ -80,6 +80,10 @@ const ApplicationEdit = () => {
   // Gửi cập nhật duyệt (Save)
   const handleUpdate = async () => {
     try {
+      if (!["ADMIN_APPROVED", "ADMIN_REJECTED"].includes(formData.status)) {
+        showSnackbar("warning", "Please select a valid status before saving.");
+        return;
+      }
       const payload = {
         approved: formData.status === "ADMIN_APPROVED",
         note: formData.finalReviewNote || "No note provided",
