@@ -122,9 +122,12 @@ const ApplicationView = () => {
           backgroundColor: colors.primary[400],
         }}
       >
-        <Grid container spacing={13}>
+        <Grid container spacing={15}>
           {/* COLUMN 1: General Info */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} sx={{
+            flexBasis: "20%",     // chiếm 20% chiều ngang container
+            maxWidth: "20%",      // giới hạn chiều rộng
+          }}>
             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
               General Info
             </Typography>
@@ -132,7 +135,26 @@ const ApplicationView = () => {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Project Title:
             </Typography>
-            <Typography mb={2}>{application.projectTitle}</Typography>
+            <TextField
+              value={application.projectTitle || "N/A"}
+              multiline
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+              inputProps={{ style: { cursor: "pointer" } }}
+              variant="outlined"
+              size="small"
+              minRows={2}
+              sx={{
+                mb: 2,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                "& .MuiInputBase-input.Mui-disabled": {
+                  WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                },
+              }}
+            />
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Review by Admin:
@@ -147,7 +169,10 @@ const ApplicationView = () => {
 
           {/* COLUMN 2: Company KYC Info */}
           {kyc && (
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} sx={{
+              flexBasis: "20%",     // chiếm 20% chiều ngang container
+              maxWidth: "20%",      // giới hạn chiều rộng
+            }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 Company Registration
               </Typography>
@@ -175,24 +200,65 @@ const ApplicationView = () => {
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Address:
               </Typography>
-              <Typography mb={2}>{kyc.address || "N/A"}</Typography>
+              <TextField
+                value={kyc.address || "N/A"}
+                multiline
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+                inputProps={{ style: { cursor: "pointer" } }}
+                variant="outlined"
+                size="small"
+                minRows={2}
+                sx={{
+                  mb: 2,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  borderRadius: "8px",
+                  "& .MuiInputBase-input.Mui-disabled": {
+                    WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                  },
+                }}
+              />
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Created At:
               </Typography>
-              <Typography mb={2}>{new Date(kyc.createAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+              <Typography mb={2}>
+                {kyc.createAt
+                  ? (() => {
+                    const date = new Date(kyc.createAt);
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const year = date.getFullYear();
+                    const time = date.toLocaleTimeString();
+                    return `${day}/${month}/${year}, ${time}`;
+                  })()
+                  : "N/A"}
+              </Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
-                Update At:
+                Updated At:
               </Typography>
-              <Typography mb={2}>{new Date(kyc.updatedAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+              <Typography mb={2}>
+                {kyc.updatedAt
+                  ? (() => {
+                    const date = new Date(kyc.updatedAt);
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const year = date.getFullYear();
+                    const time = date.toLocaleTimeString();
+                    return `${day}/${month}/${year}, ${time}`;
+                  })()
+                  : "N/A"}
+              </Typography>
             </Grid>
           )}
 
           {/* COLUMN 3: Review Info */}
           <Grid item xs={12} md={4} sx={{
-            flexBasis: "50%",     // chiếm 40% chiều ngang container
-            maxWidth: "50%",      // giới hạn chiều rộng
+            flexBasis: "30%",     // chiếm 30% chiều ngang container
+            maxWidth: "30%",      // giới hạn chiều rộng
           }}>
             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
               Review Info
@@ -216,7 +282,7 @@ const ApplicationView = () => {
               inputProps={{ style: { cursor: "pointer" } }}
               variant="outlined"
               size="small"
-              minRows={3}
+              minRows={2}
               sx={{
                 mb: 2,
                 backgroundColor: "rgba(255,255,255,0.08)",
@@ -240,7 +306,7 @@ const ApplicationView = () => {
               inputProps={{ style: { cursor: "pointer" } }}
               variant="outlined"
               size="small"
-              minRows={3}
+              minRows={2}
               sx={{
                 mb: 2,
                 backgroundColor: "rgba(255,255,255,0.08)",

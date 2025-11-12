@@ -40,6 +40,10 @@ public class ProfitSharingProperties {
                 .map(Policy::getMinPayout)
                 .orElse(defaultPolicy.getMinPayout());
 
+        BigDecimal ownerSharePct = Optional.ofNullable(override)
+                .map(Policy::getOwnerSharePct)
+                .orElse(defaultPolicy.getOwnerSharePct());
+
         String currency = Optional.ofNullable(override)
                 .map(Policy::getCurrency)
                 .filter(value -> !value.isBlank())
@@ -62,6 +66,7 @@ public class ProfitSharingProperties {
                 unitPricePerCredit,
                 minPayout,
                 effectiveUnitPrice,
+                ownerSharePct,
                 currency);
     }
 
@@ -69,7 +74,8 @@ public class ProfitSharingProperties {
     public static class Policy {
         private BigDecimal unitPricePerKwh;
         private BigDecimal unitPricePerCredit;
-        private BigDecimal minPayout;
+        private BigDecimal  minPayout;
+        private BigDecimal ownerSharePct;
         private String currency = "USD";
     }
 
@@ -86,12 +92,14 @@ public class ProfitSharingProperties {
         private final BigDecimal minPayout;
         private final BigDecimal unitPrice;
         private final String currency;
+        private final BigDecimal ownerSharePct;
 
         private ResolvedPolicy(PricingMode pricingMode,
                                BigDecimal unitPricePerKwh,
                                BigDecimal unitPricePerCredit,
                                BigDecimal minPayout,
-                               BigDecimal unitPrice
+                               BigDecimal unitPrice,
+                                BigDecimal ownerSharePct
         ,String currency) {
             this.pricingMode = pricingMode;
             this.unitPricePerKwh = scale(unitPricePerKwh);
@@ -99,6 +107,7 @@ public class ProfitSharingProperties {
             this.minPayout = scale(minPayout);
             this.unitPrice = scale(unitPrice);
             this.currency = currency == null ? "USD" : currency.trim().toUpperCase();
+            this.ownerSharePct = scale(ownerSharePct);
         }
 
         private BigDecimal scale(BigDecimal value) {
