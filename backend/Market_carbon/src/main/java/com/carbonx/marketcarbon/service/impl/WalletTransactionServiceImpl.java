@@ -198,6 +198,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .batchCode(transaction.getCreditBatch() != null
                         ? transaction.getCreditBatch().getBatchCode()
                         : null)
+                .distributionId(transaction.getDistribution() != null
+                        ? transaction.getDistribution().getId()
+                        : null)
                 .creditExpiryDate(creditExpiryDate)
                 .build();
     }

@@ -57,4 +57,9 @@ public class WalletTransaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "credit_batch_id")
     private CreditBatch creditBatch;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "distribution_id")
+    private ProfitDistribution distribution;
 }
