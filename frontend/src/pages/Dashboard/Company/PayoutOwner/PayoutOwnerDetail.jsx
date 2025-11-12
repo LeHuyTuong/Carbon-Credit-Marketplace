@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Container, Table, Accordion, Spinner, Button } from "react-bootstrap";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { FaArrowLeft } from "react-icons/fa";
+import useReveal from "../../../../hooks/useReveal";
 
 export default function PayoutOwnerDetail() {
   const params = useParams();
@@ -12,6 +13,8 @@ export default function PayoutOwnerDetail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const nav = useNavigate();
+  const sectionRef = useRef(null);
+  useReveal(sectionRef);
   // tự xác định mode: preview hay review
   const mode = location.pathname.includes("/preview/") ? "preview" : "review";
 
@@ -32,7 +35,7 @@ export default function PayoutOwnerDetail() {
 
       // gọi API backend
       const res = await apiFetch(url, { method: "GET" });
-      const data = res?.response?.summary || {};
+      const data = res?.response?.summary || res?.response || {};
 
       // danh sách chủ EV
       setOwners(data.items || []);
@@ -57,7 +60,7 @@ export default function PayoutOwnerDetail() {
   }, [id, mode]);
 
   return (
-    <div className="auth-hero min-vh-100 py-4">
+    <div ref={sectionRef} className="auth-hero min-vh-100 py-4 reveal">
       <Button
         variant="outline-info"
         size="sm"
@@ -88,7 +91,7 @@ export default function PayoutOwnerDetail() {
         <h1 className="text-light fw-bold mb-2 mt-5">
           {mode === "preview"
             ? "Payout Preview by EV Owner"
-            : "Payout Summary by EV Owner"}
+            : "Payout Review by EV Owner"}
         </h1>
 
         {/*Mô tả phụ thuộc mode*/}
@@ -132,8 +135,8 @@ export default function PayoutOwnerDetail() {
                     <strong>Total Credits:</strong> {summary.totalCredits}
                   </p>
                   <p>
-                    <strong>Grand Total Payout (VND):</strong>{" "}
-                    {summary.grandTotalPayout.toLocaleString("vi-VN")}
+                    <strong>Grand Total Payout:</strong>{" "}
+                    {summary.grandTotalPayout.toLocaleString("vi-VN")}$
                   </p>
                 </div>
               </div>
