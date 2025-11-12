@@ -41,10 +41,6 @@ public class ProfitDistribution extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal totalCreditsDistributed;
 
-    // Mô tả cho đợt chia sẻ
-    @Column(length = 500)
-    private String description;
-
     // Trạng thái của đợt chia sẻ (PENDING, PROCESSING, COMPLETED, FAILED)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

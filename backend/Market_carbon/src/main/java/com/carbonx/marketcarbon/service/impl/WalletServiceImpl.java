@@ -322,7 +322,8 @@ public class WalletServiceImpl implements WalletService {
             BigDecimal amount,
             String type,
             String debitDescription,
-            String creditDescription
+            String creditDescription,
+            ProfitDistribution distribution
     ) throws WalletException {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("Transfer amount must be positive. Amount: {}", amount);
@@ -372,7 +373,7 @@ public class WalletServiceImpl implements WalletService {
                     .description(debitDescription)
                     .balanceBefore(fromBefore)
                     .balanceAfter(fromAfter)
-                    // .status("COMPLETED") // Bỏ qua nếu entity không có
+                    .distribution(distribution)
                     .createdAt(LocalDateTime.now()) // Dùng createdAt nếu entity có
                     .build();
             walletTransactionRepository.save(fromTransaction);
@@ -387,6 +388,7 @@ public class WalletServiceImpl implements WalletService {
                     .balanceBefore(fromBefore)
                     .balanceAfter(fromAfter)
                     // .status("COMPLETED")
+                    .distribution(distribution)
                     .createdAt(LocalDateTime.now())
                     .build();
             walletTransactionRepository.save(toTransaction);

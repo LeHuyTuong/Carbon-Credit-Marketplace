@@ -30,4 +30,5 @@ public class WalletTransactionResponse {
     private String batchCode;
 
     private LocalDate creditExpiryDate;
+    private Long distributionId;
 }
