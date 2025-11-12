@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Button, Spinner, Form } from "react-bootstrap";
+import { Modal, Button, Spinner, Form, Collapse } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -22,6 +22,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
   const [formula, setFormula] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [showFormulaImg, setShowFormulaImg] = useState(false);
   const navigate = useNavigate();
 
   // load dữ liệu ban đầu
@@ -211,17 +212,49 @@ export default function ShareProfit({ show, onHide, initialData }) {
                   {/* Formula info */}
                   {formula && (
                     <div className="border rounded p-3 mb-3 bg-light">
-                      <p className="mb-1">
-                        <strong>Formula:</strong> {formula.pricingMode}
-                      </p>
-                      <p className="mb-1">
-                        <strong>Price per Credit:</strong>{" "}
-                        {formula.unitPricePerCredit}
-                      </p>
-                      <p className="mb-0">
-                        <strong>Price per kWh:</strong>{" "}
-                        {formula.unitPricePerKwh}
-                      </p>
+                      {/* Toggle ảnh công thức */}
+                      <div className="text-center mb-2">
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => setShowFormulaImg((prev) => !prev)}
+                        >
+                          {showFormulaImg ? "Hide Formula" : "Show Formula"}
+                        </Button>
+                      </div>
+
+                      {/* Nội dung collapse */}
+                      <Collapse in={showFormulaImg}>
+                        <div>
+                          <p className="mb-1">
+                            <strong>Formula:</strong> {formula.pricingMode}
+                          </p>
+
+                          <p className="mb-1">
+                            <strong>Price per Credit:</strong>{" "}
+                            {formula.unitPricePerCredit}$
+                          </p>
+                          <p className="mb-3">
+                            <strong>Price per kWh:</strong>{" "}
+                            {formula.unitPricePerKwh}$
+                          </p>
+
+                          <div className="text-center mb-2">
+                            <img
+                              src="/src/assets/formula.jpeg"
+                              alt="Carbon Credit Formula"
+                              style={{
+                                width: "95%",
+                                borderRadius: "6px",
+                                border: "1px solid #e3e3e3",
+                                backgroundColor: "#f8f9fa",
+                                padding: "4px",
+                                transition: "all 0.3s ease",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </Collapse>
                     </div>
                   )}
 
