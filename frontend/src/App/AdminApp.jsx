@@ -21,6 +21,7 @@ import User_View from "../pages/Dashboard/Admin/User_Management/view.jsx";
 import Transaction_Page from "../pages/Dashboard/Admin/Transaction_Management/transactionPage.jsx";
 import Credit_View from "../pages/Dashboard/Admin/Credit_Management/view.jsx";
 import Report_View from "../pages/Dashboard/Admin/Report_Management/view.jsx";
+import Report_Edit from "../pages/Dashboard/Admin/Report_Management/edit.jsx";
 import EV_View from "../pages/Dashboard/Admin/EV_Management/view.jsx";
 import Project_View from "../pages/Dashboard/Admin/Project_Management/view.jsx";
 import New_Project from "../pages/Dashboard/Admin/Project_Management/newProject.jsx";
@@ -79,6 +80,7 @@ function App() {
               <Route path="/view_credit/:id" element={<Credit_View />} />
               <Route path="/transaction/:id" element={<Transaction_Page />} />
               <Route path="/view_report/:id" element={<Report_View />} />
+              <Route path="/edit_report/:id" element={<Report_Edit />} />
               <Route path="/view_EV/:id" element={<EV_View />} />
               <Route path="/view_project/:id" element={<Project_View />} />
               <Route path="/new_project" element={<New_Project />} />

@@ -16,6 +16,7 @@ import {
   TableCell,
   TableBody,
   TablePagination,
+  Divider
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -245,135 +246,209 @@ const ViewReport = ({ report: initialReport }) => {
   return (
     <Box m="20px" sx={{ marginLeft: "290px" }} textAlign="left" >
       <Header title="REPORT DETAIL" subtitle={`Details of Report ${report.id}`} />
-      <Grid container spacing={2}>
-        {/* LEFT: formula image */}
-        {/* <Grid item xs={12} sm={6}>
-          <Box display="flex" flexDirection="column" alignItems="center">
-          </Box>
-        </Grid> */}
+      <Paper
+        sx={{
+          p: 4,
+          mt: 3,
+          borderRadius: 3,
+          boxShadow: 4,
+          backgroundColor: "#fafafa",
+        }}
+      >
+        {/* ===================== REPORT INFORMATION ===================== */}
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: "bold",
+            mb: 2,
+            color: "#1976d2",
+            fontSize: "1.2rem",
+          }}
+        >
+          Report Information
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
 
-        {/* RIGHT: report info */}
-        <Grid item xs={12} sm={6}>
-          <Paper elevation={4} sx={{ backgroundColor: colors.primary[400], p: 3, borderRadius: 2, maxWidth: "1000px", width: "100%" }}>
-            <Grid container spacing={20}>
+        <Grid container spacing={10}>
+          <Grid item xs={12} sm={6}>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Report ID:</b> {report.id || "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Company (Sender):</b> {report.sellerName || "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Project:</b> {report.projectName || "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Reporting Period:</b> {report.period || "—"}
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Total Energy:</b> {report.totalEnergy || "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Total CO₂:</b> {report.totalCo2 || "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Submission Date:</b>{" "}
+              {report.submittedAt
+                ? new Date(report.submittedAt).toLocaleString("vi-VN")
+                : "—"}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Attachment:</b>{" "}
+              {report.uploadOriginalFilename ? (
+                <Button
+                  href={report.uploadStorageUrl}
+                  target="_blank"
+                  variant="outlined"
+                  color="info"
+                  sx={{ textTransform: "none", fontSize: "0.9rem", ml: 1 }}
+                >
+                  Download
+                </Button>
+              ) : (
+                "—"
+              )}
+            </Typography>
+            <Typography sx={{ fontSize: "1rem" }}>
+              <b>Status:</b>{" "}
+              <span style={{ color: statusColor, fontWeight: 600 }}>
+                {report.status?.replace("_", " ") || "—"}
+              </span>
+            </Typography>
+          </Grid>
+        </Grid>
+
+        {/* Note khi bị reject */}
+        {report.status === "REJECTED" && (
+          <Box mt={2}>
+            <Typography sx={{ fontSize: "1rem", fontWeight: "bold" }}>Note:</Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Enter rejection reason..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        )}
+
+        {/* ===================== COMPANY KYC SECTION ===================== */}
+        {companyProfile && (
+          <>
+            <Divider sx={{ my: 4 }} />
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: "bold",
+                mb: 2,
+                color: "#388e3c",
+                fontSize: "1.2rem",
+              }}
+            >
+              Company Registration
+            </Typography>
+
+            <Grid container spacing={10}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6">Report ID:</Typography>
-                <Typography>{report.id}</Typography>
-                <Typography variant="h6" mt={2}>Company (Sender):</Typography>
-                <Typography>{report.sellerName}</Typography>
-                <Typography variant="body2">ID: {report.sellerId}</Typography>
-                <Typography variant="h6" mt={2}>Project:</Typography>
-                <Typography>{report.projectName}</Typography>
-                <Typography variant="h6" mt={2}>Reporting Period:</Typography>
-                <Typography>{report.period}</Typography>
-                <Typography variant="h6" mt={2}>Total Energy:</Typography>
-                <Typography>{report.totalEnergy}</Typography>
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Company Name:</b> {companyProfile.companyName || "—"}
+                </Typography>
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Business License:</b> {companyProfile.businessLicense || "—"}
+                </Typography>
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Tax Code:</b> {companyProfile.taxCode || "—"}
+                </Typography>
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6">Total CO₂:</Typography>
-                <Typography>{report.totalCo2}</Typography>
-                <Typography variant="h6" mt={2}>Submission Date:</Typography>
-                <Typography>
-                  {report.submittedAt
-                    ? new Date(report.submittedAt).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })
-                    : "—"}
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Address:</b> {companyProfile.address || "—"}
                 </Typography>
-
-                <Typography variant="h6" mt={2}>Attachment:</Typography>
-                {report.uploadOriginalFilename ? (
-                  <Button
-                    variant="outlined"
-                    color="info"
-                    onClick={() => window.open(report.uploadStorageUrl, "_blank")}
-                  >
-                    Download
-                  </Button>
-                ) : (
-                  <Typography>—</Typography>
-                )}
-                <Typography variant="h6" mt={2}>Status:</Typography>
-                <Typography sx={{ color: statusColor, fontWeight: 600 }}>
-                  {report.status?.replace("_", " ")}
+                <Typography sx={{ fontSize: "1rem" }}>
+                  <b>Created At:</b>{" "}
+                  {new Date(companyProfile.createAt).toLocaleString("vi-VN")}
                 </Typography>
-                {/* Company KYC Profile */}
-                {companyProfile && (
-                  <Box mt={3} p={2} border="1px solid #ccc" borderRadius={2}>
-                    <Typography variant="h6" gutterBottom>
-                      Company KYC Profile
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Company Name:</strong> {companyProfile.companyName}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Business License:</strong> {companyProfile.businessLicense}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Tax Code:</strong> {companyProfile.taxCode}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Address:</strong> {companyProfile.address}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Created At:</strong>{" "}
-                      {new Date(companyProfile.createAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                )}
-
-                {report.status === "REJECTED" && (
-                  <Box mt={2}>
-                    <Typography variant="h6">Note:</Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={3}
-                      placeholder="Enter rejection reason..."
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      sx={{ mt: 1 }}
-                    />
-                  </Box>
-                )}
               </Grid>
             </Grid>
+          </>
+        )}
 
-            {/* Actions */}
-            <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2} mt={4} flexWrap="nowrap">
-              {!actionTaken && (
-                <>
-                  <Button variant="contained" color="success" onClick={() => handleUpdate(true)}>
-                    Approved
-                  </Button>
-                  <Button variant="contained" color="error" onClick={() => handleUpdate(false)}>
-                    Rejected
-                  </Button>
-                </>
-              )}
-              <Button variant="contained" color="secondary" onClick={handleAnalyzeByAI} disabled={aiLoading}>
-                {aiLoading ? "Analyzing..." : "Analyze by AI"}
+        {/* ===================== ACTION BUTTONS ===================== */}
+        <Box
+          mt={5}
+          display="flex"
+          gap={2}
+          justifyContent="flex-end"
+          alignItems="center"
+        >
+          {!actionTaken && (
+            <>
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                onClick={() => handleUpdate(true)}
+              >
+                Approved
               </Button>
-              <Button variant="contained" color="warning" onClick={handleAnalyzeData} disabled={dataLoading}>
-                {dataLoading ? "Analyzing..." : "Analyze Data"}
+              <Button
+                variant="contained"
+                color="error"
+                size="large"
+                onClick={() => handleUpdate(false)}
+              >
+                Rejected
               </Button>
-              <Button variant="outlined" color="info" onClick={handleOpenDetails}>
-                View details
-              </Button>
-              <Button variant="outlined" color="inherit" onClick={() => navigate(-1)}>
-                Back
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+            </>
+          )}
 
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={handleAnalyzeByAI}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Analyzing..." : "Analyze by AI"}
+          </Button>
+
+          <Button
+            variant="contained"
+            color="warning"
+            size="large"
+            onClick={handleAnalyzeData}
+            disabled={dataLoading}
+          >
+            {dataLoading ? "Analyzing..." : "Analyze Data"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="info"
+            size="large"
+            onClick={handleOpenDetails}
+          >
+            View details
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="large"
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
+        </Box>
+      </Paper>
       {/* Details Dialog */}
       <Dialog open={detailsOpen} onClose={handleCloseDetails} fullWidth maxWidth="md">
         <DialogTitle>Report #{report.id} – Vehicle details</DialogTitle>
