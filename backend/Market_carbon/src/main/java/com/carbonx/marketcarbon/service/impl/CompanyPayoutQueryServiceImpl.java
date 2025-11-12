@@ -53,6 +53,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .minPayout(policy.getMinPayout())
                 .unitPricePerKwh(policy.getUnitPricePerKwh())
                 .unitPricePerCredit(policy.getUnitPricePerCredit())
+                .currency(policy.getCurrency())
                 .build();
     }
 
@@ -187,7 +188,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
             BigDecimal energy = aggregation.getEnergy().setScale(6, RoundingMode.HALF_UP);
             BigDecimal credits = aggregation.getCredits().setScale(6, RoundingMode.HALF_UP);
             BigDecimal payout = computePayout(energy, credits, formulaMode, pricePerCredit, kwhToCreditFactor, ownerSharePct, scale);
-            ownerViews.add(new OwnerPayoutView(aggregation, energy, credits, payout));
+            ownerViews.add(new OwnerPayoutView(aggregation, energy, credits, payout, ownerSharePct));
             grandTotalPayout = grandTotalPayout.add(payout);
             totalEnergy = totalEnergy.add(energy);
             totalCredits = totalCredits.add(credits);
@@ -202,10 +203,8 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         int toIndex = Math.min(fromIndex + size, totalOwners);
         List<OwnerPayoutView> pageSlice = ownerViews.subList(fromIndex, toIndex);
 
-        // THAY ĐỔI 1: Thay đổi kiểu của pageItems
-        // List<CompanyEVOwnerSummaryResponse> pageItems = pageSlice.stream() // <--- Dòng cũ
-        List<CompanyPayoutSummaryItemResponse> pageItems = pageSlice.stream() // <--- Dòng mới
-                .map(view -> view.toResponse(scale)) // Phương thức toResponse() cũng sẽ được sửa (ở bước 2)
+        List<CompanyPayoutSummaryItemResponse> pageItems = pageSlice.stream()
+                .map(view -> view.toResponse(scale))
                 .toList();
 
         BigDecimal pageTotalPayout = pageSlice.stream()
@@ -220,11 +219,11 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .pageNo(page)
                 .pageSize(size)
                 .totalPages(totalPages)
-                .items(pageItems) // <-- Dòng này (222:24) bây giờ đã HỢP LỆ
+                .items(pageItems)
                 .build();
 
         CompanyPayoutSummaryResponse summary = CompanyPayoutSummaryResponse.builder()
-                .items(pageItems) // <-- Dòng này bây giờ cũng HỢP LỆ
+                .items(pageItems)
                 .pageTotalPayout(pageTotalPayout)
                 .grandTotalPayout(grandTotalPayout.setScale(scale, RoundingMode.HALF_UP))
                 .totalEnergyKwh(totalEnergy.setScale(6, RoundingMode.HALF_UP))
@@ -233,8 +232,8 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 .build();
 
         return CompanyReportOwnersResponse.builder()
-                .page(pageResponse) // <-- Hợp lệ
-                .summary(summary)   // <-- Hợp lệ
+                .page(pageResponse)
+                .summary(summary)
                 .build();
     }
 
@@ -394,8 +393,11 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         if (override != null) {
             return override;
         }
-        // B2: mac dinh 100% chia cho chu xe
-        return BigDecimal.ONE;
+        Company company = requireCompanyAccess();
+        // B2: config  100% chia cho chu xe
+        ProfitSharingProperties.ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
+        return Optional.ofNullable(policy.getOwnerSharePct())
+                .orElse(BigDecimal.ZERO);
     }
 
     private BigDecimal resolveKwhToCreditFactor(BigDecimal override) {
@@ -515,18 +517,22 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         private final BigDecimal energy;
         private final BigDecimal credits;
         private final BigDecimal payout;
-
+        private final BigDecimal ownerSharePct;
         private OwnerPayoutView(OwnerAggregation aggregation,
                                 BigDecimal energy,
                                 BigDecimal credits,
-                                BigDecimal payout) {
+                                BigDecimal payout,
+                                BigDecimal ownerSharePct) {
             this.aggregation = aggregation;
             this.energy = energy;
             this.credits = credits;
             this.payout = payout;
+            this.ownerSharePct = ownerSharePct;
         }
-        // Dòng mới:
         private CompanyPayoutSummaryItemResponse toResponse(int payoutScale) {
+            BigDecimal creditAfterShare = credits.multiply(ownerSharePct)
+                    .setScale(6, RoundingMode.HALF_UP);
+
             return CompanyPayoutSummaryItemResponse.builder()
                     .ownerId(aggregation.getOwnerId())
                     .ownerName(aggregation.getOwnerName())
@@ -534,7 +540,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     .phone(aggregation.getPhone())
                     .vehiclesCount(aggregation.getVehiclesCount())
                     .energyKwh(energy)
-                    .credits(credits)
+                    .credits(creditAfterShare)
                     .amountUsd(payout.setScale(payoutScale, RoundingMode.HALF_UP))
                     .status("PREVIEW")
                     .build();
