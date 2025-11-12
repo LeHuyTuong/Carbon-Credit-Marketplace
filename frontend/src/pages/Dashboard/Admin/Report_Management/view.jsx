@@ -1,312 +1,393 @@
+import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  TextField,
-  Button,
-  Divider,
-  useTheme,
-  Grid
+    Box,
+    Typography,
+    CircularProgress,
+    Paper,
+    Button,
+    Snackbar,
+    Alert,
+    Grid,
+    useTheme,
+    TextField
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import { useEffect, useState } from "react";
+import Header from "@/components/Chart/Header";
 import { tokens } from "@/theme";
-import Header from "@/components/Chart/Header.jsx";
-import { approveReportByAdmin, getReportByIdAdmin } from "@/apiAdmin/reportAdmin.js";
-import { issueCredits } from "@/apiAdmin/creditAdmin.js";
-import { useSnackbar } from "@/hooks/useSnackbar.jsx";
+import { getReportByIdAdmin } from "@/apiAdmin/reportAdmin.js";
+import { getCompanyKYCProfile } from "@/apiAdmin/companyAdmin.js";
 
-const ViewReport = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const navigate = useNavigate();
-  const { id } = useParams();
+const ReportView = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    const [report, setReport] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: "",
+        severity: "success",
+    });
+    const [kyc, setKyc] = useState(null);
 
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [note, setNote] = useState("");
-  const { showSnackbar, SnackbarComponent } = useSnackbar();
+    useEffect(() => {
+        const fetchDetail = async () => {
+            try {
+                console.log("Fetching report ID:", id);
+                const res = await getReportByIdAdmin(id);
+                const data = res?.responseData || res;
+                console.log("Raw report API response:", data);
 
+                if (data && data.id) setReport(data);
+                else throw new Error("No valid data received");
+            } catch (error) {
+                console.error("Error fetching report detail:", error);
+                setSnackbar({
+                    open: true,
+                    message: "Failed to fetch report.",
+                    severity: "error",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDetail();
+    }, [id]);
 
-  //  State điều khiển hiển thị nút
-  const [approved, setApproved] = useState(false);
-  const [issued, setIssued] = useState(false);
+    // Load KYC Info của công ty
+    useEffect(() => {
+        if (report?.sellerId) {
+            (async () => {
+                try {
+                    const res = await getCompanyKYCProfile(report.sellerId);
+                    console.log("Raw KYC API response:", res);
 
-  useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        const res = await getReportByIdAdmin(id);
-        const data = res.response || res.responseData || res;
-        setReport(data);
+                    // thử lấy đúng field (responseData hoặc response)
+                    const data =
+                        res?.responseData || res?.response || res?.data || res;
 
-        //  Chuẩn hóa status
-        const status = data.status?.trim().toUpperCase();
-        console.log("Report status:", status);
-
-        //  Xử lý theo API thực tế
-        if (status === "ADMIN_APPROVED") setApproved(true);
-        if (status === "ISSUED") {
-          setApproved(true); // vì issued chỉ xảy ra sau khi approved
-          setIssued(true);
+                    console.log("Parsed KYC data:", data);
+                    if (data && Object.keys(data).length > 0) {
+                        setKyc(data);
+                    } else {
+                        console.warn("Empty KYC data received");
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch KYC info:", error);
+                    setSnackbar({
+                        open: true,
+                        message: "Failed to fetch company KYC profile.",
+                        severity: "error",
+                    });
+                }
+            })();
         }
-        if (status === "REJECTED") {
-          setApproved(false);
-          setIssued(false);
-        }
-        //test nếu sai
-        // const rawStatus = (data.status || "").trim().toUpperCase();
+    }, [report?.sellerId]);
 
-        // switch (rawStatus) {
-        //   case "ADMIN_APPROVED":
-        //     setApproved(true);
-        //     setIssued(false);
-        //     break;
-        //   case "ISSUED":
-        //     setApproved(true);
-        //     setIssued(true);
-        //     break;
-        //   case "REJECTED":
-        //     setApproved(false);
-        //     setIssued(false);
-        //     break;
-        //   default:
-        //     setApproved(false);
-        //     setIssued(false);
-        //     break;
-        // }
 
-      } catch (err) {
-        console.error("Error fetching report:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReport();
-  }, [id]);
 
-  const handleApproval = async (isApproved) => {
-    try {
-      const res = await approveReportByAdmin(id, isApproved, note);
-      setReport((prev) => ({
-        ...prev,
-        ...res.response,
-        status: isApproved ? "Approved" : "Rejected",
-      }));
 
-      showSnackbar(
-        "success",
-        isApproved
-          ? "Report approved successfully!"
-          : "Report rejected successfully!"
-      );
+    if (loading)
+        return (
+            <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="70vh"
+                sx={{ marginLeft: "290px" }}
+            >
+                <CircularProgress />
+            </Box>
+        );
 
-      if (isApproved) setApproved(true);
-    } catch (err) {
-      console.error("Approval error:", err);
-
-      const message =
-        err?.response?.data?.responseStatus?.responseDesc ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to update report status!";
-
-      showSnackbar("error", message);
-    }
-  };
-
-  const [issuing, setIssuing] = useState(false); // trạng thái đang cấp credit
-
-  const handleIssueCredit = async () => {
-    try {
-      setIssuing(true); // disable nút
-      showSnackbar("info", "Issuing credits... please wait (about 8 seconds)");
-      await issueCredits(id);
-      showSnackbar("success", "Credits issued successfully!");
-      setIssued(true); // ẩn nút vĩnh viễn sau khi cấp thành công
-
-      // Chuyển trang nhẹ sau 1s
-      setTimeout(() => {
-        navigate("/admin/credit_management");
-      }, 1000);
-    } catch (err) {
-      console.error("Issue credit error:", err);
-
-      const message =
-        err?.response?.data?.responseStatus?.responseDesc ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to issue credits!";
-      showSnackbar("error", message);
-    } finally {
-      // Không reset issuing nếu đã issued (để nút biến mất)
-      if (!issued) setIssuing(false);
-    }
-  };
-
-  if (loading) return <Typography m={3}>Loading...</Typography>;
-  if (!report) return <Typography m={3}>Report not found.</Typography>;
-
-  return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
-      <Header title="REPORT DETAILS" subtitle="Final approval for this report" />
-
-      <Paper
-        elevation={2}
-        sx={{
-          p: 4,
-          borderRadius: 3,
-          backgroundColor: colors.primary[400],
-          color: colors.grey[100],
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" mb={3}>
-          Report Information
-        </Typography>
-
-        <Grid container spacing={3} mb={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Report ID"
-              value={report.id}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Seller Name"
-              value={report.sellerName || ""}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Project Name"
-              value={report.projectName || ""}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Reporting Period"
-              value={report.period || ""}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Total Energy"
-              value={report.totalEnergy || 0}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Total CO₂"
-              value={report.totalCo2 || 0}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Vehicle Count"
-              value={report.vehicleCount || 0}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              label="Status"
-              value={report.status || ""}
-              fullWidth
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Admin Note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Enter note (required if rejecting)"
-            />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3, borderColor: colors.grey[700] }} />
-
-        {/* Buttons */}
-        <Box display="flex" justifyContent="space-between" mt={3}>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/admin/report_management")}
-            sx={{
-              borderColor: colors.blueAccent[400],
-              color: colors.blueAccent[400],
-              textTransform: "none",
-            }}
-          >
-            Back to List
-          </Button>
-
-          <Box display="flex" gap={2}>
-            {/* Khi chưa duyệt thì hiện 2 nút Approve/Reject */}
-            {!approved && !issued && (
-              <>
+    if (!report)
+        return (
+            <Box textAlign="center" sx={{ marginLeft: "290px" }} mt={5}>
+                <Typography variant="h6" color="error">
+                    Report not found.
+                </Typography>
                 <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<CheckCircleOutlineIcon />}
-                  onClick={() => handleApproval(true)}
-                  sx={{ textTransform: "none" }}
+                    onClick={() => navigate("/admin/report_management")}
+                    variant="contained"
+                    sx={{ mt: 2 }}
                 >
-                  Approved
+                    Back
                 </Button>
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<CancelOutlinedIcon />}
-                  onClick={() => handleApproval(false)}
-                  sx={{ textTransform: "none" }}
-                >
-                  Rejected
-                </Button>
-              </>
-            )}
+            </Box>
+        );
 
-            {/* Khi đã approved thì hiện Issue Credit */}
-            {approved && !issued && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleIssueCredit}
-                disabled={issuing}
-                sx={{ textTransform: "none" }}
-              >
-                {issuing ? "Processing..." : "Issue Credit"}
-              </Button>
-            )}
+    return (
+        <Box
+            m="20px"
+            sx={{ marginLeft: "290px", maxWidth: "1400px", width: "100%" }}
+        >
+            <Header
+                title="REPORT DETAIL"
+                subtitle={`Detailed information of report ID: ${report.id}`}
+            />
 
-          </Box>
+            <Paper
+                elevation={3}
+                sx={{
+                    p: 3,
+                    mt: 3,
+                    backgroundColor: colors.primary[400],
+                }}
+            >
+                <Grid container spacing={13}>
+                    {/* COLUMN 1: General Info */}
+                    <Grid item xs={12} md={4}>
+                        <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+                            General Info
+                        </Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Project Name:
+                        </Typography>
+                         <TextField
+                            value={report.projectName || "N/A"}
+                            multiline
+                            fullWidth
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            inputProps={{ style: { cursor: "pointer" } }}
+                            variant="outlined"
+                            size="small"
+                            minRows={3.5}
+                            sx={{
+                                mb: 2,
+                                backgroundColor: "rgba(255,255,255,0.08)",
+                                borderRadius: "8px",
+                                "& .MuiInputBase-input.Mui-disabled": {
+                                    WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                                },
+                            }}
+                        />
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Seller Company Name:
+                        </Typography>
+                        <Typography mb={2}>{report.sellerName || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Period:
+                        </Typography>
+                        <Typography mb={2}>{report.period || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Status:
+                        </Typography>
+                        <Typography mb={2}>{report.status || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Source:
+                        </Typography>
+                        <Typography mb={2}>{report.source || "N/A"}</Typography>
+
+                        {/* Document Section */}
+                        <Box mt={2}>
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Uploaded File:
+                            </Typography>
+                            {report.uploadStorageUrl ? (
+                                <Button
+                                    variant="contained"
+                                    color="info"
+                                    size="small"
+                                    onClick={() => window.open(report.uploadStorageUrl, "_blank")}
+                                >
+                                    View Uploaded File
+                                </Button>
+                            ) : (
+                                <Typography>No file uploaded</Typography>
+                            )}
+                        </Box>
+                    </Grid>
+
+                    {/* COLUMN 2: Company KYC Info */}
+                    {kyc && (
+                        <Grid item xs={12} md={4}>
+                            <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+                                Company Registration
+                            </Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                ID:
+                            </Typography>
+                            <Typography mb={2}>{kyc.id || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Company Name:
+                            </Typography>
+                            <Typography mb={2}>{kyc.companyName || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Tax Code:
+                            </Typography>
+                            <Typography mb={2}>{kyc.taxCode || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Business License:
+                            </Typography>
+                            <Typography mb={2}>{kyc.businessLicense || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Address:
+                            </Typography>
+                            <Typography mb={2}>{kyc.address || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Created At:
+                            </Typography>
+                            <Typography mb={2}>{new Date(kyc.createAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Update At:
+                            </Typography>
+                            <Typography mb={2}>{new Date(kyc.updatedAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+                        </Grid>
+                    )}
+
+                    {/* COLUMN 3: Energy & CO2 Info */}
+                    <Grid item xs={12} md={4}>
+                        <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+                            Energy & CO₂ Info
+                        </Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Total Energy:
+                        </Typography>
+                        <Typography mb={2}>{report.totalEnergy?.toLocaleString() || 0}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Total CO₂:
+                        </Typography>
+                        <Typography mb={2}>{report.totalCo2?.toLocaleString() || 0}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Vehicle Count:
+                        </Typography>
+                        <Typography mb={2}>{report.vehicleCount || 0}</Typography>
+
+
+                    </Grid>
+
+                    {/* COLUMN 4: Verification & Admin Info */}
+                    <Grid item xs={12} md={4} sx={{
+                        flexBasis: "30%",     // chiếm 40% chiều ngang container
+                        maxWidth: "30%",      // giới hạn chiều rộng
+                    }}>
+                        <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+                            Verification & Admin
+                        </Typography>
+
+                        {/* <Typography variant="h6" fontWeight="600" gutterBottom>
+                            AI Pre Score:
+                        </Typography>
+                        <Typography mb={2}>{report.aiPreScore || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            AI Pre Notes:
+                        </Typography>
+                        <Typography mb={2}>{report.aiPreNotes || "N/A"}</Typography> */}
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Verification Score:
+                        </Typography>
+                        <Typography mb={2}>{report.verificationScore || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Verified By:
+                        </Typography>
+                        <Typography mb={2}>{report.verifiedByCvaName || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Verified At:
+                        </Typography>
+                        <Typography mb={2}>
+                            {report.verifiedAt
+                                ? new Date(report.verifiedAt).toLocaleString("vi-VN")
+                                : "N/A"}
+                        </Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Admin Comment:
+                        </Typography>
+                        <TextField
+                            value={report.adminComment || "N/A"}
+                            multiline
+                            fullWidth
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            inputProps={{ style: { cursor: "pointer" } }}
+                            variant="outlined"
+                            size="small"
+                            minRows={3.5}
+                            sx={{
+                                mb: 2,
+                                backgroundColor: "rgba(255,255,255,0.08)",
+                                borderRadius: "8px",
+                                "& .MuiInputBase-input.Mui-disabled": {
+                                    WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                                },
+                            }}
+                        />
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Approved By:
+                        </Typography>
+                        <Typography mb={2}>{report.adminApprovedByName || "N/A"}</Typography>
+
+                        <Typography variant="h6" fontWeight="600" gutterBottom>
+                            Approved At:
+                        </Typography>
+                        <Typography mb={2}>
+                            {report.approvedAt
+                                ? new Date(report.approvedAt).toLocaleString("vi-VN")
+                                : "N/A"}
+                        </Typography>
+                    </Grid>
+                </Grid>
+
+
+
+                {/* Action Buttons */}
+                <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
+                    <Button
+                        variant="outlined"
+                        color="info"
+                        onClick={() => navigate("/admin/report_management")}
+                        sx={{ fontWeight: 600 }}
+                    >
+                        Back
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => navigate(`/admin/edit_report/${report.id}`)}
+                        sx={{ fontWeight: 600 }}
+                    >
+                        Edit
+                    </Button>
+                </Box>
+            </Paper>
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert severity={snackbar.severity} variant="filled">
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
-      </Paper>
-
-      {/* Snackbar */}
-      {SnackbarComponent}
-    </Box>
-  );
+    );
 };
 
-export default ViewReport;
+export default ReportView;

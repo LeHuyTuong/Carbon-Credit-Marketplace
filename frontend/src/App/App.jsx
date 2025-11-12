@@ -62,6 +62,7 @@ import AdminApp from "./AdminApp.jsx";
 //  import AdminApp
 import CVAApp from "./CVAApp.jsx";
 import EvOwnersList from "../pages/Dashboard/Company/EVOwners/EVOwnersList.jsx";
+import PayoutOwnerDetail from "../pages/Dashboard/Company/PayoutOwner/PayoutOwnerDetail.jsx";
 
 function Layout() {
   return (
@@ -171,6 +172,15 @@ export default function App() {
         <Route path="/wallet/credits/:id" element={<CreditBatchDetail />} />
         <Route path="/retired-history" element={<RetiredHistory />} />
         <Route path="/list-EVOwners" element={<EvOwnersList />} />
+        <Route
+          path="/payout/preview/:reportId"
+          element={<PayoutOwnerDetail />}
+        />
+        <Route
+          path="/payout/review/:distributionId"
+          element={<PayoutOwnerDetail />}
+        />
+
         <Route
           path="/view-registered-project/:id"
           element={<ViewRegisteredProject />}

@@ -135,7 +135,7 @@ export default function ListCredits() {
         id: item.listingId,
         title: item.projectTitle || "Unnamed Project",
         price: item.pricePerCredit,
-        totalPrice: item.totalPrice,
+        totalPrice: item.pricePerCredit * item.originalQuantity,
         listedQuantity: item.originalQuantity,
         soldQuantity: item.soldQuantity,
         availableQuantity: item.quantity,

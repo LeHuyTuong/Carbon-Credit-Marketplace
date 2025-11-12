@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { Container, Table, Accordion, Spinner } from "react-bootstrap";
+import { Container, Table, Accordion, Spinner, Button } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
+import { FaArrowLeft } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export default function EVOwnerList() {
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const nav = useNavigate();
   //gọi API để lấy danh sách tổng hợp xe của công ty
   const fetchCompanySummary = async () => {
     try {
@@ -36,9 +38,26 @@ export default function EVOwnerList() {
 
   return (
     <div className="auth-hero min-vh-100 py-4">
+      {/* nút quay lại trang Home */}
+      <Button
+        variant="outline-info"
+        size="sm"
+        className="position-fixed top-0 start-0 m-3 px-3 py-2 d-flex align-items-center gap-2 fw-semibold shadow-sm"
+        style={{
+          borderRadius: "10px",
+          background: "rgba(255, 255, 255, 0.85)",
+          backdropFilter: "blur(6px)",
+          zIndex: 20,
+        }}
+        onClick={() => nav("/home")}
+      >
+        <FaArrowLeft /> Back to Home
+      </Button>
       <Container>
         {/*tiêu đề trang */}
-        <h1 className="text-light fw-bold mb-2">EV Owners & Vehicle Summary</h1>
+        <h1 className="text-light fw-bold mb-2 mt-5">
+          EV Owners & Vehicle Summary
+        </h1>
         <p className="text-light mb-4">
           Overview of all EV owners under this company and their registered
           vehicles.
@@ -77,6 +96,7 @@ export default function EVOwnerList() {
                         <th>Plate Number</th>
                         <th>Brand</th>
                         <th>Model</th>
+                        <th>Document File</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -87,6 +107,23 @@ export default function EVOwnerList() {
                           <td>{v.plateNumber}</td>
                           <td>{v.brand}</td>
                           <td>{v.model}</td>
+                          <td>
+                            {v.documentFile ? (
+                              <a
+                                href={v.documentFile}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={v.documentFile}
+                                  alt="doc"
+                                  style={{ width: "60px", borderRadius: "4px" }}
+                                />
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
