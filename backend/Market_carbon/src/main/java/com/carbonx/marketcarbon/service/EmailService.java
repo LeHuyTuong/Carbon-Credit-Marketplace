@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface EmailService {
 
-    public void sendEmail(String subject, String content, List<String> toList) throws MessagingException,
+    void sendEmail(String subject, String content, List<String> toList) throws MessagingException,
             UnsupportedEncodingException;
     String renderCvaDecisionEmail(Map<String, Object> variables);
     String renderAdminDecisionEmail(Map<String, Object> variables);
@@ -25,6 +25,9 @@ public interface EmailService {
     String renderWithdrawalFailedEmail(Map<String, Object> variables);
     String renderReportCvaDecisionEmail(Map<String, Object> vars);
     String renderReportAdminDecisionEmail(Map<String, Object> vars);
+
+    String renderPayoutSuccessEmail(Map<String, Object> variables);
+    String renderPayoutSummaryEmail(Map<String, Object> variables);
 
     void sendPayoutSuccessToOwner(String toEmail,
                                   String ownerName,
@@ -57,5 +60,3 @@ public interface EmailService {
                             BigDecimal amountUsd) {
     }
 }
-
-
