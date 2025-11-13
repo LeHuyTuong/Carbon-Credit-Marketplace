@@ -93,7 +93,7 @@ const ApplicationView = () => {
 
       <Paper
         sx={{
-          p: 4,
+          p: 2,
           mt: 3,
           borderRadius: 3,
           boxShadow: 4,
@@ -109,7 +109,7 @@ const ApplicationView = () => {
         </Typography>
         <Divider sx={{ mb: 3 }} />
 
-        <Grid container spacing={10}>
+        <Grid container spacing={19}>
           <Grid item xs={12} sm={6}>
             <Typography sx={{ fontSize: "1rem" }}><b>Project Title:</b> {application.projectTitle || "Untitled Project"}</Typography>
             <Typography sx={{ fontSize: "1rem" }}><b>Project ID:</b> {application.projectId || "—"}</Typography>
