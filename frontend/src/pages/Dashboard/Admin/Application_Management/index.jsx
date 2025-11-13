@@ -77,7 +77,7 @@ const ApplicationList = () => {
               textTransform: "capitalize",
               padding: "4px 10px",
               borderRadius: "6px",
-              fontSize: "0.9rem",
+              fontSize: "0.8rem",
             }}
           >
             {value}
@@ -142,14 +142,17 @@ const ApplicationList = () => {
   ];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
+    <Box m="20px" sx={{ marginLeft: "290px",
+      marginTop: "8px",  
+      marginRight: "20px",
+      marginBottom: "20px", }} className="actionadmin">
       <Header
         title="APPLICATIONS"
         subtitle="List of Submitted Project Applications"
       />
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="70vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-cell": { borderBottom: "none" },

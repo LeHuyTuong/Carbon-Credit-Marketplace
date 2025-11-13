@@ -86,7 +86,7 @@ const EVList = () => {
 
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="69vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-cell": { borderBottom: "none" },

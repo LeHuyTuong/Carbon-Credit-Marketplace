@@ -418,8 +418,14 @@ const checkoutSchema = yup.object().shape({
     .matches(dateRegex, "Start date must be in dd/mm/yyyy format"),
   endDate: yup
     .string()
-    .required("End date is required")
-    .matches(dateRegex, "End date must be in dd/mm/yyyy format"),
+    .nullable()
+    .notRequired()
+    .test(
+      "is-valid-date-format",
+      "End date must be in dd/mm/yyyy format",
+      (value) => !value || dateRegex.test(value)
+    ),
+
 });
 
 const initialValues = {

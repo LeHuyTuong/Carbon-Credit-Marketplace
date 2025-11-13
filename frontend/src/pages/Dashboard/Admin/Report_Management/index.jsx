@@ -144,7 +144,7 @@ const ReportsList = () => {
       <Header title="REPORTS" subtitle="List of all submitted reports" />
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="69vh"
         sx={{
           "& .MuiDataGrid-root": {
             border: "none",

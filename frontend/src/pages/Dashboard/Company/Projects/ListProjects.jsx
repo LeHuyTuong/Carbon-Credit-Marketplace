@@ -17,6 +17,7 @@ export default function ListProjects() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  // Hàm fetch danh sách project user đã đăng ký
   const fetchMyApplications = async () => {
     setLoading(true);
     try {
@@ -24,9 +25,11 @@ export default function ListProjects() {
         method: "GET",
       });
 
+      // Chuẩn hóa response code
       const code =
         res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
 
+      // Be dùng hai dạng mã thành công nên cần kiểm tra cả hai
       if (code !== "SUCCESS" && code !== "00000000") {
         throw new Error(
           res?.responseStatus?.responseMessage ||
@@ -34,6 +37,7 @@ export default function ListProjects() {
         );
       }
 
+      // Lấy dữ liệu trả về (mảng các project đã đăng ký)
       const data = res?.response || [];
       setApplications(data);
       setRequestDateTime(res?.requestDateTime || new Date().toISOString()); //lưu request time
@@ -45,10 +49,12 @@ export default function ListProjects() {
     }
   };
 
+  // Fetch dữ liệu khi component mount
   useEffect(() => {
     fetchMyApplications();
   }, []);
 
+  // Điều hướng đến trang chi tiết của từng project
   const handleView = (applicationId) => {
     nav(`/view-registered-project/${applicationId}`);
   };
@@ -81,6 +87,7 @@ export default function ListProjects() {
           marginTop: "4rem",
         }}
       >
+        {/* Header gồm tiêu đề và nút đăng ký dự án mới */}
         <div className="d-flex justify-content-between align-items-center mb-5">
           <h2 className="fw-bold text-white mb-0 text-shadow">
             Your Projects Registered
@@ -99,6 +106,7 @@ export default function ListProjects() {
           </Button>
         </div>
 
+        {/* Khung chứa danh sách các project đã đăng ký */}
         <Card
           className="shadow-lg border-0 p-3"
           style={{
@@ -107,11 +115,13 @@ export default function ListProjects() {
             backdropFilter: "blur(10px)",
           }}
         >
+          {/* Trạng thái đang tải */}
           {loading ? (
             <div className="d-flex justify-content-center align-items-center py-5">
               <Spinner animation="border" />
             </div>
           ) : applications.length === 0 ? (
+            // Trường hợp user chưa đăng ký dự án nào
             <div className="text-center py-5">
               <h5>No registered projects yet</h5>
               <p className="text-muted mb-0">
@@ -119,6 +129,7 @@ export default function ListProjects() {
               </p>
             </div>
           ) : (
+            // Hiển thị dữ liệu dưới dạng bảng có phân trang
             <Table hover responsive className="align-middle mb-0">
               <thead className="table-light">
                 <tr>

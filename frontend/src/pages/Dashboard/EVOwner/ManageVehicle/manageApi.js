@@ -1,21 +1,19 @@
 import { apiFetch } from "../../../../utils/apiFetch";
 
-const buildRequestBody = (data) => ({
-  requestTrace: crypto.randomUUID(),
-  requestDateTime: new Date().toISOString(),
-  data,
-});
-
+//Lấy danh sách công ty đã được admin phê duyệt
 export const getApprovedCompanies = async () => {
   const res = await apiFetch("/api/v1/project-applications", { method: "GET" });
+  // Lọc các project có status ADMIN_APPROVED
   const approved = (res.response || []).filter(
     (item) => item.status?.toUpperCase() === "ADMIN_APPROVED"
   );
 
+  // Loại trùng bằng Map: mỗi key là companyId
   const uniqueCompanies = Array.from(
     new Map(approved.map((c) => [c.companyId, c])).values()
   );
 
+  // Chuẩn hóa format trả ra: {id, name}
   let companies = uniqueCompanies.map((c) => ({
     id: c.companyId,
     name: c.companyName,
@@ -23,11 +21,12 @@ export const getApprovedCompanies = async () => {
   return companies;
 };
 
-
+//lấy danh sách xe của user
 export const getVehicles = async () => {
   return await apiFetch("/api/v1/vehicles", { method: "GET"});
 };
 
+//tạo mới xe
 export const createVehicle = async (data) => {
   const formData = new FormData();
   formData.append("plateNumber", data.plateNumber);
@@ -35,6 +34,7 @@ export const createVehicle = async (data) => {
   formData.append("model", data.model);
   formData.append("companyId", data.companyId);
 
+  // File upload (nếu có)
   if (data.documentFile) {
     formData.append("documentFile", data.documentFile);
   }
@@ -45,6 +45,7 @@ export const createVehicle = async (data) => {
   });
 };
 
+//Cập nhật xe theo ID
 export const updateVehicle = async (id, data) => {
   const formData = new FormData();
   formData.append("plateNumber", data.plateNumber);
@@ -62,6 +63,7 @@ export const updateVehicle = async (id, data) => {
   });
 };
 
+//Xóa xe
 export const deleteVehicle = async (id) => {
   return await apiFetch(`/api/v1/vehicles/${id}`, {
     method: "DELETE",

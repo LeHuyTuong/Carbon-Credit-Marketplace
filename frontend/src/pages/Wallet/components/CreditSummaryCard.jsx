@@ -14,10 +14,10 @@ export default function CreditSummaryCard({ summary }) {
 
   // định nghĩa danh sách các loại credit cần hiển thị trên thẻ
   const items = [
-    { label: "Total", value: summary.total || 0, color: "#ffb1b1ff" },
     { label: "Issued", value: summary.issued || 0, color: "#00ffc8" },
     { label: "Available", value: summary.available || 0, color: "#1bb7cf" },
     { label: "Retired", value: summary.retired || 0, color: "#c484d4" },
+    { label: "Buyed", value: summary.buyed || 0, color: "#ffb1b1ff" },
     {
       label: "Listed",
       value: `${listedCount}`,

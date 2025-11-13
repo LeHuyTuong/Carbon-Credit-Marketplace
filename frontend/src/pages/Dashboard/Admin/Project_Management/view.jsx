@@ -337,7 +337,7 @@ const ViewProject = () => {
                       ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
                         "DD/MM/YYYY"
                       )
-                      : "—"}
+                      : "indefinitely"}
                   </Typography>
                 )}
               </Box>

@@ -20,10 +20,11 @@ export default function PaginatedList({
           useGrid ? "paginated-grid" : "row g-4 justify-content-center"
         }
       >
+        {/* renderItem được truyền từ component cha để tùy biến giao diện của mỗi item */}
         {currentItems.map(renderItem)}
       </div>
 
-      {/* Thanh phân trang */}
+      {/* Thanh phân trang: chỉ hiển thị nếu tổng số trang > 1 */}
       {totalPages > 1 && (
         <div
           className="d-flex justify-content-center align-items-center mt-4"
@@ -40,10 +41,12 @@ export default function PaginatedList({
               justifyContent: "center",
             }}
           >
+            {/* Nút về trang trước */}
             <Pagination.Prev
               disabled={currentPage === 1}
               onClick={() => goToPage(currentPage - 1)}
             />
+            {/* Sinh các nút cho từng trang */}
             {Array.from({ length: totalPages }, (_, i) => (
               <Pagination.Item
                 key={i + 1}
@@ -58,6 +61,7 @@ export default function PaginatedList({
                 {i + 1}
               </Pagination.Item>
             ))}
+            {/* Nút sang trang kế tiếp */}
             <Pagination.Next
               disabled={currentPage === totalPages}
               onClick={() => goToPage(currentPage + 1)}

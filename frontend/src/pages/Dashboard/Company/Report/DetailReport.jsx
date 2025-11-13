@@ -14,13 +14,14 @@ import { FaArrowLeft } from "react-icons/fa";
 import useReveal from "../../../../hooks/useReveal";
 
 export default function ReportDetail() {
-  const { id } = useParams();
+  const { id } = useParams(); // Lấy ID report từ URL
   const nav = useNavigate();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  // Gọi API lấy chi tiết report
   useEffect(() => {
     const fetchDetail = async () => {
       try {
@@ -44,6 +45,7 @@ export default function ReportDetail() {
     fetchDetail();
   }, [id]);
 
+  // Màn hình trong lúc loading
   if (loading)
     return (
       <div ref={sectionRef} className="reveal min-vh-100">
@@ -55,6 +57,7 @@ export default function ReportDetail() {
       </div>
     );
 
+  // Nếu không có report
   if (!report)
     return (
       <Container className="mt-5 text-center">
@@ -84,6 +87,7 @@ export default function ReportDetail() {
           <FaArrowLeft /> Back to Report
         </Button>
 
+        {/* Khung hiển thị chi tiết report */}
         <Card
           className="shadow-lg border-0 p-3"
           style={{
@@ -96,6 +100,7 @@ export default function ReportDetail() {
           <Card.Body>
             <h3 className="fw-bold mb-3">Detail Report</h3>
             <Row className="g-3">
+              {/* Cột trái: các thông tin chính */}
               <Col md={6}>
                 <p
                   className="mb-3"
@@ -134,6 +139,7 @@ export default function ReportDetail() {
                   <strong>Vehicles:</strong> {report.vehicleCount} vehicles
                 </p>
               </Col>
+              {/* Cột phải: trạng thái, file upload, metadata */}
               <Col md={6}>
                 <p
                   className="mb-3"
