@@ -334,6 +334,7 @@ function VehicleModal({
     fetchCompanies();
   }, []);
 
+  //giải phóng preview URL khi unmount
   useEffect(() => {
     return () => {
       if (preview) {
@@ -342,6 +343,7 @@ function VehicleModal({
     };
   }, [preview]);
 
+  //reset preview khi đóng modal
   useEffect(() => {
     if (!show) setPreview(null);
   }, [show]);

@@ -8,19 +8,27 @@ import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import formulaImg from "/src/assets/formula.jpeg";
 
+// Schema validate
 const schema = Yup.object().shape({
   projectId: Yup.number().required("Please select a project."),
   reportId: Yup.number().required("Please select an approved report."),
 });
 
 export default function ShareProfit({ show, onHide, initialData }) {
-  const { fetchApprovedProjects, fetchApprovedReports, shareProfit } =
-    useWalletData();
+  const {
+    fetchApprovedProjects,
+    fetchApprovedReports,
+    shareProfit,
+    fetchWallet,
+  } = useWalletData();
 
+  // State lưu dự án, báo cáo, tổng hợp payout, công thức tính
   const [projects, setProjects] = useState([]);
   const [reports, setReports] = useState([]);
   const [summary, setSummary] = useState(initialData?.summary || null);
   const [formula, setFormula] = useState(null);
+
+  // State cho UI
   const [loading, setLoading] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [showFormulaImg, setShowFormulaImg] = useState(false);
@@ -32,8 +40,10 @@ export default function ShareProfit({ show, onHide, initialData }) {
     (async () => {
       try {
         setLoading(true);
+        // Lấy danh sách dự án đã được duyệt
         const projectList = await fetchApprovedProjects();
         setProjects(projectList);
+        // Lấy công thức tính giá payout
         const f = await apiFetch("/api/v1/companies/payout-formula", {
           method: "GET",
         });
@@ -47,18 +57,21 @@ export default function ShareProfit({ show, onHide, initialData }) {
     })();
   }, [show]);
 
+  // Gán lại summary nếu modal mở lại hoặc có initialData
   useEffect(() => {
     if (show && initialData?.summary) {
       setSummary(initialData.summary);
     }
   }, [show, initialData]);
 
+  // Reset danh sách report khi modal đóng
   useEffect(() => {
     if (!show) {
       setReports([]);
     }
   }, [show]);
 
+  // Hàm preview chi tiết tính toán payout của report
   const handlePreview = async (reportId) => {
     try {
       setPreviewing(true);
@@ -84,6 +97,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
 
       <Modal.Body>
         {loading ? (
+          // Hiển thị spinner trong khi tải dữ liệu ban đầu
           <div className="text-center py-5">
             <Spinner animation="border" />
           </div>
@@ -98,19 +112,35 @@ export default function ShareProfit({ show, onHide, initialData }) {
             onSubmit={async (values, { setSubmitting }) => {
               try {
                 setSubmitting(true);
+
+                // 1. Lấy wallet balance mới nhất
+                const wallet = await fetchWallet();
+                const balance = wallet?.balance || 0;
+
+                // 2. Lấy số tiền cần trả
+                const required = summary?.grandTotalPayout || 0;
+
+                // 3. So sánh
+                if (balance < required) {
+                  toast.error(`Insufficient balance to process the payout`);
+                  setSubmitting(false);
+                  return; // Dừng không cho chạy tiếp
+                }
+
+                // 4. Nếu đủ tiền → thực hiện payout
                 const res = await shareProfit({
                   projectId: Number(values.projectId),
                   emissionReportId: Number(values.reportId),
                 });
 
                 if (res?.responseCode === "200" || res?.responseCode === "OK") {
-                  toast.success("Payout executed successfully.");
+                  toast.success("Payout successfully.");
                   onHide();
                 } else {
                   toast.error(res?.responseMessage || "Payout failed.");
                 }
               } catch (err) {
-                toast.error(err.message || "Unexpected error.");
+                toast.error(err.message || "Unknown error.");
               } finally {
                 setSubmitting(false);
               }
@@ -126,6 +156,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
               setFieldValue,
               ...rest
             }) => {
+              // Khi mở modal bằng initialData thì load danh sách báo cáo của project đó
               useEffect(() => {
                 if (initialData?.projectId && show) {
                   (async () => {
