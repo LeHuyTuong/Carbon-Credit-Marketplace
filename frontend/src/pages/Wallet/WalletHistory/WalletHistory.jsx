@@ -191,10 +191,9 @@ export default function WalletHistory() {
                         (() => {
                           //tìm pattern "(distribution id)" trong description
                           const match = tx.description?.match(
-                            /\(distribution\s+#(\d+)\)/i
+                            /distribution\s+#(\d+)/i
                           );
                           const distId = match ? match[1] : null;
-
                           return (
                             distId && (
                               <Button

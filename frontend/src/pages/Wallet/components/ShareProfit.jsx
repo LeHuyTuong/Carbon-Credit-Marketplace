@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import useWalletData from "./useWalletData";
 import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
+import formulaImg from "/src/assets/formula.jpeg";
 
 const schema = Yup.object().shape({
   projectId: Yup.number().required("Please select a project."),
@@ -241,8 +242,8 @@ export default function ShareProfit({ show, onHide, initialData }) {
 
                           <div className="text-center mb-2">
                             <img
-                              src="/src/assets/formula.jpeg"
-                              alt="Carbon Credit Formula"
+                              src={formulaImg}
+                              alt="Formula"
                               style={{
                                 width: "95%",
                                 borderRadius: "6px",
