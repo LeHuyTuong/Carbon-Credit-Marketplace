@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.service;
 import com.carbonx.marketcarbon.dto.response.WalletResponse;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.PaymentOrder;
+import com.carbonx.marketcarbon.model.ProfitDistribution;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import jakarta.transaction.Transactional;
@@ -33,5 +34,7 @@ public interface WalletService {
             BigDecimal amount,
             String type,
             String debitDescription,
-            String creditDescription
-    ) throws WalletException;    }
+            String creditDescription,
+            ProfitDistribution distribution
+    ) throws WalletException;
+}

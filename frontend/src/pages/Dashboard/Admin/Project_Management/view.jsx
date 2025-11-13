@@ -166,7 +166,7 @@ const ViewProject = () => {
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
-            spacing={3} // tăng khoảng cách giữa các cột
+            spacing={10} // khoảng cách giữa các cột
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
@@ -180,20 +180,23 @@ const ViewProject = () => {
               },
             }}
           >
-            {/* COLUMN 1  */}
-            <Grid item xs={12} md={4} sx={{ minWidth: 0 }}>
+            {/* COLUMN 1 */}
+            <Grid item xs={12} md={4} sx={{
+              flexBasis: "30%",     // chiếm 30% chiều ngang container
+              maxWidth: "30%",      // giới hạn chiều rộng
+            }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 General Info
               </Typography>
 
-              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 65 }}>
+              <Box mb={1}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project ID:
                 </Typography>
-                <Typography mb={2}>{formData.projectid}</Typography>
+                <Typography>{formData.projectid}</Typography>
               </Box>
 
-              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 100 }}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project Name:
                 </Typography>
@@ -207,70 +210,119 @@ const ViewProject = () => {
                     onChange={handleChange}
                   />
                 ) : (
-                  <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                    {formData.projectname}
-                  </Typography>
+                  <TextField
+                    value={formData.projectname || "N/A"}
+                    multiline
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    inputProps={{ style: { cursor: "pointer" } }}
+                    variant="outlined"
+                    size="small"
+                    minRows={1}
+                    sx={{
+                      mb: 2,
+                      backgroundColor: "rgba(255,255,255,0.08)",
+                      borderRadius: "8px",
+                      "& .MuiInputBase-input.Mui-disabled": {
+                        WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                      },
+                    }}
+                  />
                 )}
               </Box>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Description:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  name="shortdescription"
-                  value={formData.shortdescription}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                />
-              ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap",overflowWrap: "break-word", }}>
-                  {formData.shortdescription || "—"}
+              <Box mb={0.5}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Description:
                 </Typography>
-              )}
+                {isEditing ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    name="shortdescription"
+                    value={formData.shortdescription}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <TextField
+                    value={formData.shortdescription || "N/A"}
+                    multiline
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    inputProps={{ style: { cursor: "pointer" } }}
+                    variant="outlined"
+                    size="small"
+                    minRows={2}
+                    sx={{
+                      mb: 2,
+                      backgroundColor: "rgba(255,255,255,0.08)",
+                      borderRadius: "8px",
+                      "& .MuiInputBase-input.Mui-disabled": {
+                        WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                      },
+                    }}
+                  />
+                )}
+              </Box>
             </Grid>
 
-            {/* COLUMN 2  */}
-            <Grid item xs={12} md={4}>
+            {/* COLUMN 2 */}
+            <Grid item xs={12} md={4} sx={{
+              flexBasis: "30%",     // chiếm 30% chiều ngang container
+              maxWidth: "30%",      // giới hạn chiều rộng
+            }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 Technical Info
               </Typography>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Started Date:
-              </Typography>
-              {isEditing ? (
-                <DatePicker
-                  format="DD/MM/YYYY"
-                  value={formData.starteddate ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
-                  onChange={(date) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      starteddate: date ? date.format("DD/MM/YYYY") : "",
-                    }))
-                  }
-                  sx={{ width: "100%" }}
-                />
-
-              ) : (
-                <Typography mb={2}>
-                  {formData.starteddate
-                    ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
-                    : "—"}
+              <Box mb={2}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Started Date:
                 </Typography>
-              )}
+                {isEditing ? (
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={
+                      formData.starteddate
+                        ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"])
+                        : null
+                    }
+                    onChange={(date) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        starteddate: date ? date.format("DD/MM/YYYY") : "",
+                      }))
+                    }
+                    sx={{ width: "100%" }}
+                  />
+                ) : (
+                  <Typography>
+                    {formData.starteddate
+                      ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
+                        "DD/MM/YYYY"
+                      )
+                      : "—"}
+                  </Typography>
+                )}
+              </Box>
 
-              <Box mb={2} display="flex" flexDirection="column" justifyContent="space-between" sx={{ minHeight: 60 }}>
+              <Box mb={4}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   End Date:
                 </Typography>
                 {isEditing ? (
                   <DatePicker
                     format="DD/MM/YYYY"
-                    value={formData.enddate ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]) : null}
+                    value={
+                      formData.enddate
+                        ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"])
+                        : null
+                    }
                     onChange={(date) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -279,125 +331,90 @@ const ViewProject = () => {
                     }
                     sx={{ width: "100%" }}
                   />
-
                 ) : (
-                  <Typography mb={2}>
+                  <Typography>
                     {formData.enddate
-                      ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("DD/MM/YYYY")
+                      ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
+                        "DD/MM/YYYY"
+                      )
                       : "—"}
                   </Typography>
                 )}
               </Box>
 
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Measurement Method:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  name="measurementmethod"
-                  value={formData.measurementmethod}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                />
-
-              ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                  {formData.measurementmethod || "—"}
-                </Typography>
+              {/* Các field khác */}
+              {["measurementmethod", "commitments", "technicalIndicators"].map(
+                (field) => (
+                  <Box key={field} mb={0.5}>
+                    <Typography variant="h6" fontWeight="600" gutterBottom>
+                      {field
+                        .replace(/([A-Z])/g, " $1")
+                        .replace(/^./, (str) => str.toUpperCase())}
+                      :
+                    </Typography>
+                    {isEditing ? (
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleChange}
+                      />
+                    ) : (
+                      <TextField
+                        value={formData[field] || "N/A"}
+                        multiline
+                        fullWidth
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                        inputProps={{ style: { cursor: "pointer" } }}
+                        variant="outlined"
+                        size="small"
+                        minRows={2}
+                        sx={{
+                          mb: 2,
+                          backgroundColor: "rgba(255,255,255,0.08)",
+                          borderRadius: "8px",
+                          "& .MuiInputBase-input.Mui-disabled": {
+                            WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                          },
+                        }}
+                      />
+                    )}
+                  </Box>
+                )
               )}
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Commitments:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  name="commitments"
-                  value={formData.commitments}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                />
-              ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                  {formData.commitments || "—"}
-                </Typography>
-              )}
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Technical Indicators:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  name="technicalIndicators"
-                  value={formData.technicalIndicators}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                />
-              ) : (
-                <Typography mb={2} sx={{ wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
-                  {formData.technicalIndicators || "—"}
-                </Typography>
-              )}
-
             </Grid>
 
-            {/*  COLUMN 3  */}
-            <Grid item xs={12} md={4}>
+            {/* COLUMN 3 */}
+            <Grid item xs={12} md={4} >
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
                 Documents & Status
               </Typography>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Emission Factor (Kg/Kwh):
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  name="emissionFactor"
-                  value={formData.emissionFactor}
-                  onChange={handleChange}
-                />
-              ) : (
-                <Typography mb={2}>{formData.emissionFactor || "—"}</Typography>
-              )}
+              <Box mb={2}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Emission Factor (Kg/Kwh):
+                </Typography>
+                {isEditing ? (
+                  <TextField name="emissionFactor" value={formData.emissionFactor} onChange={handleChange} />
+                ) : (
+                  <Typography>{formData.emissionFactor || "—"}</Typography>
+                )}
+              </Box>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Logo:
-              </Typography>
-              {isEditing ? (
-                <Box mb={2}>
+              <Box mb={2}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Logo:
+                </Typography>
+                {isEditing ? (
                   <Button variant="contained" component="label" color="info" fullWidth>
                     Upload Logo
                     <input hidden type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "logo")} />
                   </Button>
-
-                  {/* Hiển thị preview nhỏ */}
-                  {formData.logo && (
-                    <Box mt={1} display="flex" justifyContent="center">
-                      <img
-                        src={Array.isArray(formData.logo) ? formData.logo[0] : formData.logo}
-                        alt="Logo Preview"
-                        style={{
-                          width: 80,
-                          height: 80,
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                          border: "1px solid #ccc",
-                        }}
-                      />
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                formData.logo ? (
+                ) : formData.logo ? (
                   <Button
                     variant="contained"
                     color="info"
@@ -407,17 +424,15 @@ const ViewProject = () => {
                     View Logo
                   </Button>
                 ) : (
-                  <Typography mb={2}>—</Typography>
-                )
-              )}
+                  <Typography>—</Typography>
+                )}
+              </Box>
 
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Legal Docs:
-              </Typography>
-
-              {isEditing ? (
-                <Box mb={2}>
+              <Box mb={2}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Legal Docs:
+                </Typography>
+                {isEditing ? (
                   <Button
                     variant="contained"
                     component="label"
@@ -425,62 +440,34 @@ const ViewProject = () => {
                     fullWidth
                   >
                     Upload Document(s)
-                    <input
-                      hidden
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => handleFileUpload(e, "legaldocurl")}
-                    />
+                    <input hidden type="file" multiple accept=".pdf,.doc,.docx" onChange={(e) => handleFileUpload(e, "legaldocurl")} />
                   </Button>
-
-                  {/* Hiển thị danh sách file vừa upload */}
-                  {formData.legaldocurl?.length > 0 && (
-                    <Box mt={1}>
-                      {formData.legaldocurl.map((url, idx) => (
-                        <Typography key={idx} variant="body2" sx={{ color: "#aaa" }}>
-                          Document {idx + 1} ready to upload
-                        </Typography>
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-              ) : formData.legaldocurl?.length > 0 ? (
-                <Box mb={2} display="flex" flexDirection="column" gap={1}>
-                  {formData.legaldocurl.map((url, idx) => (
-                    <Button
-                      key={idx}
-                      variant="contained"
-                      color="secondary"
-                      size="small"
-                      onClick={() => window.open(url, "_blank")}
-                    >
+                ) : formData.legaldocurl?.length ? (
+                  formData.legaldocurl.map((url, idx) => (
+                    <Button key={idx} variant="contained" color="secondary" size="small" onClick={() => window.open(url, "_blank")} sx={{ mb: 1 }}>
                       View Document {idx + 1}
                     </Button>
-                  ))}
-                </Box>
-              ) : (
-                <Typography mb={2}>—</Typography>
-              )}
+                  ))
+                ) : (
+                  <Typography>—</Typography>
+                )}
 
+              </Box>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Status:
-              </Typography>
-              {isEditing ? (
-                <TextField
-                  select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                >
-                  <MenuItem value="OPEN">OPEN</MenuItem>
-                  <MenuItem value="COMING_SOON">COMING SOON</MenuItem>
-                  <MenuItem value="CLOSE">CLOSE</MenuItem>
-                </TextField>
-              ) : (
-                <Typography mb={2}>{formData.status}</Typography>
-              )}
+              <Box mb={2}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Status:
+                </Typography>
+                {isEditing ? (
+                  <TextField select name="status" value={formData.status} onChange={handleChange} fullWidth>
+                    <MenuItem value="OPEN">OPEN</MenuItem>
+                    <MenuItem value="COMING_SOON">COMING SOON</MenuItem>
+                    <MenuItem value="CLOSE">CLOSE</MenuItem>
+                  </TextField>
+                ) : (
+                  <Typography>{formData.status}</Typography>
+                )}
+              </Box>
             </Grid>
           </Grid>
 

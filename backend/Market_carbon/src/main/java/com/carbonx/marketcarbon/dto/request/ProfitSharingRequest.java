@@ -21,7 +21,4 @@ public class ProfitSharingRequest {
     //  Chỉ chia lợi nhuận cho 1 report cụ thể
     private Long emissionReportId;
 
-    @NotNull(message = "Mô tả không được để trống")
-    private String description;
-
 }

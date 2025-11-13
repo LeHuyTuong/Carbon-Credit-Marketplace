@@ -16,7 +16,7 @@ public enum ErrorCode {
     INVALID_KEY(1001, "Uncategorized error.", HttpStatus.BAD_REQUEST),
 
     // ==== USER & ROLE ====
-    USER_NOT_EXISTED(404, "User not existed.", HttpStatus.NOT_FOUND),
+    USER_NOT_EXISTED(404, "User need KYC to use this feature.", HttpStatus.NOT_FOUND),
     USER_EXISTED(409, "User already existed.", HttpStatus.CONFLICT),
     ROLE_NOT_EXISTED(404, "Role not existed.", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND(404, "Role not found.", HttpStatus.NOT_FOUND),

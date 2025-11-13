@@ -128,7 +128,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         Company company = companyRepository.findByUserId(companyUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
         ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
-
+        log.info("Execution Policy for companyId={}: source={}, pricingMode={}, unitPricePerKwh={}, unitPricePerCredit={}, unitPrice={}, ownerSharePct={}, minPayout={}, currency={}",
+                company.getId(),
+                policy.getSource(),
+                policy.getPricingMode(),
+                policy.getUnitPricePerKwh(),
+                policy.getUnitPricePerCredit(),
+                policy.getUnitPrice(),
+                policy.getOwnerSharePct(),
+                policy.getMinPayout(),
+                policy.getCurrency());
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
         // 1. Tạo và lưu sự kiện chia lợi nhuận
         ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
@@ -159,7 +168,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (reportsToProcess.isEmpty()) {
                 log.warn("Do not have emission report is approved to share profit.");
                 distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED); // Hoàn thành (không có gì để làm)
-                distributionEvent.setDescription("Do not have report approve to share profit.");
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -167,7 +175,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             Map<String, Vehicle> vehicleByPlate = buildCompanyVehicleMap(company.getId());
             if (vehicleByPlate.isEmpty()) {
                 distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
-                distributionEvent.setDescription(request.getDescription() + " | No registered vehicles for this company");
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -199,7 +206,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (evOwnerContributions.isEmpty()) {
                 log.warn("No eligible vehicle contributions found for company {}", company.getId());
                 distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
-                distributionEvent.setDescription(request.getDescription() + " | No eligible vehicle contributions");
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -231,7 +237,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (payoutPlan.isEmpty() || totalRawPayout.compareTo(BigDecimal.ZERO) <= 0) {
                 log.warn("Computed payout amount is zero after applying policy filters.");
                 distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
-                distributionEvent.setDescription(request.getDescription() + " | Payout amount resolved to zero");
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -246,13 +251,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             distributionEvent.setTotalMoneyDistributed(finalTotal);
             distributionEvent.setTotalCreditsDistributed(totalCreditsForDistribution.setScale(6, RoundingMode.HALF_UP));
 
-            StringBuilder descriptionBuilder = new StringBuilder(request.getDescription());
-            descriptionBuilder.append(" | Pricing mode: ").append(policy.getPricingMode());
-            descriptionBuilder.append(" | Unit price: ").append(policy.getUnitPrice().toPlainString());
-            if (policy.getMinPayout() != null) {
-                descriptionBuilder.append(" | Min payout: ").append(policy.getMinPayout().toPlainString());
-            }
-            distributionEvent.setDescription(descriptionBuilder.toString());
             profitDistributionRepository.save(distributionEvent);
 
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
@@ -273,12 +271,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             String errorMessage = (e instanceof AppException ae) ? ae.getErrorCode().getMessage() : e.getMessage();
 
             distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-            // Cắt ngắn lỗi (Sửa lỗi Data Truncation)
-            if (errorMessage != null && errorMessage.length() > 250) {
-                distributionEvent.setDescription("Error: " + errorMessage.substring(0, 250) + "...");
-            } else {
-                distributionEvent.setDescription("Error: " + errorMessage);
-            }
+
             profitDistributionRepository.save(distributionEvent);
         }
     }
@@ -336,7 +329,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         payout.getPayoutAmount(),
                         WalletTransactionType.PROFIT_SHARING.name(),
                         String.format("Sharing profit to EV owner %s (distribution #%d)", owner.getName(), event.getId()),
-                        String.format("Profit-sharing from distribution #%d", event.getId())
+                        String.format("Profit-sharing from distribution #%d", event.getId()),event
                 );
             }
             detail.setStatus("SUCCESS");
@@ -372,7 +365,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
         event.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         event.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
-        event.setDescription(request.getDescription());
         event.setStatus(ProfitDistributionStatus.PROCESSING);
         return profitDistributionRepository.save(event);
     }

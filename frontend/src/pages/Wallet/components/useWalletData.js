@@ -52,11 +52,13 @@ export default function useWalletData() {
 
       const list = res?.response?.content || [];
 
-            // map dữ liệu thành format hiển thị
+      // map dữ liệu thành format hiển thị
       const mapped = list.map((item) => ({
         id: item.id,
         batchCode: item.batchCode,
         projectTitle: item.projectTitle,
+        reportFileName: item.reportFileName,
+        reportPeriod: item.reportPeriod,
         creditsCount: item.creditsCount,
         totalTco2e: item.totalTco2e,
         residualTco2e: item.residualTco2e,
@@ -69,7 +71,13 @@ export default function useWalletData() {
           : "Not Issued",
       }));
 
-      setIssuedCredits(mapped);
+      const sorted = mapped.sort((a, b) => {
+        const d1 = new Date(a.issuedAt);
+        const d2 = new Date(b.issuedAt);
+        return d2-d1;
+      })
+
+      setIssuedCredits(sorted);
     } catch (err) {
       console.error("Failed to fetch issued credits:", err);
     } finally {
@@ -359,9 +367,12 @@ export default function useWalletData() {
 
 
   // chia sẻ lợi nhuận theo report đã duyệt
-  const shareProfit = async ({ projectId, emissionReportId, totalMoneyToDistribute, companySharePercent, description }) => {
-    if (!projectId || !emissionReportId || !totalMoneyToDistribute)
-      throw new Error("Missing required fields for profit sharing.");
+  const shareProfit = async ({
+    projectId,
+    emissionReportId,
+  }) => {
+    if (!projectId || !emissionReportId)
+      throw new Error("Missing required fields for payout distribution.");
 
     try {
       setLoading(true);
@@ -371,20 +382,17 @@ export default function useWalletData() {
           data: {
             projectId,
             emissionReportId,
-            totalMoneyToDistribute,
-            companySharePercent,
-            description: description || "Profit sharing based on emission report",
           },
         },
       });
 
-      return res?.responseStatus || {
+      return res?.response || {
         responseCode: "200",
-        responseMessage: "Profit shared successfully",
+        responseMessage: "Payout created successfully",
       };
     } catch (err) {
-      console.error("Failed to share profit:", err);
-      throw new Error(err.message || "Profit sharing failed.");
+      console.error("Failed to create payout:", err);
+      throw new Error(err.message || "Payout creation failed.");
     } finally {
       setLoading(false);
     }

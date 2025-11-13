@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -134,9 +134,81 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             // Nếu user chưa có ví, trả về danh sách rỗng
             return List.of();
         }
+
+        // Gọi query đã được tối ưu (từ Bước 1)
         List<WalletTransaction> transactions = walletTransactionRepository.findByWalletOrderByCreatedAtDesc(wallet);
-        // Map entities to DTOs
-        return transactions.stream()
+
+        // === LOGIC GỘP GIAO DỊCH (MỚI) ===
+
+        // 1. Phân loại giao dịch: Gộp các khoản chi PROFIT_SHARING, giữ nguyên các giao dịch khác
+        Map<Long, List<WalletTransaction>> groupedProfitSharing = new LinkedHashMap<>();
+        List<WalletTransaction> otherTransactions = new ArrayList<>();
+
+        for (WalletTransaction tx : transactions) {
+            // Chỉ gộp các giao dịch CHI TIỀN (amount < 0) và có cùng distributionId
+            if (tx.getTransactionType() == WalletTransactionType.PROFIT_SHARING &&
+                    tx.getDistribution() != null &&
+                    tx.getAmount() != null &&
+                    tx.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+
+                groupedProfitSharing.computeIfAbsent(
+                        tx.getDistribution().getId(),
+                        k -> new ArrayList<>()
+                ).add(tx);
+            } else {
+                otherTransactions.add(tx);
+            }
+        }
+
+        // 2. Xử lý các nhóm đã gộp
+        List<WalletTransaction> mergedTransactions = new ArrayList<>();
+        for (List<WalletTransaction> group : groupedProfitSharing.values()) {
+            if (group.isEmpty()) continue;
+
+            if (group.size() == 1) {
+                // Nếu nhóm chỉ có 1, giữ nguyên
+                mergedTransactions.add(group.get(0));
+            } else {
+                // Nếu nhóm có > 1, tạo giao dịch ảo (virtual transaction)
+                WalletTransaction newestTx = group.get(0); // Giao dịch mới nhất (vì list đã sắp xếp DESC)
+                WalletTransaction oldestTx = group.get(group.size() - 1); // Giao dịch cũ nhất
+
+                // Tính tổng số tiền
+                BigDecimal totalAmount = group.stream()
+                        .map(WalletTransaction::getAmount)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                // Lấy số dư ĐẦU của giao dịch CŨ NHẤT
+                BigDecimal balanceBefore = oldestTx.getBalanceBefore();
+                // Lấy số dư SAU của giao dịch MỚI NHẤT
+                BigDecimal balanceAfter = newestTx.getBalanceAfter();
+
+                // Tạo một thực thể WalletTransaction "ảo" để gộp
+                WalletTransaction mergedTx = new WalletTransaction();
+                mergedTx.setId(newestTx.getId()); // Dùng ID của giao dịch mới nhất làm đại diện
+                mergedTx.setWallet(newestTx.getWallet());
+                mergedTx.setTransactionType(WalletTransactionType.PROFIT_SHARING);
+                mergedTx.setDescription(String.format("Payout for distribution #%d (%d owners)",
+                        newestTx.getDistribution().getId(), group.size()));
+                mergedTx.setBalanceBefore(balanceBefore);
+                mergedTx.setBalanceAfter(balanceAfter);
+                mergedTx.setAmount(totalAmount); // Tổng số tiền (âm)
+                mergedTx.setCreatedAt(newestTx.getCreatedAt()); // Dùng thời gian mới nhất
+                mergedTx.setDistribution(newestTx.getDistribution());
+
+                mergedTransactions.add(mergedTx);
+            }
+        }
+
+        // 3. Thêm lại các giao dịch khác
+        mergedTransactions.addAll(otherTransactions);
+
+        // 4. Sắp xếp lại list tổng
+        mergedTransactions.sort(Comparator.comparing(WalletTransaction::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        // Map entities (đã gộp) to DTOs
+        return mergedTransactions.stream()
                 .map(this::mapToTransactionResponse) // sử dụng stream map
                 .collect(Collectors.toList());
     }
@@ -197,6 +269,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
                 .createdAt(transaction.getCreatedAt())
                 .batchCode(transaction.getCreditBatch() != null
                         ? transaction.getCreditBatch().getBatchCode()
+                        : null)
+                .distributionId(transaction.getDistribution() != null
+                        ? transaction.getDistribution().getId()
                         : null)
                 .creditExpiryDate(creditExpiryDate)
                 .build();

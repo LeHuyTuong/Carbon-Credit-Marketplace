@@ -9,7 +9,8 @@ import {
   Alert,
   Grid,
   useTheme,
-  Divider
+  Divider,
+  TextField
 } from "@mui/material";
 import { useParams, useNavigate, } from "react-router-dom";
 import { getProjectApplicationById } from "@/apiAdmin/companyAdmin.js";
@@ -107,7 +108,7 @@ const ApplicationView = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1400px", width: "100%", }}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1350px", width: "100%", }}>
       <Header
         title="COMPANY APPLICATION DETAIL"
         subtitle={`Detailed information of application ID: ${application.id}`}
@@ -121,9 +122,12 @@ const ApplicationView = () => {
           backgroundColor: colors.primary[400],
         }}
       >
-        <Grid container spacing={35}>
+        <Grid container spacing={15}>
           {/* COLUMN 1: General Info */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} sx={{
+            flexBasis: "20%",     // chiếm 20% chiều ngang container
+            maxWidth: "20%",      // giới hạn chiều rộng
+          }}>
             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
               General Info
             </Typography>
@@ -131,7 +135,26 @@ const ApplicationView = () => {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Project Title:
             </Typography>
-            <Typography mb={2}>{application.projectTitle}</Typography>
+            <TextField
+              value={application.projectTitle || "N/A"}
+              multiline
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+              inputProps={{ style: { cursor: "pointer" } }}
+              variant="outlined"
+              size="small"
+              minRows={2}
+              sx={{
+                mb: 2,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                "& .MuiInputBase-input.Mui-disabled": {
+                  WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                },
+              }}
+            />
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Review by Admin:
@@ -144,26 +167,156 @@ const ApplicationView = () => {
             <Typography mb={2}>{application.status}</Typography>
           </Grid>
 
-          {/* COLUMN 2: Review Info */}
-          <Grid item xs={12} md={4}>
+          {/* COLUMN 2: Company KYC Info */}
+          {kyc && (
+            <Grid item xs={12} md={4} sx={{
+              flexBasis: "20%",     // chiếm 20% chiều ngang container
+              maxWidth: "20%",      // giới hạn chiều rộng
+            }}>
+              <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+                Company Registration
+              </Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                ID:
+              </Typography>
+              <Typography mb={2}>{kyc.id || "N/A"}</Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Company Name:
+              </Typography>
+              <Typography mb={2}>{kyc.companyName || "N/A"}</Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Tax Code:
+              </Typography>
+              <Typography mb={2}>{kyc.taxCode || "N/A"}</Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Business License:
+              </Typography>
+              <Typography mb={2}>{kyc.businessLicense || "N/A"}</Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Address:
+              </Typography>
+              <TextField
+                value={kyc.address || "N/A"}
+                multiline
+                fullWidth
+                InputProps={{
+                  readOnly: true,
+                }}
+                inputProps={{ style: { cursor: "pointer" } }}
+                variant="outlined"
+                size="small"
+                minRows={2}
+                sx={{
+                  mb: 2,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  borderRadius: "8px",
+                  "& .MuiInputBase-input.Mui-disabled": {
+                    WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                  },
+                }}
+              />
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Created At:
+              </Typography>
+              <Typography mb={2}>
+                {kyc.createAt
+                  ? (() => {
+                    const date = new Date(kyc.createAt);
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const year = date.getFullYear();
+                    const time = date.toLocaleTimeString();
+                    return `${day}/${month}/${year}, ${time}`;
+                  })()
+                  : "N/A"}
+              </Typography>
+
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Updated At:
+              </Typography>
+              <Typography mb={2}>
+                {kyc.updatedAt
+                  ? (() => {
+                    const date = new Date(kyc.updatedAt);
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const year = date.getFullYear();
+                    const time = date.toLocaleTimeString();
+                    return `${day}/${month}/${year}, ${time}`;
+                  })()
+                  : "N/A"}
+              </Typography>
+            </Grid>
+          )}
+
+          {/* COLUMN 3: Review Info */}
+          <Grid item xs={12} md={4} sx={{
+            flexBasis: "30%",     // chiếm 30% chiều ngang container
+            maxWidth: "30%",      // giới hạn chiều rộng
+          }}>
             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
               Review Info
             </Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
-              Verification by CVA:
+              Verified by CVA:
             </Typography>
             <Typography mb={2}>{application.cvaReviewerName || "N/A"}</Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Review Note Of CVA:
             </Typography>
-            <Typography mb={2}>{application.reviewNote || "N/A"}</Typography>
+            <TextField
+              value={application.reviewNote || "N/A"}
+              multiline
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+              inputProps={{ style: { cursor: "pointer" } }}
+              variant="outlined"
+              size="small"
+              minRows={2}
+              sx={{
+                mb: 2,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                "& .MuiInputBase-input.Mui-disabled": {
+                  WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                },
+              }}
+            />
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Final Review Note Of Admin:
             </Typography>
-            <Typography mb={2}>{application.finalReviewNote || "N/A"}</Typography>
+            <TextField
+              value={application.finalReviewNote || "N/A"}
+              multiline
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+              inputProps={{ style: { cursor: "pointer" } }}
+              variant="outlined"
+              size="small"
+              minRows={2}
+              sx={{
+                mb: 2,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                "& .MuiInputBase-input.Mui-disabled": {
+                  WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                },
+              }}
+            />
+
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Submitted At:
@@ -197,51 +350,9 @@ const ApplicationView = () => {
               <Typography>No document attached</Typography>
             )}
           </Grid>
-
-          {/* COLUMN 3: Company KYC Info */}
-          {kyc && (
-            <Grid item xs={12} md={4}>
-              <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
-                Company Registration
-              </Typography>
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                ID:
-              </Typography>
-              <Typography mb={2}>{kyc.id || "N/A"}</Typography>
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Company Name:
-              </Typography>
-              <Typography mb={2}>{kyc.companyName || "N/A"}</Typography>
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Tax Code:
-              </Typography>
-              <Typography mb={2}>{kyc.taxCode || "N/A"}</Typography>
-              
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Business License:
-              </Typography>
-              <Typography mb={2}>{kyc.businessLicense || "N/A"}</Typography>
-
-              <Typography variant="h6" fontWeight="600" gutterBottom>
-                Address:
-              </Typography>
-              <Typography mb={2}>{kyc.address || "N/A"}</Typography>
-               
-               <Typography variant="h6" fontWeight="600" gutterBottom>
-                Created At:
-              </Typography>
-              <Typography mb={2}>{new Date(kyc.createAt).toLocaleString("vi-VN") || "N/A"}</Typography>
-
-               <Typography variant="h6" fontWeight="600" gutterBottom>
-                Update At:
-              </Typography>
-              <Typography mb={2}>{new Date(kyc.updatedAt).toLocaleString("vi-VN") || "N/A"}</Typography>
-            </Grid>
-          )}
         </Grid>
+
+
 
 
 
