@@ -202,7 +202,7 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("reviewNote", e.target.value)}
           fullWidth
           multiline
-          rows={3}
+          rows={1}
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
           inputProps={{ style: { cursor: "pointer" } }}
@@ -224,7 +224,7 @@ const ApplicationEdit = () => {
           onChange={(e) => handleChange("finalReviewNote", e.target.value)}
           fullWidth
           multiline
-          rows={3}
+          rows={1}
           sx={{ mt: 2 }}
         />
 

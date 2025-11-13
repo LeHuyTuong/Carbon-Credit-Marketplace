@@ -108,7 +108,7 @@ const ApplicationView = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1350px", width: "100%", }}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1210px", width: "100%", }}>
       <Header
         title="COMPANY APPLICATION DETAIL"
         subtitle={`Detailed information of application ID: ${application.id}`}
@@ -117,12 +117,12 @@ const ApplicationView = () => {
       <Paper
         elevation={3}
         sx={{
-          p: 3,
-          mt: 3,
+          p: 2,
+          mt: 2,
           backgroundColor: colors.primary[400],
-        }}
+         }}
       >
-        <Grid container spacing={15}>
+        <Grid container spacing={13}>
           {/* COLUMN 1: General Info */}
           <Grid item xs={12} md={4} sx={{
             flexBasis: "20%",     // chiếm 20% chiều ngang container
@@ -210,9 +210,9 @@ const ApplicationView = () => {
                 inputProps={{ style: { cursor: "pointer" } }}
                 variant="outlined"
                 size="small"
-                minRows={2}
+                minRows={1}
                 sx={{
-                  mb: 2,
+                  mb: 1,
                   backgroundColor: "rgba(255,255,255,0.08)",
                   borderRadius: "8px",
                   "& .MuiInputBase-input.Mui-disabled": {
