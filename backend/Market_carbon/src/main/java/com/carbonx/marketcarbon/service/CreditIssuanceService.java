@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 
 public interface CreditIssuanceService {
     CreditBatchResponse issueForReport(Long reportId);
+    CreditBatchResponse issueForReport(Long reportId, Integer approvedCredits);
     Page<CreditBatchResponse> listAllBatches(Pageable pageable);
     CreditBatchResponse getBatchById(Long batchId);
 

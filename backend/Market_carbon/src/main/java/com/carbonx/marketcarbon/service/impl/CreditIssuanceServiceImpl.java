@@ -57,7 +57,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final SseService sseService;
 
-    @Value("${app.frontendBaseUrl:https://your-frontend.com}")   // <— THÊM BIẾN CẤU HÌNH
+    @Value("${app.frontendBaseUrl:https://your-frontend.com}")
     private String frontendBaseUrl;
 
     @Transactional
@@ -178,6 +178,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         walletTransactionRepository.save(tx);
 
         report.setStatus(EmissionStatus.CREDIT_ISSUED);
+        report.setResidualTco2e(result.getResidualTco2e());
         reportRepo.save(report);
 
         log.info("Issued {} credits for company {} (project {})",
@@ -221,8 +222,16 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .serialFrom(String.format("%06d", range.from()))
                     .serialTo(String.format("%06d", range.to()))
                     .certificateCode(certificateCode)
-                    .standard("CarbonX Internal Registry • ISO 14064-2 & GHG Protocol")
-                    .methodology("EV Charging Emission Reduction Methodology v1.0")
+                    .standard(
+                            project.getTechnicalIndicators() != null && !project.getTechnicalIndicators().isBlank()
+                                    ? project.getTechnicalIndicators()
+                                    : "N/A"
+                    )
+                    .methodology(
+                            project.getMeasurementMethod() != null && !project.getMeasurementMethod().isBlank()
+                                    ? project.getMeasurementMethod()
+                                    : "N/A"
+                    )
                     .projectId("PRJ-" + project.getId())
                     .issuedAt(batch.getIssuedAt().toLocalDate().toString())
                     .issuerName("CarbonX Marketplace")
@@ -284,6 +293,262 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
 
         return toResponse(batch, cert);
     }
+
+    @Transactional
+    @Override
+    public CreditBatchResponse issueForReport(Long reportId, Integer approvedCredits) {
+        EmissionReport report = reportRepo.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        if (report.getStatus() != EmissionStatus.ADMIN_APPROVED) {
+            throw new AppException(ErrorCode.REPORT_NOT_APPROVED);
+        }
+
+        batchRepo.findByReportId(reportId)
+                .ifPresent(b -> { throw new AppException(ErrorCode.CREDIT_ALREADY_ISSUED); });
+
+        Company company = companyRepository.findById(report.getSeller().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+        Project project = projectRepository.findById(report.getProject().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+
+        var result = creditFormula.compute(report, project);
+        int computedCredits = result.getCreditsCount();
+        if (computedCredits <= 0) {
+            throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
+        }
+
+        // ----- QUAN TRỌNG: chọn số tín chỉ thực sự sẽ cấp -----
+        int creditsToIssue;
+        if (approvedCredits == null) {
+            // Không truyền gì => dùng full số hệ thống tính
+            creditsToIssue = computedCredits;
+        } else {
+            if (approvedCredits <= 0) {
+                throw new AppException(ErrorCode.CREDIT_QUANTITY_INVALID);
+            }
+            if (approvedCredits > computedCredits) {
+                throw new AppException(ErrorCode.CREDIT_APPROVED_EXCEEDS_LIMIT);
+            }
+            creditsToIssue = approvedCredits;
+        }
+
+        int year = Integer.parseInt(report.getPeriod().substring(0, 4));
+        String companyCode = CodeGenerator.slug3WithId(company.getCompanyName(), "COMP", company.getId());
+        String projectCode = CodeGenerator.slug3WithId(project.getTitle(), "PRJ", project.getId());
+
+        // Allocate theo số tín chỉ thực sự cấp
+        SerialRange range = serialSvc.allocate(project, company, year, creditsToIssue);
+        String prefix = year + "-" + companyCode + "-" + projectCode + "-";
+        String batchCode = prefix + String.format("%06d", range.from()) + "_" + String.format("%06d", range.to());
+
+        String issuedBy = java.util.Optional
+                .ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(Authentication::getName)
+                .orElse("system@carbonx.com");
+
+        LocalDateTime issuedAt = LocalDateTime.now();
+        LocalDate expiresAt = issuedAt.toLocalDate().plusYears(1);
+
+        CreditBatch batch = CreditBatch.builder()
+                .report(report)
+                .company(company)
+                .project(project)
+                .batchCode(batchCode)
+                .totalTco2e(result.getTotalTco2e())
+                .creditsCount(creditsToIssue)      // dùng số đã duyệt
+                .residualTco2e(result.getResidualTco2e())
+                .vintageYear(year)
+                .serialPrefix(prefix)
+                .serialFrom(range.from())
+                .serialTo(range.to())
+                .status("ISSUED")
+                .issuedBy(issuedBy)
+                .issuedAt(issuedAt)
+                .expiresAt(expiresAt)
+                .build();
+
+        batch = batchRepo.save(batch);
+
+        // Giai đoạn 1: Sinh các tín chỉ ở trạng thái ISSUED
+        List<CarbonCredit> credits = new ArrayList<>(creditsToIssue);
+        long serial = range.from();
+        for (int i = 0; i < creditsToIssue; i++, serial++) {
+            String code = serialSvc.buildCode(year, companyCode, projectCode, serial);
+            credits.add(CarbonCredit.builder()
+                    .batch(batch)
+                    .company(company)
+                    .project(project)
+                    .creditCode(code)
+                    .vintageYear(year)
+                    .status(CreditStatus.ISSUED)
+                    .issuedBy(issuedBy)
+                    .issuedAt(OffsetDateTime.now())
+                    .expiryDate(LocalDate.now().plusYears(1))
+                    .amount(BigDecimal.ONE)
+                    .carbonCredit(BigDecimal.ONE)
+                    .tCo2e(BigDecimal.ONE)
+                    .name("Carbon Credit")
+                    .currentPrice(0.0)
+                    .build());
+        }
+        creditRepo.saveAll(credits);
+
+        // Giai đoạn 2: Sau khi nạp vào ví, chuyển sang AVAILABLE
+        credits.forEach(c -> c.setStatus(CreditStatus.AVAILABLE));
+        creditRepo.saveAll(credits);
+
+        // Cập nhật ví và tạo giao dịch
+        Wallet wallet = walletRepository.findByCompany(company)
+                .orElseGet(() -> {
+                    Wallet existing = walletRepository.findByUserId(company.getUser().getId());
+                    if (existing != null) return existing;
+
+                    Wallet newWallet = Wallet.builder()
+                            .company(company)
+                            .user(company.getUser())
+                            .balance(BigDecimal.ZERO)
+                            .carbonCreditBalance(BigDecimal.ZERO)
+                            .build();
+                    return walletRepository.save(newWallet);
+                });
+
+        BigDecimal issuedCredits = BigDecimal.valueOf(creditsToIssue);
+        BigDecimal before = wallet.getCarbonCreditBalance();
+        BigDecimal after = before.add(issuedCredits);
+        wallet.setCarbonCreditBalance(after);
+        walletRepository.save(wallet);
+
+        WalletTransaction tx = WalletTransaction.builder()
+                .wallet(wallet)
+                .transactionType(WalletTransactionType.ISSUE_CREDIT)
+                .amount(issuedCredits)
+                .balanceBefore(before)
+                .balanceAfter(after)
+                .creditBatch(batch)
+                .description("Issued " + creditsToIssue + " Carbon Credits for project " + project.getTitle())
+                .createdAt(LocalDateTime.now())
+                .build();
+        walletTransactionRepository.save(tx);
+
+        report.setStatus(EmissionStatus.CREDIT_ISSUED);
+
+        // Nếu muốn: có thể chỉnh residual theo creditsToIssue, ở đây tạm giữ nguyên
+        report.setResidualTco2e(result.getResidualTco2e());
+        reportRepo.save(report);
+
+        log.info("Issued {} credits (approved) for company {} (project {}, computed = {})",
+                creditsToIssue, company.getCompanyName(), project.getTitle(), computedCredits);
+
+        String message = "Admin issued " + creditsToIssue + " credits to your company wallet";
+        sseService.sendNotificationToUser(company.getUser().getId(), message);
+
+        // ------------------ CERTIFICATE ------------------
+        String certificateCode = "CERT-" + batch.getBatchCode().replace("-", "") + "-" + System.currentTimeMillis();
+
+        CreditCertificate cert = CreditCertificate.builder()
+                .batch(batch)
+                .certificateCode(certificateCode)
+                .issuedTo(company.getCompanyName())
+                .issuedEmail(company.getUser().getEmail())
+                .verifyUrl("https://verify.carbonx.io/" + certificateCode)
+                .qrCodeUrl("https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+                        java.net.URLEncoder.encode("https://verify.carbonx.io/" + certificateCode,
+                                java.nio.charset.StandardCharsets.UTF_8))
+                .registry("CarbonX Internal Registry")
+                .standard("ISO 14064-2 aligned")
+                .methodology("EV Charging Emission Reduction Methodology v1.0")
+                .build();
+        cert = certificateRepo.save(cert);
+
+        String validatedBy = "CVA Organization";
+        if (report.getVerifiedAt() != null && report.getVerifiedByCva() != null) {
+            validatedBy = report.getVerifiedByCva().getDisplayName();
+        }
+
+        CertificateData data = CertificateData.builder()
+                .creditsCount(batch.getCreditsCount())  // = creditsToIssue
+                .totalTco2e(result.getTotalTco2e().doubleValue())
+                .retired(false)
+                .projectTitle(project.getTitle())
+                .companyName(company.getCompanyName())
+                .status("ISSUED")
+                .vintageYear(year)
+                .batchCode(batchCode)
+                .serialPrefix(prefix)
+                .serialFrom(String.format("%06d", range.from()))
+                .serialTo(String.format("%06d", range.to()))
+                .certificateCode(certificateCode)
+                .standard(
+                        project.getTechnicalIndicators() != null && !project.getTechnicalIndicators().isBlank()
+                                ? project.getTechnicalIndicators()
+                                : "N/A"
+                )
+                .methodology(
+                        project.getMeasurementMethod() != null && !project.getMeasurementMethod().isBlank()
+                                ? project.getMeasurementMethod()
+                                : "N/A"
+                )
+                .projectId("PRJ-" + project.getId())
+                .issuedAt(batch.getIssuedAt().toLocalDate().toString())
+                .issuerName("CarbonX Marketplace")
+                .issuerTitle("Authorized Signatory")
+                .issuerSignatureUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/ch%E1%BB%AF+k%C3%AD+CarbonX.jpg")
+                .leftLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
+                .rightLogoUrl("https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/carbonlogooo.jpg")
+                .verifiedBy(validatedBy)
+                .qrCodeUrl(cert.getQrCodeUrl())
+                .verifyUrl(cert.getVerifyUrl())
+                .build();
+
+        StorageService.StoredObject stored = certificatePdfService.generateAndUploadPdf(data);
+        String pdfUrl = stored.url();
+
+        cert.setCertificateUrl(pdfUrl);
+        certificateRepo.save(cert);
+
+        batch.setCertificate(cert);
+        batchRepo.save(batch);
+
+        byte[] pdf;
+        try (InputStream in = new java.net.URL(pdfUrl).openStream()) {
+            pdf = in.readAllBytes();
+        } catch (IOException ioEx) {
+            throw new UncheckedIOException("Cannot download PDF from " + pdfUrl, ioEx);
+        }
+
+        try {
+            String subject = "Your Carbon Credit Certificate is Ready!";
+            String htmlBody = """
+        <div style='font-family:Arial,sans-serif;color:#333;'>
+          <h2 style='color:#16a34a;'>Congratulations, %s!</h2>
+          <p>Your company has been issued <b>%d Carbon Credits</b> for project <b>%s</b>.</p>
+          <p>Certificate Code: <b>%s</b></p>
+          <p>You can <a href="%s" target="_blank">view/download the certificate here</a>.</p>
+          <p>Best regards,<br><b>CarbonX Marketplace</b></p>
+        </div>
+        """.formatted(
+                    company.getCompanyName(),
+                    batch.getCreditsCount(),
+                    project.getTitle(),
+                    certificateCode,
+                    pdfUrl
+            );
+
+            emailService.sendEmailWithAttachment(
+                    company.getUser().getEmail(),
+                    subject,
+                    htmlBody,
+                    pdf,
+                    "CarbonX_Certificate.pdf"
+            );
+        } catch (Exception e) {
+            log.error("Failed to send certificate email: {}", e.getMessage(), e);
+        }
+
+        return toResponse(batch, cert);
+    }
+
 
     @Override
     public Page<CreditBatchResponse> listAllBatches(Pageable pageable) {
