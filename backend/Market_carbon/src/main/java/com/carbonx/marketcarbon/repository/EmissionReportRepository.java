@@ -1,7 +1,9 @@
 package com.carbonx.marketcarbon.repository;
 
 import com.carbonx.marketcarbon.common.EmissionStatus;
+import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EmissionReport;
+import com.carbonx.marketcarbon.model.Project;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,9 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     List<EmissionReport> findBySeller_IdAndProject_Id(Long sellerId, Long projectId);
     List<EmissionReport> findBySeller_IdAndProject_IdAndStatus(Long sellerId, Long projectId, EmissionStatus status);
     int countByProjectIdAndSeller_IdNot(Long projectId, Long sellerId);
+
+    Optional<EmissionReport> findTopByProjectAndSellerAndPeriodBeforeOrderByPeriodDesc(
+            Project project, Company seller, String period);
 
     Optional<EmissionReport> findById(Long id);
     /**

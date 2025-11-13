@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.dto.request.IssueRequest;
 import com.carbonx.marketcarbon.dto.response.CreditBatchResponse;
 import com.carbonx.marketcarbon.service.CreditIssuanceService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
@@ -59,6 +60,30 @@ public class CreditIssuanceController {
         );
         return ResponseEntity.ok(new TuongCommonResponse<>(reqTrace, now, rs, data));
     }
+
+
+    @Operation(summary = "Issue carbon credits for an approved emission report (Admin only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/issued/{reportId}")
+    public ResponseEntity<TuongCommonResponse<CreditBatchResponse>> issueCredits(
+            @PathVariable Long reportId,
+            @RequestBody(required = false) IssueRequest request,
+            @RequestHeader(value = "X-Request-Trace", required = false) String trace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
+    ) {
+        String reqTrace = (trace != null && !trace.isBlank()) ? trace : UUID.randomUUID().toString();
+        String now = (dateTime != null && !dateTime.isBlank()) ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        Integer approved = (request != null) ? request.getApprovedCredits() : null;
+        CreditBatchResponse data = creditIssuanceService.issueForReport(reportId, approved);
+
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                "Credits issued successfully"
+        );
+        return ResponseEntity.ok(new TuongCommonResponse<>(reqTrace, now, rs, data));
+    }
+
 
 
     @Operation(summary = "List all issued credit batches (paginated)")

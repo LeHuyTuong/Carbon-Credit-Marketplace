@@ -33,10 +33,6 @@
       border-radius: 8px;
       object-fit: cover;
     }
-    .title {
-      font-size: 16px;
-      font-weight: 600;
-    }
     .content { padding: 24px; }
     .badge {
       display: inline-block;
@@ -78,13 +74,28 @@
     </div>
     <div class="content">
       <p><strong>Company:</strong> <span th:text="${companyName}">Company Name</span></p>
+
       <span class="badge"
             th:text="${decision}"
             th:style="'background-color:' + ${badgeColor} + ';'">APPROVED</span>
+
       <p><strong>Application ID:</strong> <span th:text="${applicationId}">123</span></p>
       <p><strong>Project:</strong> <span th:text="${projectName}">EV Replacement Program</span></p>
       <p><strong>Reviewer:</strong> <span th:text="${reviewerName}">CVA Officer</span></p>
-      <div class="note" th:text="${reviewNote}">Your application meets the verification standards.</div>
+
+      <!-- Review Note -->
+      <div class="note" th:text="${reviewNote}">
+        Your application meets the verification standards.
+      </div>
+
+      <!-- ⭐ NEW: Waiting For -->
+      <p style="margin-top: 20px; font-size: 14px; color: #374151;">
+        <strong>Next Step:</strong>
+      </p>
+      <div class="note" style="border-left-color:#059669;" th:text="${waitingFor}">
+        Your application is now waiting for the next review stage.
+      </div>
+
     </div>
     <div class="footer">
       Thank you for participating in the CarbonX Project Approval Program.<br>
