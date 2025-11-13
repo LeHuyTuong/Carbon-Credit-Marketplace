@@ -111,7 +111,7 @@ const ReportListCVA = () => {
       <Header title="CVA REPORTS" subtitle="Managing CVA Reports" />
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="70vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none", },
           "& .MuiDataGrid-columnHeaders": {

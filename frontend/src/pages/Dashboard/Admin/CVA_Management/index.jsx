@@ -96,7 +96,7 @@ const CvaTeam = () => {
       <Header title="CVA KYC PROFILES" subtitle="Managing CVA Verification Profiles" />
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="69vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-columnHeaders": {

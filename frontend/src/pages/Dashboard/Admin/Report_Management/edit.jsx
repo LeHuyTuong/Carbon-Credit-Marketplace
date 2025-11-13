@@ -343,18 +343,7 @@ const ViewReport = () => {
         <DialogContent>
           {previewData ? (
             <Box display="flex" flexDirection="column" gap={2} mt={1}>
-              <TextField
-                label="Batch Code"
-                value={previewData.batchCode || ""}
-                fullWidth
-                InputProps={{ readOnly: true }}
-              />
-              <TextField
-                label="Vintage Year"
-                value={previewData.vintageYear || ""}
-                fullWidth
-                InputProps={{ readOnly: true }}
-              />
+              
               <TextField
                 label="Total tCO₂e"
                 value={previewData.totalTco2e || ""}

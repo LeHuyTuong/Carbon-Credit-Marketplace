@@ -106,11 +106,24 @@ const CreditsList = () => {
       field: "numbercredit",
       headerName: "Number of Credits",
       type: "number",
-      align: "left",
       headerAlign: "left",
-      flex: 1,
-    },
-    { field: "estimatedvalue", headerName: "Estimated value", flex: 1 },
+      flex: 1.2,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start", //  canh trái
+            pl: 4,                       //  đẩy nhẹ qua phải (tăng/giảm theo ý, ví dụ 1, 1.5, 2)
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          {params.value}
+        </Box>
+      ),
+    }
+    ,
     { field: "issuedday", headerName: "Issued Day", flex: 1.5 },
     {
       field: "status",
@@ -151,7 +164,7 @@ const CreditsList = () => {
                 fontSize: "0.95rem",
                 minWidth: "90px",
                 textAlign: "left",
-                pl: -5, // đẩy nội dung sang trái
+                pl: -3, // đẩy nội dung sang trái
               }}
             >
               {value}
@@ -221,15 +234,20 @@ const CreditsList = () => {
   ];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
+    <Box m="20px" sx={{
+      marginLeft: "290px",
+      marginTop: "8px",  
+      marginRight: "20px",
+      marginBottom: "20px",
+    }} className="actionadmin">
       <Header title="CREDITS" subtitle="List of Carbon Credits in the System" />
       <Box
         m="40px 0 0 0"
-        height="75vh"
+        height="70vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-cell": { borderBottom: "none" },
-          "& .name-column--cell": { color: colors.greenAccent[300] },
+          "& .name-column--cell": { color: colors.greenAccent[300], whiteSpace: "normal !important", },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -243,6 +261,7 @@ const CreditsList = () => {
           "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
             color: `${colors.grey[100]} !important`,
           },
+          overflowX: "auto", // tránh che ngang
         }}
       >
         <AdminDataGrid rows={data} columns={columns} getRowId={(row) => row.id} />

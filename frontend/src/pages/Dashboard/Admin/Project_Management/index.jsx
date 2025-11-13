@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, Button } from "@mui/material";
+import { Box, Typography, useTheme, Button, Tooltip } from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link, useNavigate } from "react-router-dom";
@@ -69,64 +69,109 @@ const ListProjects = () => {
       headerName: "Description",
       flex: 1.5,
       renderCell: (params) => (
-        <Typography
-          variant="body2"
+        <Box
           sx={{
             display: "flex",
-            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            alignItems: "center",
             height: "100%",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.2,
-            textAlign: "left",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
-          {params.value}
-        </Typography>
+          <Tooltip title={params.value || ""}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                lineHeight: 1.4,
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              {params.value}
+            </Typography>
+          </Tooltip>
+        </Box>
       ),
-
     },
     {
       field: "commitments",
       headerName: "Commitments",
       flex: 1.5,
+
+
       renderCell: (params) => (
-        <Typography
-          variant="body2"
+        <Box
           sx={{
             display: "flex",
-            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            alignItems: "center",
             height: "100%",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.2,
-            textAlign: "left",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
-          {params.value}
-        </Typography>
+          <Tooltip title={params.value || ""}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                lineHeight: 1.4,
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              {params.value}
+            </Typography>
+          </Tooltip>
+        </Box>
       ),
-
     },
     {
       field: "measurementmethod",
       headerName: "Measurement Method",
       flex: 1.5,
       renderCell: (params) => (
-        <Typography
-          variant="body2"
+        <Box
           sx={{
             display: "flex",
-            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            alignItems: "center",
             height: "100%",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.2,
-            textAlign: "left",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
-          {params.value}
-        </Typography>
+          <Tooltip title={params.value || ""}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                lineHeight: 1.4,
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              {params.value}
+            </Typography>
+          </Tooltip>
+        </Box>
       ),
 
     },
@@ -135,20 +180,35 @@ const ListProjects = () => {
       headerName: "Technical Indicators",
       flex: 1.5,
       renderCell: (params) => (
-        <Typography
-          variant="body2"
+        <Box
           sx={{
             display: "flex",
-            alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
+            alignItems: "center",
             height: "100%",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.2,
-            textAlign: "left",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
-          {params.value}
-        </Typography>
+          <Tooltip title={params.value || ""}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                lineHeight: 1.4,
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              {params.value}
+            </Typography>
+          </Tooltip>
+        </Box>
       ),
 
     },
@@ -197,7 +257,12 @@ const ListProjects = () => {
 
   //  Render Component 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
+    <Box m="20px" sx={{
+      marginLeft: "290px",
+      marginTop: "8px",
+      marginRight: "20px",
+      marginBottom: "20px",
+    }} className="actionadmin">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="PROJECTS" subtitle="List of all registered projects" />
         <Button
@@ -217,6 +282,7 @@ const ListProjects = () => {
 
       <Box
         m="40px 0 0 0"
+        height="65vh"
         sx={{
           "& .MuiDataGrid-root": {
             border: "none",

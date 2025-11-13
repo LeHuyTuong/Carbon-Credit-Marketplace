@@ -74,33 +74,30 @@ const EvOwnerTeam = () => {
 
   //  Cấu hình các cột hiển thị
   const columns = [
-    { field: "userid", headerName: "User ID", width: 100 },
-    { field: "name", headerName: "Full Name", width: 160 },
-    {
-      field: "email",
-      headerName: "Email",
-      flex: 0.5,
-      minWidth: 220,
-    },
-    { field: "phone", headerName: "Phone", width: 140 },
-    { field: "gender", headerName: "Gender", width: 110 },
-    { field: "country", headerName: "Country", width: 130 },
-    { field: "documentNumber", headerName: "CCCD", width: 160 },
-    { field: "birthday", headerName: "Birthday", width: 130 },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      renderCell: ({ row }) => (
-        <Chip
-          size="small"
-          label={row.status === "active" ? "Active" : "Inactive"}
-          color={row.status === "active" ? "success" : "default"}
-          variant={row.status === "active" ? "filled" : "outlined"}
-        />
-      ),
-    },
-  ];
+  { field: "userid", headerName: "User ID", flex: 0.6 },
+  { field: "name", headerName: "Full Name", flex: 1 },
+  { field: "email", headerName: "Email", flex: 1.2 },
+  { field: "phone", headerName: "Phone", flex: 0.8 },
+  { field: "gender", headerName: "Gender", flex: 0.6 },
+  { field: "country", headerName: "Country", flex: 0.8 },
+  { field: "documentNumber", headerName: "CCCD", flex: 1 },
+  { field: "birthday", headerName: "Birthday", flex: 0.8 },
+  {
+    field: "status",
+    headerName: "Status",
+    flex: 0.6,
+    minWidth: 120,
+    renderCell: ({ row }) => (
+      <Chip
+        size="small"
+        label={row.status === "active" ? "Active" : "Inactive"}
+        color={row.status === "active" ? "success" : "default"}
+        variant={row.status === "active" ? "filled" : "outlined"}
+      />
+    ),
+  },
+];
+
 
   //  Render UI
   return (
@@ -123,9 +120,9 @@ const EvOwnerTeam = () => {
       {!loading && !err && (
         <Box
           m="40px 0 0 0"
-          height="75vh"
+          height="69vh"
           sx={{
-            "& .MuiDataGrid-root": { border: "none" },
+            "& .MuiDataGrid-root": { border: "none", },
             "& .MuiDataGrid-columnHeaders": {
               backgroundColor: colors.blueAccent[700],
               borderBottom: "none",
