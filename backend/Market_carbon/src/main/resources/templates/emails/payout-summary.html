@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarbonX Payout Summary</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { width: 90%; max-width: 600px; margin: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    .header { font-size: 24px; color: #16a34a; }
+    .content { margin-top: 20px; }
+    .summary-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .summary-table td { padding: 8px; border-bottom: 1px solid #eee; }
+    .summary-table td:first-child { font-weight: bold; width: 40%; }
+    .total-row { font-weight: bold; font-size: 1.1em; }
+    .note { font-size: 0.9em; font-style: italic; color: #555; }
+    .footer { margin-top: 20px; font-size: 0.9em; color: #777; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header" th:text="'Payout Summary for Period ' + ${periodLabel}">
+    Payout Summary for Period [Period]
+  </div>
+
+  <div class="content">
+    <p th:text="'Hello ' + ${companyName} + ','">Hello [Company Name],</p>
+    <p>
+      The system has completed processing the payout for the period
+      <b th:text="${periodLabel}">[Period]</b>.
+      Below is the summary information:
+    </p>
+
+    <table class="summary-table">
+      <tr>
+        <td>Number of EV Owners Paid:</td>
+        <td th:text="${ownersPaid}">[ownersPaid]</td>
+      </tr>
+      <tr>
+        <td>Total Energy:</td>
+        <td th:text="${#numbers.formatDecimal(totalEnergy, 1, 'COMMA', 2, 'POINT')} + ' kWh'">[Total Energy] kWh</td>
+      </tr>
+      <tr>
+        <td>Total Credits:</td>
+        <td th:text="${#numbers.formatDecimal(totalCredits, 1, 'COMMA', 4, 'POINT')} + ' tCO₂e'">[Total Credits] tCO₂e</td>
+      </tr>
+      <tr class="total-row">
+        <td>Total Amount Paid:</td>
+        <td th:text="${#numbers.formatDecimal(totalPayoutUsd, 1, 'COMMA', 2, 'POINT')} + ' USD'">[Total Payout] USD</td>
+      </tr>
+    </table>
+
+    <p th:if="${scaledByCap}" class="note">
+      Note: The payout amount has been adjusted according to the total budget set for this period.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>
+      Payout distribution reference: <span th:text="${distributionReference}">[Dist Ref]</span><br>
+      You can view details and export the Excel file on the admin dashboard.
+    </p>
+  </div>
+</div>
+</body>
+</html>

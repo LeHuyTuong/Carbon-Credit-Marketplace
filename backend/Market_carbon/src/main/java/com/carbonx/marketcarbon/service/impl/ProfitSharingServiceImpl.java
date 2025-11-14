@@ -1,6 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.common.EmissionStatus; // THAY ĐỔI
+import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.carbonx.marketcarbon.common.ProfitDistributionStatus;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.config.ProfitSharingProperties;
@@ -13,11 +13,12 @@ import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
-import com.carbonx.marketcarbon.service.ProfitSharingService;
-import com.carbonx.marketcarbon.service.WalletService;
-import lombok.Data; // THÊM
+import com.carbonx.marketcarbon.service.*;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,10 +52,18 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     private final ProjectRepository projectRepository;
     private final CompanyRepository companyRepository;
     private final ProfitSharingProperties profitSharingProperties;
+    private final EmailService emailService;
+    private final DynamicPricingService dynamicPricingService;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    private ProfitSharingServiceImpl getSelf() {
+        return applicationContext.getBean(ProfitSharingServiceImpl.class);
+    }
 
     @Data
-    private static class ContributionData {
+    static class ContributionData {
         private final Long evOwnerId;
         private BigDecimal totalEnergyContribution = BigDecimal.ZERO;
         private BigDecimal totalCreditContribution = BigDecimal.ZERO;
@@ -67,7 +76,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (energy != null && energy.compareTo(BigDecimal.ZERO) > 0) {
                 this.totalEnergyContribution = this.totalEnergyContribution.add(energy);
             }
-
             if (credit != null && credit.compareTo(BigDecimal.ZERO) > 0) {
                 this.totalCreditContribution = this.totalCreditContribution.add(credit);
             }
@@ -75,27 +83,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
     @Data
-    private static class VehicleSnapshot {
-        private final Long id;
-        private final String plateNumber;
-        private final String brand;
-        private final String model;
-        private final Long evOwnerId;
-
-        private VehicleSnapshot(Vehicle vehicle) {
-            this.id = vehicle.getId();
-            this.plateNumber = vehicle.getPlateNumber();
-            this.brand = vehicle.getBrand();
-            this.model = vehicle.getModel();
-            this.evOwnerId = vehicle.getEvOwner() != null ? vehicle.getEvOwner().getId() : null;
-        }
-    }
-
-    /**
-     * DTO nội bộ để tổng hợp đóng góp của mỗi chủ xe.
-     */
-    @Data
-    private static class OwnerPayoutData {
+    static class OwnerPayoutData {
         private final Long evOwnerId;
         private final BigDecimal creditContribution;
         private final BigDecimal energyContribution;
@@ -114,46 +102,56 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
     }
 
-
-    @Async("profitSharingTaskExecutor") // Chạy bất đồng bộ trên luồng riêng
+    @Async("profitSharingTaskExecutor")
     @Override
     public void shareCompanyProfit(ProfitSharingRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User companyUser = userRepository.findByEmail(authentication.getName());
         if (companyUser == null) {
             log.error("Authentication failed, user not found for email: {}", authentication.getName());
-            return; // Không ném lỗi ra ngoài @Async
+            return;
         }
 
         Company company = companyRepository.findByUserId(companyUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
         ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
-        log.info("Execution Policy for companyId={}: source={}, pricingMode={}, unitPricePerKwh={}, unitPricePerCredit={}, unitPrice={}, ownerSharePct={}, minPayout={}, currency={}",
+        BigDecimal marketPricePerCredit = dynamicPricingService.getMarketPricePerCredit();
+        BigDecimal kwhPerCreditFactor = dynamicPricingService.getKwhPerCreditFactor();
+        BigDecimal actualPayoutPricePerCredit = marketPricePerCredit
+                .multiply(policy.getOwnerSharePct())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        log.info(
+                "Execution Policy for companyId={}: source={}, pricingMode={}, ownerSharePct={}, minPayout={}, currency={}",
                 company.getId(),
                 policy.getSource(),
                 policy.getPricingMode(),
-                policy.getUnitPricePerKwh(),
-                policy.getUnitPricePerCredit(),
-                policy.getUnitPrice(),
                 policy.getOwnerSharePct(),
                 policy.getMinPayout(),
-                policy.getCurrency());
+                policy.getCurrency()
+        );
+        log.info(
+                "Dynamic Prices: MarketPrice/Credit={}, KwhFactor={}, Calculated Payout/Credit={}",
+                marketPricePerCredit,
+                kwhPerCreditFactor,
+                actualPayoutPricePerCredit
+        );
+
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
-        // 1. Tạo và lưu sự kiện chia lợi nhuận
-        ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
+
+        ProfitDistribution distributionEvent = getSelf().createDistributionEvent(request, companyUser);
 
         try {
-            // 2. Lấy ví của công ty (Không nằm trong TX)
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
-
-            // 3. Lấy danh sách EmissionReport
             List<EmissionReport> reportsToProcess = new ArrayList<>();
 
-            // Công ty muốn chia cho 1 report cụ thể
-            if (request.getEmissionReportId() != null) {
+            // Khai báo report ở đây để dùng cho cả vòng lặp và gửi email
+            EmissionReport report;
 
-                // sử dụng detail để tránh lỗi lazy init
-                EmissionReport report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
+            if (request.getEmissionReportId() != null) {
+                // Tải report (với @EntityGraph)
+                report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
 
                 if (report.getStatus() != EmissionStatus.CREDIT_ISSUED ) {
@@ -163,11 +161,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     throw new AppException(ErrorCode.ACCESS_DENIED);
                 }
                 reportsToProcess.add(report);
+            } else {
+                log.warn("No emissionReportId provided.");
+                distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
+                profitDistributionRepository.save(distributionEvent);
+                return;
             }
 
             if (reportsToProcess.isEmpty()) {
                 log.warn("Do not have emission report is approved to share profit.");
-                distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED); // Hoàn thành (không có gì để làm)
+                distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
                 profitDistributionRepository.save(distributionEvent);
                 return;
             }
@@ -180,10 +183,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
 
             Map<Long, ContributionData> evOwnerContributions = new HashMap<>();
-            BigDecimal totalCreditsForDistribution = BigDecimal.ZERO;
 
-            for (EmissionReport report : reportsToProcess) {
-                for (EmissionReportDetail detail : report.getDetails()) {
+            for (EmissionReport r : reportsToProcess) { // Đổi tên biến
+                for (EmissionReportDetail detail : r.getDetails()) {
                     if (!Objects.equals(detail.getCompanyId(), company.getId())) {
                         continue;
                     }
@@ -196,10 +198,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         continue;
                     }
 
-                    BigDecimal creditContribution = resolveCreditContribution(detail, energy);
+                    BigDecimal creditContributionKg = resolveCreditContribution(detail, energy);
                     ContributionData contribution = evOwnerContributions.computeIfAbsent(
                             vehicle.getEvOwner().getId(), ContributionData::new);
-                    contribution.addContribution(energy, creditContribution);
+                    contribution.addContribution(energy, creditContributionKg);
                 }
             }
 
@@ -212,10 +214,17 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             List<OwnerPayoutData> payoutPlan = new ArrayList<>();
             BigDecimal totalRawPayout = BigDecimal.ZERO;
+            BigDecimal totalCreditsKgForDistribution = BigDecimal.ZERO;
+            BigDecimal totalEnergyForDistribution = BigDecimal.ZERO;
 
             for (ContributionData contribution : evOwnerContributions.values()) {
-                // TÍNH TOÁN PAYOUT CHUẨN (KHÔNG CHIA %)
-                BigDecimal rawPayout = calculateRawPayout(contribution, policy);
+                BigDecimal rawPayout = calculateRawPayout(
+                        contribution,
+                        policy,
+                        actualPayoutPricePerCredit,
+                        kwhPerCreditFactor
+                );
+
                 if (rawPayout.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
@@ -223,15 +232,19 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     log.info("Skipping payout for owner {} due to min payout threshold {}", contribution.getEvOwnerId(), policy.getMinPayout());
                     continue;
                 }
-                BigDecimal creditContribution = normalizeAmount(contribution.getTotalCreditContribution(), 6);
+
+                BigDecimal creditContributionKg = normalizeAmount(contribution.getTotalCreditContribution(), 6);
                 BigDecimal energyContribution = normalizeAmount(contribution.getTotalEnergyContribution(), 6);
+
                 payoutPlan.add(new OwnerPayoutData(
                         contribution.getEvOwnerId(),
-                        creditContribution,
+                        creditContributionKg,
                         energyContribution,
                         rawPayout));
+
                 totalRawPayout = totalRawPayout.add(rawPayout);
-                totalCreditsForDistribution = totalCreditsForDistribution.add(creditContribution);
+                totalCreditsKgForDistribution = totalCreditsKgForDistribution.add(creditContributionKg);
+                totalEnergyForDistribution = totalEnergyForDistribution.add(energyContribution);
             }
 
             if (payoutPlan.isEmpty() || totalRawPayout.compareTo(BigDecimal.ZERO) <= 0) {
@@ -241,97 +254,169 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 return;
             }
 
-            // TỔNG TIỀN TRẢ = TỔNG PAYOUT (KHÔNG CÓ CAP)
             BigDecimal finalTotal = totalRawPayout.setScale(2, RoundingMode.HALF_UP);
-
-            // KIỂM TRA VÍ CÔNG TY VỚI TỔNG SỐ TIỀN PHẢI TRẢ
+            // 'report' đã được tải ở trên
             validateCompanyBalance(companyWallet, finalTotal);
 
-            // LƯU TỔNG SỐ TIỀN PHẢI TRẢ
             distributionEvent.setTotalMoneyDistributed(finalTotal);
-            distributionEvent.setTotalCreditsDistributed(totalCreditsForDistribution.setScale(6, RoundingMode.HALF_UP));
-
+            distributionEvent.setTotalCreditsDistributed(totalCreditsKgForDistribution.setScale(6, RoundingMode.HALF_UP));
             profitDistributionRepository.save(distributionEvent);
 
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
             for (OwnerPayoutData payout : payoutPlan) {
-                // THỰC THI CHUYỂN TIỀN
-                processPayoutForOwner(distributionEvent, payout, companyWallet);
+                getSelf().processPayoutForOwner(
+                        distributionEvent,
+                        payout,
+                        companyWallet,
+                        report.getId(), // Chỉ truyền ID
+                        policy,
+                        company
+                );
             }
 
             log.info("All sequential payouts processed.");
 
-            updateReportsToPaidOut(reportsToProcess);
+            getSelf().updateReportsToPaidOut(reportsToProcess);
+
+            try {
+                BigDecimal totalCreditsTCO2e = totalCreditsKgForDistribution.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
+
+                // Lấy Project Title (LAZY) ở đây. Vì 'report' được tải bằng 'findByIdWithDetails'
+                // (giả sử là EAGER hoặc JOIN FETCH), nó vẫn an toàn.
+                String period = report.getPeriod();
+
+                emailService.sendDistributionSummaryToCompany(
+                        companyUser.getEmail(),
+                        company.getCompanyName(),
+                        period, // Sử dụng biến an toàn
+                        payoutPlan.size(),
+                        totalEnergyForDistribution,
+                        totalCreditsTCO2e,
+                        finalTotal,
+                        false,
+                        company.getId(),
+                        String.valueOf(distributionEvent.getId())
+                );
+                log.info("Sent payout summary email to company {}", company.getId());
+            } catch (Exception e) {
+                // Nếu 'findByIdWithDetails' không fetch 'period', lỗi 'no Session' cũng xảy ra ở đây
+                log.warn("Failed to send payout summary email to company {}: {}", company.getId(), e.getMessage(), e);
+            }
 
             distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
             profitDistributionRepository.save(distributionEvent);
 
         } catch (Exception e) {
             log.error("System Error: {}", e.getMessage(), e);
-            String errorMessage = (e instanceof AppException ae) ? ae.getErrorCode().getMessage() : e.getMessage();
-
             distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-
             profitDistributionRepository.save(distributionEvent);
         }
     }
 
-
-    /**
-     * BƯỚC 3: Xử lý thanh toán (Hàm này tạo Lịch sử Giao dịch)
-     * Hàm này chạy trong 1 GIAO DỊCH MỚI (REQUIRES_NEW)
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processPayoutForOwner(ProfitDistribution event, OwnerPayoutData payout, Wallet companyWallet) {
-        // Lấy lại (fresh) company wallet trong transaction mới để tránh lỗi "detached entity"
-        // và đảm bảo số dư là mới nhất.
+    public void processPayoutForOwner(
+            ProfitDistribution event,
+            OwnerPayoutData payout,
+            Wallet companyWallet,
+            Long reportId,
+            ResolvedPolicy policy,
+            Company company
+    ) {
+        // Tải lại (fetch) report bên trong giao dịch (transaction) MỚI này
+        // để đảm bảo Session đang mở.
+        // **QUAN TRỌNG: Dùng findByIdWithDetails để tải EAGER các trường cần thiết**
+        EmissionReport report = emissionReportRepository.findByIdWithDetails(reportId).orElse(null);
+
+        // Lấy thông tin LAZY (Project, Period) ngay khi Session CÒN MỞ
+        String projectName = "N/A";
+        String reportPeriod = "N/A";
+        String reportIdStr = String.valueOf(reportId);
+
+        if (report != null) {
+            try {
+                // Vì đã dùng findByIdWithDetails, các trường này đã được tải (EAGER)
+                if (report.getProject() != null) {
+                    projectName = report.getProject().getTitle();
+                }
+                reportPeriod = report.getPeriod();
+            } catch (Exception e) {
+                // Phòng trường hợp 'findByIdWithDetails' không fetch hết
+                log.warn("Could not eager fetch report/project data for email (trong TX mới): {}", e.getMessage());
+            }
+        } else {
+            log.error("Không tìm thấy Report với ID {} bên trong processPayoutForOwner!", reportId);
+        }
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
             log.error("Company wallet not found in async thread! Wallet ID: {}", companyWallet.getId());
-            saveFailedDetail(event, payout, "Company wallet not found");
+            getSelf().saveFailedDetail(event, payout, "Company wallet not found");
             return;
         }
 
         EVOwner owner = evOwnerRepository.findById(payout.getEvOwnerId()).orElse(null);
         if (owner == null || owner.getUser() == null) {
             log.error("EVOwner or associated User not found for EVOwner ID: {}", payout.getEvOwnerId());
-            saveFailedDetail(event, payout, "EVOwner not found");
+            getSelf().saveFailedDetail(event, payout, "EVOwner not found");
             return;
         }
 
         Wallet ownerWallet = walletService.findWalletByUser(owner.getUser());
         if (ownerWallet == null) {
-            // Tự động tạo ví nếu chưa có
             try {
                 ownerWallet = ((WalletServiceImpl) walletService).generateWallet(owner.getUser());
                 log.info("Wallet for EVOwner ID {} not found. Generated new wallet.", payout.getEvOwnerId());
             } catch (Exception e) {
                 log.error("Failed to generate wallet for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
-                saveFailedDetail(event, payout, "Failed to create wallet: " + e.getMessage());
+                getSelf().saveFailedDetail(event, payout, "Failed to create wallet: " + e.getMessage());
                 return;
             }
         }
 
-        // tạo detail profit sharing
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(event);
         detail.setEvOwner(owner);
-        detail.setMoneyAmount(payout.getPayoutAmount()); // SỐ TIỀN CHUẨN
+        detail.setMoneyAmount(payout.getPayoutAmount());
         detail.setCreditAmount(payout.getCreditContribution());
         detail.setEnergyAmount(payout.getEnergyContribution());
 
         try {
             if (payout.getPayoutAmount().compareTo(BigDecimal.ZERO) > 0) {
-                // CHUYỂN TIỀN CHUẨN
                 walletService.transferFunds(
                         threadSafeCompanyWallet,
                         ownerWallet,
                         payout.getPayoutAmount(),
                         WalletTransactionType.PROFIT_SHARING.name(),
                         String.format("Sharing profit to EV owner %s (distribution #%d)", owner.getName(), event.getId()),
-                        String.format("Profit-sharing from distribution #%d", event.getId()),event
+                        String.format("Profit-sharing from distribution #%d", event.getId()),
+                        event
                 );
             }
+
+            try {
+                // Sử dụng các biến String đã lấy từ trước
+                String reportReference = "Report #" + reportIdStr + " (" + projectName + ")";
+                BigDecimal creditsAsTCO2e = payout.getCreditContribution().divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
+
+                emailService.sendPayoutSuccessToOwner(
+                        owner.getUser().getEmail(),
+                        owner.getName(),
+                        company.getCompanyName(),
+                        reportPeriod, // Sử dụng biến an toàn
+                        payout.getEnergyContribution(),
+                        creditsAsTCO2e,
+                        payout.getPayoutAmount(),
+                        java.util.Collections.emptyList(),
+                        String.valueOf(event.getId()),
+                        company.getId(),
+                        reportReference, // Sử dụng biến an toàn
+                        policy.getMinPayout()
+                );
+                log.info("Sent payout success email to owner {} for distribution {}", owner.getId(), event.getId());
+
+            } catch (Exception e) {
+                log.warn("Failed to send payout success email to owner {}: {}", owner.getId(), e.getMessage(), e);
+            }
+
             detail.setStatus("SUCCESS");
             log.info("Successfully processed payout for EVOwner ID: {}", payout.getEvOwnerId());
 
@@ -350,10 +435,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
 
-    /**
-     * BƯỚC 1: Tạo sự kiện (Hàm này tạo Lịch sử Giao dịch)
-     * Hàm này chạy trong 1 GIAO DỊCH MỚI (REQUIRES_NEW)
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
         ProfitDistribution event = new ProfitDistribution();
@@ -369,7 +450,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         return profitDistributionRepository.save(event);
     }
 
-    // Gói việc lưu lỗi chi tiết vào Transaction
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
         try {
@@ -389,7 +469,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
     private Map<String, Vehicle> buildCompanyVehicleMap(Long companyId) {
-        // buoc 1: tai toan bo xe thuoc company kem thong tin chu xe bang entity graph
         List<Vehicle> vehicles = vehicleRepository.findByCompanyId(companyId);
         Map<String, Vehicle> vehicleMap = new HashMap<>();
         for (Vehicle vehicle : vehicles) {
@@ -404,8 +483,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         return vehicleMap;
     }
 
-
-    // Gói việc update Report vào Transaction
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateReportsToPaidOut(List<EmissionReport> reports) {
         if (reports == null || reports.isEmpty()) return;
@@ -418,49 +495,49 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         emissionReportRepository.saveAll(freshReports);
     }
 
-    /**
-     * TÍNH TOÁN PAYOUT CHUẨN (LOGIC CỐT LÕI)
-     * Tính toán số tiền payout (chi phí) dựa trên chính sách cố định.
-     */
-    private BigDecimal calculateRawPayout(ContributionData contribution, ResolvedPolicy policy) {
-        // Logic 1: Nếu chính sách trả theo KWH
-        if (policy.getPricingMode() == PricingMode.KWH && policy.getUnitPricePerKwh() != null) {
-            return contribution.getTotalEnergyContribution()
-                    .multiply(policy.getUnitPricePerKwh())
-                    .setScale(2, RoundingMode.HALF_UP);
+    private BigDecimal calculateRawPayout(
+            ContributionData contribution,
+            ResolvedPolicy policy,
+            BigDecimal actualPayoutPricePerCredit,
+            BigDecimal kwhPerCreditFactor
+    ) {
+        if (policy.getPricingMode() == PricingMode.KWH) {
+            if (kwhPerCreditFactor.compareTo(BigDecimal.ZERO) == 0) {
+                log.warn("KWH_PER_CREDIT_FACTOR is zero, cannot calculate KWH payout. Defaulting to CREDIT mode.");
+            } else {
+                BigDecimal payoutPricePerKwh = actualPayoutPricePerCredit.divide(kwhPerCreditFactor, 6, RoundingMode.HALF_UP);
+                return contribution.getTotalEnergyContribution()
+                        .multiply(payoutPricePerKwh)
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
         }
-        // Logic 2: Nếu chính sách trả theo CREDIT
-        return contribution.getTotalCreditContribution()
-                .multiply(policy.getUnitPricePerCredit())
+
+        BigDecimal creditsAsTCO2e = contribution.getTotalCreditContribution()
+                .divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
+
+        return creditsAsTCO2e
+                .multiply(actualPayoutPricePerCredit)
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
     private BigDecimal normalizeAmount(BigDecimal value, int scale) {
-        if (value == null) {
-            return BigDecimal.ZERO.setScale(scale, RoundingMode.HALF_UP);
-        }
-        return value.setScale(scale, RoundingMode.HALF_UP);
+        return Objects.requireNonNullElse(value, BigDecimal.ZERO)
+                .setScale(scale, RoundingMode.HALF_UP);
     }
 
     private String normalizePlate(String plate) {
         return plate == null ? null : plate.replaceAll("\\s+", "").toUpperCase();
     }
 
-    /**
-     * KIỂM TRA VÍ CÔNG TY
-     * Đảm bảo công ty có đủ tiền để trả tổng chi phí (finalTotal).
-     */
     private void validateCompanyBalance(Wallet companyWallet, BigDecimal requiredAmount) throws WalletException {
         if (requiredAmount == null) return;
 
         Wallet freshWallet = walletRepository.findById(companyWallet.getId())
                 .orElseThrow(() -> new WalletException("Wallet not found during validation"));
 
-        // SO SÁNH SỐ DƯ VÍ VỚI TỔNG TIỀN PHẢI TRẢ
         if (freshWallet.getBalance().compareTo(requiredAmount) < 0) {
             log.warn("Insufficient funds: Wallet {} has {} but requires {}",
                     freshWallet.getId(), freshWallet.getBalance(), requiredAmount);
-            // NÉM LỖI CHUẨN
             throw new AppException(ErrorCode.WALLET_INSUFFICIENT_FUNDS);
         }
     }
@@ -469,11 +546,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         if (detail == null) return BigDecimal.ZERO;
         BigDecimal co2Kg = detail.getCo2Kg();
         if (co2Kg != null && co2Kg.compareTo(BigDecimal.ZERO) > 0) {
-            return co2Kg.setScale( 6, RoundingMode.HALF_UP);
+            return co2Kg.setScale(6, RoundingMode.HALF_UP);
         }
         if (fallbackEnergy != null && fallbackEnergy.compareTo(BigDecimal.ZERO) > 0) {
-            return fallbackEnergy.multiply(DEFAULT_EMISSION_FACTOR).setScale( 6, RoundingMode.HALF_UP);
+            return fallbackEnergy.multiply(DEFAULT_EMISSION_FACTOR).setScale(6, RoundingMode.HALF_UP);
         }
-        return BigDecimal.ZERO.setScale(6,RoundingMode.HALF_UP);
+        return BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP);
     }
 }

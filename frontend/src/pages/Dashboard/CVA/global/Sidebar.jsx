@@ -6,7 +6,7 @@ import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "@/themeCVA";
 import SecurityIcon from "@mui/icons-material/Security";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import { checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 
@@ -57,8 +57,8 @@ const Sidebar = () => {
   const menuItems = [
     { title: "Dashboard", to: "/cva/dashboard", icon: <HomeOutlinedIcon /> },
     { section: "Data" },
-    { title: "Manage Reports", to: "/cva/report_management", icon: <PeopleOutlinedIcon /> },
-    { title: "Manage Applications_Projects", to: "/cva/registration_project_management", icon: <ReceiptOutlinedIcon /> },
+    { title: "Reports", to: "/cva/report_management", icon: <DescriptionOutlinedIcon /> },
+    { title: "Applications_Projects", to: "/cva/registration_project_management", icon: <ReceiptOutlinedIcon /> },
   ];
 
   return (
@@ -79,10 +79,10 @@ const Sidebar = () => {
           padding: "5px 35px 5px 20px !important",
         },
         "& .pro-inner-item:hover": {
-          color: "#868dfb !important",
+          color: "#79bdb4ff !important",
         },
         "& .pro-menu-item.active": {
-          color: "#6870fa !important",
+          color: "#2b8773fe !important",
         },
       }}
     >

@@ -66,7 +66,7 @@ export default function Register() {
         },
       });
 
-      // nếu thành công
+      // Nếu thành công: chuyển sang trang nhập OTP
       toast.success("Registration successful! Please verify your email.");
       nav("/otp", {
         replace: true,

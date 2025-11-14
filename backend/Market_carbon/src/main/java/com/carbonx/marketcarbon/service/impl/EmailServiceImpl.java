@@ -11,8 +11,6 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -22,6 +20,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.util.HashMap; // Đảm bảo import
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,10 +41,9 @@ public class EmailServiceImpl implements EmailService {
 
     @NonFinal
     @Value("${spring.mail.enabled:true}")
-    boolean mailEnabled;   // <— now excluded from required-args constructor
+    boolean mailEnabled;
 
 
-    // Cho phép đổi tên hiển thị qua cấu hình; mặc định "CarbonX team"
     @NonFinal
     @Value("${app.mail.display-name:CarbonX team}")
     String displayName;
@@ -108,7 +106,7 @@ public class EmailServiceImpl implements EmailService {
             log.info("Plain text email sent to {}", to);
         } catch (MessagingException ex) {
             log.error("Failed to send plain text email to {}: {}", to, ex.getMessage(), ex);
-            throw ex; // giữ hành vi theo interface nếu cần bắt ở tầng gọi
+            throw ex;
         }
     }
 
@@ -171,7 +169,6 @@ public class EmailServiceImpl implements EmailService {
     public String renderWithdrawalFailedEmail(Map<String, Object> variables) {
         Context ctx = new Context();
         ctx.setVariables(variables);
-        // Sử dụng template mới emails/withdrawal-failed.html
         return templateEngine.process("emails/withdrawal-failed.html", ctx);
     }
 
@@ -183,6 +180,19 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public String renderReportAdminDecisionEmail(Map<String, Object> vars) {
         return templateEngine.process("emails/report-admin-decision.html", new Context(Locale.getDefault(), vars));
+    }
+
+    // --- CÁC HÀM MỚI ĐÂY ---
+    @Override
+    public String renderPayoutSuccessEmail(Map<String, Object> variables) {
+        Context ctx = new Context(Locale.getDefault(), variables);
+        return templateEngine.process("emails/payout-success.html", ctx);
+    }
+
+    @Override
+    public String renderPayoutSummaryEmail(Map<String, Object> variables) {
+        Context ctx = new Context(Locale.getDefault(), variables);
+        return templateEngine.process("emails/payout-summary.html", ctx);
     }
 
     @Async("profitSharingTaskExecutor")
@@ -208,11 +218,31 @@ public class EmailServiceImpl implements EmailService {
             return;
         }
 
-        String subject = String.format("[CarbonX] Payout tháng %s từ %s", periodLabel, companyName);
-        String body = buildOwnerBody(ownerName, companyName, periodLabel, totalEnergyKWh, totalCredits, amountUsd,
-                perVehicle, distributionReference, companyId, reportReference, minPayout);
+        // 1. Tạo Context Map cho Thymeleaf
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("ownerName", ownerName);
+        vars.put("companyName", companyName);
+        vars.put("periodLabel", periodLabel);
+        vars.put("totalEnergyKWh", totalEnergyKWh);
+        vars.put("totalCredits", totalCredits);
+        vars.put("amountUsd", amountUsd);
+        vars.put("perVehicle", perVehicle);
+        vars.put("distributionReference", distributionReference);
+        vars.put("companyId", companyId);
+        vars.put("reportReference", reportReference);
+        vars.put("minPayout", minPayout);
 
-        sendPlainTextEmail(toEmail, subject, body);
+        try {
+            // 2. Render HTML
+            String subject = String.format("[CarbonX] Bạn nhận được thanh toán kỳ %s từ %s", periodLabel, companyName);
+            String htmlBody = renderPayoutSuccessEmail(vars);
+
+            // 3. Gửi bằng sendHtml
+            sendHtml(toEmail, subject, htmlBody);
+
+        } catch (Exception ex) {
+            log.warn("Failed to send HTML payout notification email to {}: {}", toEmail, ex.getMessage(), ex);
+        }
     }
 
     @Async("profitSharingTaskExecutor")
@@ -236,113 +266,28 @@ public class EmailServiceImpl implements EmailService {
             return;
         }
 
-        String subject = String.format("[CarbonX] Tổng kết payout kỳ %s", periodLabel);
-        StringBuilder body = new StringBuilder();
-        body.append("Xin chào ").append(companyName).append("\n\n")
-                .append("Tổng số EV Owner đã được thanh toán: ").append(ownersPaid).append("\n")
-                .append("Tổng năng lượng: ").append(formatDecimal(totalEnergy)).append(" kWh\n")
-                .append("Tổng tín chỉ: ").append(formatDecimal(totalCredits)).append(" tCO₂e\n")
-                .append("Tổng số tiền đã chi: ").append(formatCurrency(totalPayoutUsd)).append(" USD\n\n");
+        // 1. Tạo Context Map
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("companyName", companyName);
+        vars.put("periodLabel", periodLabel);
+        vars.put("ownersPaid", ownersPaid);
+        vars.put("totalEnergy", totalEnergy);
+        vars.put("totalCredits", totalCredits);
+        vars.put("totalPayoutUsd", totalPayoutUsd);
+        vars.put("scaledByCap", scaledByCap);
+        vars.put("companyId", companyId);
+        vars.put("distributionReference", distributionReference);
 
-        if (scaledByCap) {
-            body.append("Lưu ý: Số tiền payout đã được điều chỉnh theo tổng ngân sách được đặt trong kỳ này.\n\n");
-        }
-
-        body.append("Xem chi tiết đợt payout: /companies/").append(companyId)
-                .append("/payouts/").append(distributionReference).append("\n");
-        body.append("Link export Excel: /companies/").append(companyId)
-                .append("/payouts/").append(distributionReference).append("/export.xlsx\n");
-
-        sendPlainTextEmail(toEmail, subject, body.toString());
-    }
-
-    private void sendPlainTextEmail(String toEmail, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(toEmail);
-            if (!emailFrom.isBlank()) {
-                message.setFrom(String.format("%s <%s>", displayName, emailFrom).trim());
-            }
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
-            log.info("Sent notification email to {}", toEmail);
-        } catch (MailException ex) {
-            log.warn("Failed to send notification email to {}: {}", toEmail, ex.getMessage());
+            // 2. Render HTML
+            String subject = String.format("[CarbonX] Tổng kết payout kỳ %s", periodLabel);
+            String htmlBody = renderPayoutSummaryEmail(vars);
+
+            // 3. Gửi bằng sendHtml
+            sendHtml(toEmail, subject, htmlBody);
+
         } catch (Exception ex) {
-            log.warn("Unexpected error when sending notification email to {}: {}", toEmail, ex.getMessage());
+            log.warn("Failed to send HTML payout summary email to {}: {}", toEmail, ex.getMessage(), ex);
         }
-    }
-
-    private String buildOwnerBody(String ownerName,
-                                  String companyName,
-                                  String periodLabel,
-                                  BigDecimal totalEnergyKWh,
-                                  BigDecimal totalCredits,
-                                  BigDecimal amountUsd,
-                                  List<VehiclePayoutRow> perVehicle,
-                                  String distributionReference,
-                                  Long companyId,
-                                  String reportReference,
-                                  BigDecimal minPayout) {
-        StringBuilder body = new StringBuilder();
-        body.append("Xin chào ").append(ownerName).append("\n\n")
-                .append("Tổng năng lượng bạn đã đóng góp trong kỳ ").append(periodLabel).append(": ")
-                .append(formatDecimal(totalEnergyKWh)).append(" kWh\n")
-                .append("Tổng tín chỉ (credits): ").append(formatDecimal(totalCredits)).append(" tCO₂e\n")
-                .append("Số tiền nhận trong kỳ: ").append(formatCurrency(amountUsd)).append(" USD\n\n");
-
-        if (perVehicle != null && !perVehicle.isEmpty()) {
-            body.append("Biển số | Tên xe | kWh | Credits | Số tiền (VND)\n");
-            String rows = perVehicle.stream()
-                    .map(row -> String.join(" | ",
-                            safe(row.plate()),
-                            safe(row.vehicleNameOrModel()),
-                            formatDecimal(row.energyKWh()),
-                            formatDecimal(row.credits()),
-                            formatCurrency(row.amountUsd())))
-                    .collect(Collectors.joining("\n"));
-            body.append(rows).append("\n\n");
-        }
-
-        body.append("Thông tin report: ").append(reportReference)
-                .append(" do ").append(companyName).append(" nộp\n");
-        body.append("Link xem chi tiết: /companies/").append(companyId)
-                .append("/payouts/").append(distributionReference).append("\n");
-
-        if (minPayout != null) {
-            body.append("Lưu ý: Các khoản payout dưới ")
-                    .append(formatCurrency(minPayout))
-                    .append(" USD sẽ được cộng dồn sang kỳ sau theo chính sách hiện hành.\n");
-        }
-
-        return body.toString();
-    }
-
-    private String formatCurrency(BigDecimal value) {
-        if (value == null) {
-            return "0";
-        }
-        return formatNumber(value, 2);
-    }
-
-    private String formatDecimal(BigDecimal value) {
-        if (value == null) {
-            return "0";
-        }
-        return formatNumber(value, 2);
-    }
-
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private String formatNumber(BigDecimal value, int fractionDigits) {
-        Locale locale = new Locale("vi", "VN");
-        var format = java.text.NumberFormat.getInstance(locale);
-        format.setMaximumFractionDigits(fractionDigits);
-        format.setMinimumFractionDigits(fractionDigits);
-        format.setGroupingUsed(true);
-        return format.format(value);
     }
 }

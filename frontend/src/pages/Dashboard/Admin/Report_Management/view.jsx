@@ -120,7 +120,7 @@ const ReportView = () => {
     return (
         <Box
             m="20px"
-            sx={{ marginLeft: "290px", maxWidth: "1400px", width: "100%" }}
+            sx={{ marginLeft: "290px", maxWidth: "1210px", width: "100%" }}
         >
             <Header
                 title="REPORT DETAIL"

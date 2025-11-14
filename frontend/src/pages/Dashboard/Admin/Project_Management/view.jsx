@@ -88,7 +88,6 @@ const ViewProject = () => {
         requestDateTime: new Date().toISOString(),
         title: formData.projectname,
         description: formData.shortdescription,
-        technicalIndicators: formData.totalcompanies,
         measurementMethod: formData.measurementmethod,
         emissionFactorKgPerKwh: parseFloat(formData.emissionFactor) || 0,
         logo: formData.logo || "",
@@ -337,7 +336,7 @@ const ViewProject = () => {
                       ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
                         "DD/MM/YYYY"
                       )
-                      : "—"}
+                      : "indefinitely"}
                   </Typography>
                 )}
               </Box>

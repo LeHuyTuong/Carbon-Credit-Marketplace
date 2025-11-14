@@ -5,6 +5,7 @@ import { apiFetch } from "../../../utils/apiFetch";
 import { useNavigate } from "react-router-dom";
 import PaginatedList from "../../../components/Pagination/PaginatedList";
 import useReveal from "../../../hooks/useReveal";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function WalletHistory() {
   const nav = useNavigate();
@@ -12,6 +13,8 @@ export default function WalletHistory() {
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { isEv } = useAuth();
+
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
@@ -188,13 +191,13 @@ export default function WalletHistory() {
 
                       {/*nếu là Profit Sharing → show nút View Details */}
                       {tx.transactionType === "PROFIT_SHARING" &&
+                        isEv !== "EV_OWNER" &&
                         (() => {
                           //tìm pattern "(distribution id)" trong description
                           const match = tx.description?.match(
-                            /\(distribution\s+#(\d+)\)/i
+                            /distribution\s+#(\d+)/i
                           );
                           const distId = match ? match[1] : null;
-
                           return (
                             distId && (
                               <Button

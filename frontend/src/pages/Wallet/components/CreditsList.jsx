@@ -37,13 +37,11 @@ export default function CreditsList({ credits = [] }) {
               </>
             ) : (
               <>
-                <th>Batch Code</th>
                 <th>Project</th>
                 <th>Report File Name</th>
                 <th>Report Period</th>
                 <th>Total tCO₂e</th>
                 <th>Credits Count</th>
-                <th>Status</th>
                 <th>Issued At</th>
                 <th></th>
               </>
@@ -72,21 +70,11 @@ export default function CreditsList({ credits = [] }) {
               ) : (
                 // render dòng dữ liệu cho issued credits
                 <tr key={item.id}>
-                  <td>{item.batchCode}</td>
                   <td>{item.projectTitle}</td>
                   <td>{item.reportFileName}</td>
                   <td>{item.reportPeriod}</td>
                   <td>{item.totalTco2e}</td>
                   <td>{item.creditsCount}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        item.status === "ISSUED" ? "bg-success" : "bg-secondary"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
                   <td>{item.issuedAt}</td>
                   <td>
                     <button

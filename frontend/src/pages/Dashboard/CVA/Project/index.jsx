@@ -5,14 +5,13 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataProjectsCVA } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
-    const [data, setData] = useState(mockDataProjectsCVA);
-    
+  const [data, setData] = useState(mockDataProjectsCVA);
+
   const columns = [
     { field: "projectid", headerName: "Project ID", flex: 1 },
     {
@@ -36,19 +35,18 @@ const Invoices = () => {
       field: "projecttype",
       headerName: "Project Type",
       flex: 1.5,
-      
     },
     {
-      field: "numberofcreditsrecorded", 
+      field: "numberofcreditsrecorded",
       headerName: "Number of Credits Recorded",
       flex: 1,
     },
     {
-      field: "starteddate", 
+      field: "starteddate",
       headerName: "Started Date",
       flex: 1,
     },
-    
+
     {
       field: "status",
       headerName: "Status",
@@ -78,21 +76,22 @@ const Invoices = () => {
       },
     },
     {
-          field: "action",
-          headerName: "Action",
-          flex: 1,
-          renderCell: (params) => {
-            return (
-              <div className="cellAction">
-                <Link to={`/cva/view_project/${params.row.id}`} style={{ textDecoration: "none" }}>
-                  <div className="viewButton">View</div>
-                </Link>
-                
-              </div>
-            );
-          },
-        },
-    
+      field: "action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <div className="cellAction">
+            <Link
+              to={`/cva/view_project/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
+              <div className="viewButton">View</div>
+            </Link>
+          </div>
+        );
+      },
+    },
   ];
 
   return (
@@ -130,11 +129,12 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",

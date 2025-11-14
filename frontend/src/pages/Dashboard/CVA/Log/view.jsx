@@ -12,7 +12,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataLogCVA } from "@/data/mockData";
 
 const ViewLog = () => {
   const theme = useTheme();
@@ -60,7 +59,12 @@ const ViewLog = () => {
         }}
       >
         {/* Header trong card */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Typography variant="h5" fontWeight="bold">
             Log Information
           </Typography>

@@ -8,11 +8,13 @@ import {
   ToastContainer,
   OverlayTrigger,
   Tooltip,
+  Collapse,
 } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import useReveal from "../../../../hooks/useReveal";
 import { getApprovedCompanies } from "../ManageVehicle/manageApi";
+import formulaImg from "/src/assets/formula.jpeg";
 
 import {
   getVehicles,
@@ -41,6 +43,26 @@ export default function Manage() {
   const [deleteTarget, setDeleteTarget] = useState(null); // chứa vehicle muốn xóa
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showFormulaImg, setShowFormulaImg] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
+
+  //check đã kyc chưa
+  useEffect(() => {
+    const checkKyc = async () => {
+      try {
+        const res = await apiFetch("/api/v1/kyc/user", { method: "GET" });
+        if (res?.response?.id) {
+          setIsKycVerified(true); // kyc rồi
+        } else {
+          setIsKycVerified(false); // chưa kyc
+        }
+      } catch (err) {
+        setIsKycVerified(false);
+      }
+    };
+
+    checkKyc();
+  }, []);
 
   //state hiển thị thông báo (Toast)
   const [toast, setToast] = useState({
@@ -122,6 +144,18 @@ export default function Manage() {
 
   //submit (thêm hoặc sửa)
   const handleSubmit = async (values) => {
+    //chặn nếu chưa kyc
+    if (!isKycVerified) {
+      showToast(
+        "You must complete KYC verification before adding a vehicle.",
+        "danger"
+      );
+      //điều hướng sang kyc
+      setTimeout(() => {
+        window.location.href = "/kyc";
+      }, 1800);
+      return;
+    }
     try {
       //chuẩn hóa dữ liệu trước khi gửi lên API
       const payload = {
@@ -187,6 +221,8 @@ export default function Manage() {
         onHide={handleClose}
         onSubmit={handleSubmit}
         data={editData}
+        showFormulaImg={showFormulaImg}
+        setShowFormulaImg={setShowFormulaImg}
       />
 
       {/*bảng hiển thị danh sách xe */}
@@ -295,7 +331,14 @@ export default function Manage() {
 }
 
 //modal thêm/sửa xe
-function VehicleModal({ show, onHide, data, onSubmit }) {
+function VehicleModal({
+  show,
+  onHide,
+  data,
+  onSubmit,
+  showFormulaImg,
+  setShowFormulaImg,
+}) {
   const [companies, setCompanies] = useState([]);
   const [preview, setPreview] = useState(null);
 
@@ -306,7 +349,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     model: data?.model ?? "",
     company: data?.companyId ?? "",
     image: null,
-    acceptRules: false,
+    acceptRules: data ? true : false, //edit thì true
   };
 
   //lấy danh sách công ty được duyệt khi mở modal
@@ -322,6 +365,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     fetchCompanies();
   }, []);
 
+  //giải phóng preview URL khi unmount
   useEffect(() => {
     return () => {
       if (preview) {
@@ -330,6 +374,7 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
     };
   }, [preview]);
 
+  //reset preview khi đóng modal
   useEffect(() => {
     if (!show) setPreview(null);
   }, [show]);
@@ -502,58 +547,90 @@ function VehicleModal({ show, onHide, data, onSubmit }) {
                   </div>
                 )}
               </Form.Group>
-            </Modal.Body>
 
-            {/* checkbox chấp nhận quy tắc chia tiền */}
-            <Form.Group
-              className="mb-3"
-              controlId="formTerms"
-              style={{ marginLeft: "17px" }}
-            >
-              <Form.Check
-                type="checkbox"
-                name="acceptRules"
-                checked={values.acceptRules || false}
-                onChange={handleChange}
-                isInvalid={touched.acceptRules && !!errors.acceptRules}
-                label={
-                  <>
-                    I accept the{" "}
-                    <OverlayTrigger
-                      placement="top"
-                      overlay={
-                        <Tooltip id="tooltip-rules">
-                          When you agree with the company's credit-sharing
-                          policy, you’ll receive{" "}
-                          <strong>≈ $0.019 (₫500)</strong> for each kWh you
-                          contribute.
-                        </Tooltip>
-                      }
+              {/* checkbox chấp nhận quy tắc chia tiền */}
+              {!data && (
+                <Form.Group className="mb-3" controlId="formTerms">
+                  <Form.Check
+                    type="checkbox"
+                    name="acceptRules"
+                    checked={values.acceptRules || false}
+                    onChange={handleChange}
+                    isInvalid={touched.acceptRules && !!errors.acceptRules}
+                    label={
+                      <>
+                        I accept the{" "}
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={
+                            <Tooltip id="tooltip-rules">
+                              When you agree with the company's credit-sharing
+                              policy, you’ll receive{" "}
+                              <strong>≈ $0.019 (₫500)</strong> for each kWh you
+                              contribute.
+                            </Tooltip>
+                          }
+                        >
+                          <span
+                            className="text-primary"
+                            style={{
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                            }}
+                          >
+                            credit-sharing rules
+                          </span>
+                        </OverlayTrigger>
+                      </>
+                    }
+                  />
+
+                  {/*hiển thị lỗi*/}
+                  {touched.acceptRules && errors.acceptRules && (
+                    <div
+                      className="text-danger mt-1"
+                      style={{ fontSize: "0.875rem", marginLeft: "1.8rem" }}
                     >
-                      <span
-                        className="text-primary"
-                        style={{
-                          textDecoration: "underline",
-                          cursor: "pointer",
-                        }}
-                      >
-                        credit-sharing rules
-                      </span>
-                    </OverlayTrigger>
-                  </>
-                }
-              />
-
-              {/*hiển thị lỗi*/}
-              {touched.acceptRules && errors.acceptRules && (
-                <div
-                  className="text-danger mt-1"
-                  style={{ fontSize: "0.875rem", marginLeft: "1.8rem" }}
-                >
-                  {errors.acceptRules}
-                </div>
+                      {errors.acceptRules}
+                    </div>
+                  )}
+                </Form.Group>
               )}
-            </Form.Group>
+              {/* Toggle nút Show/Hide */}
+              {!data && (
+                <>
+                  <div className="text-start mb-2">
+                    <Button
+                      variant="outline-info"
+                      size="sm"
+                      onClick={() => setShowFormulaImg((prev) => !prev)}
+                    >
+                      {showFormulaImg ? "Hide Formula" : "View Formula"}
+                    </Button>
+                  </div>
+
+                  {/*ảnh formula*/}
+                  <Collapse in={showFormulaImg}>
+                    <div>
+                      <div className="text-center mb-2">
+                        <img
+                          src={formulaImg}
+                          alt="Formula"
+                          style={{
+                            width: "95%",
+                            borderRadius: "6px",
+                            border: "1px solid #e3e3e3",
+                            backgroundColor: "#f8f9fa",
+                            padding: "4px",
+                            transition: "all 0.3s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </Collapse>
+                </>
+              )}
+            </Modal.Body>
 
             {/* nút hành động */}
             <Modal.Footer>
