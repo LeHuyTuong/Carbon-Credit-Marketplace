@@ -78,7 +78,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                 actualPayoutPricePerCredit
         );
 
-        // Trả về giá đã tính toán
         return PayoutFormulaResponse.builder()
                 .pricingMode(policy.getPricingMode())
                 .unitPrice(actualPayoutPricePerCredit)
@@ -152,8 +151,13 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
         FormulaMode formulaMode = FormulaMode.from(formula);
 
+        // Lấy Payout % (ưu tiên override)
         BigDecimal ownerSharePct = resolveOwnerSharePct(ownerSharePctOverride, policy);
+
+        // Lấy giá Payout (đã nhân %) (ưu tiên override)
         BigDecimal actualPayoutPricePerCredit = resolvePricePerCredit(pricePerCreditOverride, policy, ownerSharePct);
+
+        // Lấy hệ số quy đổi (ưu tiên override)
         BigDecimal kwhPerCreditFactor = resolveKwhToCreditFactor(kwhToCreditFactorOverride);
 
         validateFormulaParameters(formulaMode, actualPayoutPricePerCredit, kwhPerCreditFactor, ownerSharePct);
@@ -207,7 +211,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     formulaMode,
                     actualPayoutPricePerCredit,
                     kwhPerCreditFactor,
-                    BigDecimal.ONE,
                     scale
             );
 
@@ -378,9 +381,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         return plate == null ? null : plate.replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
     }
 
-    /**
-     * Hàm này trả về CO2 (tCO2e)
-     */
     private BigDecimal resolveCredits(EmissionReportDetail detail, BigDecimal fallbackEnergy) {
         if (detail.getCo2Kg() != null && detail.getCo2Kg().compareTo(BigDecimal.ZERO) > 0) {
             return detail.getCo2Kg().divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
@@ -443,7 +443,6 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                                      FormulaMode formulaMode,
                                      BigDecimal actualPayoutPricePerCredit,
                                      BigDecimal kwhPerCreditFactor,
-                                     BigDecimal ownerSharePct,
                                      int scale) {
 
         BigDecimal base;
@@ -543,8 +542,8 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
         }
 
         private CompanyPayoutSummaryItemResponse toResponse(int payoutScale) {
-            BigDecimal creditAfterShare = credits.multiply(ownerSharePct)
-                    .setScale(6, RoundingMode.HALF_UP);
+            // Hiển thị số credit gốc (chưa nhân %)
+            BigDecimal originalCredits = credits.setScale(6, RoundingMode.HALF_UP);
 
             return CompanyPayoutSummaryItemResponse.builder()
                     .ownerId(aggregation.getOwnerId())
@@ -553,7 +552,7 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
                     .phone(aggregation.getPhone())
                     .vehiclesCount(aggregation.getVehiclesCount())
                     .energyKwh(energy)
-                    .credits(creditAfterShare)
+                    .credits(originalCredits) // Hiển thị credit gốc
                     .amountUsd(payout.setScale(payoutScale, RoundingMode.HALF_UP))
                     .status("PREVIEW")
                     .build();

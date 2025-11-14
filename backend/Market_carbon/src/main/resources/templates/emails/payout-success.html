@@ -6,7 +6,7 @@
   <title>CarbonX Payout</title>
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-    .container { width: 90%; max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    .container { width: 90%; max-width: 600px; margin: 20px ; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
     .header { font-size: 24px; color: #16a34a; }
     .content { margin-top: 20px; }
     .summary-box { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 15px; }
@@ -21,46 +21,46 @@
 </head>
 <body>
 <div class="container">
-  <div class="header" th:text="'Xin chào, ' + ${ownerName} + '!'">
-    Xin chào, [Owner Name]!
+  <div class="header" th:text="'Hello, ' + ${ownerName} + '!'">
+    Hello, [Owner Name]!
   </div>
 
   <div class="content">
     <p>
-      Công ty <b th:text="${companyName}">[Company Name]</b> vừa thực hiện thanh toán cho
-      những đóng góp của bạn trong kỳ <b th:text="${periodLabel}">[Period]</b>
-      từ báo cáo <b th:text="${reportReference}">[Report Ref]</b>.
+      Company <b th:text="${companyName}">[Company Name]</b> has just made a payment for
+      your contributions during the period <b th:text="${periodLabel}">[Period]</b>
+      from report <b th:text="${reportReference}">[Report Ref]</b>.
     </p>
 
     <div class="summary-box">
-      <p>Tổng số tiền bạn nhận được:</p>
+      <p>Total amount you received:</p>
       <p>
         <strong th:text="${#numbers.formatDecimal(amountUsd, 1, 'COMMA', 2, 'POINT')} + ' USD'">
           [Amount] USD
         </strong>
       </p>
       <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-      <p>Tổng đóng góp của bạn trong kỳ này:</p>
+      <p>Your total contributions this period:</p>
       <ul>
-        <li th:text="${#numbers.formatDecimal(totalEnergyKWh, 1, 'COMMA', 2, 'POINT')} + ' kWh (Năng lượng)'">
-          [Total Energy] kWh (Năng lượng)
+        <li th:text="${#numbers.formatDecimal(totalEnergyKWh, 1, 'COMMA', 2, 'POINT')} + ' kWh (Energy)'">
+          [Total Energy] kWh (Energy)
         </li>
-        <li th:text="${#numbers.formatDecimal(totalCredits, 1, 'COMMA', 4, 'POINT')} + ' tCO₂e (Tín chỉ)'">
-          [Total Credits] tCO₂e (Tín chỉ)
+        <li th:text="${#numbers.formatDecimal(totalCredits, 1, 'COMMA', 4, 'POINT')} + ' tCO₂e (Credits)'">
+          [Total Credits] tCO₂e (Credits)
         </li>
       </ul>
     </div>
 
     <div th:if="${perVehicle != null && !perVehicle.isEmpty()}">
-      <h4>Chi tiết theo xe:</h4>
+      <h4>Details by vehicle:</h4>
       <table class="details-table">
         <thead>
         <tr>
-          <th>Biển số</th>
+          <th>License Plate</th>
           <th>Model</th>
-          <th>Năng lượng (kWh)</th>
-          <th>Tín chỉ (tCO₂e)</th>
-          <th>Số tiền (USD)</th>
+          <th>Energy (kWh)</th>
+          <th>Credits (tCO₂e)</th>
+          <th>Amount (USD)</th>
         </tr>
         </thead>
         <tbody>
@@ -77,7 +77,7 @@
 
     <p th:if="${minPayout != null && minPayout > 0}"
        class="note"
-       th:text="'Lưu ý: Các khoản thanh toán dưới ' + ${#numbers.formatDecimal(minPayout, 1, 'COMMA', 2, 'POINT')} + ' USD sẽ được cộng dồn sang kỳ sau.'">
+       th:text="'Note: Payments below ' + ${#numbers.formatDecimal(minPayout, 1, 'COMMA', 2, 'POINT')} + ' USD will be carried over to the next period.'">
       [Min payout note]
     </p>
 
@@ -85,8 +85,8 @@
 
   <div class="footer">
     <p>
-      Mã tham chiếu đợt thanh toán: <span th:text="${distributionReference}">[Dist Ref]</span><br>
-      Cảm ơn bạn đã đồng hành cùng CarbonX.
+      Payout distribution reference: <span th:text="${distributionReference}">[Dist Ref]</span><br>
+      Thank you for partnering with CarbonX.
     </p>
   </div>
 </div>
