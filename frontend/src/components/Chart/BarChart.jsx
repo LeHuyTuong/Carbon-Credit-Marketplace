@@ -2,7 +2,6 @@ import React from "react";
 import { useTheme } from "@mui/material";
 import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "@/theme";
-import { mockBarData as mockData } from "@/data/mockData";
 
 /**
  * BarChart - hiển thị Credit Status
@@ -15,13 +14,20 @@ const BarChart = ({ data = mockData, isDashboard = false }) => {
 
   const colorById = (id) => {
     switch (id) {
-      case "active": return "#4CAF50";
-      case "pending": return "#42A5F5";
-      case "listed": return "#FFCA28";
-      case "revoke": return "#EF5350";
-      case "sold": return "#AB47BC";
-      case "retire": return "#9E9E9E";
-      default: return "#90A4AE";
+      case "active":
+        return "#4CAF50";
+      case "pending":
+        return "#42A5F5";
+      case "listed":
+        return "#FFCA28";
+      case "revoke":
+        return "#EF5350";
+      case "sold":
+        return "#AB47BC";
+      case "retire":
+        return "#9E9E9E";
+      default:
+        return "#90A4AE";
     }
   };
 
@@ -90,23 +96,23 @@ const BarChart = ({ data = mockData, isDashboard = false }) => {
         legendOffset: -40,
       }}
       enableLabel={false}
-      legends={
-         [
-            {
-              dataFrom: "keys",
-              anchor: "bottom-right",
-              direction: "column",
-              translateX: 120,
-              itemsSpacing: 2,
-              itemWidth: 100,
-              itemHeight: 20,
-              itemOpacity: 0.85,
-              symbolSize: 18,
-            },
-          ]
-      }
+      legends={[
+        {
+          dataFrom: "keys",
+          anchor: "bottom-right",
+          direction: "column",
+          translateX: 120,
+          itemsSpacing: 2,
+          itemWidth: 100,
+          itemHeight: 20,
+          itemOpacity: 0.85,
+          symbolSize: 18,
+        },
+      ]}
       role="application"
-      barAriaLabel={(e) => `${e.id}: ${e.formattedValue} in month: ${e.indexValue}`}
+      barAriaLabel={(e) =>
+        `${e.id}: ${e.formattedValue} in month: ${e.indexValue}`
+      }
     />
   );
 };

@@ -5,7 +5,6 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataLogCVA } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -55,7 +54,6 @@ const Invoices = () => {
           {params.value}
         </Typography>
       ),
-
     },
     {
       field: "action",
@@ -64,15 +62,16 @@ const Invoices = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/cva/view_log/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/cva/view_log/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
-
           </div>
         );
       },
     },
-
   ];
 
   return (
@@ -110,19 +109,18 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",
             paddingTop: "0 !important",
             paddingBottom: "0 !important",
           },
-
-
         }}
       >
         <DataGrid checkboxSelection rows={data} columns={columns} />

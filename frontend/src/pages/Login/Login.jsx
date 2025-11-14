@@ -48,8 +48,12 @@ export default function Login() {
       //check token từ be
       if (!token) throw new Error("Missing token from server");
 
-      //lưu user
-      const user = { email: values.email, role: roles?.[0] || "USER" };
+      const rawRole = roles?.[0] || "USER";
+
+      // BE trả "ROLE_ADMIN" → FE dùng "ADMIN"
+      const normalizedRole = rawRole.replace("ROLE_", "");
+
+      const user = { email: values.email, role: normalizedRole };
       login(user, token, remember);
 
       if (user.role === "CVA") {
@@ -86,7 +90,7 @@ export default function Login() {
       import.meta.env.MODE === "development"
         ? "http://163.61.111.120:8082"
         : "https://carbonx.io.vn";
-    window.location.href = `${backend}/oauth2/authorization/google`;
+    window.location.assign(`${backend}/oauth2/authorization/google`);
   };
 
   return (

@@ -13,7 +13,6 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataCompanyCVA } from "@/data/mockData";
 import { useState } from "react";
 
 const ViewCompany = () => {
