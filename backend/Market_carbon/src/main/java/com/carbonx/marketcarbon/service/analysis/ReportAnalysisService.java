@@ -20,7 +20,8 @@ public class ReportAnalysisService {
     private final EmissionReportRepository reportRepo;
     private final EmissionReportDetailRepository detailRepo;
 
-    private static final Map<String,Integer> DQ_WEIGHTS = Map.of(
+    /* Điểm số tối đa của từng Rule */
+    private static final Map<String, Integer> DQ_WEIGHTS = Map.of(
             "DQ1_SCHEMA", 10,
             "DQ2_PERIOD", 10,
             "DQ3_ENERGY", 15,
@@ -30,30 +31,57 @@ public class ReportAnalysisService {
             "DQ7_UNIFORMITY_CV", 5,
             "DQ8_REPEAT_VALUES", 5
     );
+
     private static final int FRAUD_MAX = 30;
 
-    public AnalysisResult analyzeNoCo2(long reportId, boolean persist){
+    /** Tên đầy đủ của từng Rule (KHÔNG VIẾT TẮT) */
+    private static final Map<String, String> RULE_NAMES = Map.of(
+            "DQ1_SCHEMA", "Schema Validation Rule",
+            "DQ2_PERIOD", "Period Consistency Rule",
+            "DQ3_ENERGY", "Energy Validity Rule",
+            "DQ4_DUP_PLATE", "Duplicate License Plate Detection",
+            "DQ5_DUP_ROW", "Exact Duplicate Row Detection",
+            "DQ6_OUTLIER_IQR", "Energy Outlier Detection (IQR Method)",
+            "DQ7_UNIFORMITY_CV", "Energy Uniformity Rule (Coefficient of Variation)",
+            "DQ8_REPEAT_VALUES", "Repeated Rounded Energy Values Detection"
+    );
+
+    /** Mô tả đầy đủ từng Rule */
+    private static final Map<String, String> RULE_DESCRIPTIONS = Map.of(
+            "DQ1_SCHEMA", "Check that all required columns exist and the data schema is correct.",
+            "DQ2_PERIOD", "Ensure all rows use the same reporting period.",
+            "DQ3_ENERGY", "Validate that energy values are positive and meaningful.",
+            "DQ4_DUP_PLATE", "Detect repeated vehicle license plates across rows.",
+            "DQ5_DUP_ROW", "Detect rows that are duplicated exactly.",
+            "DQ6_OUTLIER_IQR", "Identify extreme energy values using the Interquartile Range.",
+            "DQ7_UNIFORMITY_CV", "Check if energy values are too uniform (suspicious low variation).",
+            "DQ8_REPEAT_VALUES", "Detect repeated rounded energy values that may indicate synthetic data."
+    );
+
+
+    /** MAIN FUNCTION — FULL RULE ANALYSIS */
+    public AnalysisResult analyzeNoCo2(long reportId, boolean persist) {
+
         var report = reportRepo.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
 
-        // 1) Lấy chi tiết từ DB
+        // 1. Lấy chi tiết bản ghi
         List<EmissionReportDetail> details = detailRepo.findByReport_Id(reportId);
 
-        // 2) Map -> rows cho rule engine (period, total_energy, license_plate)
-        List<Map<String,Object>> rows = details.stream()
+        // 2. Map từng record -> JSON cho Rule Engine
+        List<Map<String, Object>> rows = details.stream()
                 .map(d -> {
-                    Map<String,Object> m = new HashMap<>();
+                    Map<String, Object> m = new HashMap<>();
                     m.put("period", report.getPeriod());
-                    m.put("total_energy", toDouble(d.getTotalEnergy()));   // BigDecimal -> Double (hoặc null)
-                    // đổi getter này cho đúng tên field thật trong EmissionReportDetail
+                    m.put("total_energy", toDouble(d.getTotalEnergy()));
                     m.put("license_plate", d.getVehiclePlate());
                     return m;
                 })
                 .collect(Collectors.toList());
 
-        Set<String> columns = Set.of("period","total_energy","license_plate");
+        Set<String> columns = Set.of("period", "total_energy", "license_plate");
 
-        // 3) Build context
+        // 3. Build context
         AnalysisContext ctx = AnalysisContext.builder()
                 .reportId(reportId)
                 .reportingPeriod(report.getPeriod())
@@ -63,9 +91,9 @@ public class ReportAnalysisService {
                 .roundRepeatScale(2)
                 .build();
 
-        // 4) Rules (no-CO2)
+        // 4. Khởi tạo danh sách Rule
         List<IRule> rules = List.of(
-                new SchemaRule(Set.of("period","total_energy","license_plate")),
+                new SchemaRule(Set.of("period", "total_energy", "license_plate")),
                 new PeriodRule(),
                 new EnergyValidRule(),
                 new DuplicatePlateRule(),
@@ -75,40 +103,66 @@ public class ReportAnalysisService {
                 new RepeatedRoundedEnergyRule(2)
         );
 
-        // 5) Run rules
-        int dqScore = 0;
-        List<RuleResult> detailsOut = new ArrayList<>();
-        for (IRule r : rules){
-            RuleResult rr = r.apply(ctx);
-            int max = DQ_WEIGHTS.getOrDefault(r.id(), r.maxScore());
-            rr.setMaxScore(max);
-            rr.setScore(Math.min(rr.getScore(), max));
-            detailsOut.add(rr);
-            dqScore += rr.getScore();
+        // 5. Chấm điểm
+        int totalDQScore = 0;
+        List<RuleResult> results = new ArrayList<>();
+
+        for (IRule rule : rules) {
+
+            RuleResult rr = rule.apply(ctx);
+
+            // gán tên đầy đủ
+            rr.setName(RULE_NAMES.getOrDefault(rr.getRuleId(), "Unknown Rule"));
+
+            // mô tả chi tiết
+            if (rr.getMessage() == null || rr.getMessage().isBlank()) {
+                rr.setMessage(RULE_DESCRIPTIONS.getOrDefault(rr.getRuleId(), ""));
+            }
+
+            // severity mặc định
+            if (rr.getSeverity() == null) {
+                rr.setSeverity(rr.getScore() == rr.getMaxScore() ? "INFO" : "WARN");
+            }
+
+            // max score
+            int maxScore = DQ_WEIGHTS.getOrDefault(rr.getRuleId(), rule.maxScore());
+            rr.setMaxScore(maxScore);
+            rr.setScore(Math.min(rr.getScore(), maxScore));
+
+            // evidence mặc định nếu thiếu
+            if (rr.getEvidence() == null) {
+                rr.setEvidence("");
+            }
+
+            results.add(rr);
+            totalDQScore += rr.getScore();
         }
-        int dqMax = DQ_WEIGHTS.values().stream().mapToInt(i->i).sum();
 
-        // 6) Fraud-lite
-        FraudDetector.FraudResult fr = new FraudDetector().detect(ctx);
+        int dqMax = DQ_WEIGHTS.values().stream().mapToInt(x -> x).sum();
 
-        AnalysisResult ar = new AnalysisResult(
+        // 6. Fraud detection
+        FraudDetector.FraudResult fraud = new FraudDetector().detect(ctx);
+
+        AnalysisResult output = new AnalysisResult(
                 reportId,
                 "logic-no-co2-v1",
-                dqScore, dqMax,
-                fr.getScore(), FRAUD_MAX,
-                detailsOut,
-                fr.getReasons()
+                totalDQScore, dqMax,
+                fraud.getScore(), FRAUD_MAX,
+                results,
+                fraud.getReasons()
         );
 
-        if (persist){
-            // ví dụ bạn muốn lưu điểm vào report:
-            // report.setVerificationScore(BigDecimal.valueOf( (dqScore*1.0/dqMax)*10 ).setScale(2, RoundingMode.HALF_UP));
+        // 7. Persist nếu cần
+        if (persist) {
             reportRepo.save(report);
         }
-        return ar;
+
+        return output;
     }
 
-    private static Double toDouble(BigDecimal v){
-        return (v == null) ? null : v.doubleValue();
+
+    /** Convert BigDecimal -> Double */
+    private static Double toDouble(BigDecimal val) {
+        return (val == null) ? null : val.doubleValue();
     }
 }

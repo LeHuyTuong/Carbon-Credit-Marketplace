@@ -76,6 +76,8 @@ public class EmissionReportResponse {
                     waitingFor = "Rejected by Admin — please review the Admin’s feedback, update your report, and resubmit.";
             case PAID_OUT ->
                     waitingFor = "Payment completed by company — this emission report has been fully settled and all related payouts have been made.";
+            case CREDIT_ISSUED ->
+                    waitingFor = "Carbon credits have been issued — your emission report has now successfully generated tradeable credits. You may proceed to the marketplace.";
             default ->
                     waitingFor = "Unknown status — please contact support or the CVA team for clarification.";
         }

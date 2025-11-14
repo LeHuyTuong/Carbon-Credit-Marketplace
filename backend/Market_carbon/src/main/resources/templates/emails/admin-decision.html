@@ -90,12 +90,10 @@
       <p><strong>Project:</strong> <span th:text="${projectName}">EV Replacement Program</span></p>
       <p><strong>Final Reviewer:</strong> <span th:text="${reviewerName}">Admin User</span></p>
 
-      <!-- Review Note -->
       <div class="note" th:text="${reviewNote}">
         All criteria met, approved for credit allocation.
       </div>
 
-      <!-- ⭐ NEW: Waiting For -->
       <p style="margin-top: 24px; font-weight:600; color:#374151;">Next Step:</p>
       <div class="note" style="border-left-color:#059669;" th:text="${waitingFor}">
         Your application status is being processed for the next stage.
