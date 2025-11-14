@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.analysis.AnalysisResult;
 import com.carbonx.marketcarbon.dto.analysis.RuleResult;
+import com.carbonx.marketcarbon.dto.analysis.RuleRubric;
 import com.carbonx.marketcarbon.service.analysis.ReportAnalysisService;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
@@ -62,50 +63,45 @@ public class ReportAnalysisController {
 
         AnalysisResult ar = analysisService.analyzeNoCo2(id, false);
 
-        TuongResponseStatus status = new TuongResponseStatus(
-                StatusCode.SUCCESS.getCode(),
-                StatusCode.SUCCESS.getMessage()
-        );
-
         TuongCommonResponse<List<RuleResult>> response =
-                new TuongCommonResponse<>(trace, now, status, ar.getDetails());
+                new TuongCommonResponse<>(
+                        trace,
+                        now,
+                        new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage()),
+                        ar.getDetails()
+                );
 
         return ResponseEntity.ok(response);
     }
 
-
-    // GET FRAUD-ONLY – chỉ trả về Fraud score + lý do
-    @PreAuthorize("hasAnyRole('ADMIN','CVA')")
+    @PreAuthorize("hasAnyRole('ADMIN','CVA','COMPANY')")
     @Operation(
-            summary = "Get fraud-lite result",
-            description = "Returns fraud score and fraud reasons only (no DQ scoring)"
+            summary = "Get rule rubric template",
+            description = "Returns the list of rules with scoring guidelines and evidence hints for manual or AI-based evaluation."
     )
-    @GetMapping("/{id}/analysis/fraud")
-    public ResponseEntity<TuongCommonResponse<Object>> getFraudOnly(
-            @PathVariable("id") Long id,
+    @GetMapping("/analysis/rules/rubric")
+    public ResponseEntity<TuongCommonResponse<List<RuleRubric>>> getRuleRubricTemplate(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
 
         String trace = (requestTrace != null) ? requestTrace : UUID.randomUUID().toString();
-        String now = (requestDateTime != null) ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        String now = (requestDateTime != null)
+                ? requestDateTime
+                : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        AnalysisResult ar = analysisService.analyzeNoCo2(id, false);
-
-        Map<String, Object> out = new HashMap<>();
-        out.put("fraudRiskScore", ar.getFraudRiskScore());
-        out.put("fraudRiskMax", ar.getFraudRiskMax());
-        out.put("reasons", ar.getFraudReasons());
+        List<RuleRubric> data = analysisService.getRuleRubrics();
 
         TuongResponseStatus status = new TuongResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage()
         );
 
-        TuongCommonResponse<Object> response =
-                new TuongCommonResponse<>(trace, now, status, out);
+        TuongCommonResponse<List<RuleRubric>> response =
+                new TuongCommonResponse<>(trace, now, status, data);
 
         return ResponseEntity.ok(response);
     }
+
 
 }

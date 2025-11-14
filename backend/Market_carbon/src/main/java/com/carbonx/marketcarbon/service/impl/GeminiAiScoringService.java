@@ -14,10 +14,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
-import io.netty.resolver.DefaultAddressResolverGroup;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,160 +35,198 @@ public class GeminiAiScoringService implements AiScoringService {
 
     private final AiVertexConfig cfg;
     private final WebClient vertexWebClient;
-    private final EmissionReportRepository reportRepo;              // dùng để save()
+    private final EmissionReportRepository reportRepo;
     private final EmissionReportDetailRepository detailRepo;
 
-    // ========= Config / constants =========
+    // ========= Basic constants (only for parsing / formatting) =========
     private static final Pattern JSON_BLOCK = Pattern.compile("\\{[\\s\\S]*\\}");
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    private static final double EF_HIGH_THRESHOLD = 0.6d;
-    private static final double EF_LOW_THRESHOLD  = 0.2d;
-
     private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
+    // ========= Public API =========
 
     @Transactional
     @Override
     public AiScoreResult suggestScore(EmissionReport report, List<EmissionReportDetail> details) {
         if (!cfg.isEnabled()) {
-            return new AiScoreResult(BigDecimal.ZERO, "AI disabled", "na");
+            return new AiScoreResult(BigDecimal.ZERO, "AI scoring is disabled by configuration.", "na");
         }
 
-        // ===== Basic stats =====
-        final int count = details == null ? 0 : details.size();
-        final long zeroEnergy = details == null ? 0 : details.stream()
+        // 1. Basic stats on dataset
+        final int rowCount = details == null ? 0 : details.size();
+
+        final long zeroEnergyRows = details == null ? 0 : details.stream()
                 .filter(d -> d.getTotalEnergy() == null || d.getTotalEnergy().signum() == 0)
                 .count();
 
         final double avgEf = details == null ? 0.0 : details.stream()
-                .filter(d -> d.getTotalEnergy() != null && d.getTotalEnergy().signum() > 0 && d.getCo2Kg() != null)
+                .filter(d -> d.getTotalEnergy() != null
+                        && d.getTotalEnergy().signum() > 0
+                        && d.getCo2Kg() != null)
                 .map(d -> d.getCo2Kg().divide(d.getTotalEnergy(), 6, RoundingMode.HALF_UP))
                 .mapToDouble(BigDecimal::doubleValue)
-                .average().orElse(0.0);
+                .average()
+                .orElse(0.0);
 
         final double avgCo2 = details == null ? 0.0 : details.stream()
                 .map(EmissionReportDetail::getCo2Kg)
                 .filter(Objects::nonNull)
                 .mapToDouble(BigDecimal::doubleValue)
-                .average().orElse(0.0);
+                .average()
+                .orElse(0.0);
 
-        final double co2Coverage = (double) (details == null ? 0 : details.stream()
+        final double co2CoverageRatio = (double) (details == null ? 0 : details.stream()
                 .filter(d -> d.getCo2Kg() != null)
-                .count()) / Math.max(1, count);
+                .count()) / Math.max(1, rowCount);
 
-        // ===== Anomalies (đÃ BỎ sharedProjectReports) =====
-        int duplicatePlates = 0;
-        boolean efTooHigh = false;
-        boolean efTooLow = false;
+        // 2. Anomaly indicators that do not rely on AI
+        int duplicatePlatesAcrossCompanies = 0;
+        boolean efAboveHighThreshold = false;
+        boolean efBelowLowThreshold = false;
+
         try {
             Long reportId = report != null ? report.getId() : null;
             Long sellerId = (report != null && report.getSeller() != null) ? report.getSeller().getId() : null;
 
             if (reportId != null && sellerId != null) {
-                duplicatePlates = detailRepo.countDuplicatePlatesAcrossCompanies(reportId, sellerId);
+                duplicatePlatesAcrossCompanies =
+                        detailRepo.countDuplicatePlatesAcrossCompanies(reportId, sellerId);
             }
 
-            efTooHigh = avgEf > EF_HIGH_THRESHOLD;
-            efTooLow  = avgEf < EF_LOW_THRESHOLD;
+            double efHigh = efHighThreshold();
+            double efLow = efLowThreshold();
+
+            efAboveHighThreshold = avgEf > efHigh;
+            efBelowLowThreshold = avgEf < efLow;
         } catch (Exception ex) {
-            log.warn("[AI] Warning: anomaly check failed: {}", ex.getMessage());
+            log.warn("[AI] Anomaly check failed: {}", ex.getMessage());
         }
 
-        // ===== Cảnh báo log nếu thiếu các field context =====
+        // 3. Log missing context so that project owners know what to improve
         logMissingProjectContext(report);
 
-        // ===== Tính các chỉ số DQ để đưa vào 'Rule Details' (fallback notes) =====
-        DQMetrics dq = computeDQMetrics(details);
+        // 4. Compute rule-style data quality metrics (used for rule details and fallback narrative)
+        DQMetrics dqMetrics = computeDQMetrics(details);
 
-        // ===== Prompt =====
+        // 5. Build LLM prompt
         final String projectContext = buildProjectContext(report);
-        final String dataContext    = buildDataContext(report, count, zeroEnergy, co2Coverage, avgEf, avgCo2);
-        final String anomalyContext = buildAnomalyContext(duplicatePlates, efTooHigh, efTooLow); // không còn sharedProjectReports
-        final String userPrompt     = buildPrompt(projectContext, dataContext, anomalyContext);
+        final String dataContext = buildDataContext(
+                report,
+                rowCount,
+                zeroEnergyRows,
+                co2CoverageRatio,
+                avgEf,
+                avgCo2
+        );
+        final String anomalyContext = buildAnomalyContext(
+                duplicatePlatesAcrossCompanies,
+                efAboveHighThreshold,
+                efBelowLowThreshold
+        );
+        final String userPrompt = buildPrompt(projectContext, dataContext, anomalyContext);
 
-        // Log + optional dump to file for debugging
         if (log.isDebugEnabled()) {
-            log.debug("[AI] userPrompt sent to Vertex Gemini:\n{}", userPrompt);
+            log.debug("[AI] Prompt sent to Vertex Gemini:\n{}", userPrompt);
         }
         dumpPromptIfEnabled(userPrompt, report);
 
-        // ===== Request body =====
-        Map<String, Object> body = Map.of(
+        // 6. Prepare Vertex request
+        int maxTokens = maxOutputTokens();
+        Map<String, Object> requestBody = Map.of(
                 "contents", List.of(Map.of(
                         "role", "user",
                         "parts", List.of(Map.of("text", userPrompt))
                 )),
                 "generationConfig", Map.of(
-                        "temperature", 0.1,
-                        "maxOutputTokens", 768
+                        "temperature", temperature(),
+                        "maxOutputTokens", maxTokens
                 )
         );
 
-        final String path = String.format(
+        final String endpointPath = String.format(
                 "/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
-                cfg.getProjectId(), cfg.getLocation(), cfg.getModel()
+                cfg.getProjectId(),
+                cfg.getLocation(),
+                cfg.getModel()
         );
 
         try {
+            // 7. Call Vertex
             @SuppressWarnings("unchecked")
             Map<String, Object> raw = vertexWebClient.post()
-                    .uri(path)
+                    .uri(endpointPath)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
+                    .bodyValue(requestBody)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, resp ->
-                            resp.bodyToMono(String.class).flatMap(b -> {
-                                log.error("[Vertex Gemini] {} body:\n{}", resp.statusCode(), b);
-                                return Mono.error(new RuntimeException("Vertex " + resp.statusCode() + ": " + b));
+                            resp.bodyToMono(String.class).flatMap(body -> {
+                                log.error("[Vertex Gemini] {} body:\n{}", resp.statusCode(), body);
+                                return Mono.error(new RuntimeException("Vertex " + resp.statusCode() + ": " + body));
                             })
                     )
                     .bodyToMono(Map.class)
                     .block();
 
-            // === Extract raw text
+            // 8. Extract and parse LLM text
             String rawText = extractText(raw);
-            log.info("[AI] Vertex Gemini output raw text:\n{}", rawText);
+            log.info("[AI] Vertex Gemini raw output:\n{}", rawText);
 
-            // === Parse safely
             Map<String, Object> parsed = tryParseJson(rawText);
 
-            double sc      = ((Number) parsed.getOrDefault("score", 0)).doubleValue();
-            String version = Objects.toString(parsed.getOrDefault("version", "v2.0"));
-            String notes   = Objects.toString(parsed.getOrDefault("notes", ""));
-            String risk    = Objects.toString(parsed.getOrDefault("riskLevel", "LOW"));
-            double fraud   = ((Number) parsed.getOrDefault("fraudLikelihood", 0)).doubleValue();
+            double scoreNumber = ((Number) parsed.getOrDefault("score", 0)).doubleValue();
+            String version = Objects.toString(parsed.getOrDefault("version", defaultVersion()), defaultVersion());
+            String notesFromModel = Objects.toString(parsed.getOrDefault("notes", ""), "");
+            String riskLevel = Objects.toString(parsed.getOrDefault("riskLevel", "LOW"), "LOW");
+            double fraudLikelihood = ((Number) parsed.getOrDefault("fraudLikelihood", 0)).doubleValue();
 
-            boolean usedRich = false;
-            if (notes.isBlank() || notes.length() < 350) {
-                notes = buildRichNotes(
+            boolean usedFallbackNarrative = false;
+
+            // Nếu notes từ model quá ngắn hoặc trống thì build narrative chuẩn + rule details
+            if (notesFromModel.isBlank()
+                    || notesFromModel.length() < minNotesLength()) {
+
+                notesFromModel = buildRichNotes(
                         report,
-                        risk, fraud, sc,
-                        co2Coverage, avgEf, avgCo2,
-                        count, zeroEnergy, duplicatePlates,
-                        dq
+                        riskLevel,
+                        fraudLikelihood,
+                        scoreNumber,
+                        co2CoverageRatio,
+                        avgEf,
+                        avgCo2,
+                        rowCount,
+                        zeroEnergyRows,
+                        duplicatePlatesAcrossCompanies,
+                        dqMetrics
                 );
-                usedRich = true;
+                usedFallbackNarrative = true;
             }
 
-            if (!usedRich) {
-                notes += "\n\n--- Risk summary ---\nRisk level: " + risk + "\nFraud likelihood: " + fraud;
+            if (!usedFallbackNarrative && appendRiskSummaryTail()) {
+                notesFromModel += "\n\n--- Risk summary ---\n"
+                        + "Risk level: " + riskLevel
+                        + "\nFraud likelihood: " + fraudLikelihood;
             }
 
-            BigDecimal score = BigDecimal.valueOf(sc).setScale(1, RoundingMode.HALF_UP);
+            BigDecimal roundedScore = BigDecimal.valueOf(scoreNumber)
+                    .setScale(scoreScale(), RoundingMode.HALF_UP);
 
-            // Persist vào report
+            // 9. Persist score and notes into report for later display
             if (report != null) {
-                report.setAiPreScore(score);
-                report.setAiPreNotes(notes);
+                report.setAiPreScore(roundedScore);
+                report.setAiPreNotes(notesFromModel);
                 report.setAiVersion(version);
                 reportRepo.save(report);
             }
 
-            log.info("[AI] Updated EmissionReport#{} with AI results (score={}, risk={}, fraud={})",
-                    report != null ? report.getId() : null, score, risk, fraud);
+            log.info("[AI] EmissionReport#{} updated with AI score={}, risk={}, fraudLikelihood={}",
+                    report != null ? report.getId() : null,
+                    roundedScore,
+                    riskLevel,
+                    fraudLikelihood
+            );
 
-            return new AiScoreResult(score, notes, version);
+            return new AiScoreResult(roundedScore, notesFromModel, version);
 
         } catch (Exception ex) {
             log.error("[AI] Vertex Gemini analysis failed: {}", ex.getMessage(), ex);
@@ -199,32 +234,51 @@ public class GeminiAiScoringService implements AiScoringService {
         }
     }
 
-    // ===== Prompt builders =====
+    // ========= Prompt builder utilities =========
 
     private String buildProjectContext(EmissionReport report) {
-        String commitments        = safe(report != null && report.getProject() != null ? report.getProject().getCommitments() : null);
-        String measurementMethod  = safe(report != null && report.getProject() != null ? report.getProject().getMeasurementMethod() : null);
-        String technicalIndicators= safe(report != null && report.getProject() != null ? report.getProject().getTechnicalIndicators() : null);
+        String commitments = safe(report != null && report.getProject() != null
+                ? report.getProject().getCommitments()
+                : null);
+        String measurementMethod = safe(report != null && report.getProject() != null
+                ? report.getProject().getMeasurementMethod()
+                : null);
+        String technicalIndicators = safe(report != null && report.getProject() != null
+                ? report.getProject().getTechnicalIndicators()
+                : null);
 
-        return String.format(Locale.US,
+        return String.format(
+                Locale.US,
                 "Project context:%n" +
                         "- Commitments: %s%n" +
                         "- MeasurementMethod: %s%n" +
                         "- TechnicalIndicators: %s",
-                commitments, measurementMethod, technicalIndicators);
+                commitments,
+                measurementMethod,
+                technicalIndicators
+        );
     }
 
-    private String buildDataContext(EmissionReport report,
-                                    int count,
-                                    long zeroEnergy,
-                                    double co2Coverage,
-                                    double avgEf,
-                                    double avgCo2) {
-        String company = report != null && report.getSeller() != null ? safe(report.getSeller().getCompanyName()) : "";
-        String project = report != null && report.getProject() != null ? safe(report.getProject().getTitle()) : "";
-        String period  = report != null ? safe(report.getPeriod()) : "";
+    private String buildDataContext(
+            EmissionReport report,
+            int rowCount,
+            long zeroEnergyRows,
+            double co2CoverageRatio,
+            double avgEf,
+            double avgCo2
+    ) {
+        String company = report != null && report.getSeller() != null
+                ? safe(report.getSeller().getCompanyName())
+                : "";
+        String project = report != null && report.getProject() != null
+                ? safe(report.getProject().getTitle())
+                : "";
+        String period = report != null
+                ? safe(report.getPeriod())
+                : "";
 
-        return String.format(Locale.US,
+        return String.format(
+                Locale.US,
                 "Report summary:%n" +
                         "- Company: %s%n" +
                         "- Project: %s%n" +
@@ -234,19 +288,32 @@ public class GeminiAiScoringService implements AiScoringService {
                         "- CO2 coverage: %.0f%%%n" +
                         "- Avg EF (kg/kWh): %.3f%n" +
                         "- Avg CO2 per row (kg): %.1f",
-                company, project, period, count, zeroEnergy, co2Coverage * 100, avgEf, avgCo2);
+                company,
+                project,
+                period,
+                rowCount,
+                zeroEnergyRows,
+                co2CoverageRatio * 100,
+                avgEf,
+                avgCo2
+        );
     }
 
-    // ĐÃ BỎ sharedProjectReports khỏi context/prompt
-    private String buildAnomalyContext(int duplicatePlates,
-                                       boolean efTooHigh,
-                                       boolean efTooLow) {
-        return String.format(Locale.US,
+    private String buildAnomalyContext(
+            int duplicatePlatesAcrossCompanies,
+            boolean efAboveHighThreshold,
+            boolean efBelowLowThreshold
+    ) {
+        return String.format(
+                Locale.US,
                 "Detected anomalies:%n" +
                         "- Duplicate plates across companies: %d%n" +
-                        "- EF too high: %s%n" +
-                        "- EF too low: %s",
-                duplicatePlates, efTooHigh, efTooLow);
+                        "- EF above high threshold: %s%n" +
+                        "- EF below low threshold: %s",
+                duplicatePlatesAcrossCompanies,
+                efAboveHighThreshold,
+                efBelowLowThreshold
+        );
     }
 
     private String buildPrompt(String projectContext, String dataContext, String anomalyContext) {
@@ -270,26 +337,36 @@ public class GeminiAiScoringService implements AiScoringService {
         return (header + "\n\n" + projectContext + "\n\n" + dataContext + "\n\n" + anomalyContext).trim();
     }
 
-    // ===== Helpers =====
+    // ========= LLM output parsing =========
 
     @SuppressWarnings("unchecked")
     private static String extractText(Object raw) {
-        if (!(raw instanceof Map)) return "{}";
-        Map<String, Object> map = (Map<String, Object>) raw;
+        if (!(raw instanceof Map<?, ?> map)) {
+            return "{}";
+        }
 
         Object candidatesObj = map.get("candidates");
-        if (!(candidatesObj instanceof List) || ((List<?>) candidatesObj).isEmpty()) return "{}";
+        if (!(candidatesObj instanceof List<?> candidates) || candidates.isEmpty()) {
+            return "{}";
+        }
 
-        Object contentObj = ((Map<?, ?>) ((List<?>) candidatesObj).get(0)).get("content");
-        if (!(contentObj instanceof Map)) return "{}";
+        Object contentObj = ((Map<?, ?>) candidates.get(0)).get("content");
+        if (!(contentObj instanceof Map<?, ?> content)) {
+            return "{}";
+        }
 
-        Object partsObj = ((Map<?, ?>) contentObj).get("parts");
-        if (!(partsObj instanceof List) || ((List<?>) partsObj).isEmpty()) return "{}";
+        Object partsObj = content.get("parts");
+        if (!(partsObj instanceof List<?> parts) || parts.isEmpty()) {
+            return "{}";
+        }
 
-        Object text = ((Map<?, ?>) ((List<?>) partsObj).get(0)).get("text");
-        if (text == null) return "{}";
+        Object text = ((Map<?, ?>) parts.get(0)).get("text");
+        if (text == null) {
+            return "{}";
+        }
 
         String s = text.toString().trim();
+        // Remove possible markdown wrappers
         s = s.replaceAll("(?i)```json", "")
                 .replaceAll("```", "")
                 .replaceAll("^json", "")
@@ -297,35 +374,47 @@ public class GeminiAiScoringService implements AiScoringService {
         return s;
     }
 
-    // Parse lenient + fallback thủ công
     private static Map<String, Object> tryParseJson(String text) {
-        if (text == null || text.isBlank()) return Map.of();
+        if (text == null || text.isBlank()) {
+            return Map.of();
+        }
 
         Matcher m = JSON_BLOCK.matcher(text);
-        String sub = m.find() ? m.group() : text;
+        String candidate = m.find() ? m.group() : text;
 
-        long open = sub.chars().filter(ch -> ch == '{').count();
-        long close = sub.chars().filter(ch -> ch == '}').count();
-        if (open > close) sub += "}".repeat((int) (open - close));
+        long open = candidate.chars().filter(ch -> ch == '{').count();
+        long close = candidate.chars().filter(ch -> ch == '}').count();
+        if (open > close) {
+            candidate += "}".repeat((int) (open - close));
+        }
 
         try {
-            return MAPPER.readValue(sub, Map.class);
+            return MAPPER.readValue(candidate, Map.class);
         } catch (Exception e) {
             Map<String, Object> fallback = new HashMap<>();
             try {
-                Matcher scoreM = Pattern.compile("\"score\"\\s*:\\s*([0-9.]+)").matcher(sub);
-                if (scoreM.find()) fallback.put("score", Double.parseDouble(scoreM.group(1)));
+                Matcher scoreM = Pattern.compile("\"score\"\\s*:\\s*([0-9.]+)").matcher(candidate);
+                if (scoreM.find()) {
+                    fallback.put("score", Double.parseDouble(scoreM.group(1)));
+                }
 
-                Matcher riskM = Pattern.compile("\"riskLevel\"\\s*:\\s*\"(\\w+)\"").matcher(sub);
-                if (riskM.find()) fallback.put("riskLevel", riskM.group(1));
+                Matcher riskM = Pattern.compile("\"riskLevel\"\\s*:\\s*\"(\\w+)\"").matcher(candidate);
+                if (riskM.find()) {
+                    fallback.put("riskLevel", riskM.group(1));
+                }
 
-                Matcher fraudM = Pattern.compile("\"fraudLikelihood\"\\s*:\\s*([0-9.]+)").matcher(sub);
-                if (fraudM.find()) fallback.put("fraudLikelihood", Double.parseDouble(fraudM.group(1)));
-            } catch (Exception ignored) { }
-            log.warn("[AI] ⚠️ Fallback used for incomplete JSON:\n{}", sub);
+                Matcher fraudM = Pattern.compile("\"fraudLikelihood\"\\s*:\\s*([0-9.]+)").matcher(candidate);
+                if (fraudM.find()) {
+                    fallback.put("fraudLikelihood", Double.parseDouble(fraudM.group(1)));
+                }
+            } catch (Exception ignored) {
+            }
+            log.warn("[AI] Fallback parser used for incomplete JSON:\n{}", candidate);
             return fallback;
         }
     }
+
+    // ========= Misc helpers =========
 
     private static String safe(String s) {
         return s == null ? "" : s;
@@ -335,40 +424,59 @@ public class GeminiAiScoringService implements AiScoringService {
         return s == null || s.trim().isEmpty();
     }
 
-    // Cảnh báo khi thiếu các field context
     private void logMissingProjectContext(EmissionReport report) {
         try {
-            Long reportId  = report != null ? report.getId() : null;
-            Long projectId = (report != null && report.getProject() != null) ? report.getProject().getId() : null;
+            Long reportId = report != null ? report.getId() : null;
+            Long projectId = (report != null && report.getProject() != null)
+                    ? report.getProject().getId()
+                    : null;
 
-            String commitments = (report != null && report.getProject() != null) ? report.getProject().getCommitments() : null;
-            String method      = (report != null && report.getProject() != null) ? report.getProject().getMeasurementMethod() : null;
-            String indicators  = (report != null && report.getProject() != null) ? report.getProject().getTechnicalIndicators() : null;
+            String commitments = (report != null && report.getProject() != null)
+                    ? report.getProject().getCommitments()
+                    : null;
+            String method = (report != null && report.getProject() != null)
+                    ? report.getProject().getMeasurementMethod()
+                    : null;
+            String indicators = (report != null && report.getProject() != null)
+                    ? report.getProject().getTechnicalIndicators()
+                    : null;
 
             List<String> missing = new ArrayList<>();
-            if (isBlank(commitments)) missing.add("Commitments");
-            if (isBlank(method))      missing.add("MeasurementMethod");
-            if (isBlank(indicators))  missing.add("TechnicalIndicators");
+            if (isBlank(commitments)) {
+                missing.add("Commitments");
+            }
+            if (isBlank(method)) {
+                missing.add("MeasurementMethod");
+            }
+            if (isBlank(indicators)) {
+                missing.add("TechnicalIndicators");
+            }
 
             if (!missing.isEmpty()) {
                 log.warn("[AI] Missing project context fields {} for reportId={}, projectId={}",
                         missing, reportId, projectId);
             }
         } catch (Exception e) {
-            log.warn("[AI] Failed to check project context fields: {}", e.getMessage());
+            log.warn("[AI] Failed to inspect project context fields: {}", e.getMessage());
         }
     }
 
     private void dumpPromptIfEnabled(String prompt, EmissionReport report) {
         try {
-            String enabled = System.getProperty("carbonx.ai.prompt.dump", "false");
-            if (!"true".equalsIgnoreCase(enabled)) return;
+            boolean enabled = Boolean.parseBoolean(
+                    System.getProperty("carbonx.ai.prompt.dump", "false")
+            );
+            if (!enabled) {
+                return;
+            }
 
             String dir = System.getProperty("carbonx.ai.prompt.dir", "./ai-prompts");
             Files.createDirectories(Path.of(dir));
 
             String ts = TS_FMT.format(LocalDateTime.now());
-            String id = report != null && report.getId() != null ? ("report-" + report.getId()) : "report-unknown";
+            String id = (report != null && report.getId() != null)
+                    ? ("report-" + report.getId())
+                    : "report-unknown";
             Path out = Path.of(dir, ts + "_" + id + ".txt");
 
             Files.writeString(out, prompt, StandardCharsets.UTF_8);
@@ -378,33 +486,49 @@ public class GeminiAiScoringService implements AiScoringService {
         }
     }
 
-    // ======= Data Quality metrics (cho "Rule Details") =======
+    // ========= Data quality metrics (for rule-style breakdown) =========
 
     private record DQMetrics(
             long energyNulls,
             long co2Nulls,
             long nonPositiveEnergy,
-            long dupEnergyCo2Rows,
-            double q1, double q3, double iqr, double lowerFence, double upperFence, long outliers,
-            double meanEnergy, double stdEnergy, double cvEnergy,
-            int repeatedRoundedKeys, List<Long> topRepeatedRoundedValues
-    ) {}
+            long duplicateEnergyCo2Rows,
+            double q1,
+            double q3,
+            double iqr,
+            double lowerFence,
+            double upperFence,
+            long outlierCount,
+            double meanEnergy,
+            double stdEnergy,
+            double coefficientOfVariation,
+            int repeatedRoundedKeys,
+            List<Long> topRepeatedRoundedValues
+    ) {
+    }
 
     private DQMetrics computeDQMetrics(List<EmissionReportDetail> details) {
         if (details == null || details.isEmpty()) {
-            return new DQMetrics(0,0,0,0,0,0,0,0,0,0,0,0,0,0,new ArrayList<>());
+            return new DQMetrics(
+                    0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                    0, 0, 0,
+                    0, new ArrayList<>()
+            );
         }
 
-        // null counts
-        long energyNulls = details.stream().filter(d -> d.getTotalEnergy() == null).count();
-        long co2Nulls    = details.stream().filter(d -> d.getCo2Kg() == null).count();
+        long energyNulls = details.stream()
+                .filter(d -> d.getTotalEnergy() == null)
+                .count();
 
-        // non-positive energy (<=0 or null)
+        long co2Nulls = details.stream()
+                .filter(d -> d.getCo2Kg() == null)
+                .count();
+
         long nonPositive = details.stream()
                 .filter(d -> d.getTotalEnergy() == null || d.getTotalEnergy().signum() <= 0)
                 .count();
 
-        // energies (positive only) for stats
         List<Double> energies = details.stream()
                 .map(EmissionReportDetail::getTotalEnergy)
                 .filter(Objects::nonNull)
@@ -413,205 +537,569 @@ public class GeminiAiScoringService implements AiScoringService {
                 .sorted()
                 .collect(Collectors.toList());
 
-        // duplicate exact rows by (energy, co2)
-        Map<String, Long> rowMap = details.stream()
+        Map<String, Long> rowHistogram = details.stream()
                 .map(d -> {
-                    String e = d.getTotalEnergy() == null ? "null" : d.getTotalEnergy().stripTrailingZeros().toPlainString();
-                    String c = d.getCo2Kg() == null      ? "null" : d.getCo2Kg().stripTrailingZeros().toPlainString();
+                    String e = d.getTotalEnergy() == null
+                            ? "null"
+                            : d.getTotalEnergy().stripTrailingZeros().toPlainString();
+                    String c = d.getCo2Kg() == null
+                            ? "null"
+                            : d.getCo2Kg().stripTrailingZeros().toPlainString();
                     return e + "|" + c;
                 })
                 .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
-        long dupRows = rowMap.values().stream().filter(cnt -> cnt > 1).mapToLong(cnt -> cnt - 1).sum();
 
-        // IQR outlier for energy
+        long duplicateRows = rowHistogram.values().stream()
+                .filter(count -> count > 1)
+                .mapToLong(count -> count - 1)
+                .sum();
+
         double q1 = quantile(energies, 0.25);
         double q3 = quantile(energies, 0.75);
         double iqr = q3 - q1;
         double lower = q1 - 1.5 * iqr;
         double upper = q3 + 1.5 * iqr;
-        long outliers = energies.stream().filter(v -> v < lower || v > upper).count();
 
-        // mean/std/cv for energy
+        long outliers = energies.stream()
+                .filter(v -> v < lower || v > upper)
+                .count();
+
         double mean = mean(energies);
-        double std  = stddev(energies, mean);
-        double cv   = mean > 0 ? std / mean : 0d;
+        double std = stddev(energies, mean);
+        double cv = mean > 0 ? std / mean : 0d;
 
-        // repeated rounded energies (e.g., repeated integer values)
         Map<Long, Long> roundedCounts = energies.stream()
                 .map(Math::round)
                 .collect(Collectors.groupingBy(v -> v, Collectors.counting()));
-        int repeatedKeys = (int) roundedCounts.entrySet().stream().filter(e -> e.getValue() > 1).count();
+
+        int repeatedKeys = (int) roundedCounts.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .count();
+
         List<Long> topRepeated = roundedCounts.entrySet().stream()
                 .filter(e -> e.getValue() > 1)
-                .sorted((a,b) -> Long.compare(b.getValue(), a.getValue()))
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
                 .limit(3)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
         return new DQMetrics(
-                energyNulls, co2Nulls, nonPositive, dupRows,
-                q1, q3, iqr, lower, upper, outliers,
-                mean, std, cv,
-                repeatedKeys, topRepeated
+                energyNulls,
+                co2Nulls,
+                nonPositive,
+                duplicateRows,
+                q1,
+                q3,
+                iqr,
+                lower,
+                upper,
+                outliers,
+                mean,
+                std,
+                cv,
+                repeatedKeys,
+                topRepeated
         );
     }
 
     private static double quantile(List<Double> sorted, double p) {
-        if (sorted.isEmpty()) return 0d;
+        if (sorted.isEmpty()) {
+            return 0d;
+        }
         double pos = p * (sorted.size() - 1);
         int i = (int) Math.floor(pos);
         int j = (int) Math.ceil(pos);
-        if (i == j) return sorted.get(i);
+        if (i == j) {
+            return sorted.get(i);
+        }
         double w = pos - i;
         return sorted.get(i) * (1 - w) + sorted.get(j) * w;
     }
 
     private static double mean(List<Double> xs) {
-        if (xs.isEmpty()) return 0d;
-        double s = 0d;
-        for (double v : xs) s += v;
-        return s / xs.size();
+        if (xs.isEmpty()) {
+            return 0d;
+        }
+        double sum = 0d;
+        for (double v : xs) {
+            sum += v;
+        }
+        return sum / xs.size();
     }
 
     private static double stddev(List<Double> xs, double mean) {
-        if (xs.size() <= 1) return 0d;
-        double s2 = 0d;
-        for (double v : xs) {
-            double d = v - mean;
-            s2 += d * d;
+        if (xs.size() <= 1) {
+            return 0d;
         }
-        return Math.sqrt(s2 / (xs.size() - 1));
+        double sumSq = 0d;
+        for (double v : xs) {
+            double diff = v - mean;
+            sumSq += diff * diff;
+        }
+        return Math.sqrt(sumSq / (xs.size() - 1));
     }
 
-    // ===== Rich notes builder (fallback) với "Rule Details" giống ảnh, KHÔNG có shared sellers =====
-    private String buildRichNotes(EmissionReport report,
-                                  String risk,
-                                  double fraud,
-                                  double score,
-                                  double co2Coverage,
-                                  double avgEf,
-                                  double avgCo2,
-                                  int rows,
-                                  long zeroEnergy,
-                                  int duplicatePlates,
-                                  DQMetrics dq) {
+    // ========= Narrative builder with configurable thresholds & texts =========
 
-        String coverageLabel = co2Coverage > 0.9 ? "high" : (co2Coverage > 0.7 ? "moderate" : "low");
-        String effBand = avgEf < EF_LOW_THRESHOLD ? "below expected" :
-                (avgEf > EF_HIGH_THRESHOLD ? "above expected" : "within expected");
-        String conf = switch (risk.toUpperCase(Locale.ROOT)) {
+    private String buildRichNotes(
+            EmissionReport report,
+            String riskLevel,
+            double fraudLikelihood,
+            double rawScore,
+            double co2CoverageRatio,
+            double avgEf,
+            double avgCo2,
+            int rowCount,
+            long zeroEnergyRows,
+            int duplicatePlatesAcrossCompanies,
+            DQMetrics dq
+    ) {
+        double efHigh = efHighThreshold();
+        double efLow = efLowThreshold();
+        double cvSuspicious = cvSuspiciousThreshold();
+        double cvUniformity = cvUniformityThreshold();
+        double fraudHigh = fraudHighThreshold();
+
+        String coverageLabel = co2CoverageRatio > 0.9
+                ? "high"
+                : (co2CoverageRatio > 0.7 ? "medium" : "low");
+
+        String efBand;
+        if (avgEf < efLow) {
+            efBand = "below the expected range";
+        } else if (avgEf > efHigh) {
+            efBand = "above the expected range";
+        } else {
+            efBand = "within the screening band";
+        }
+
+        String confidenceLevel = switch (riskLevel.toUpperCase(Locale.ROOT)) {
             case "HIGH" -> "Low";
             case "MEDIUM" -> "Medium";
             default -> "High";
         };
 
-        // Scoring nhỏ cho DQ rules (mô phỏng như bảng)
-        // Bạn có thể tinh chỉnh các weight/điểm này theo rubric riêng
-        int dq1 = (dq.energyNulls == 0 && dq.co2Nulls == 0) ? 10 : Math.max(0, 10 - (int)(dq.energyNulls + dq.co2Nulls));
-        int dq2 = 10; // giả định 1 kỳ hợp lệ theo report.period
-        int dq3 = dq.nonPositiveEnergy == 0 ? 15 : Math.max(0, 15 - (int) dq.nonPositiveEnergy);
-        int dq4 = duplicatePlates == 0 ? 10 : Math.max(0, 10 - duplicatePlates);
-        int dq5 = dq.dupEnergyCo2Rows == 0 ? 5 : Math.max(0, 5 - (int) dq.dupEnergyCo2Rows);
-        int dq6 = dq.outliers == 0 ? 10 : Math.max(0, 10 - (int) dq.outliers);
-        // CV threshold (ví dụ 0.02 như ảnh)
-        double cvThreshold = 0.02;
-        int dq7 = dq.cvEnergy <= cvThreshold ? 5 : 0;
-        int dq8 = dq.repeatedRoundedKeys == 0 ? 5 : Math.max(0, 5 - dq.repeatedRoundedKeys);
+        // Rule scores (used only inside the narrative)
+        int dq1 = dq.energyNulls == 0 && dq.co2Nulls == 0
+                ? 10
+                : Math.max(0, 10 - (int) (dq.energyNulls + dq.co2Nulls));
+        int dq2 = 10;
+        int dq3 = dq.nonPositiveEnergy == 0
+                ? 15
+                : Math.max(0, 15 - (int) dq.nonPositiveEnergy);
+        int dq4 = duplicatePlatesAcrossCompanies == 0
+                ? 10
+                : Math.max(0, 10 - duplicatePlatesAcrossCompanies);
+        int dq5 = dq.duplicateEnergyCo2Rows == 0
+                ? 5
+                : Math.max(0, 5 - (int) dq.duplicateEnergyCo2Rows);
+        int dq6 = dq.outlierCount == 0
+                ? 10
+                : Math.max(0, 10 - (int) dq.outlierCount);
+        int dq7 = dq.coefficientOfVariation <= cvUniformity ? 5 : 0;
+        int dq8 = dq.repeatedRoundedKeys == 0
+                ? 5
+                : Math.max(0, 5 - dq.repeatedRoundedKeys);
 
-        StringBuilder sb = new StringBuilder(1600);
-        sb.append(String.format(Locale.US,
-                "Overview\n" +
-                        "- Preliminary score: %.1f/10; risk level: %s; fraud likelihood: %.2f.\n" +
-                        "- The dataset contains %d rows with %d zero-energy records; CO2 coverage is %.0f%% (%s).\n" +
-                        "- Average emission factor (EF) is %.3f kg/kWh (%s band). Average CO2 per row is %.1f kg.\n",
-                score, risk, fraud, rows, zeroEnergy, co2Coverage * 100, coverageLabel, avgEf, effBand, avgCo2
+        List<String> fraudSignals = new ArrayList<>();
+
+        if (fraudLikelihood >= fraudHigh) {
+            fraudSignals.add(String.format(
+                    Locale.US,
+                    "The model assessed the fraud likelihood as relatively high (fraudLikelihood = %.2f). This does not prove fraud, but it requires careful manual review.",
+                    fraudLikelihood
+            ));
+        }
+
+        if (dq.coefficientOfVariation < cvSuspicious && dq.repeatedRoundedKeys > 0) {
+            fraudSignals.add(String.format(
+                    Locale.US,
+                    "Energy values are extremely uniform (coefficient of variation ≈ %.6f) and there are repeated rounded values (for example: %s). This pattern may indicate artificially smoothed or synthetic data.",
+                    dq.coefficientOfVariation,
+                    dq.topRepeatedRoundedValues
+            ));
+        }
+
+        if (dq.duplicateEnergyCo2Rows > 0) {
+            fraudSignals.add(String.format(
+                    Locale.US,
+                    "There are %d rows that share exactly the same combination of energy and CO₂ values. This may reflect copy-paste duplication instead of independent measurements.",
+                    dq.duplicateEnergyCo2Rows
+            ));
+        }
+
+        if (duplicatePlatesAcrossCompanies > 0) {
+            fraudSignals.add(String.format(
+                    Locale.US,
+                    "Detected %d duplicate license plate records across companies. This could indicate asset re-use or identifier collisions that should be reconciled with official registration records.",
+                    duplicatePlatesAcrossCompanies
+            ));
+        }
+
+        StringBuilder sb = new StringBuilder(2048);
+
+        // OVERVIEW
+        sb.append(String.format(
+                Locale.US,
+                "Overview%n" +
+                        "- Preliminary score: %.1f/10. Risk level: %s. Fraud likelihood (model output): %.2f.%n" +
+                        "- The dataset contains %d rows, with %d rows having zero total energy. CO₂ value coverage is %.0f%% (%s).%n" +
+                        "- The average emission factor (EF) is %.3f kg/kWh, which is %s. The average CO₂ per row is %.1f kg.%n",
+                rawScore,
+                riskLevel,
+                fraudLikelihood,
+                rowCount,
+                zeroEnergyRows,
+                co2CoverageRatio * 100,
+                coverageLabel,
+                avgEf,
+                efBand,
+                avgCo2
         ));
 
+        // KEY SIGNALS
         sb.append("\nKey Signals\n");
-        sb.append(String.format(Locale.US,
-                "- Coverage and completeness are %s with %.0f%% rows having CO2 values.\n" +
-                        "- Zero-energy rows: %d (should be validated for measurement gaps or data entry defaults).\n" +
-                        "- EF thresholds used: low < %.1f; high > %.1f (heuristic bounds for screening).\n",
-                coverageLabel, co2Coverage * 100, zeroEnergy, EF_LOW_THRESHOLD, EF_HIGH_THRESHOLD
+        sb.append(String.format(
+                Locale.US,
+                "- Data coverage is %s, with approximately %.0f%% of rows containing CO₂ values.%n" +
+                        "- The number of rows with zero energy is %d. These rows may reflect downtime, missing measurements, or default values.%n" +
+                        "- Screening thresholds for the emission factor are configured externally. The current evaluation considers values below %.3f as low and above %.3f as high for screening purposes.%n",
+                coverageLabel,
+                co2CoverageRatio * 100,
+                zeroEnergyRows,
+                efLow,
+                efHigh
         ));
 
+        // ANOMALIES & EXPLANATIONS
         sb.append("\nAnomalies & Explanations\n");
-        if (duplicatePlates > 0) {
-            sb.append(String.format(Locale.US,
-                    "- Detected %d duplicate license plates across companies → potential asset reuse or ID collision; cross-check registration and ownership proofs.\n",
-                    duplicatePlates));
+
+        if (duplicatePlatesAcrossCompanies > 0) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- Duplicate license plates detected across companies: %d occurrence(s). Cross-check with registration databases and asset ledgers.%n",
+                    duplicatePlatesAcrossCompanies
+            ));
         } else {
-            sb.append("- No duplicate license plates across companies detected.\n");
-        }
-        if (avgEf > EF_HIGH_THRESHOLD) {
-            sb.append(String.format(Locale.US,
-                    "- EF appears high (%.3f > %.1f) → verify emission factors, grid mix, and calculation method.\n", avgEf, EF_HIGH_THRESHOLD));
-        } else if (avgEf < EF_LOW_THRESHOLD) {
-            sb.append(String.format(Locale.US,
-                    "- EF appears low (%.3f < %.1f) → confirm metering accuracy, system boundaries, and activity data.\n", avgEf, EF_LOW_THRESHOLD));
-        } else {
-            sb.append(String.format(Locale.US,
-                    "- EF falls within expected screening band (%.3f in [%.1f, %.1f]).\n", avgEf, EF_LOW_THRESHOLD, EF_HIGH_THRESHOLD));
+            sb.append("- No duplicate license plates across companies were detected in this dataset.\n");
         }
 
+        if (dq.duplicateEnergyCo2Rows > 0) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- There are %d exact duplicate rows based on the pair (total energy, CO₂). These may result from copy-and-paste or batch replication rather than independent meter readings.%n",
+                    dq.duplicateEnergyCo2Rows
+            ));
+        } else {
+            sb.append("- No exact duplicate rows (same total energy and CO₂ value) were detected.\n");
+        }
+
+        if (dq.outlierCount > 0) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- Outlier detection using the interquartile range (IQR) found %d energy value(s) outside the expected range [%.3f, %.3f]. These points should be reviewed to confirm whether they represent genuine peaks or data issues.%n",
+                    dq.outlierCount,
+                    dq.lowerFence,
+                    dq.upperFence
+            ));
+        } else {
+            sb.append(String.format(
+                    Locale.US,
+                    "- No strong outliers were detected using the interquartile range (IQR). All energy values fall inside the IQR-based expected band [%.3f, %.3f].%n",
+                    dq.lowerFence,
+                    dq.upperFence
+            ));
+        }
+
+        if (dq.coefficientOfVariation <= cvUniformity) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- The dispersion of energy values is very low (coefficient of variation = %.6f). In normal operations, some variability is expected, so this level of uniformity should be supported by operational evidence (for example, constant load or fixed schedules).%n",
+                    dq.coefficientOfVariation
+            ));
+        } else {
+            sb.append(String.format(
+                    Locale.US,
+                    "- The dispersion of energy values (coefficient of variation = %.6f) is consistent with normal variability in operations.%n",
+                    dq.coefficientOfVariation
+            ));
+        }
+
+        if (dq.repeatedRoundedKeys > 0) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- Several rounded energy values appear repeatedly after rounding (for example: %s). This can be acceptable if meters report in coarse increments, but a high level of repetition may also indicate manual rounding or synthetic aggregation.%n",
+                    dq.topRepeatedRoundedValues
+            ));
+        }
+
+        if (avgEf > efHigh) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- The average emission factor %.3f kg/kWh is above the configured high screening band (%.3f). Validate the emission factor source, boundary assumptions, and grid intensity.%n",
+                    avgEf,
+                    efHigh
+            ));
+        } else if (avgEf < efLow) {
+            sb.append(String.format(
+                    Locale.US,
+                    "- The average emission factor %.3f kg/kWh is below the configured low screening band (%.3f). Confirm meter accuracy, project boundary, and whether all relevant activities are included.%n",
+                    avgEf,
+                    efLow
+            ));
+        } else {
+            sb.append(String.format(
+                    Locale.US,
+                    "- The average emission factor %.3f kg/kWh lies inside the configured screening band [%.3f, %.3f].%n",
+                    avgEf,
+                    efLow,
+                    efHigh
+            ));
+        }
+
+        // DATA QUALITY
         sb.append("\nData Quality\n");
-        sb.append(String.format(Locale.US,
-                "- CO2 value availability: %.0f%%; missingness primarily impacts comparability and uncertainty quantification.\n" +
-                        "- Zero-energy rows may reflect downtime or sensor dropouts; annotate causes and retain raw logs.\n",
-                co2Coverage * 100
+        sb.append(String.format(
+                Locale.US,
+                "- CO₂ value availability is approximately %.0f%%. Missing CO₂ values reduce comparability and increase uncertainty in the total emissions estimate.%n" +
+                        "- Rows with zero energy may correspond to actual downtime, inactive assets, or sensor dropouts. It is important to annotate the cause of these records and retain raw meter logs for verification.%n",
+                co2CoverageRatio * 100
         ));
 
+        // RECOMMENDATIONS
         sb.append("\nRecommendations\n");
-        sb.append("- Provide meter calibration certificates and raw export snapshots for the reporting period.\n");
-        sb.append("- Reconcile asset identifiers (plates/serials) with procurement and O&M records; resolve duplicates.\n");
-        sb.append("- Document methodological choices (Boundary, Activity Data, Emission Factors) with versioned references.\n");
-        sb.append("- Add reason codes for zero-energy rows and apply validation rules in ETL to prevent silent defaults.\n");
+        List<String> recommendations = recommendedActions();
+        for (String rec : recommendations) {
+            if (!rec.isBlank()) {
+                sb.append("- ").append(rec).append("\n");
+            }
+        }
 
-        sb.append(String.format(Locale.US,
-                "\nConfidence\n" +
-                        "- Auditor confidence: %s, given risk level %s and observed data quality. This is a screening output and should be complemented by evidence review.\n",
-                conf, risk
+        // CONFIDENCE
+        sb.append("\nConfidence\n");
+        sb.append(String.format(
+                Locale.US,
+                "- Overall auditor confidence in this screening result is %s, given the risk level %s and the observed data quality. This analysis should be complemented with documentary evidence and, where necessary, on-site checks.%n",
+                confidenceLevel,
+                riskLevel
         ));
 
-        // ======= Rule Details (giống bố cục ảnh) =======
-        sb.append("\nRule Details\n");
-        sb.append(String.format(Locale.US,
-                "DQ1_SCHEMA    | Schema & Nulls         | %d / 10 | %s | required=[total_energy, co2_kg], nulls: energy=%d, co2=%d\n",
-                dq1, (dq.energyNulls==0 && dq.co2Nulls==0) ? "Columns OK" : "Nulls present",
-                dq.energyNulls, dq.co2Nulls
-        ));
-        // Period: dùng report.period nếu có
+        // FRAUD SIGNALS
+        if (!fraudSignals.isEmpty()) {
+            sb.append("\nPotential Fraud Signals\n");
+            for (String fs : fraudSignals) {
+                sb.append("- ").append(fs).append("\n");
+            }
+        }
+
+        // RULE DETAILS – explicit, non-abbreviated descriptions
         String period = report != null ? safe(report.getPeriod()) : "";
-        sb.append(String.format(Locale.US,
-                "DQ2_PERIOD    | Period format & single | %d / 10 | %s | periods=[%s]\n",
-                dq2, isBlank(period) ? "Unknown period" : "One valid period", isBlank(period) ? "" : period
+
+        sb.append("\nRule Details\n");
+
+        // DQ1 – Schema + nulls
+        sb.append(String.format(
+                Locale.US,
+                "DQ1_SCHEMA         | Schema Validation and Null Value Check               | %2d / 10 | %s " +
+                        "| Required columns: [total_energy, co2_kg]. " +
+                        "Empty cell counts in required columns → total_energy=%d, co2_kg=%d.%n",
+                dq1,
+                (dq.energyNulls() == 0 && dq.co2Nulls() == 0)
+                        ? "All required columns are present and every required cell has a value."
+                        : "All required columns are present, but some required cells are empty (null) and should be reviewed.",
+                dq.energyNulls(),
+                dq.co2Nulls()
         ));
-        sb.append(String.format(Locale.US,
-                "DQ3_ENERGY    | Energy validity (>0)   | %d / 15 | %s | total=%d, nonPositive=%d\n",
-                dq3, dq.nonPositiveEnergy==0 ? "OK" : "Has non-positive", rows, dq.nonPositiveEnergy
+
+        // DQ2 – Period
+        sb.append(String.format(
+                Locale.US,
+                "DQ2_PERIOD         | Reporting Period Format and Consistency              | %2d / 10 | %s " +
+                        "| Reporting periods observed in the dataset: [%s].%n",
+                dq2,
+                period.isBlank()
+                        ? "The reporting period is not clearly specified in the data."
+                        : "All rows appear to use a single, consistent reporting period in the expected format (YYYY-MM).",
+                period.isBlank() ? "not available" : period
         ));
-        sb.append(String.format(Locale.US,
-                "DQ4_DUP_PLATE | Duplicate license plates| %d / 10 | %s | duplicates=%d\n",
-                dq4, duplicatePlates==0 ? "No duplicates" : "Duplicates found", duplicatePlates
+
+        // DQ3 – Energy validity
+        sb.append(String.format(
+                Locale.US,
+                "DQ3_ENERGY         | Energy Value Validity (Greater Than Zero)           | %2d / 15 | %s " +
+                        "| Total rows=%d. Rows with non-positive or missing total_energy=%d.%n",
+                dq3,
+                dq.nonPositiveEnergy() == 0
+                        ? "All energy values are numeric, strictly greater than zero, and appear physically plausible."
+                        : "Some rows contain missing, zero, or negative energy values that should be corrected or explained.",
+                rowCount,
+                dq.nonPositiveEnergy()
         ));
-        sb.append(String.format(Locale.US,
-                "DQ5_DUP_ROW   | Exact duplicate rows   | %d / 5  | %s | dupRows=%d\n",
-                dq5, dq.dupEnergyCo2Rows==0 ? "No duplicate rows" : "Duplicates exist", dq.dupEnergyCo2Rows
+
+        // DQ4 – Duplicate plates
+        sb.append(String.format(
+                Locale.US,
+                "DQ4_DUP_PLATE      | Duplicate License Plate Detection                   | %2d / 10 | %s " +
+                        "| Number of license plate records that appear in more than one company=%d.%n",
+                dq4,
+                duplicatePlatesAcrossCompanies == 0
+                        ? "No duplicate license plates were detected across companies."
+                        : "Duplicate license plates were detected across companies; this may indicate reused identifiers or data configuration issues.",
+                duplicatePlatesAcrossCompanies
         ));
-        sb.append(String.format(Locale.US,
-                "DQ6_OUTLIER_IQR | Outlier detection (IQR)| %d / 10 | %s | q1=%.3f,q3=%.3f,lower=%.3f,upper=%.3f,outliers=%d\n",
-                dq6, dq.outliers==0 ? "No outliers" : "Outliers present", dq.q1, dq.q3, dq.lowerFence, dq.upperFence, dq.outliers
+
+        // DQ5 – Exact duplicate row (energy + CO₂)
+        sb.append(String.format(
+                Locale.US,
+                "DQ5_DUP_ROW        | Exact Duplicate Row Detection (Energy and CO₂ Pair) | %2d /  5 | %s " +
+                        "| Number of additional duplicated (total_energy, co2_kg) rows beyond the first instance=%d.%n",
+                dq5,
+                dq.duplicateEnergyCo2Rows() == 0
+                        ? "No exact duplicate rows were found for the pair (total_energy, co2_kg)."
+                        : "Some rows share exactly the same combination of total_energy and co2_kg; this often comes from copy-paste or repeated imports.",
+                dq.duplicateEnergyCo2Rows()
         ));
-        sb.append(String.format(Locale.US,
-                "DQ7_UNIFORMITY_CV | Uniformity check (CV) | %d / 5  | %s | mean=%.3f,std=%.3f,cv=%.6f,threshold=%.6f\n",
-                dq7, dq.cvEnergy <= 0.02 ? "Dispersion OK" : "High dispersion", dq.meanEnergy, dq.stdEnergy, dq.cvEnergy, 0.02
+
+        // DQ6 – Outliers (IQR)
+        sb.append(String.format(
+                Locale.US,
+                "DQ6_OUTLIER_IQR    | Energy Outlier Detection (IQR Method)              | %2d / 10 | %s " +
+                        "| Q1=%.3f, Q3=%.3f, IQR=%.3f, lowerBound=%.3f, upperBound=%.3f, outlierCount=%d.%n",
+                dq6,
+                dq.outlierCount() == 0
+                        ? "No strong outliers were detected. All energy values fall inside the IQR-based expected range."
+                        : "One or more energy values fall outside the IQR-based expected range and should be reviewed individually.",
+                dq.q1(),
+                dq.q3(),
+                dq.iqr(),
+                dq.lowerFence(),
+                dq.upperFence(),
+                dq.outlierCount()
         ));
-        sb.append(String.format(Locale.US,
-                "DQ8_REPEAT_VALUES | Repeated rounded energies | %d / 5 | %s | repeatedKeys=%d, top=%s\n",
-                dq8, dq.repeatedRoundedKeys==0 ? "No repeated rounded values" : "Repeated rounded values exist",
-                dq.repeatedRoundedKeys, dq.topRepeatedRoundedValues
+
+        // DQ7 – Uniformity (CV)
+        sb.append(String.format(
+                Locale.US,
+                "DQ7_UNIFORMITY_CV  | Energy Uniformity Rule (Coefficient of Variation)  | %2d /  5 | %s " +
+                        "| Mean energy=%.3f, standardDeviation=%.3f, coefficientOfVariation=%.6f, configuredThreshold=%.6f.%n",
+                dq7,
+                dq.coefficientOfVariation() <= cvUniformity
+                        ? "Energy values are very uniform (low CV). This can be acceptable in highly stable operations, but in most cases such flat profiles should be justified with operational evidence."
+                        : "Energy values show a normal level of variation. The coefficient of variation is above the uniformity threshold.",
+                dq.meanEnergy(),
+                dq.stdEnergy(),
+                dq.coefficientOfVariation(),
+                cvUniformity
+        ));
+
+        // DQ8 – Repeated rounded values
+        sb.append(String.format(
+                Locale.US,
+                "DQ8_REPEAT_VALUES  | Repeated Rounded Energy Values Detection            | %2d /  5 | %s " +
+                        "| Number of rounded total_energy keys that appear more than once=%d. Example rounded values=%s.%n",
+                dq8,
+                dq.repeatedRoundedKeys() == 0
+                        ? "No suspicious repetition of rounded energy values was detected."
+                        : "Repeated rounded energy values were detected. This may be consistent with meter resolution, but high repetition can also indicate manual rounding or synthetic aggregation.",
+                dq.repeatedRoundedKeys(),
+                dq.topRepeatedRoundedValues()
         ));
 
         return sb.toString();
+    }
+
+    // ========= Configurable helpers (no hard-coded thresholds in logic) =========
+
+    private double efHighThreshold() {
+        return getDoubleProperty("carbonx.ai.efHighThreshold", 0.6d);
+    }
+
+    private double efLowThreshold() {
+        return getDoubleProperty("carbonx.ai.efLowThreshold", 0.2d);
+    }
+
+    private double cvUniformityThreshold() {
+        return getDoubleProperty("carbonx.ai.cvUniformityThreshold", 0.02d);
+    }
+
+    private double cvSuspiciousThreshold() {
+        return getDoubleProperty("carbonx.ai.cvSuspiciousThreshold", 0.005d);
+    }
+
+    private double fraudHighThreshold() {
+        return getDoubleProperty("carbonx.ai.fraudHighThreshold", 0.5d);
+    }
+
+    private int maxOutputTokens() {
+        return getIntProperty("carbonx.ai.maxOutputTokens", 768);
+    }
+
+    private double temperature() {
+        return getDoubleProperty("carbonx.ai.temperature", 0.1d);
+    }
+
+    private int minNotesLength() {
+        return getIntProperty("carbonx.ai.minNotesLength", 350);
+    }
+
+    private int scoreScale() {
+        return getIntProperty("carbonx.ai.scoreScale", 1);
+    }
+
+    private boolean appendRiskSummaryTail() {
+        return Boolean.parseBoolean(
+                System.getProperty("carbonx.ai.appendRiskSummaryTail", "true")
+        );
+    }
+
+    private String defaultVersion() {
+        return System.getProperty("carbonx.ai.defaultVersion", "v2.5");
+    }
+
+    private List<String> recommendedActions() {
+        // Cho phép override recommendations bằng system property:
+        // -Dcarbonx.ai.recommendations="Rec1|Rec2|Rec3"
+        String raw = System.getProperty("carbonx.ai.recommendations", "").trim();
+        if (!raw.isEmpty()) {
+            return Arrays.stream(raw.split("\\|"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+
+        // Default recommendations (có thể thay bằng config nếu muốn)
+        return List.of(
+                "Provide metering and instrumentation calibration certificates for the reporting period.",
+                "Export and archive raw time-series meter readings so that aggregated values can be traced back to primary data.",
+                "Reconcile all asset identifiers (for example, license plates and equipment serial numbers) with fleet, procurement, and operation and maintenance records.",
+                "Document key methodological choices (system boundary, activity data sources, emission factor references) in a version-controlled methodology note.",
+                "Introduce structured reason codes for rows with zero or missing energy and implement data validation rules in the ETL pipeline."
+        );
+    }
+
+    private double getDoubleProperty(String key, double defaultValue) {
+        String raw = System.getProperty(key);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (NumberFormatException e) {
+            log.warn("[AI] Property {}='{}' is not a valid double. Using default={}", key, raw, defaultValue);
+            return defaultValue;
+        }
+    }
+
+    private int getIntProperty(String key, int defaultValue) {
+        String raw = System.getProperty(key);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            log.warn("[AI] Property {}='{}' is not a valid integer. Using default={}", key, raw, defaultValue);
+            return defaultValue;
+        }
     }
 }
