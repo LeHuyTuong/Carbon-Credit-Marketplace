@@ -17,7 +17,7 @@ import { fetchCvaCards, fetchMonthlyReportStatus, fetchMonthlyCreditStatus } fro
 function buildReportSeries(monthly = []) {
   const label = (o) => o?.month ?? o?.monthLabel ?? o?.period ?? o?.label ?? "";
   const num = (o, k) => Number(o?.[k] ?? 0);
-   if (monthly.length === 1) {
+  if (monthly.length === 1) {
     monthly = [{ month: "Previous", approved: 0, pending: 0, rejected: 0 }, ...monthly];
   }
   return [
@@ -118,7 +118,7 @@ const Dashboard = () => {
           gap="20px"
         >
           {/* === ROW 1: SUMMARY CARDS === */}
-          <Box gridColumn="span 3"  sx={{ backgroundColor: colors.greenAccent[900]}} display="flex" justifyContent="center" alignItems="center">
+          <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.reports).toLocaleString()}
               subtitle="Reports"
@@ -127,7 +127,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          <Box gridColumn="span 3"  sx={{ backgroundColor: colors.greenAccent[900]}} display="flex" justifyContent="center" alignItems="center">
+          <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.credits).toLocaleString()}
               subtitle="Credits"
@@ -136,7 +136,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          <Box gridColumn="span 3"  sx={{ backgroundColor: colors.greenAccent[900]}} display="flex" justifyContent="center" alignItems="center">
+          <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.companies).toLocaleString()}
               subtitle="Companies"
@@ -145,7 +145,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          <Box gridColumn="span 3"  sx={{ backgroundColor: colors.greenAccent[900] }}  display="flex" justifyContent="center" alignItems="center">
+          <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.projects).toLocaleString()}
               subtitle="Projects"
