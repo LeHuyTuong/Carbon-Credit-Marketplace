@@ -139,6 +139,7 @@ export default function ListCredits() {
         listedQuantity: item.originalQuantity,
         soldQuantity: item.soldQuantity,
         availableQuantity: item.quantity,
+        quantity: item.quantity,
         seller: item.sellerCompanyName,
         expiresAt: item.expiresAt || null,
       }));

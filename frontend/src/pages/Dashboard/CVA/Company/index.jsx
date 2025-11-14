@@ -5,14 +5,13 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataCompanyCVA } from "@/data/mockData";
 const Invoices = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   // lưu dữ liệu (để có thể xóa hàng)
   const [data, setData] = useState(mockDataCompanyCVA);
-  
+
   const columns = [
     { field: "id", headerName: "" },
     { field: "companyid", headerName: "Company ID", flex: 1 },
@@ -38,7 +37,7 @@ const Invoices = () => {
       flex: 1,
     },
     {
-      field: "status",// Trạng thái (Hoạt động / Không hoạt động )
+      field: "status", // Trạng thái (Hoạt động / Không hoạt động )
       headerName: "Status",
       flex: 1,
       renderCell: ({ row: { status } }) => {
@@ -71,15 +70,16 @@ const Invoices = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/cva/view_company/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/cva/view_company/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
-            
           </div>
         );
       },
     },
-
   ];
 
   return (
@@ -117,11 +117,12 @@ const Invoices = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",

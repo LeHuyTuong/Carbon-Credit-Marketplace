@@ -14,13 +14,18 @@ export default function useWalletData() {
 
   // fetch thông tin ví
   const fetchWallet = async () => {
-    try {
-      const res = await apiFetch("/api/v1/wallet", { method: "GET" });
-      setWallet(res.response);
-    } catch (err) {
-      console.error("Failed to fetch wallet:", err);
-    }
-  };
+  try {
+    const res = await apiFetch("/api/v1/wallet", { method: "GET" });
+    const data = res?.response || {};
+
+    setWallet(data);
+    return data; 
+  } catch (err) {
+    console.error("Failed to fetch wallet:", err);
+    return { balance: 0 }; // fallback an toàn
+  }
+};
+
 
   // fetch danh sách giao dịch ví
   const fetchTransactions = async () => {

@@ -54,7 +54,14 @@ export default function UploadReport() {
         submittedAt: r.submittedAt,
       }));
 
-      setReports(mapped);
+      //sort cái mới nhất
+      const sorted = mapped.sort((a, b) => {
+        const r1 = new Date(a.submittedAt);
+        const r2 = new Date(b.submittedAt);
+        return r2 - r1;
+      });
+
+      setReports(sorted);
       // nếu có report đã được duyệt → trigger refresh credit
       const approvedReports = data.filter((r) => r.status === "ADMIN_APPROVED");
       if (approvedReports.length > 0) {
