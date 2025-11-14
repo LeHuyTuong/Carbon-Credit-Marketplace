@@ -13,9 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Static profit sharing policy resolved from configuration.
- */
 @Slf4j
 @Component
 @ConfigurationProperties(prefix = "profit-sharing")
@@ -33,55 +30,49 @@ public class ProfitSharingProperties {
         Policy override = companyId != null ? overrides.get(companyId) : null;
         String source = override != null ? String.format("overrides[%d]", companyId) : "defaultPolicy";
 
+        // 1. Lấy Pricing Mode (KWH hay CREDIT)
+        PricingMode pricingMode = Optional.ofNullable(override)
+                .map(Policy::getPricingMode) // Ưu tiên override
+                .orElse(defaultPolicy.getPricingMode()); // Nếu không có, dùng default
 
-        BigDecimal unitPricePerKwh = override != null && override.getUnitPricePerKwh() != null
-                ? override.getUnitPricePerKwh()
-                : defaultPolicy.getUnitPricePerKwh();
-        BigDecimal unitPricePerCredit = override != null && override.getUnitPricePerCredit() != null
-                ? override.getUnitPricePerCredit()
-                : defaultPolicy.getUnitPricePerCredit();
+        // 2. Lấy % chia sẻ
+        BigDecimal ownerSharePct = Optional.ofNullable(override)
+                .map(Policy::getOwnerSharePct) // Ưu tiên override
+                .orElse(defaultPolicy.getOwnerSharePct()); // Nếu không có, dùng default
+
+        // 3. Lấy Min Payout
         BigDecimal minPayout = Optional.ofNullable(override)
                 .map(Policy::getMinPayout)
                 .orElse(defaultPolicy.getMinPayout());
 
-        BigDecimal ownerSharePct = Optional.ofNullable(override)
-                .map(Policy::getOwnerSharePct)
-                .orElse(defaultPolicy.getOwnerSharePct());
-
+        // 4. Lấy Tiền tệ
         String currency = Optional.ofNullable(override)
                 .map(Policy::getCurrency)
                 .filter(value -> !value.isBlank())
                 .orElse(defaultPolicy.getCurrency());
 
-        PricingMode pricingMode;
-        BigDecimal effectiveUnitPrice;
-        if (unitPricePerKwh != null) {
-            pricingMode = PricingMode.KWH;
-            effectiveUnitPrice = unitPricePerKwh;
-        } else if (unitPricePerCredit != null) {
-            pricingMode = PricingMode.CREDIT;
-            effectiveUnitPrice = unitPricePerCredit;
-        } else {
-            throw new IllegalStateException("Profit sharing policy must define either kWh or credit unit price");
+        if (pricingMode == null) {
+            // Lỗi này xảy ra nếu file .properties thiếu 'pricingMode'
+            throw new IllegalStateException("Profit sharing policy must define a 'pricingMode' (KWH or CREDIT)");
+        }
+        if (ownerSharePct == null) {
+            // Lỗi này xảy ra nếu file .properties thiếu 'ownerSharePct'
+            throw new IllegalStateException("Profit sharing policy must define 'ownerSharePct'");
         }
 
         return new ResolvedPolicy(
                 source,
                 pricingMode,
-                unitPricePerKwh,
-                unitPricePerCredit,
                 minPayout,
-                effectiveUnitPrice,
                 ownerSharePct,
                 currency);
     }
 
     @Data
     public static class Policy {
-        private BigDecimal unitPricePerKwh;
-        private BigDecimal unitPricePerCredit;
+        private PricingMode pricingMode; // KWH hoặc CREDIT
         private BigDecimal minPayout;
-        private BigDecimal ownerSharePct;
+        private BigDecimal ownerSharePct; // Ví dụ: 0.4 (cho 40%)
         private String currency = "USD";
     }
 
@@ -94,34 +85,25 @@ public class ProfitSharingProperties {
     public static class ResolvedPolicy {
         private String source;
         private final PricingMode pricingMode;
-        private final BigDecimal unitPricePerKwh;
-        private final BigDecimal unitPricePerCredit;
         private final BigDecimal minPayout;
-        private final BigDecimal unitPrice;
         private final String currency;
         private final BigDecimal ownerSharePct;
 
         private ResolvedPolicy(
                 String source,
                 PricingMode pricingMode,
-                BigDecimal unitPricePerKwh,
-                BigDecimal unitPricePerCredit,
                 BigDecimal minPayout,
-                BigDecimal unitPrice,
-                BigDecimal ownerSharePct
-                , String currency) {
+                BigDecimal ownerSharePct,
+                String currency) {
             this.source = source;
             this.pricingMode = pricingMode;
-            this.unitPricePerKwh = scale(unitPricePerKwh);
-            this.unitPricePerCredit = scale(unitPricePerCredit);
-            this.minPayout = scale(minPayout);
-            this.unitPrice = scale(unitPrice);
+            this.minPayout = scale(minPayout, 2); // Tiền tệ 2 chữ số
             this.currency = currency == null ? "USD" : currency.trim().toUpperCase();
-            this.ownerSharePct = scale(ownerSharePct);
+            this.ownerSharePct = scale(ownerSharePct, 4); // % 4 chữ số (ví dụ 0.4000)
         }
 
-        private BigDecimal scale(BigDecimal value) {
-            return value == null ? null : value.setScale(2, RoundingMode.HALF_UP);
+        private BigDecimal scale(BigDecimal value, int scale) {
+            return value == null ? null : value.setScale(scale, RoundingMode.HALF_UP);
         }
     }
 }
