@@ -16,7 +16,6 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
-import { mockDataCreditsCVA,mockDataLogCVA } from "@/data/mockData";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -79,7 +78,10 @@ const ViewCredit = () => {
 
   return (
     <Box m="20px">
-      <Header title="CREDIT DETAIL" subtitle={`Details of ${credit.creditid}`} />
+      <Header
+        title="CREDIT DETAIL"
+        subtitle={`Details of ${credit.creditid}`}
+      />
 
       <Paper
         elevation={4}
@@ -158,7 +160,9 @@ const ViewCredit = () => {
                 </Select>
               </FormControl>
             ) : (
-              <Typography sx={{ color, fontWeight: 600, textTransform: "capitalize" }}>
+              <Typography
+                sx={{ color, fontWeight: 600, textTransform: "capitalize" }}
+              >
                 {credit.status}
               </Typography>
             )}
@@ -198,8 +202,12 @@ const ViewCredit = () => {
             </Typography>
             <Typography sx={{ mb: 1 }}>{credit.linkedcertificate}</Typography>
             <Box display="flex" gap={2}>
-              <Button variant="contained" color="info">View</Button>
-              <Button variant="contained" color="secondary">Download</Button>
+              <Button variant="contained" color="info">
+                View
+              </Button>
+              <Button variant="contained" color="secondary">
+                Download
+              </Button>
             </Box>
           </Grid>
         </Grid>
@@ -213,7 +221,9 @@ const ViewCredit = () => {
                 setIsEditing(true);
                 setStatus(credit.status);
                 setIssuedDay(
-                  credit.issuedday ? dayjs(credit.issuedday, "DD/MM/YYYY") : null
+                  credit.issuedday
+                    ? dayjs(credit.issuedday, "DD/MM/YYYY")
+                    : null
                 );
                 setNote(credit.note || "");
               }}
@@ -225,7 +235,11 @@ const ViewCredit = () => {
               Update
             </Button>
           )}
-          <Button variant="outlined" color="inherit" onClick={() => navigate(-1)}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => navigate(-1)}
+          >
             Back
           </Button>
         </Box>
@@ -267,7 +281,11 @@ const ViewCredit = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
           Status updated successfully!
         </Alert>
       </Snackbar>

@@ -12,7 +12,6 @@ import {
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { tokens } from "@/themeCVA";
-import { mockDataProjects } from "@/data/mockData";
 import Header from "@/components/Chart/Header.jsx";
 import dayjs from "dayjs";
 import "dayjs/locale/en";
@@ -50,7 +49,10 @@ const ViewProject = () => {
 
   return (
     <Box m="20px">
-      <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
+      <Header
+        title="PROJECT DETAILS"
+        subtitle="Detailed information of project"
+      />
 
       <Paper
         elevation={3}
@@ -83,9 +85,7 @@ const ViewProject = () => {
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Started Date:
               </Typography>
-              <Typography mb={2}>
-                {project.starteddate || "—"}
-              </Typography>
+              <Typography mb={2}>{project.starteddate || "—"}</Typography>
             </Grid>
 
             {/* RIGHT COLUMN */}
@@ -93,9 +93,7 @@ const ViewProject = () => {
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 End Date:
               </Typography>
-              <Typography mb={2}>
-                {project.enddate || "—"}
-              </Typography>
+              <Typography mb={2}>{project.enddate || "—"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Total Expected Credits:
@@ -127,8 +125,6 @@ const ViewProject = () => {
           </Button>
         </Box>
       </Paper>
-
-      
     </Box>
   );
 };

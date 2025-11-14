@@ -44,6 +44,25 @@ export default function Manage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showFormulaImg, setShowFormulaImg] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
+
+  //check đã kyc chưa
+  useEffect(() => {
+    const checkKyc = async () => {
+      try {
+        const res = await apiFetch("/api/v1/kyc/user", { method: "GET" });
+        if (res?.response?.id) {
+          setIsKycVerified(true); // kyc rồi
+        } else {
+          setIsKycVerified(false); // chưa kyc
+        }
+      } catch (err) {
+        setIsKycVerified(false);
+      }
+    };
+
+    checkKyc();
+  }, []);
 
   //state hiển thị thông báo (Toast)
   const [toast, setToast] = useState({
@@ -125,6 +144,18 @@ export default function Manage() {
 
   //submit (thêm hoặc sửa)
   const handleSubmit = async (values) => {
+    //chặn nếu chưa kyc
+    if (!isKycVerified) {
+      showToast(
+        "You must complete KYC verification before adding a vehicle.",
+        "danger"
+      );
+      //điều hướng sang kyc
+      setTimeout(() => {
+        window.location.href = "/kyc";
+      }, 1800);
+      return;
+    }
     try {
       //chuẩn hóa dữ liệu trước khi gửi lên API
       const payload = {
@@ -318,7 +349,7 @@ function VehicleModal({
     model: data?.model ?? "",
     company: data?.companyId ?? "",
     image: null,
-    acceptRules: false,
+    acceptRules: data ? true : false, //edit thì true
   };
 
   //lấy danh sách công ty được duyệt khi mở modal

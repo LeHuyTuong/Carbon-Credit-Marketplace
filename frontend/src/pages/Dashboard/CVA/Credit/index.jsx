@@ -6,17 +6,15 @@ import { useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useState } from "react"; //thêm để quản lý dữ liệu
 import "@/styles/actionadmin.scss"; // dùng style đã copy từ template
-import { mockDataCreditsCVA} from "@/data/mockData";
 const Contacts = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-
   const [data, setData] = useState(mockDataCreditsCVA);
-  
+
   const columns = [
     { field: "id", headerName: "", flex: 0.5 },
-    { field: "creditid", headerName: "Credit ID", },
+    { field: "creditid", headerName: "Credit ID" },
     {
       field: "aggregator",
       headerName: "Company",
@@ -28,7 +26,6 @@ const Contacts = () => {
       field: "projectname",
       headerName: "Project Name",
       flex: 1,
-
     },
     {
       field: "numbercredit",
@@ -57,10 +54,9 @@ const Contacts = () => {
 
         // Map màu cho từng trạng thái
         const colorMap = {
-          approved: "#4CAF50",   // xanh lá
-          rejected: "#E53935",  // đỏ
-          pending: "#42A5F5",     // xanh dương
-          
+          approved: "#4CAF50", // xanh lá
+          rejected: "#E53935", // đỏ
+          pending: "#42A5F5", // xanh dương
         };
 
         const color = colorMap[value.toLowerCase()] || "#E0E0E0";
@@ -104,10 +100,12 @@ const Contacts = () => {
       renderCell: (params) => {
         return (
           <div className="cellAction">
-            <Link to={`/cva/view_credit/${params.row.id}`} style={{ textDecoration: "none" }}>
+            <Link
+              to={`/cva/view_credit/${params.row.id}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="viewButton">View</div>
             </Link>
-            
           </div>
         );
       },
@@ -116,11 +114,7 @@ const Contacts = () => {
 
   return (
     <Box m="20px" className="actionadmin">
-      <Header
-        title="CREDIT"
-        subtitle="List of Carbon Credits"
-
-      />
+      <Header title="CREDIT" subtitle="List of Carbon Credits" />
       <Box
         m="40px 0 0 0"
         height="75vh"
@@ -156,11 +150,12 @@ const Contacts = () => {
             alignItems: "center",
             justifyContent: "flex-end",
           },
-          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-            marginTop: 0,
-            marginBottom: 0,
-            lineHeight: "normal",
-          },
+          "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+            {
+              marginTop: 0,
+              marginBottom: 0,
+              lineHeight: "normal",
+            },
           "& .MuiTablePagination-select": {
             marginTop: "0 !important",
             marginBottom: "0 !important",
