@@ -58,7 +58,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     @Autowired
     private ApplicationContext applicationContext;
 
-    // Helper method to get proxy for @Transactional methods
     private ProfitSharingServiceImpl getSelf() {
         return applicationContext.getBean(ProfitSharingServiceImpl.class);
     }
@@ -141,15 +140,18 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
 
-        // Use getSelf() to get proxy with @Transactional
         ProfitDistribution distributionEvent = getSelf().createDistributionEvent(request, companyUser);
 
         try {
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
             List<EmissionReport> reportsToProcess = new ArrayList<>();
 
+            // Khai báo report ở đây để dùng cho cả vòng lặp và gửi email
+            EmissionReport report;
+
             if (request.getEmissionReportId() != null) {
-                EmissionReport report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
+                // Tải report (với @EntityGraph)
+                report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
                         .orElseThrow(() -> new BadRequestException("No find emission report with id : " + request.getEmissionReportId()));
 
                 if (report.getStatus() != EmissionStatus.CREDIT_ISSUED ) {
@@ -159,6 +161,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     throw new AppException(ErrorCode.ACCESS_DENIED);
                 }
                 reportsToProcess.add(report);
+            } else {
+                log.warn("No emissionReportId provided.");
+                distributionEvent.setStatus(ProfitDistributionStatus.COMPLETED);
+                profitDistributionRepository.save(distributionEvent);
+                return;
             }
 
             if (reportsToProcess.isEmpty()) {
@@ -177,8 +184,8 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             Map<Long, ContributionData> evOwnerContributions = new HashMap<>();
 
-            for (EmissionReport report : reportsToProcess) {
-                for (EmissionReportDetail detail : report.getDetails()) {
+            for (EmissionReport r : reportsToProcess) { // Đổi tên biến
+                for (EmissionReportDetail detail : r.getDetails()) {
                     if (!Objects.equals(detail.getCompanyId(), company.getId())) {
                         continue;
                     }
@@ -248,7 +255,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
 
             BigDecimal finalTotal = totalRawPayout.setScale(2, RoundingMode.HALF_UP);
-            EmissionReport report = reportsToProcess.get(0);
+            // 'report' đã được tải ở trên
             validateCompanyBalance(companyWallet, finalTotal);
 
             distributionEvent.setTotalMoneyDistributed(finalTotal);
@@ -261,7 +268,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         distributionEvent,
                         payout,
                         companyWallet,
-                        report,
+                        report.getId(), // Chỉ truyền ID
                         policy,
                         company
                 );
@@ -274,10 +281,14 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             try {
                 BigDecimal totalCreditsTCO2e = totalCreditsKgForDistribution.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
 
+                // Lấy Project Title (LAZY) ở đây. Vì 'report' được tải bằng 'findByIdWithDetails'
+                // (giả sử là EAGER hoặc JOIN FETCH), nó vẫn an toàn.
+                String period = report.getPeriod();
+
                 emailService.sendDistributionSummaryToCompany(
                         companyUser.getEmail(),
                         company.getCompanyName(),
-                        report.getPeriod(),
+                        period, // Sử dụng biến an toàn
                         payoutPlan.size(),
                         totalEnergyForDistribution,
                         totalCreditsTCO2e,
@@ -288,6 +299,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 );
                 log.info("Sent payout summary email to company {}", company.getId());
             } catch (Exception e) {
+                // Nếu 'findByIdWithDetails' không fetch 'period', lỗi 'no Session' cũng xảy ra ở đây
                 log.warn("Failed to send payout summary email to company {}: {}", company.getId(), e.getMessage(), e);
             }
 
@@ -306,10 +318,34 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             ProfitDistribution event,
             OwnerPayoutData payout,
             Wallet companyWallet,
-            EmissionReport report,
+            Long reportId,
             ResolvedPolicy policy,
             Company company
     ) {
+        // Tải lại (fetch) report bên trong giao dịch (transaction) MỚI này
+        // để đảm bảo Session đang mở.
+        // **QUAN TRỌNG: Dùng findByIdWithDetails để tải EAGER các trường cần thiết**
+        EmissionReport report = emissionReportRepository.findByIdWithDetails(reportId).orElse(null);
+
+        // Lấy thông tin LAZY (Project, Period) ngay khi Session CÒN MỞ
+        String projectName = "N/A";
+        String reportPeriod = "N/A";
+        String reportIdStr = String.valueOf(reportId);
+
+        if (report != null) {
+            try {
+                // Vì đã dùng findByIdWithDetails, các trường này đã được tải (EAGER)
+                if (report.getProject() != null) {
+                    projectName = report.getProject().getTitle();
+                }
+                reportPeriod = report.getPeriod();
+            } catch (Exception e) {
+                // Phòng trường hợp 'findByIdWithDetails' không fetch hết
+                log.warn("Could not eager fetch report/project data for email (trong TX mới): {}", e.getMessage());
+            }
+        } else {
+            log.error("Không tìm thấy Report với ID {} bên trong processPayoutForOwner!", reportId);
+        }
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
             log.error("Company wallet not found in async thread! Wallet ID: {}", companyWallet.getId());
@@ -357,21 +393,22 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
 
             try {
-                String reportReference = "Report #" + report.getId() + " (" + report.getProject().getTitle() + ")";
+                // Sử dụng các biến String đã lấy từ trước
+                String reportReference = "Report #" + reportIdStr + " (" + projectName + ")";
                 BigDecimal creditsAsTCO2e = payout.getCreditContribution().divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
 
                 emailService.sendPayoutSuccessToOwner(
                         owner.getUser().getEmail(),
                         owner.getName(),
                         company.getCompanyName(),
-                        report.getPeriod(),
+                        reportPeriod, // Sử dụng biến an toàn
                         payout.getEnergyContribution(),
                         creditsAsTCO2e,
                         payout.getPayoutAmount(),
                         java.util.Collections.emptyList(),
                         String.valueOf(event.getId()),
                         company.getId(),
-                        reportReference,
+                        reportReference, // Sử dụng biến an toàn
                         policy.getMinPayout()
                 );
                 log.info("Sent payout success email to owner {} for distribution {}", owner.getId(), event.getId());
@@ -396,6 +433,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             profitDistributionDetailRepository.save(detail);
         }
     }
+
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
