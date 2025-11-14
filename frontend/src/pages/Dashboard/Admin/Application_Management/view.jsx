@@ -108,7 +108,8 @@ const ApplicationView = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1210px", width: "100%", }}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1210px", height: "100vh",       // chiếm toàn bộ chiều cao viewport
+    overflow: "hidden",      }}>
       <Header
         title="COMPANY APPLICATION DETAIL"
         subtitle={`Detailed information of application ID: ${application.id}`}
@@ -120,7 +121,10 @@ const ApplicationView = () => {
           p: 2,
           mt: 2,
           backgroundColor: colors.primary[400],
-         }}
+          maxHeight: "80vh",    // Giới hạn chiều cao khung hiển thị
+          overflowY: "auto",    // Cho phép cuộn trong khung
+
+        }}
       >
         <Grid container spacing={13}>
           {/* COLUMN 1: General Info */}
@@ -351,12 +355,6 @@ const ApplicationView = () => {
             )}
           </Grid>
         </Grid>
-
-
-
-
-
-
         {/* Action Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
           <Button

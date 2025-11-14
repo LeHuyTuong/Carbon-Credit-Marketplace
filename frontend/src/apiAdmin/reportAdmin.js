@@ -40,3 +40,16 @@ export const getCreditPreviewByReportId = async (reportId) => {
     method: "GET",
   });
 };
+
+// Issue credits (cấp tín chỉ 1 lần duy nhất cho report)
+export const issueCreditsForReport = async (reportId, approvedCredits) => {
+  return apiFetch(`/api/v1/credits/issued/${reportId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      approvedCredits,
+    }),
+  });
+};

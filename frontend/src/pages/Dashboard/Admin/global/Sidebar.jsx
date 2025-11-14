@@ -188,7 +188,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
             <Item
-              title="Manage Credits"
+              title="Manage Certificates"
               to="/admin/credit_management"
               icon={<CreditCardIcon />}
               selected={selected}
