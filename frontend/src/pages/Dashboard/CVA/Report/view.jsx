@@ -244,18 +244,18 @@ const ViewReport = ({ report: initialReport }) => {
   const statusColor = colorMap[report.status] || colors.grey[300];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }} textAlign="left" >
+    <Box m="20px" sx={{ marginLeft: "290px",maxWidth: "1200px", width: "100%", }} textAlign="left" >
       <Header title="REPORT DETAIL" subtitle={`Details of Report ${report.id}`} />
       <Paper
         sx={{
-          p: 4,
-          mt: 3,
+          p: 2,
+          mt: 2,
           borderRadius: 3,
           boxShadow: 4,
           backgroundColor: "#fafafa",
         }}
       >
-        {/* ===================== REPORT INFORMATION ===================== */}
+        {/* REPORT INFORMATION  */}
         <Typography
           variant="h5"
           sx={{
@@ -339,7 +339,7 @@ const ViewReport = ({ report: initialReport }) => {
           </Box>
         )}
 
-        {/* ===================== COMPANY KYC SECTION ===================== */}
+        {/* COMPANY KYC SECTION  */}
         {companyProfile && (
           <>
             <Divider sx={{ my: 4 }} />
@@ -381,7 +381,7 @@ const ViewReport = ({ report: initialReport }) => {
           </>
         )}
 
-        {/* ===================== ACTION BUTTONS ===================== */}
+        {/* ACTION BUTTONS */}
         <Box
           mt={5}
           display="flex"
@@ -523,37 +523,40 @@ const ViewReport = ({ report: initialReport }) => {
         </DialogContent>
       </Dialog>
 
-      {/* --- AI Analysis Popup --- */}
+      {/* AI Analysis Popup  */}
       <Dialog open={openAIDialog} onClose={() => setOpenAIDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>AI Evaluation Summary</DialogTitle>
-        <DialogContent dividers>
-          {aiLoading ? (
-            <Box display="flex" justifyContent="center" py={4}>
-              <CircularProgress />
-            </Box>
-          ) : aiResult ? (
-            <Box>
-              <Typography variant="body1">
-                <strong>Version:</strong> {aiResult.aiVersion || "v?.?"}
-              </Typography>
-              <Typography variant="body1">
-                <strong>Score:</strong> {aiResult.aiPreScore ?? "—"} / 10
-              </Typography>
-              <Typography sx={{ mt: 2, whiteSpace: "pre-wrap" }}>
-                {aiResult.aiPreNotes || "No AI notes available."}
-              </Typography>
-            </Box>
-          ) : (
-            <Typography>No AI result available.</Typography>
-          )}
-        </DialogContent>
-        {/* Exit popup */}
-        <DialogActions>
-          <Button onClick={() => setOpenAIDialog(false)} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+  <DialogTitle>AI Evaluation Summary</DialogTitle>
+  <DialogContent dividers>
+    {aiLoading ? (
+      <Box display="flex" justifyContent="center" py={4}>
+        <CircularProgress />
+      </Box>
+    ) : aiResult ? (
+      <Box>
+        <Typography variant="body1">
+          <strong>Version:</strong> {aiResult.aiVersion || "Unknown"}
+        </Typography>
+
+        <Typography variant="body1" sx={{ mt: 1 }}>
+          <strong>Score:</strong> {aiResult.aiPreScore ?? aiResult.score ?? "—"} / 10
+        </Typography>
+
+        <Typography sx={{ mt: 2, whiteSpace: "pre-wrap" }}>
+          {aiResult.aiPreNotes || aiResult.notes || "No AI notes available."}
+        </Typography>
+      </Box>
+    ) : (
+      <Typography>No AI result available.</Typography>
+    )}
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setOpenAIDialog(false)} color="primary">
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
       {/*  Data Analysis Popup (formatted)  */}
       <Dialog
@@ -604,6 +607,7 @@ const ViewReport = ({ report: initialReport }) => {
               <Table size="small" sx={{ mt: 1 }}>
                 <TableHead>
                   <TableRow>
+                    <TableCell>Rule ID</TableCell>
                     <TableCell>Name</TableCell>
                     <TableCell>Score</TableCell>
                     <TableCell>Message</TableCell>
@@ -644,7 +648,7 @@ const ViewReport = ({ report: initialReport }) => {
 
               </Table>
 
-              {/* === Tổng điểm cuối === */}
+              {/* Tổng điểm cuối */}
               <Box mt={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
                 <Typography fontWeight="bold">
                   Total Score:{" "}
