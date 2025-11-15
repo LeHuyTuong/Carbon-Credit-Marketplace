@@ -154,7 +154,7 @@ const Dashboard = () => {
             />
           </Box>
           {/* === ROW 2: LINE CHART === */}
-          <Box gridColumn="span 12" gridRow="span 2" bg={colors.greenAccent[800]}>
+          <Box gridColumn="span 6" gridRow="span 2" bg={colors.greenAccent[800]}>
             <Box mt="25px" px="30px" display="flex" justifyContent="space-between" alignItems="center">
               <Box>
                 <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
@@ -171,7 +171,7 @@ const Dashboard = () => {
           </Box>
 
           {/* === ROW 2: BAR CHART === */}
-          {/* <Box gridColumn="span 6" gridRow="span 2" bg={colors.greenAccent[800]} p="30px">
+          <Box gridColumn="span 6" gridRow="span 2" bg={colors.greenAccent[800]} p="30px">
             <Typography variant="h5" fontWeight="600" mb="15px">
               Credit Status
             </Typography>
@@ -183,7 +183,7 @@ const Dashboard = () => {
                 indexBy={creditBar.indexBy}
               />
             </Box>
-          </Box> */}
+          </Box>
         </Box>
       )}
     </Box>

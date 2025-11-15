@@ -244,7 +244,7 @@ const ViewReport = ({ report: initialReport }) => {
   const statusColor = colorMap[report.status] || colors.grey[300];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px",maxWidth: "1200px", width: "100%", }} textAlign="left" >
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1200px", width: "100%", }} textAlign="left" >
       <Header title="REPORT DETAIL" subtitle={`Details of Report ${report.id}`} />
       <Paper
         sx={{
@@ -524,38 +524,152 @@ const ViewReport = ({ report: initialReport }) => {
       </Dialog>
 
       {/* AI Analysis Popup  */}
-      <Dialog open={openAIDialog} onClose={() => setOpenAIDialog(false)} fullWidth maxWidth="sm">
-  <DialogTitle>AI Evaluation Summary</DialogTitle>
-  <DialogContent dividers>
-    {aiLoading ? (
-      <Box display="flex" justifyContent="center" py={4}>
-        <CircularProgress />
-      </Box>
-    ) : aiResult ? (
-      <Box>
-        <Typography variant="body1">
-          <strong>Version:</strong> {aiResult.aiVersion || "Unknown"}
-        </Typography>
+      <Dialog
+        open={openAIDialog}
+        onClose={() => setOpenAIDialog(false)}
+        maxWidth={false}
+        PaperProps={{
+          sx: { width: "95vw", maxWidth: "1600px" }
+        }}
+      >
+        <DialogTitle>AI Evaluation Summary</DialogTitle>
 
-        <Typography variant="body1" sx={{ mt: 1 }}>
-          <strong>Score:</strong> {aiResult.aiPreScore ?? aiResult.score ?? "—"} / 10
-        </Typography>
+        <DialogContent dividers>
+          {aiLoading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : aiResult ? (
+            <>
+              {/* ==== BASIC INFO ==== */}
+              <Typography variant="body1">
+                <strong>Version:</strong> {aiResult.aiVersion || "Unknown"}
+              </Typography>
 
-        <Typography sx={{ mt: 2, whiteSpace: "pre-wrap" }}>
-          {aiResult.aiPreNotes || aiResult.notes || "No AI notes available."}
-        </Typography>
-      </Box>
-    ) : (
-      <Typography>No AI result available.</Typography>
-    )}
-  </DialogContent>
+              <Typography variant="body1" sx={{ mt: 1 }}>
+                <strong>Score:</strong> {aiResult.aiPreScore ?? aiResult.score ?? "—"} / 10
+              </Typography>
 
-  <DialogActions>
-    <Button onClick={() => setOpenAIDialog(false)} color="primary">
-      Close
-    </Button>
-  </DialogActions>
-</Dialog>
+              {/* ==== MAIN NOTES ==== */}
+              <Typography sx={{ mt: 2, mb: 2, whiteSpace: "pre-wrap" }}>
+                {(aiResult.aiPreNotes || aiResult.notes || "")
+                  .split("\n")
+                  .filter(line => !line.includes("|")) // ẨN RUN DETAIL TRONG TEXT
+                  .join("\n") || "No AI notes available."}
+              </Typography>
+
+
+
+              {/* RUN DETAIL PARSED TABLE  */}
+
+
+              {(() => {
+                const runText =
+                  aiResult.aiRunDetail ||
+                  aiResult.aiPreNotes ||
+                  aiResult.notes ||
+                  "";
+
+                if (!runText.trim()) return null;
+
+                // --- PARSER ---
+                const parsed = runText
+                  .split("\n")
+                  .filter((line) => line.includes("|"))
+                  .map((line) => {
+                    const parts = line.split("|").map((x) => x.trim());
+                    return {
+                      rule: parts[0] || "",
+                      description: parts[1] || "",
+                      score: parts[2] || "",
+                      note: parts.slice(3).join(" | ") || "",
+                    };
+                  });
+
+                if (parsed.length === 0) return null;
+
+                return (
+                  <Paper sx={{ mt: 3, p: 1 }} elevation={2}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                     
+                    </Typography>
+
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Rule</strong></TableCell>
+                          <TableCell><strong>Description</strong></TableCell>
+                          <TableCell><strong>Score</strong></TableCell>
+                          <TableCell><strong>Note</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+
+                      <TableBody>
+                        {parsed.map((row, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{row.rule}</TableCell>
+                            <TableCell>{row.description}</TableCell>
+                            <TableCell>{row.score}</TableCell>
+                            <TableCell>{row.note}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Paper>
+                );
+              })()}
+
+              {/* ====================================================== */}
+              {/* =================== RUBRIC TABLE ===================== */}
+              {/* ====================================================== */}
+
+              {aiResult.rubricData && aiResult.rubricData.length > 0 && (
+                <Paper sx={{ mt: 4, p: 1 }} elevation={2}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Rubric
+                  </Typography>
+
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell><strong>ID</strong></TableCell>
+                        <TableCell><strong>Name</strong></TableCell>
+                        <TableCell><strong>Max Score</strong></TableCell>
+                        <TableCell><strong>Description</strong></TableCell>
+                        <TableCell><strong>Scoring Guideline</strong></TableCell>
+                        <TableCell><strong>Evidence Hint</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {aiResult.rubricData.map((r, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{r.ruleId}</TableCell>
+                          <TableCell>{r.name}</TableCell>
+                          <TableCell>{r.maxScore}</TableCell>
+                          <TableCell>{r.description}</TableCell>
+                          <TableCell>{r.scoringGuideline}</TableCell>
+                          <TableCell>{r.evidenceHint}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              )}
+            </>
+          ) : (
+            <Typography>No AI result available.</Typography>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenAIDialog(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
 
 
       {/*  Data Analysis Popup (formatted)  */}
@@ -573,7 +687,7 @@ const ViewReport = ({ report: initialReport }) => {
             </Box>
           ) : dataAnalysis?.response ? (
             <Box>
-              {/* === Tổng quan === */}
+              {/* Tổng quan */}
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Overview
               </Typography>
