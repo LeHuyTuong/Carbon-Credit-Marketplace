@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.dto.response.UserResponse;
@@ -25,5 +26,8 @@ public interface UserService {
             throws MessagingException, UnsupportedEncodingException;
 
     long countUsers();
+
+    MessageResponse updateUserStatus(Long userId, USER_STATUS status);
+
 
 }

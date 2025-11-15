@@ -1,9 +1,6 @@
 package com.carbonx.marketcarbon.controller;
 
-import com.carbonx.marketcarbon.dto.request.ChangePasswordRequest;
-import com.carbonx.marketcarbon.dto.request.EmailRequest;
-import com.carbonx.marketcarbon.dto.request.PasswordCreationRequest;
-import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
+import com.carbonx.marketcarbon.dto.request.*;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -11,6 +8,7 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
+import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -206,5 +204,20 @@ public class UserController {
         return ResponseEntity.ok(count);
     }
 
+    @Operation(summary = "Update user status (Admin only)")
+    @PatchMapping("/users/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CommonResponse<MessageResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody ChangeUserStatusRequest req
+    ) {
+        MessageResponse message = userService.updateUserStatus(id, req.getStatus());
+
+        // chỉ dùng version success(traceId, data)
+        return ResponseUtil.success(
+                "trace-update-status",
+                message
+        );
+    }
 
 }
