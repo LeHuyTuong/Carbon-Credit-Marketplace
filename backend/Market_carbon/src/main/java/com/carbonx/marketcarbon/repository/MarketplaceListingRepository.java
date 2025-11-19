@@ -37,4 +37,12 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
             Long companyId,
             Long batchId,
             ListingStatus status);
+
+    @Query("""
+    SELECT SUM(m.pricePerCredit * m.quantity) / SUM(m.quantity)
+    FROM MarketPlaceListing m
+    """)
+    Double getWeightedAveragePrice();
+
+
 }

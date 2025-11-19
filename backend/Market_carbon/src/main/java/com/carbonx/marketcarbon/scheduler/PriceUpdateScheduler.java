@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.scheduler;
 
+import com.carbonx.marketcarbon.repository.MarketplaceListingRepository;
 import com.carbonx.marketcarbon.service.DynamicPricingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.util.Random;
 public class PriceUpdateScheduler {
 
     private final DynamicPricingService dynamicPricingService;
-    private final Random random = new Random();
+    private final MarketplaceListingRepository  marketplaceListingRepository;
 
     @Transactional
 //    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh") // 8h sáng giờ VN
@@ -25,14 +26,21 @@ public class PriceUpdateScheduler {
     public void updateMarketPrices() {
         log.info("[CRON] Running daily price update job (Redis)...");
 
-        // Giả lập giá dao động từ $100 đến $110
-        double randomMarketPrice = 100.0 + (random.nextDouble() * 10.0);
-        BigDecimal newPrice = new BigDecimal(String.format(Locale.US, "%.2f", randomMarketPrice));
+        // lấy giá trung bình từ repo
+        Double priceAvg = marketplaceListingRepository.getWeightedAveragePrice();
 
-        // Cập nhật giá vào Redis (thông qua Service)
+        if (priceAvg == null) {
+            log.warn("[CRON] No marketplace listing available → skip update.");
+            return;
+        }
+
+        BigDecimal newPrice = BigDecimal.valueOf(priceAvg)
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
+
+        // Cập nhật giá vào ram
         dynamicPricingService.updateMarketPrice(newPrice);
 
-        // Cập nhật hệ số (nếu cần)
+        // Cập nhật hệ số
         dynamicPricingService.updateKwhPerCreditFactor(new BigDecimal("2500"));
 
         log.info("[CRON] Updated Redis MarketPrice={} | KwhFactor={}",
