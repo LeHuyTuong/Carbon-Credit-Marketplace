@@ -95,19 +95,19 @@ const ViewCredit = () => {
             <Typography variant="h6" color={colors.grey[100]}>Credit ID:</Typography>
             <Typography>{creditData.id}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Batch Code:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Batch Code:</Typography>
             <Typography>{creditData.batchCode}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Company:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Company:</Typography>
             <Typography>{creditData.companyName}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Project Name:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Project Name:</Typography>
             <Typography>{creditData.projectTitle}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Vintage Year:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Vintage Year:</Typography>
             <Typography>{creditData.vintageYear}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Number of Credits:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Number of Credits:</Typography>
             <Typography>{creditData.creditsCount}</Typography>
           </Grid>
 
@@ -116,10 +116,10 @@ const ViewCredit = () => {
             <Typography variant="h6" color={colors.grey[100]}>Estimated Value (tCO2e):</Typography>
             <Typography>{creditData.totalTco2e}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Residual (tCO2e):</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Residual (tCO2e):</Typography>
             <Typography>{creditData.residualTco2e}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Issued Day:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Issued Day:</Typography>
             <Typography>
               {creditData.issuedAt
                 ? (() => {
@@ -134,18 +134,18 @@ const ViewCredit = () => {
             </Typography>
 
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Status:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Status:</Typography>
             <Typography sx={{ color, fontWeight: 600, textTransform: "capitalize" }}>
               {status}
             </Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Serial From:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Serial From:</Typography>
             <Typography>{creditData.serialFrom}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Serial To:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Serial To:</Typography>
             <Typography>{creditData.serialTo}</Typography>
 
-            <Typography variant="h6" color={colors.grey[100]} mt={2}>Certificate:</Typography>
+            <Typography variant="h6" color={colors.grey[100]} mt={1}>Certificate:</Typography>
             {creditData.certificateUrl ? (
               <Button
                 variant="contained"

@@ -240,7 +240,7 @@ const CreditsList = () => {
       marginRight: "20px",
       marginBottom: "20px",
     }} className="actionadmin">
-      <Header title="CREDITS" subtitle="List of Carbon Credits in the System" />
+      <Header title="CERTIFICATES" subtitle="List of Carbon Certificates in the System" />
       <Box
         m="40px 0 0 0"
         height="70vh"

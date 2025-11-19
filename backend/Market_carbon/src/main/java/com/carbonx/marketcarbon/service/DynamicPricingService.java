@@ -17,6 +17,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DynamicPricingService {
 
     // Sử dụng AtomicReference để đảm bảo an toàn khi nhiều luồng cùng đọc/ghi
+    /*
+    Để Cron job update giá, trong khi thread khác đang đọc giá
+    Tránh race condition
+    Thread-safe 100% mà không cần synchronized
+     */
     private final AtomicReference<BigDecimal> marketPricePerCredit;
     private final AtomicReference<BigDecimal> kwhPerCreditFactor;
 
@@ -24,6 +29,7 @@ public class DynamicPricingService {
     private static final BigDecimal DEFAULT_MARKET_PRICE = new BigDecimal("100.00");
     private static final BigDecimal DEFAULT_KWH_FACTOR = new BigDecimal("2500");
 
+    //Khi Spring khởi tạo bean, nó sẽ gán default giá vào RAM.Sau khi app start, scheduler sẽ override lại.
     public DynamicPricingService() {
         this.marketPricePerCredit = new AtomicReference<>(DEFAULT_MARKET_PRICE);
         this.kwhPerCreditFactor = new AtomicReference<>(DEFAULT_KWH_FACTOR);
