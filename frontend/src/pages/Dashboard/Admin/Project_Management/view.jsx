@@ -159,7 +159,7 @@ const ViewProject = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1150px", width: "100%", }}>
       <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
       <Paper elevation={3} sx={{ p: 3, mt: 3, width: "100%", backgroundColor: colors.primary[400] }}>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
@@ -169,7 +169,7 @@ const ViewProject = () => {
             sx={{
               "& .MuiTextField-root": {
                 width: "100%",
-                mb: 2,
+                mb: 0.3,
               },
               "& .MuiFormControl-root": {
                 width: "100%",
@@ -188,7 +188,7 @@ const ViewProject = () => {
                 General Info
               </Typography>
 
-              <Box mb={1}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project ID:
                 </Typography>
@@ -221,7 +221,7 @@ const ViewProject = () => {
                     size="small"
                     minRows={1}
                     sx={{
-                      mb: 2,
+                      mb: 0.5,
                       backgroundColor: "rgba(255,255,255,0.08)",
                       borderRadius: "8px",
                       "& .MuiInputBase-input.Mui-disabled": {
@@ -258,7 +258,7 @@ const ViewProject = () => {
                     size="small"
                     minRows={2}
                     sx={{
-                      mb: 2,
+                      mb: 0.5,
                       backgroundColor: "rgba(255,255,255,0.08)",
                       borderRadius: "8px",
                       "& .MuiInputBase-input.Mui-disabled": {
@@ -279,7 +279,7 @@ const ViewProject = () => {
                 Technical Info
               </Typography>
 
-              <Box mb={2}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Started Date:
                 </Typography>
@@ -310,7 +310,7 @@ const ViewProject = () => {
                 )}
               </Box>
 
-              <Box mb={4}>
+              <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   End Date:
                 </Typography>
@@ -373,7 +373,7 @@ const ViewProject = () => {
                         size="small"
                         minRows={2}
                         sx={{
-                          mb: 2,
+                          mb: 0.5,
                           backgroundColor: "rgba(255,255,255,0.08)",
                           borderRadius: "8px",
                           "& .MuiInputBase-input.Mui-disabled": {

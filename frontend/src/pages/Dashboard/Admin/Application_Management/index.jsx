@@ -30,7 +30,7 @@ const ApplicationList = () => {
   }, []);
 
   const columns = [
-    { field: "projectId", headerName: "Project ID", flex: 0.5 },
+    { field: "projectId", headerName: "Project ID", flex: 0.7 },
     {
       field: "projectTitle",
       headerName: "Project Title",
@@ -52,7 +52,7 @@ const ApplicationList = () => {
         </Typography>
       ),
     },
-    { field: "companyId", headerName: "Company ID", flex: 0.6 },
+    { field: "companyId", headerName: "Company ID", flex: 0.7 },
     { field: "companyName", headerName: "Company Name", flex: 1 },
     {
       field: "status",
@@ -90,7 +90,7 @@ const ApplicationList = () => {
     {
       field: "applicationDocsUrl",
       headerName: "Docs Link",
-      flex: 1,
+      flex: 0.8,
       renderCell: (params) =>
         params.value ? (
           <a

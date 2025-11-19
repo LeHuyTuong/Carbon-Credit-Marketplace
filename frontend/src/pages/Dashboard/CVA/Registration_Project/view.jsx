@@ -85,7 +85,7 @@ const ApplicationView = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px"}}>
+    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1150px", width: "100%",}}>
       <Header
         title="APPLICATION DETAIL"
         subtitle={`Application ID: ${application.applicationId || id}`}
@@ -94,7 +94,7 @@ const ApplicationView = () => {
       <Paper
         sx={{
           p: 2,
-          mt: 3,
+          mt: 2,
           borderRadius: 3,
           boxShadow: 4,
           backgroundColor: "#fafafa",

@@ -8,7 +8,7 @@ import { tokens } from "@/theme";
  * @param {Array} data - dữ liệu động từ API (optional)
  * @param {boolean} isDashboard - ẩn legend, label nếu dùng trong dashboard
  */
-const BarChart = ({ data = mockData, isDashboard = false }) => {
+const BarChart = ({ data = [], keys = [], indexBy = "month", isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -33,9 +33,16 @@ const BarChart = ({ data = mockData, isDashboard = false }) => {
 
   return (
     <ResponsiveBar
-      data={data}
-      keys={["listed", "sold", "active", "pending", "retire"]}
-      indexBy="month"
+      data={data.map(d => ({
+        month: d.month,
+        listed: d.listed,
+        retired: d.retired,
+        active: d.active,
+      }))}
+
+      keys={["listed", "retired", "active"]}
+
+      indexBy={indexBy}
       margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
       padding={0.3}
       valueScale={{ type: "linear" }}

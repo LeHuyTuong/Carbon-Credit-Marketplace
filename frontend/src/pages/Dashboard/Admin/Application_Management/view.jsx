@@ -108,7 +108,7 @@ const ApplicationView = () => {
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1210px", width: "100%", }}>
+    <Box m={3} sx={{ marginLeft: "290px", maxWidth: "1150px", width: "100%", }}>
       <Header
         title="COMPANY APPLICATION DETAIL"
         subtitle={`Detailed information of application ID: ${application.id}`}
@@ -120,7 +120,9 @@ const ApplicationView = () => {
           p: 2,
           mt: 2,
           backgroundColor: colors.primary[400],
-         }}
+          // maxHeight: "75vh",
+          // overflowY: "auto",
+        }}
       >
         <Grid container spacing={13}>
           {/* COLUMN 1: General Info */}
@@ -147,7 +149,7 @@ const ApplicationView = () => {
               size="small"
               minRows={2}
               sx={{
-                mb: 2,
+                mb: 1,
                 backgroundColor: "rgba(255,255,255,0.08)",
                 borderRadius: "8px",
                 "& .MuiInputBase-input.Mui-disabled": {
@@ -159,12 +161,12 @@ const ApplicationView = () => {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Review by Admin:
             </Typography>
-            <Typography mb={2}>{application.adminReviewerName || "N/A"}</Typography>
+            <Typography mb={1}>{application.adminReviewerName || "N/A"}</Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Status:
             </Typography>
-            <Typography mb={2}>{application.status}</Typography>
+            <Typography mb={1}>{application.status}</Typography>
           </Grid>
 
           {/* COLUMN 2: Company KYC Info */}
@@ -177,25 +179,25 @@ const ApplicationView = () => {
                 Company Registration
               </Typography>
 
-              <Typography variant="h6" fontWeight="600" gutterBottom>
+              {/* <Typography variant="h6" fontWeight="600" gutterBottom>
                 ID:
               </Typography>
-              <Typography mb={2}>{kyc.id || "N/A"}</Typography>
+              <Typography mb={1}>{kyc.id || "N/A"}</Typography> */}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Company Name:
               </Typography>
-              <Typography mb={2}>{kyc.companyName || "N/A"}</Typography>
+              <Typography mb={1}>{kyc.companyName || "N/A"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Tax Code:
               </Typography>
-              <Typography mb={2}>{kyc.taxCode || "N/A"}</Typography>
+              <Typography mb={1}>{kyc.taxCode || "N/A"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Business License:
               </Typography>
-              <Typography mb={2}>{kyc.businessLicense || "N/A"}</Typography>
+              <Typography mb={1}>{kyc.businessLicense || "N/A"}</Typography>
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Address:
@@ -224,7 +226,7 @@ const ApplicationView = () => {
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Created At:
               </Typography>
-              <Typography mb={2}>
+              <Typography mb={1}>
                 {kyc.createAt
                   ? (() => {
                     const date = new Date(kyc.createAt);
@@ -267,7 +269,7 @@ const ApplicationView = () => {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Verified by CVA:
             </Typography>
-            <Typography mb={2}>{application.cvaReviewerName || "N/A"}</Typography>
+            <Typography mb={1}>{application.cvaReviewerName || "N/A"}</Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Review Note Of CVA:
@@ -284,7 +286,7 @@ const ApplicationView = () => {
               size="small"
               minRows={2}
               sx={{
-                mb: 2,
+                mb: 1,
                 backgroundColor: "rgba(255,255,255,0.08)",
                 borderRadius: "8px",
                 "& .MuiInputBase-input.Mui-disabled": {
@@ -308,7 +310,7 @@ const ApplicationView = () => {
               size="small"
               minRows={2}
               sx={{
-                mb: 2,
+                mb: 1,
                 backgroundColor: "rgba(255,255,255,0.08)",
                 borderRadius: "8px",
                 "& .MuiInputBase-input.Mui-disabled": {
@@ -321,7 +323,7 @@ const ApplicationView = () => {
             <Typography variant="h6" fontWeight="600" gutterBottom>
               Submitted At:
             </Typography>
-            <Typography mb={2}>
+            <Typography mb={1}>
               {application.submittedAt
                 ? (() => {
                   const date = new Date(application.submittedAt);
@@ -351,12 +353,6 @@ const ApplicationView = () => {
             )}
           </Grid>
         </Grid>
-
-
-
-
-
-
         {/* Action Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
           <Button
