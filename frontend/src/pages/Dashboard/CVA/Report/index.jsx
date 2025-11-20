@@ -57,7 +57,7 @@ const ReportListCVA = () => {
         const statusColorMap = {
           SUBMITTED: colors.blueAccent[500],
           CVA_APPROVED: colors.greenAccent[500],
-          CVA_REJECT: colors.redAccent[500],
+          CVA_REJECTED: colors.redAccent[500],
         };
         return (
           <Box

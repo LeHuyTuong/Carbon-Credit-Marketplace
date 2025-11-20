@@ -74,21 +74,6 @@ const CvaTeam = () => {
 
     { field: "createdAt", headerName: "Created At", flex: 1 },
     { field: "updatedAt", headerName: "Updated At", flex: 1 },
-    // {
-    //   field: "action",
-    //   headerName: "Action",
-    //   flex: 0.7,
-    //   renderCell: (params) => (
-    //     <div className="cellAction">
-    //       <Link
-    //         to={`/admin/cva_view/${params.row.email}`}
-    //         style={{ textDecoration: "none" }}
-    //       >
-    //         <div className="viewButton">View</div>
-    //       </Link>
-    //     </div>
-    //   ),
-    // },
   ];
 
   return (

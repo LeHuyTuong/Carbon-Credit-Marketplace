@@ -6,17 +6,20 @@ import {
   TextField,
   Button,
   Divider,
+  CircularProgress,
+  MenuItem,
   useTheme,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect } from "react";
-import { getUserByEmail } from "@/apiAdmin/userAdmin.js";
+import { getUserById, updateUserStatus } from "@/apiAdmin/userAdmin.js";
+import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
-// ROLE MAPPING 
+
+// ROLE MAPPING
 const ACCESS_TO_ROLE = {
   ev_owner: "EV_OWNER",
   company: "COMPANY",
@@ -31,17 +34,19 @@ const ViewUser = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-  const { email } = useParams();
+  const { id } = useParams();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+  const [newStatus, setNewStatus] = useState("");
 
-  //  FETCH USER 
+  // FETCH USER
   useEffect(() => {
     async function fetchUser() {
       setLoading(true);
       try {
-        const res = await getUserByEmail(email);
+        const res = await getUserById(id);
         const data = res?.responseData;
         if (!data) throw new Error("No user data found");
 
@@ -49,6 +54,7 @@ const ViewUser = () => {
           Array.isArray(data.roles) && data.roles.length
             ? data.roles[0].name
             : "EV_OWNER";
+
         const access = ROLE_TO_ACCESS[primaryRole] ?? "ev_owner";
 
         let companyName = "";
@@ -78,114 +84,184 @@ const ViewUser = () => {
         };
 
         setUser(uiUser);
+        setNewStatus(uiUser.status);
       } catch (error) {
         console.error("Error fetching user:", error);
+        showSnackbar("Failed to load user data", "error");
       } finally {
         setLoading(false);
       }
     }
 
     fetchUser();
-  }, [email]);
+  }, [id]);
 
-  if (loading) return <Typography sx={{ marginLeft: "290px" }}>Loading...</Typography>;
-  if (!user) return <Typography sx={{ marginLeft: "290px" }}>User not found</Typography>;
-
-  // UI 
-  return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
-      <Header title="USER DETAILS" subtitle="View user information" />
-      <Paper
-        elevation={2}
-        sx={{
-          p: 4,
-          borderRadius: 3,
-          backgroundColor: colors.primary[400],
-          color: colors.grey[100],
-        }}
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="70vh"
+        sx={{ marginLeft: "290px" }}
       >
-        {/* HEADER */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h5" fontWeight="bold">
-            Profile Information
-          </Typography>
-        </Box>
+        <CircularProgress />
+      </Box>
+    );
 
-        {/* ICON ONLY */}
-        <Box display="flex" justifyContent="center" alignItems="center" mb={4}>
-          <AccountCircleIcon sx={{ fontSize: 100, color: colors.grey[200] }} />
-        </Box>
+  if (!user)
+    return (
+      <Box textAlign="center" sx={{ marginLeft: "290px" }} mt={5}>
+        <Typography variant="h6" color="error">
+          User not found.
+        </Typography>
+        <Button
+          onClick={() => navigate("/admin/user_management")}
+          variant="contained"
+          sx={{ mt: 2 }}
+        >
+          Back
+        </Button>
+      </Box>
+    );
 
-        <Divider sx={{ mb: 3, borderColor: colors.grey[700] }} />
+  // UPDATE STATUS
+  const handleUpdateStatus = async () => {
+    try {
+      const payload = { status: newStatus };
+      await updateUserStatus(user.id, payload);
 
-        {/* BASIC DETAILS */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={6}>
+      showSnackbar("success","Status updated successfully!");
+    } catch (error) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update status.";
+      showSnackbar(msg, "error");
+      console.error(error);
+    }
+  };
+
+  return (
+    <Box m={3} sx={{ marginLeft: "290px", maxWidth: "800px", width: "100%" }}>
+      <Header title="USER DETAILS" subtitle="Edit user information" />
+
+      <Paper elevation={3} sx={{ p: 3, mt: 2, backgroundColor: colors.primary[400] }}>
+
+
+        <Grid container spacing={6}>
+          {/* GENERAL INFO */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+              General Info
+            </Typography>
+
+            <Typography fontWeight={600}>Email:</Typography>
             <TextField
-              label="Email Address"
+              value={user.email}
               fullWidth
-              value={user.email || ""}
+              size="small"
               InputProps={{ readOnly: true }}
+              sx={{ mb: 2, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 1 }}
             />
+
+            <Typography fontWeight={600}>Role:</Typography>
+            <TextField
+              value={user.access.toUpperCase()}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+              sx={{ mb: 2, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 1 }}
+            />
+
+            {user.company && (
+              <>
+                <Typography fontWeight={600}>Company:</Typography>
+                <TextField
+                  value={user.company}
+                  fullWidth
+                  size="small"
+                  InputProps={{ readOnly: true }}
+                  sx={{
+                    mb: 2,
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                    borderRadius: 1,
+                  }}
+                />
+              </>
+            )}
+
+            {user.organization && (
+              <>
+                <Typography fontWeight={600}>Organization:</Typography>
+                <TextField
+                  value={user.organization}
+                  fullWidth
+                  size="small"
+                  InputProps={{ readOnly: true }}
+                  sx={{
+                    mb: 2,
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                    borderRadius: 1,
+                  }}
+                />
+              </>
+            )}
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* STATUS EDIT */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+              Status Control
+            </Typography>
+
+            <Typography fontWeight={600}>Status:</Typography>
             <TextField
-              label="Role"
+              select
               fullWidth
-              value={user.access}
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
+              size="small"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              sx={{
+                mb: 2,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                color: "#fff",
+                borderRadius: 1,
+              }}
+            >
+              <MenuItem value="ACTIVE">ACTIVE</MenuItem>
+              <MenuItem value="INACTIVE">INACTIVE</MenuItem>
+            </TextField>
 
-          {user.access === "company" && (
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Company Name"
-                fullWidth
-                value={user.company || ""}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-          )}
 
-          {user.access === "cva" && (
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Organization"
-                fullWidth
-                value={user.organization || ""}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-          )}
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Status"
-              fullWidth
-              value={user.status}
-              InputProps={{ readOnly: true }}
-            />
           </Grid>
         </Grid>
 
-        {/* BUTTON BACK */}
+        {/* STATUS + BACK BUTTONS */}
         <Box display="flex" justifyContent="flex-end" mt={4}>
           <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleUpdateStatus}
+            sx={{ fontWeight: 600, mr: 2 }}
+          >
+            Save Status
+          </Button>
+
+          <Button
             variant="outlined"
+            color="info"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/admin/user_management")}
-            sx={{
-              borderColor: colors.blueAccent[400],
-              color: colors.blueAccent[400],
-              textTransform: "none",
-            }}
           >
             Back
           </Button>
         </Box>
+
       </Paper>
+
+      {/* SNACKBAR */}
+      {SnackbarComponent}
     </Box>
   );
 };

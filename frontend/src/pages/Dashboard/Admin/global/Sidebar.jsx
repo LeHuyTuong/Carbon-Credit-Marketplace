@@ -159,13 +159,13 @@ const Sidebar = () => {
             >
               Data
             </Typography>
-            {/* <Item
+            <Item
               title="Manage Users"
               to="/admin/user_management"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
-            /> */}
+            />
             <Item
               title="Manage EV Owners"
               to="/admin/ev_owner_management"
