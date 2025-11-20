@@ -29,7 +29,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
 
-    // 🔹 Lấy companyId của user hiện tại
+    // Lấy companyId của user hiện tại
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepo.findByEmail(email);
