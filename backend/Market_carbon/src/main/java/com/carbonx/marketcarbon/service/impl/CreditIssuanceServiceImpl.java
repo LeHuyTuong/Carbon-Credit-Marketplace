@@ -600,7 +600,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .company(buyerCompany)
                     .project(project)
                     .sourceCredit(sourceCredit) // Tất cả đều trỏ về nguồn
-                    .creditCode(sourceCredit.getCreditCode())      // Code mới, duy nhất
+                    .creditCode(creditCode)      // Code mới, duy nhất
                     .status(CreditStatus.AVAILABLE)
                     .carbonCredit(BigDecimal.ONE) // LUÔN LÀ 1
                     .tCo2e(sourceCredit.getTCo2e()) // (Hoặc tCo2e/quantity)
