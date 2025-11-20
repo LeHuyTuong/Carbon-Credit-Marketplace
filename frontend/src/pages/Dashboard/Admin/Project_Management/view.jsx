@@ -46,14 +46,14 @@ const ViewProject = () => {
             shortdescription: project.description || "",
             starteddate: project.startedDate || "",
             enddate: project.endDate || "",
-            totalcompanies: project.technicalIndicators || "",
-            measurementmethod: project.measurementMethod || "",
+            measurementMethod: project.measurementMethod || "",
             emissionFactor: project.emissionFactorKgPerKwh || "",
-            logo: project.logo || "",
-            legaldocurl: Array.isArray(project.legalDocsFile)
-              ? project.legalDocsFile
-              : project.legalDocsFile
-              ? [project.legalDocsFile]
+            logo: null, // file upload
+            logoUrl: project.logo || "", // link để preview
+            legalDocsUrl: project.legalDocsFile
+              ? Array.isArray(project.legalDocsFile)
+                ? project.legalDocsFile
+                : [project.legalDocsFile]
               : [],
             status: project.status || "OPEN",
             commitments: project.commitments || "",
@@ -81,28 +81,50 @@ const ViewProject = () => {
   const handleUpdate = async () => {
     try {
       setUpdateLoading(true);
-      const payload = {
-        requestTrace: `trace_${Date.now()}`,
-        requestDateTime: new Date().toISOString(),
-        title: formData.projectname,
-        description: formData.shortdescription,
-        measurementMethod: formData.measurementmethod,
-        emissionFactorKgPerKwh: parseFloat(formData.emissionFactor) || 0,
-        logo: formData.logo || "",
-        legaldocurl: Array.isArray(formData.legalDocsFile)
-          ? formData.legalDocsFile
-          : formData.legalDocsFile
-          ? [formData.legalDocsFile]
-          : [],
-        status: formData.status,
-        commitments: formData.commitments,
-        technicalIndicators: formData.technicalIndicators,
-      };
 
-      const res = await updateProjectById(formData.projectid, payload);
+      const form = new FormData();
+
+      // Headers
+      form.append("title", formData.projectname);
+      form.append("description", formData.shortdescription);
+      form.append("commitments", formData.commitments);
+      form.append("technicalIndicators", formData.technicalIndicators);
+      form.append("measurementMethod", formData.measurementMethod);
+      form.append("emissionFactorKgPerKwh", formData.emissionFactor);
+      form.append("status", formData.status);
+
+      // Dates required by API
+      if (formData.starteddate)
+        form.append(
+          "startedDate",
+          dayjs(formData.starteddate, ["DD/MM/YYYY", "YYYY-MM-DD"]).format(
+            "YYYY-MM-DD"
+          )
+        );
+
+      if (formData.enddate)
+        form.append(
+          "endDate",
+          dayjs(formData.enddate, ["DD/MM/YYYY", "YYYY-MM-DD"]).format(
+            "YYYY-MM-DD"
+          )
+        );
+
+      // Files
+      if (formData.logo) form.append("logo", formData.logo);
+
+      if (formData.legalDocsFile?.length) {
+        formData.legalDocsFile.forEach((file) => {
+          form.append("legalDocsFile", file);
+        });
+      }
+
+      // Call API
+      const res = await updateProjectById(formData.projectid, form);
+
       if (res?.responseStatus?.responseCode === "00000000") {
-        setIsEditing(false);
         showSnackbar("success", "Update successfully!");
+        setIsEditing(false);
       } else {
         showSnackbar(
           "error",
@@ -110,11 +132,7 @@ const ViewProject = () => {
         );
       }
     } catch (err) {
-      err?.response?.data?.responseStatus?.responseDesc ||
-        err?.response?.data?.responseStatus?.responseMessage ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error updating project!";
+      showSnackbar("error", err?.response?.data?.message || "Update error");
     } finally {
       setUpdateLoading(false);
     }
@@ -128,11 +146,16 @@ const ViewProject = () => {
 
   const handleFileUpload = (e, field) => {
     const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      const newFiles = files.map((file) => URL.createObjectURL(file));
+    if (field === "logo") {
       setFormData((prev) => ({
         ...prev,
-        [field]: [...(prev[field] || []), ...newFiles],
+        logo: files[0], // file mới
+      }));
+    }
+    if (field === "legalDocsFile") {
+      setFormData((prev) => ({
+        ...prev,
+        legalDocsFile: files,
       }));
     }
   };
@@ -389,7 +412,7 @@ const ViewProject = () => {
               </Box>
 
               {/* Các field khác */}
-              {["measurementmethod", "commitments", "technicalIndicators"].map(
+              {["measurementMethod", "commitments", "technicalIndicators"].map(
                 (field) => (
                   <Box key={field} mb={0.5}>
                     <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -479,19 +502,12 @@ const ViewProject = () => {
                       onChange={(e) => handleFileUpload(e, "logo")}
                     />
                   </Button>
-                ) : formData.logo ? (
+                ) : formData.logoUrl ? (
                   <Button
                     variant="contained"
                     color="info"
                     size="small"
-                    onClick={() =>
-                      window.open(
-                        Array.isArray(formData.logo)
-                          ? formData.logo[0]
-                          : formData.logo,
-                        "_blank"
-                      )
-                    }
+                    onClick={() => window.open(formData.logoUrl)}
                   >
                     View Logo
                   </Button>
@@ -517,17 +533,17 @@ const ViewProject = () => {
                       type="file"
                       multiple
                       accept=".pdf,.doc,.docx"
-                      onChange={(e) => handleFileUpload(e, "legaldocurl")}
+                      onChange={(e) => handleFileUpload(e, "legalDocsFile")}
                     />
                   </Button>
-                ) : formData.legaldocurl?.length ? (
-                  formData.legaldocurl.map((url, idx) => (
+                ) : formData.legalDocsUrl?.length ? (
+                  formData.legalDocsUrl.map((url, idx) => (
                     <Button
                       key={idx}
                       variant="contained"
                       color="secondary"
                       size="small"
-                      onClick={() => window.open(url, "_blank")}
+                      onClick={() => window.open(url)}
                       sx={{ mb: 1 }}
                     >
                       View Document {idx + 1}
