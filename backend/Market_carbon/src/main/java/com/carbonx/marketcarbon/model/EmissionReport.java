@@ -49,6 +49,10 @@ public class EmissionReport {
     @Builder.Default
     BigDecimal totalCo2 = BigDecimal.ZERO;
 
+    @Column(name = "residual_tco2e", precision = 10, scale = 3)
+    @Builder.Default
+    BigDecimal residualTco2e = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 32, nullable = false)
     @Builder.Default

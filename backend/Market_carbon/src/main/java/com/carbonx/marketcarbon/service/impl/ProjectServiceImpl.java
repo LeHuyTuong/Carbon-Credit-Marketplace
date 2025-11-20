@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.ProjectStatus;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
+import com.carbonx.marketcarbon.dto.request.ProjectUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -62,7 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void updateProject(Long id, ProjectRequest req) {
+    public void updateProject(Long id, ProjectUpdateRequest req) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 

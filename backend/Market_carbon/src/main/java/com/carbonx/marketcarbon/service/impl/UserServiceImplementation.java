@@ -1,6 +1,7 @@
     package com.carbonx.marketcarbon.service.impl;
 
     import com.carbonx.marketcarbon.common.OtpPurpose;
+    import com.carbonx.marketcarbon.common.USER_STATUS;
     import com.carbonx.marketcarbon.config.JwtProvider;
     import com.carbonx.marketcarbon.dto.request.*;
     import com.carbonx.marketcarbon.dto.response.MessageResponse;
@@ -247,5 +248,19 @@
         public long countUsers() {
             return userRepository.count();
         }
+
+        @Override
+        @Transactional
+        public MessageResponse updateUserStatus(Long userId, USER_STATUS status) {
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+            user.setStatus(status);
+            userRepository.save(user);
+
+            return new MessageResponse("User status updated to: " + status.name());
+        }
+
 
     }

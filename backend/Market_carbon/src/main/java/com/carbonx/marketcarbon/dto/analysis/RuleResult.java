@@ -14,5 +14,4 @@ public class RuleResult {
     private int maxScore;    // điểm tối đa rule
     private String message;  // mô tả ngắn
     private String evidence; // bằng chứng rút gọn (text/json)
-    private String severity; // INFO/WARN/ERROR
 }

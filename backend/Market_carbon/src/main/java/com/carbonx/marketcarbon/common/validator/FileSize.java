@@ -13,6 +13,7 @@ public @interface FileSize {
     String message() default "File size exceeds the maximum limit";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
+    boolean required() default true;
 
     long max() default 5242880;
 }

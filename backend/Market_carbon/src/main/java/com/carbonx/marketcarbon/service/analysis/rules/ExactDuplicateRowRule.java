@@ -8,19 +8,36 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ExactDuplicateRowRule implements IRule {
-    public String id(){ return "DQ5_DUP_ROW"; }
-    public String name(){ return "Exact duplicate rows"; }
-    public int maxScore(){ return 5; }
+
+    @Override
+    public String id() { return "DQ5_DUP_ROW"; }
+
+    @Override
+    public String name() { return "Exact Duplicate Row Detection"; }
+
+    @Override
+    public int maxScore() { return 5; }
 
     @Override
     public RuleResult apply(AnalysisContext ctx) {
-        Set<String> sigs = new HashSet<>();
-        int dup = 0;
-        for (var r : ctx.getRows()){
-            String sig = r.toString();
-            if (!sigs.add(sig)) dup++;
+
+        Set<String> signatures = new HashSet<>();
+        int duplicates = 0;
+
+        for (var row : ctx.getRows()) {
+            String sig = row.toString();
+            if (!signatures.add(sig)) duplicates++;
         }
-        int score = (dup==0)? 5 : (dup<=2? 3 : 0);
-        return new RuleResult(id(), name(), score, maxScore(), dup==0?"No duplicate rows":"Duplicate rows found", "dupRows="+dup, dup==0?"INFO":"WARN");
+
+        int score = (duplicates == 0) ? 5 : (duplicates <= 2 ? 3 : 0);
+
+        String message =
+                duplicates == 0
+                        ? "No exact duplicate rows detected."
+                        : "Exact duplicates detected in dataset.";
+
+        String evidence = "duplicateRows=" + duplicates;
+
+        return new RuleResult(id(), name(), score, maxScore(), message, evidence);
     }
 }

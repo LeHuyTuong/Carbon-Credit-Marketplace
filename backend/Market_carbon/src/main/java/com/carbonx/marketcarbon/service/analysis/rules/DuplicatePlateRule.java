@@ -8,20 +8,36 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class DuplicatePlateRule implements IRule {
-    public String id(){ return "DQ4_DUP_PLATE"; }
-    public String name(){ return "Duplicate license plates"; }
-    public int maxScore(){ return 10; }
 
+    @Override
+    public String id() { return "DQ4_DUP_PLATE"; }
+
+    @Override
+    public String name() { return "Duplicate License Plate Detection"; }
+
+    @Override
+    public int maxScore() { return 10; }
+
+    @Override
     public RuleResult apply(AnalysisContext ctx) {
+
         Set<String> seen = new HashSet<>();
         int dup = 0;
-        for (var r : ctx.getRows()){
-            String plate = r.get("license_plate")==null? "": String.valueOf(r.get("license_plate")).trim();
+
+        for (var row : ctx.getRows()) {
+            String plate = String.valueOf(row.get("license_plate")).trim();
             if (plate.isEmpty()) continue;
             if (!seen.add(plate)) dup++;
         }
-        int score = (dup==0)? 10 : (dup<=2? 7 : (dup<=5? 3 : 0));
-        String ev = "duplicates="+dup;
-        return new RuleResult(id(), name(), score, maxScore(), (dup==0?"No duplicates":"Found duplicates"), ev, dup==0?"INFO":"WARN");
+
+        int score = (dup == 0) ? 10 : (dup <= 2 ? 7 : (dup <= 5 ? 3 : 0));
+
+        String message =
+                dup == 0 ? "No duplicate license plates detected." :
+                        "Duplicate license plates detected.";
+
+        String evidence = "duplicateCount=" + dup;
+
+        return new RuleResult(id(), name(), score, maxScore(), message, evidence);
     }
 }

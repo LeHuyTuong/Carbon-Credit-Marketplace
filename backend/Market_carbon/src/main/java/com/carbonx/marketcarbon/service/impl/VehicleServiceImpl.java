@@ -181,6 +181,7 @@ public class VehicleServiceImpl implements VehicleService {
                                     .plateNumber(v.getPlateNumber())
                                     .brand(v.getBrand())
                                     .model(v.getModel())
+                                    .documentFile(v.getDocumentUrl())
                                     .build())
                             .toList();
 

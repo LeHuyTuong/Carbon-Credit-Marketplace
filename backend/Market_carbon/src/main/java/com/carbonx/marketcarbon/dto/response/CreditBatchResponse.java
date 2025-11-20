@@ -30,6 +30,7 @@ public class CreditBatchResponse {
 
     private Long reportId;
     private String reportPeriod;
+    private String reportFileName;
 
 
     public static CreditBatchResponse from(CreditBatch entity) {
@@ -49,6 +50,7 @@ public class CreditBatchResponse {
                 .certificateUrl(entity.getCertificate() != null ? entity.getCertificate().getCertificateUrl() : null)
                 .reportId(entity.getReport() != null ? entity.getReport().getId() : null)
                 .reportPeriod(entity.getReport() != null ? entity.getReport().getPeriod() : null)
+                .reportFileName(entity.getReport() != null ? entity.getReport().getUploadOriginalFilename() : null)
                 .build();
     }
 }

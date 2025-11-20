@@ -81,19 +81,27 @@
 
     <div class="content">
       <p><strong>Company:</strong> <span th:text="${companyName}">Company Name</span></p>
+
       <span class="badge"
             th:text="${decision}"
             th:style="'background-color:' + ${badgeColor} + ';'">APPROVED</span>
+
       <p><strong>Application ID:</strong> <span th:text="${applicationId}">12345</span></p>
       <p><strong>Project:</strong> <span th:text="${projectName}">EV Replacement Program</span></p>
       <p><strong>Final Reviewer:</strong> <span th:text="${reviewerName}">Admin User</span></p>
+
       <div class="note" th:text="${reviewNote}">
         All criteria met, approved for credit allocation.
       </div>
 
+      <p style="margin-top: 24px; font-weight:600; color:#374151;">Next Step:</p>
+      <div class="note" style="border-left-color:#059669;" th:text="${waitingFor}">
+        Your application status is being processed for the next stage.
+      </div>
+
       <p style="margin-top: 24px; color:#4b5563;">
-        This is the final decision regarding your CarbonX application.
-        Please contact your account administrator if you need further clarification.
+        This email contains the official final decision regarding your CarbonX application.
+        If you require further clarification, please contact your system administrator.
       </p>
     </div>
 

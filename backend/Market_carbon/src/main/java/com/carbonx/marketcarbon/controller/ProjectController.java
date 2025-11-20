@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProjectRequest;
+import com.carbonx.marketcarbon.dto.request.ProjectUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
 import com.carbonx.marketcarbon.dto.response.ProjectResponse;
 import com.carbonx.marketcarbon.service.ProjectService;
@@ -50,7 +51,7 @@ public class ProjectController {
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Void>> update(
             @PathVariable("id") Long id,
-            @ModelAttribute @Valid ProjectRequest req,
+            @ModelAttribute @Valid ProjectUpdateRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 

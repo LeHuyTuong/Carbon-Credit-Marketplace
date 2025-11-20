@@ -9,24 +9,41 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public class PeriodRule implements IRule {
-    private static final Pattern P = Pattern.compile("^\\d{4}-\\d{2}$");
 
-    public String id(){ return "DQ2_PERIOD"; }
-    public String name(){ return "Period format & single period"; }
-    public int maxScore(){ return 10; }
+    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}$");
 
+    @Override
+    public String id() { return "DQ2_PERIOD"; }
+
+    @Override
+    public String name() { return "Period Consistency Rule"; }
+
+    @Override
+    public int maxScore() { return 10; }
+
+    @Override
     public RuleResult apply(AnalysisContext ctx) {
+
         Set<String> periods = new HashSet<>();
-        boolean formatOk = true;
-        for (var r : ctx.getRows()){
-            Object p = r.get("period");
-            String s = (p==null)? "": String.valueOf(p);
-            if (!P.matcher(s).matches()) formatOk = false;
-            if (!s.isEmpty()) periods.add(s);
+        boolean formatOK = true;
+
+        for (var row : ctx.getRows()) {
+            String p = String.valueOf(row.get("period"));
+            if (!DATE_PATTERN.matcher(p).matches()) formatOK = false;
+            if (p != null && !p.isEmpty()) periods.add(p);
         }
-        boolean single = periods.size()==1;
-        int score = (formatOk && single) ? 10 : (formatOk ? 5 : 0);
-        String msg = (formatOk && single)? "One valid period" : (formatOk? "Multiple periods":"Invalid format");
-        return new RuleResult(id(), name(), score, maxScore(), msg, "periods="+periods, score==10?"INFO":"WARN");
+
+        int score = (formatOK && periods.size() == 1) ? 10 : (formatOK ? 5 : 0);
+
+        String message =
+                formatOK && periods.size() == 1
+                        ? "All rows use one valid reporting period."
+                        : formatOK
+                        ? "Multiple valid periods detected."
+                        : "Invalid reporting period format found.";
+
+        String evidence = "periods=" + periods;
+
+        return new RuleResult(id(), name(), score, maxScore(), message, evidence);
     }
 }
