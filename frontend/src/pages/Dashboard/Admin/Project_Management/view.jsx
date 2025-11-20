@@ -21,7 +21,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
-
 const ViewProject = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -47,19 +46,18 @@ const ViewProject = () => {
             shortdescription: project.description || "",
             starteddate: project.startedDate || "",
             enddate: project.endDate || "",
-            totalcompanies: project.technicalIndicators || "",
-            measurementmethod: project.measurementMethod || "",
+            measurementMethod: project.measurementMethod || "",
             emissionFactor: project.emissionFactorKgPerKwh || "",
-            logo: project.logo || "",
-            legaldocurl: Array.isArray(project.legalDocsFile)
-              ? project.legalDocsFile
-              : project.legalDocsFile
-                ? [project.legalDocsFile]
-                : [],
+            logo: null, // file upload
+            logoUrl: project.logo || "", // link để preview
+            legalDocsUrl: project.legalDocsFile
+              ? Array.isArray(project.legalDocsFile)
+                ? project.legalDocsFile
+                : [project.legalDocsFile]
+              : [],
             status: project.status || "OPEN",
             commitments: project.commitments || "",
             technicalIndicators: project.technicalIndicators || "",
-
           });
         }
       } catch (err) {
@@ -83,43 +81,62 @@ const ViewProject = () => {
   const handleUpdate = async () => {
     try {
       setUpdateLoading(true);
-      const payload = {
-        requestTrace: `trace_${Date.now()}`,
-        requestDateTime: new Date().toISOString(),
-        title: formData.projectname,
-        description: formData.shortdescription,
-        measurementMethod: formData.measurementmethod,
-        emissionFactorKgPerKwh: parseFloat(formData.emissionFactor) || 0,
-        logo: formData.logo || "",
-        legaldocurl: Array.isArray(formData.legalDocsFile)
-          ? formData.legalDocsFile
-          : formData.legalDocsFile
-            ? [formData.legalDocsFile]
-            : [],
-        status: formData.status,
-        commitments: formData.commitments,
-        technicalIndicators: formData.technicalIndicators,
 
-      };
+      const form = new FormData();
 
-      const res = await updateProjectById(formData.projectid, payload);
+      // Headers
+      form.append("title", formData.projectname);
+      form.append("description", formData.shortdescription);
+      form.append("commitments", formData.commitments);
+      form.append("technicalIndicators", formData.technicalIndicators);
+      form.append("measurementMethod", formData.measurementMethod);
+      form.append("emissionFactorKgPerKwh", formData.emissionFactor);
+      form.append("status", formData.status);
+
+      // Dates required by API
+      if (formData.starteddate)
+        form.append(
+          "startedDate",
+          dayjs(formData.starteddate, ["DD/MM/YYYY", "YYYY-MM-DD"]).format(
+            "YYYY-MM-DD"
+          )
+        );
+
+      if (formData.enddate)
+        form.append(
+          "endDate",
+          dayjs(formData.enddate, ["DD/MM/YYYY", "YYYY-MM-DD"]).format(
+            "YYYY-MM-DD"
+          )
+        );
+
+      // Files
+      if (formData.logo) form.append("logo", formData.logo);
+
+      if (formData.legalDocsFile?.length) {
+        formData.legalDocsFile.forEach((file) => {
+          form.append("legalDocsFile", file);
+        });
+      }
+
+      // Call API
+      const res = await updateProjectById(formData.projectid, form);
+
       if (res?.responseStatus?.responseCode === "00000000") {
-        setIsEditing(false);
         showSnackbar("success", "Update successfully!");
+        setIsEditing(false);
       } else {
-        showSnackbar("error", res?.responseStatus?.responseMessage || "Update failed!");
+        showSnackbar(
+          "error",
+          res?.responseStatus?.responseMessage || "Update failed!"
+        );
       }
     } catch (err) {
-      err?.response?.data?.responseStatus?.responseDesc ||
-        err?.response?.data?.responseStatus?.responseMessage ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error updating project!";
+      showSnackbar("error", err?.response?.data?.message || "Update error");
     } finally {
       setUpdateLoading(false);
     }
   };
-
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,19 +146,29 @@ const ViewProject = () => {
 
   const handleFileUpload = (e, field) => {
     const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      const newFiles = files.map((file) => URL.createObjectURL(file));
+    if (field === "logo") {
       setFormData((prev) => ({
         ...prev,
-        [field]: [...(prev[field] || []), ...newFiles],
+        logo: files[0], // file mới
+      }));
+    }
+    if (field === "legalDocsFile") {
+      setFormData((prev) => ({
+        ...prev,
+        legalDocsFile: files,
       }));
     }
   };
 
-
   if (loading)
     return (
-      <Box m="20px" display="flex" justifyContent="center" alignItems="center" height="60vh">
+      <Box
+        m="20px"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -152,16 +179,34 @@ const ViewProject = () => {
         <Typography variant="h5" color="error">
           Project not found.
         </Typography>
-        <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate("/admin/project_management")}>
+        <Button
+          variant="contained"
+          sx={{ mt: 2 }}
+          onClick={() => navigate("/admin/project_management")}
+        >
           Back
         </Button>
       </Box>
     );
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", maxWidth: "1150px", width: "100%", }}>
-      <Header title="PROJECT DETAILS" subtitle="Detailed information of project" />
-      <Paper elevation={3} sx={{ p: 3, mt: 3, width: "100%", backgroundColor: colors.primary[400] }}>
+    <Box
+      m="20px"
+      sx={{ marginLeft: "290px", maxWidth: "1150px", width: "100%" }}
+    >
+      <Header
+        title="PROJECT DETAILS"
+        subtitle="Detailed information of project"
+      />
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          mt: 3,
+          width: "100%",
+          backgroundColor: colors.primary[400],
+        }}
+      >
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en">
           <Grid
             container
@@ -180,11 +225,21 @@ const ViewProject = () => {
             }}
           >
             {/* COLUMN 1 */}
-            <Grid item xs={12} md={4} sx={{
-              flexBasis: "30%",     // chiếm 30% chiều ngang container
-              maxWidth: "30%",      // giới hạn chiều rộng
-            }}>
-              <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+            <Grid
+              item
+              xs={12}
+              md={4}
+              sx={{
+                flexBasis: "30%", // chiếm 30% chiều ngang container
+                maxWidth: "30%", // giới hạn chiều rộng
+              }}
+            >
+              <Typography
+                variant="h5"
+                fontWeight="700"
+                color="secondary"
+                gutterBottom
+              >
                 General Info
               </Typography>
 
@@ -271,11 +326,21 @@ const ViewProject = () => {
             </Grid>
 
             {/* COLUMN 2 */}
-            <Grid item xs={12} md={4} sx={{
-              flexBasis: "30%",     // chiếm 30% chiều ngang container
-              maxWidth: "30%",      // giới hạn chiều rộng
-            }}>
-              <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+            <Grid
+              item
+              xs={12}
+              md={4}
+              sx={{
+                flexBasis: "30%", // chiếm 30% chiều ngang container
+                maxWidth: "30%", // giới hạn chiều rộng
+              }}
+            >
+              <Typography
+                variant="h5"
+                fontWeight="700"
+                color="secondary"
+                gutterBottom
+              >
                 Technical Info
               </Typography>
 
@@ -288,7 +353,10 @@ const ViewProject = () => {
                     format="DD/MM/YYYY"
                     value={
                       formData.starteddate
-                        ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"])
+                        ? dayjs(formData.starteddate, [
+                            "YYYY-MM-DD",
+                            "DD/MM/YYYY",
+                          ])
                         : null
                     }
                     onChange={(date) =>
@@ -302,9 +370,10 @@ const ViewProject = () => {
                 ) : (
                   <Typography>
                     {formData.starteddate
-                      ? dayjs(formData.starteddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
-                        "DD/MM/YYYY"
-                      )
+                      ? dayjs(formData.starteddate, [
+                          "YYYY-MM-DD",
+                          "DD/MM/YYYY",
+                        ]).format("DD/MM/YYYY")
                       : "—"}
                   </Typography>
                 )}
@@ -333,16 +402,17 @@ const ViewProject = () => {
                 ) : (
                   <Typography>
                     {formData.enddate
-                      ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"]).format(
-                        "DD/MM/YYYY"
-                      )
+                      ? dayjs(formData.enddate, [
+                          "YYYY-MM-DD",
+                          "DD/MM/YYYY",
+                        ]).format("DD/MM/YYYY")
                       : "indefinitely"}
                   </Typography>
                 )}
               </Box>
 
               {/* Các field khác */}
-              {["measurementmethod", "commitments", "technicalIndicators"].map(
+              {["measurementMethod", "commitments", "technicalIndicators"].map(
                 (field) => (
                   <Box key={field} mb={0.5}>
                     <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -388,8 +458,13 @@ const ViewProject = () => {
             </Grid>
 
             {/* COLUMN 3 */}
-            <Grid item xs={12} md={4} >
-              <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
+            <Grid item xs={12} md={4}>
+              <Typography
+                variant="h5"
+                fontWeight="700"
+                color="secondary"
+                gutterBottom
+              >
                 Documents & Status
               </Typography>
 
@@ -398,7 +473,11 @@ const ViewProject = () => {
                   Emission Factor (Kg/Kwh):
                 </Typography>
                 {isEditing ? (
-                  <TextField name="emissionFactor" value={formData.emissionFactor} onChange={handleChange} />
+                  <TextField
+                    name="emissionFactor"
+                    value={formData.emissionFactor}
+                    onChange={handleChange}
+                  />
                 ) : (
                   <Typography>{formData.emissionFactor || "—"}</Typography>
                 )}
@@ -409,16 +488,26 @@ const ViewProject = () => {
                   Logo:
                 </Typography>
                 {isEditing ? (
-                  <Button variant="contained" component="label" color="info" fullWidth>
+                  <Button
+                    variant="contained"
+                    component="label"
+                    color="info"
+                    fullWidth
+                  >
                     Upload Logo
-                    <input hidden type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "logo")} />
+                    <input
+                      hidden
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, "logo")}
+                    />
                   </Button>
-                ) : formData.logo ? (
+                ) : formData.logoUrl ? (
                   <Button
                     variant="contained"
                     color="info"
                     size="small"
-                    onClick={() => window.open(Array.isArray(formData.logo) ? formData.logo[0] : formData.logo, "_blank")}
+                    onClick={() => window.open(formData.logoUrl)}
                   >
                     View Logo
                   </Button>
@@ -439,18 +528,30 @@ const ViewProject = () => {
                     fullWidth
                   >
                     Upload Document(s)
-                    <input hidden type="file" multiple accept=".pdf,.doc,.docx" onChange={(e) => handleFileUpload(e, "legaldocurl")} />
+                    <input
+                      hidden
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => handleFileUpload(e, "legalDocsFile")}
+                    />
                   </Button>
-                ) : formData.legaldocurl?.length ? (
-                  formData.legaldocurl.map((url, idx) => (
-                    <Button key={idx} variant="contained" color="secondary" size="small" onClick={() => window.open(url, "_blank")} sx={{ mb: 1 }}>
+                ) : formData.legalDocsUrl?.length ? (
+                  formData.legalDocsUrl.map((url, idx) => (
+                    <Button
+                      key={idx}
+                      variant="contained"
+                      color="secondary"
+                      size="small"
+                      onClick={() => window.open(url)}
+                      sx={{ mb: 1 }}
+                    >
                       View Document {idx + 1}
                     </Button>
                   ))
                 ) : (
                   <Typography>—</Typography>
                 )}
-
               </Box>
 
               <Box mb={2}>
@@ -458,7 +559,13 @@ const ViewProject = () => {
                   Status:
                 </Typography>
                 {isEditing ? (
-                  <TextField select name="status" value={formData.status} onChange={handleChange} fullWidth>
+                  <TextField
+                    select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    fullWidth
+                  >
                     <MenuItem value="OPEN">OPEN</MenuItem>
                     <MenuItem value="COMING_SOON">COMING SOON</MenuItem>
                     <MenuItem value="CLOSE">CLOSE</MenuItem>
@@ -469,13 +576,17 @@ const ViewProject = () => {
               </Box>
             </Grid>
           </Grid>
-
         </LocalizationProvider>
 
         {/* ACTION BUTTONS */}
         <Box display="flex" justifyContent="flex-end" mt={4} gap={2}>
           {!isEditing ? (
-            <Button variant="contained" color="secondary" onClick={handleEdit} sx={{ fontWeight: 600 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleEdit}
+              sx={{ fontWeight: 600 }}
+            >
               Edit
             </Button>
           ) : (
@@ -485,12 +596,19 @@ const ViewProject = () => {
               onClick={handleUpdate}
               sx={{ fontWeight: 600 }}
               disabled={updateLoading}
-              startIcon={updateLoading && <CircularProgress size={20} color="inherit" />}
+              startIcon={
+                updateLoading && <CircularProgress size={20} color="inherit" />
+              }
             >
               {updateLoading ? "Updating..." : "Update"}
             </Button>
           )}
-          <Button variant="outlined" color="info" onClick={() => navigate("/admin/project_management")} sx={{ fontWeight: 600 }}>
+          <Button
+            variant="outlined"
+            color="info"
+            onClick={() => navigate("/admin/project_management")}
+            sx={{ fontWeight: 600 }}
+          >
             Back
           </Button>
         </Box>

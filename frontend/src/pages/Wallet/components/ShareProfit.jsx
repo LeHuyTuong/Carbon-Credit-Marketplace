@@ -271,6 +271,15 @@ export default function ShareProfit({ show, onHide, initialData }) {
                             {formula.unitPricePerKwh}$
                           </p>
 
+                          <p
+                            className="text-muted"
+                            style={{ fontSize: "0.85rem" }}
+                          >
+                            <strong>Note:</strong> Price per Credit is
+                            dynamically benchmarked against the current average
+                            market rate.
+                          </p>
+
                           <div className="text-center mb-2">
                             <img
                               src={formulaImg}
