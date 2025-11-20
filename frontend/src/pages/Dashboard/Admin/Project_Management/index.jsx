@@ -16,10 +16,11 @@ const ListProjects = () => {
   // Gọi API khi load trang
   useEffect(() => {
     const fetchProjects = async () => {
-      try {
+      try { 
+        // Gọi API lấy danh sách project
         const res = await apiFetch("/api/v1/projects/all", { method: "GET" });
         console.log("API Project List:", res);
-
+        // Chuyển đổi dữ liệu để phù hợp với DataGrid
         const projects = (res?.response || []).map((item, idx) => ({
           id: item.id || idx,
           projectid: item.id,
@@ -50,14 +51,15 @@ const ListProjects = () => {
       renderCell: (params) => (
         <Typography
           variant="body2"
+          // sx styles
           sx={{
-            display: "flex",
+            display: "flex", // sử dụng flexbox
             alignItems: "center", // căn giữa theo chiều dọc nếu 1 dòng
-            height: "100%",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-            lineHeight: 1.4,
-            textAlign: "left",
+            height: "100%", // chiếm toàn bộ chiều cao ô
+            whiteSpace: "normal", // cho phép xuống dòng
+            wordWrap: "break-word", // ngắt từ nếu quá dài
+            lineHeight: 1.4, // chiều cao dòng
+            textAlign: "left", // căn trái
           }}
         >
           {params.value}
@@ -75,7 +77,7 @@ const ListProjects = () => {
             alignItems: "center",
             height: "100%",
             width: "100%",
-            overflow: "hidden",
+            overflow: "hidden",// Ẩn tràn văn bản
           }}
         >
           <Tooltip title={params.value || ""}>
@@ -120,16 +122,16 @@ const ListProjects = () => {
             <Typography
               variant="body2"
               sx={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
+                display: "-webkit-box",//  Hiển thị dạng box
+                WebkitLineClamp: 2,//  Giới hạn 2 dòng
+                WebkitBoxOrient: "vertical",//  Hướng box theo chiều dọc
                 overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "normal",
-                wordBreak: "break-word",
-                lineHeight: 1.4,
-                textAlign: "left",
-                width: "100%",
+                textOverflow: "ellipsis",//  Hiển thị dấu ... nếu tràn
+                whiteSpace: "normal",//  Cho phép xuống dòng
+                wordBreak: "break-word",//  Ngắt từ nếu quá dài
+                lineHeight: 1.4,//  Chiều cao dòng
+                textAlign: "left",//  Căn trái
+                width: "100%",//  Chiếm toàn bộ chiều rộng
               }}
             >
               {params.value}
@@ -216,7 +218,9 @@ const ListProjects = () => {
       field: "status",
       headerName: "Status",
       flex: 0.5,
+      //  Hiển thị trạng thái với màu sắc khác nhau
       renderCell: ({ row: { status } }) => {
+        //  Map trạng thái sang màu sắc
         const statusColorMap = {
           SUBMITTED: colors.blueAccent[400],
           APPROVED: colors.greenAccent[500],
@@ -289,24 +293,25 @@ const ListProjects = () => {
             overflowX: "hidden !important", //  Ẩn scroll ngang
           },
           "& .MuiDataGrid-cell": {
-            borderBottom: "none",
-            display: "flex",
+            borderBottom: "none", //  Xóa border dưới mỗi cell
+            display: "flex", 
             alignItems: "flex-start !important", //  Căn text lên trên
             whiteSpace: "normal",
           },
           "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
+            backgroundColor: colors.blueAccent[700],// Màu nền header
             borderBottom: "none",
           },
           "& .MuiDataGrid-virtualScroller": {
-            backgroundColor: colors.primary[400],
+            backgroundColor: colors.primary[400],// Màu nền body
           },
           "& .MuiDataGrid-footerContainer": {
             borderTop: "none",
-            backgroundColor: colors.blueAccent[700],
+            backgroundColor: colors.blueAccent[700],// Màu nền footer
           },
         }}
       >
+        {/* Data Grid hiển thị danh sách project */}
         <AdminDataGrid
           rows={data}
           columns={columns}

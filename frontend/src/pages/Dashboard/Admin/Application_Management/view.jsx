@@ -176,13 +176,8 @@ const ApplicationView = () => {
               maxWidth: "20%",      // giới hạn chiều rộng
             }}>
               <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
-                Company Registration
+                Company Registration KYC
               </Typography>
-
-              {/* <Typography variant="h6" fontWeight="600" gutterBottom>
-                ID:
-              </Typography>
-              <Typography mb={1}>{kyc.id || "N/A"}</Typography> */}
 
               <Typography variant="h6" fontWeight="600" gutterBottom>
                 Company Name:

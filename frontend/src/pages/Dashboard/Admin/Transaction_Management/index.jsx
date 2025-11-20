@@ -7,6 +7,7 @@ import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
 import { getWithdrawalsAdmin } from "@/apiAdmin/transactionAdmin.js";
 import AdminDataGrid from "@/components/DataGrid/AdminDataGrid.jsx";
+import "@/styles/actionadmin.scss";
 const TransactionAdmin = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -118,22 +119,24 @@ const TransactionAdmin = () => {
       headerName: "Action",
       flex: 0.8,
       renderCell: (params) => (
-        <Link
-          to={`/admin/transaction/${params.row.id}`}
-          style={{ textDecoration: "none" }}
-        >
-          <div className="viewButton">View</div>
-        </Link>
+        <div className="cellAction">
+          <Link
+            to={`/admin/transaction/${params.row.id}`}
+            style={{ textDecoration: "none" }}
+          >
+            <div className="viewButton">View</div>
+          </Link>
+        </div>
       ),
     },
   ];
 
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
+    <Box m="20px" sx={{ marginLeft: "290px" }} className="actionadmin">
       <Header title="WITHDRAWAL TRANSACTIONS" subtitle="List of Withdrawal Requests" />
       <Box
         m="40px 0 0 0"
-        height="70vh"
+        height="69vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-columnHeaders": {

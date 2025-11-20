@@ -27,10 +27,10 @@ import {
   verifyReportCVA,
   getReportById,
   getReportDetails,
-  getCompanyKYCProfile
+  getCompanyKYCProfile,
+  getReportRules
 } from "@/apiCVA/reportCVA.js";
-import FormulaImage from "@/assets/z7155603890092_2ed7af1b23662f3986de0fc7dce736af.jpg";
-import { analyzeReportByAI, analyzeReportData } from "@/apiCVA/aiCVA.js";
+import { analyzeReportByAI, analyzeReportData, } from "@/apiCVA/aiCVA.js";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
 
@@ -39,11 +39,17 @@ const ViewReport = ({ report: initialReport }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { id } = useParams();
+  //snackbar component
   const { showSnackbar, SnackbarComponent } = useSnackbar();
+  //kyc company
   const [companyProfile, setCompanyProfile] = useState(null);
+
+  //report
   const [report, setReport] = useState(initialReport || null);
   const [note, setNote] = useState(initialReport?.note || "");
   const [loading, setLoading] = useState(!initialReport);
+
+  //details
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [details, setDetails] = useState([]);
@@ -51,6 +57,12 @@ const ViewReport = ({ report: initialReport }) => {
   const [detailsSize, setDetailsSize] = useState(20);
   const [detailsTotal, setDetailsTotal] = useState(0);
   const [actionTaken, setActionTaken] = useState(false);
+
+  //rules
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [rulesData, setRulesData] = useState([]);
+
 
   // AI + Data
   const [aiResult, setAiResult] = useState(null);
@@ -62,16 +74,12 @@ const ViewReport = ({ report: initialReport }) => {
   const [openAIDialog, setOpenAIDialog] = useState(false);
   const [openDataDialog, setOpenDataDialog] = useState(false);
 
-  const [showFormula, setShowFormula] = useState(false);
-
   const colorMap = {
-    Pending: "#42A5F5",
-    Approved: "#4CAF50",
-    Rejected: "#E53935",
+
     SUBMITTED: "#42A5F5",
     CVA_APPROVED: "#4CAF50",
     ADMIN_APPROVED: "#2E7D32",
-    REJECTED: "#E53935",
+    CVA_REJECTED: "#E53935",
   };
 
   // Load report 
@@ -221,6 +229,22 @@ const ViewReport = ({ report: initialReport }) => {
       setDataLoading(false);
     }
   };
+  //rules
+  const handleOpenRules = async () => {
+    setRulesOpen(true);
+    setRulesLoading(true);
+    try {
+      const data = await getReportRules();
+      setRulesData(data || []);
+    } catch (err) {
+      console.error("Failed to load rules:", err);
+      showSnackbar("error", err.message || "Failed to load rules!");
+    } finally {
+      setRulesLoading(false);
+    }
+  };
+  const handleCloseRules = () => setRulesOpen(false);
+
 
   if (loading)
     return (
@@ -256,17 +280,28 @@ const ViewReport = ({ report: initialReport }) => {
         }}
       >
         {/* REPORT INFORMATION  */}
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "bold",
-            mb: 2,
-            color: "#1976d2",
-            fontSize: "1.2rem",
-          }}
-        >
-          Report Information
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              color: "#1976d2",
+              fontSize: "1.2rem",
+            }}
+          >
+            Report Information
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="info"
+            onClick={handleOpenRules}
+            size="medium"
+          >
+            View Rules
+          </Button>
+        </Box>
+
         <Divider sx={{ mb: 3 }} />
 
         <Grid container spacing={10}>
@@ -591,7 +626,7 @@ const ViewReport = ({ report: initialReport }) => {
                 return (
                   <Paper sx={{ mt: 3, p: 1 }} elevation={2}>
                     <Typography variant="h6" sx={{ mb: 1 }}>
-                     
+
                     </Typography>
 
                     <Table>
@@ -599,7 +634,7 @@ const ViewReport = ({ report: initialReport }) => {
                         <TableRow>
                           <TableCell><strong>Rule</strong></TableCell>
                           <TableCell><strong>Description</strong></TableCell>
-                          <TableCell><strong>Score</strong></TableCell>
+                          <TableCell sx={{ width: 100 }}><strong>Score</strong></TableCell>
                           <TableCell><strong>Note</strong></TableCell>
                         </TableRow>
                       </TableHead>
@@ -609,7 +644,7 @@ const ViewReport = ({ report: initialReport }) => {
                           <TableRow key={idx}>
                             <TableCell>{row.rule}</TableCell>
                             <TableCell>{row.description}</TableCell>
-                            <TableCell>{row.score}</TableCell>
+                            <TableCell sx={{ width: 100 }}>{row.score}</TableCell>
                             <TableCell>{row.note}</TableCell>
                           </TableRow>
                         ))}
@@ -619,9 +654,9 @@ const ViewReport = ({ report: initialReport }) => {
                 );
               })()}
 
-              {/* ====================================================== */}
-              {/* =================== RUBRIC TABLE ===================== */}
-              {/* ====================================================== */}
+
+              {/*  RUBRIC TABLE  */}
+
 
               {aiResult.rubricData && aiResult.rubricData.length > 0 && (
                 <Paper sx={{ mt: 4, p: 1 }} elevation={2}>
@@ -772,9 +807,9 @@ const ViewReport = ({ report: initialReport }) => {
                   {dataAnalysis.response.dataQualityMax +
                     dataAnalysis.response.fraudRiskMax}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                {/* <Typography variant="body2" color="text.secondary">
                   Response: {dataAnalysis.responseStatus?.responseMessage}
-                </Typography>
+                </Typography> */}
               </Box>
             </Box>
           ) : (
@@ -788,6 +823,56 @@ const ViewReport = ({ report: initialReport }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Rules Dialog */}
+      <Dialog
+        open={rulesOpen}
+        onClose={handleCloseRules}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle>Evaluation Rules</DialogTitle>
+        <DialogContent dividers>
+          {rulesLoading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : rulesData.length ? (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Rule ID</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell sx={{width: 100}}>Max Score</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Scoring Guideline</TableCell>
+                  <TableCell>Evidence Hint</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rulesData.map((r, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{r.ruleId}</TableCell>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{r.maxScore}</TableCell>
+                    <TableCell>{r.description}</TableCell>
+                    <TableCell>{r.scoringGuideline}</TableCell>
+                    <TableCell>{r.evidenceHint}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Typography>No rules available.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRules} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
 
       {/* Snackbar */}

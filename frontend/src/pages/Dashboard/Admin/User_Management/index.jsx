@@ -33,7 +33,7 @@ const accessConfig = {
   },
 };
 
-const Team = () => {
+const User = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [data, setData] = useState([]);
@@ -88,44 +88,57 @@ const Team = () => {
         </Box>
       ),
     },
-    {
-      field: "access", // trùng với row.access để filter/sort được
-      headerName: "Access Level",
-      flex: 1.2,
-      renderCell: ({ row: { access } }) => {
-        const config = accessConfig[access?.toUpperCase()] || {};
-        return (
-          <Box display="flex" alignItems="center" justifyContent="left" width="100%" height="100%">
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              width="110px"
-              py="6px"
-              borderRadius="6px"
-              sx={{
-                backgroundColor: config.bg
-                  ? colors[config.bg.split(".")[0]][config.bg.split(".")[1]]
-                  : colors.grey[700],
-              }}
-            >
-              {config.icon}
-              <Typography color={colors.grey[100]} sx={{ ml: "6px" }}>
-                {config.label || access}
-              </Typography>
-            </Box>
-          </Box>
-        );
-      },
-    },
+   {
+  field: "access",
+  headerName: "Access Level",
+  flex: 1.2,
+  sortComparator: (a, b) => {
+    const accessOrder = {
+      EV_OWNER: 1,
+      COMPANY: 2,
+      CVA: 3,
+      ADMIN: 4,
+    };
+
+    const orderA = accessOrder[a?.toUpperCase()] || 999;
+    const orderB = accessOrder[b?.toUpperCase()] || 999;
+    return orderA - orderB;
+  },
+  renderCell: ({ row: { access } }) => {
+    const config = accessConfig[access?.toUpperCase()] || {};
+    return (
+      <Box display="flex" alignItems="center" justifyContent="left" width="100%" height="100%">
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          width="110px"
+          py="6px"
+          borderRadius="6px"
+          sx={{
+            backgroundColor: config.bg
+              ? colors[config.bg.split(".")[0]][config.bg.split(".")[1]]
+              : colors.grey[700],
+          }}
+        >
+          {config.icon}
+          <Typography color={colors.grey[100]} sx={{ ml: "6px" }}>
+            {config.label || access}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  },
+}
+,
     {
       field: "action",
       headerName: "Action",
       flex: 0.8,
       renderCell: (params) => (
         <div className="cellAction">
-          <Link to={`/admin/view_user/${params.row.email}`} style={{ textDecoration: "none" }}>
-            <div className="viewButton">View</div>
+          <Link to={`/admin/view_user/${params.row.userid}`} style={{ textDecoration: "none" }}>
+            <div className="editButton">Edit</div>
           </Link>
         </div>
       ),
@@ -163,4 +176,4 @@ const Team = () => {
   );
 };
 
-export default Team;
+export default User;

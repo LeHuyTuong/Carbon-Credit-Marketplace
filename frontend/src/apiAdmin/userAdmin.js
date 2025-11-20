@@ -6,15 +6,18 @@ export async function getAllUsers() {
 }
 
 // Lấy chi tiết user theo email
-export async function getUserByEmail(email) {
-  return await apiFetch(`/api/v1/users/by-email?email=${encodeURIComponent(email)}`, { method: "GET" });
+export async function getUserById(id) {
+  return await apiFetch(`/api/v1/users/${encodeURIComponent(id)}`, {
+    method: "GET",
+  });
 }
 
-// Cập nhật user
-export async function updateUser(id, payload) {
-  return await apiFetch(`/api/v1/users/${id}`, {
-    method: "PUT",
+//Update trạng thái user
+export async function updateUserStatus(id, payload) {
+  return await apiFetch(`/api/v1/users/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
     body: payload,
   });
 }
+
 

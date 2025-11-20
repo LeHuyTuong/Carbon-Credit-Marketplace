@@ -47,7 +47,12 @@ export default function WalletHistory() {
     setLoading(true);
     try {
       const res = await apiFetch("/api/v1/withdrawal", { method: "GET" });
-      setWithdrawals(res.response || []);
+
+      //sort hiện cái mới nhất
+      const sorted = [...(res.response || [])].sort(
+        (a, b) => new Date(b.requestedAt) - new Date(a.requestedAt)
+      );
+      setWithdrawals(sorted);
     } catch (err) {
       console.error("Failed to fetch withdrawals:", err);
     } finally {
