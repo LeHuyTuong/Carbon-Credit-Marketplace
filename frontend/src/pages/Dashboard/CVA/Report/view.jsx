@@ -843,7 +843,7 @@ const ViewReport = ({ report: initialReport }) => {
                 <TableRow>
                   <TableCell>Rule ID</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell>Max Score</TableCell>
+                  <TableCell sx={{width: 100}}>Max Score</TableCell>
                   <TableCell>Description</TableCell>
                   <TableCell>Scoring Guideline</TableCell>
                   <TableCell>Evidence Hint</TableCell>

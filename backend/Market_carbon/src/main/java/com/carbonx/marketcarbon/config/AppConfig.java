@@ -45,7 +45,12 @@ public class AppConfig {
             "/api/v1/send-otp-forgot",
             "/api/v1/check-exists-user",
             "/api/v1/projects/all",
-            "/api/v1/forgot-password/resend-otp"
+            "/api/v1/forgot-password/resend-otp",
+            "/api/v1/projects",               // Cho phép xem danh sách dự án
+            "/api/v1/projects/{id}",          // Cho phép xem chi tiết dự án
+            "/api/v1/reports/files/download", // Cho phép tải file/ảnh (Logo)
+            "/api/v1/marketplace",            // Cho phép xem chợ tín chỉ
+            "/files/**"
     };
 
     @Bean

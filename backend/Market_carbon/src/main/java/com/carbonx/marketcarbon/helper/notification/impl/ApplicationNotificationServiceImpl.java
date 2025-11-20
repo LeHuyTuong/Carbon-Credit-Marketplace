@@ -140,10 +140,9 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
         vars.put("amount", amount.toPlainString());
         vars.put("reason", reason); // Truyền lý do vào template
         vars.put("processedAt", processedAt.format(DATETIME_FORMATTER));
-        // Bạn có thể thêm userName nếu cần
-        // vars.put("userName", "Tên người dùng"); // Lấy từ User entity nếu cần
+         vars.put("userName", userName);
 
-        String subject = "[CarbonX] Yêu cầu rút tiền của bạn không thành công";
+        String subject = "[CarbonX] Your request withdrawal is rejected";
 
         try {
             // Render template mới: emails/withdrawal-failed.html

@@ -39,11 +39,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private User currentUser(){
+    private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
-        if(user == null){
+        if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
         return user;
@@ -53,15 +53,15 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Override
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
-        Wallet wallet =  walletRepository.findByUserId(user.getId());
-        if(amount < 2 ){
+        Wallet wallet = walletRepository.findByUserId(user.getId());
+        if (amount < 2) {
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
-        //B1 tạo request withdrawal
+        // B1 tạo request withdrawal
 
         BigDecimal withdrawalAmount = BigDecimal.valueOf(amount);
 
-        if(wallet.getBalance().compareTo(withdrawalAmount) >= 0 ){
+        if (wallet.getBalance().compareTo(withdrawalAmount) >= 0) {
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
                     .status(Status.PENDING)
@@ -69,13 +69,13 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                     .user(user)
                     .build();
 
-            log.info("Withdrawal with id {} has been sent with money ",  withdrawal.getId());
+            log.info("Withdrawal with id {} has been sent with money ", withdrawal.getId());
 
-            String message = " deposit with money "  + withdrawalAmount  + " USD"  ;
+            String message = " deposit with money " + withdrawalAmount + " USD";
             sseService.sendNotificationToUser(user.getId(), message);
 
             return withdrawalRepository.save(withdrawal);
-        }else{
+        } else {
             throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
         }
     }
@@ -85,7 +85,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     public Withdrawal processWithdrawal(Long withdrawalId, boolean accept) throws Exception {
         Optional<Withdrawal> withdrawal = withdrawalRepository.findById(withdrawalId);
 
-        if(withdrawal.isEmpty()){
+        if (withdrawal.isEmpty()) {
             throw new ResourceNotFoundException("Withdrawal not found with id: " + withdrawalId);
         }
 
@@ -106,32 +106,33 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             withdrawalRequest.setStatus(Status.SUCCEEDED);
             Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
             // send notification
-            try{
+            try {
                 applicationNotificationService.sendAdminConfirmRequestWithdrawal(
                         user.getEmail(),
                         user.getEmail(),
                         withdrawalRequest.getId(),
                         amountToWithdraw,
-                        withdrawalRequest.getRequestedAt()
-                );
-            }catch (Exception e){
-                log.warn("Failed to send withdrawal confirmation email via notification service for user {}: {}", user.getEmail(), e.getMessage());
+                        withdrawalRequest.getRequestedAt());
+            } catch (Exception e) {
+                log.warn("Failed to send withdrawal confirmation email via notification service for user {}: {}",
+                        user.getEmail(), e.getMessage());
             }
 
-
             log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
-            String message = " deposit with money "  + amountToWithdraw  + " USD"  ;
+            String message = " deposit with money " + amountToWithdraw + " USD";
             sseService.sendNotificationToUser(user.getId(), message);
 
             return savedWithdrawal;
         } else {
             withdrawalRequest.setStatus(Status.REJECTED);
             reason = "Withdrawal request rejected by administrator."; // Lý do bị từ chối
+            wallet.setBalance(wallet.getBalance().add(amountToWithdraw));
+            walletRepository.save(wallet);
         }
         // Lưu trạng thái FAILED hoặc REJECTED
         Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
 
-        //  Gửi email thất bại/từ chối (chỉ khi FAILED hoặc REJECTED)
+        // Gửi email thất bại/từ chối (chỉ khi FAILED hoặc REJECTED)
         if (savedWithdrawal.getStatus() == Status.FAILED || savedWithdrawal.getStatus() == Status.REJECTED) {
             try {
                 log.info("Withdrawal with id {} has been sent", withdrawalRequest.getId());
@@ -144,7 +145,8 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                         savedWithdrawal.getProcessedAt() // Sử dụng thời gian đã xử lý
                 );
             } catch (Exception e) {
-                log.warn("Failed to send withdrawal failed/rejected email for user {}: {}", user.getEmail(), e.getMessage());
+                log.warn("Failed to send withdrawal failed/rejected email for user {}: {}", user.getEmail(),
+                        e.getMessage());
             }
         }
         // Ném Exception sau khi lưu và gửi mail FAILED để báo lỗi rõ ràng

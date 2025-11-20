@@ -20,7 +20,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.util.HashMap; // Đảm bảo import
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +42,6 @@ public class EmailServiceImpl implements EmailService {
     @NonFinal
     @Value("${spring.mail.enabled:true}")
     boolean mailEnabled;
-
 
     @NonFinal
     @Value("${app.mail.display-name:CarbonX team}")
@@ -139,7 +138,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(new InternetAddress("hoang106408@donga.edu.vn", "CarbonX Marketplace"));
+            helper.setFrom(new InternetAddress("carboncreditmarketplace@gmail.com", "CarbonX Marketplace"));
             helper.setTo(to);
             helper.setSubject(subject);
 
@@ -157,7 +156,6 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
-
 
     public String renderWithdrawalConfirmationEmail(Map<String, Object> variables) {
         Context ctx = new Context();
@@ -198,17 +196,17 @@ public class EmailServiceImpl implements EmailService {
     @Async("profitSharingTaskExecutor")
     @Override
     public void sendPayoutSuccessToOwner(String toEmail,
-                                         String ownerName,
-                                         String companyName,
-                                         String periodLabel,
-                                         BigDecimal totalEnergyKWh,
-                                         BigDecimal totalCredits,
-                                         BigDecimal amountUsd,
-                                         List<VehiclePayoutRow> perVehicle,
-                                         String distributionReference,
-                                         Long companyId,
-                                         String reportReference,
-                                         BigDecimal minPayout) {
+            String ownerName,
+            String companyName,
+            String periodLabel,
+            BigDecimal totalEnergyKWh,
+            BigDecimal totalCredits,
+            BigDecimal amountUsd,
+            List<VehiclePayoutRow> perVehicle,
+            String distributionReference,
+            Long companyId,
+            String reportReference,
+            BigDecimal minPayout) {
         if (!mailEnabled) {
             log.info("Mail disabled. Skipping payout success email to {}", toEmail);
             return;
@@ -234,7 +232,8 @@ public class EmailServiceImpl implements EmailService {
 
         try {
             // 2. Render HTML
-            String subject = String.format("[CarbonX] Bạn nhận được thanh toán kỳ %s từ %s", periodLabel, companyName);
+            String subject = String.format("[CarbonX] You received payment for period %s from %s", periodLabel,
+                    companyName);
             String htmlBody = renderPayoutSuccessEmail(vars);
 
             // 3. Gửi bằng sendHtml
@@ -248,15 +247,15 @@ public class EmailServiceImpl implements EmailService {
     @Async("profitSharingTaskExecutor")
     @Override
     public void sendDistributionSummaryToCompany(String toEmail,
-                                                 String companyName,
-                                                 String periodLabel,
-                                                 int ownersPaid,
-                                                 BigDecimal totalEnergy,
-                                                 BigDecimal totalCredits,
-                                                 BigDecimal totalPayoutUsd,
-                                                 boolean scaledByCap,
-                                                 Long companyId,
-                                                 String distributionReference) {
+            String companyName,
+            String periodLabel,
+            int ownersPaid,
+            BigDecimal totalEnergy,
+            BigDecimal totalCredits,
+            BigDecimal totalPayoutUsd,
+            boolean scaledByCap,
+            Long companyId,
+            String distributionReference) {
         if (!mailEnabled) {
             log.info("Mail disabled. Skipping payout summary email to company {}", companyName);
             return;
@@ -280,7 +279,7 @@ public class EmailServiceImpl implements EmailService {
 
         try {
             // 2. Render HTML
-            String subject = String.format("[CarbonX] Tổng kết payout kỳ %s", periodLabel);
+            String subject = String.format("[CarbonX] Payout summary for period %s", periodLabel);
             String htmlBody = renderPayoutSummaryEmail(vars);
 
             // 3. Gửi bằng sendHtml

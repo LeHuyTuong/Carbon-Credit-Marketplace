@@ -32,6 +32,11 @@ const ViewProject = () => {
   const [loading, setLoading] = useState(true);
   const [updateLoading, setUpdateLoading] = useState(false);
   const { showSnackbar, SnackbarComponent } = useSnackbar();
+  const [preview, setPreview] = useState({
+    logo: null,
+    legalDocs: []
+  });
+
 
   //API FETCH
   useEffect(() => {
@@ -144,21 +149,33 @@ const ViewProject = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileUpload = (e, field) => {
-    const files = Array.from(e.target.files);
-    if (field === "logo") {
-      setFormData((prev) => ({
+  const handleFileUpload = (e, type) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (type === "logo") {
+      const file = files[0];
+      setPreview((prev) => ({
         ...prev,
-        logo: files[0], // file mới
+        logo: URL.createObjectURL(file)
       }));
+      handleChange("logoFile", file);
     }
-    if (field === "legalDocsFile") {
-      setFormData((prev) => ({
-        ...prev,
-        legalDocsFile: files,
+
+    if (type === "legalDocsFile") {
+      const previews = Array.from(files).map((f) => ({
+        name: f.name,
+        url: URL.createObjectURL(f),
       }));
+
+      setPreview((prev) => ({
+        ...prev,
+        legalDocs: previews
+      }));
+      handleChange("legalDocsFile", files);
     }
   };
+
 
   if (loading)
     return (
@@ -242,14 +259,14 @@ const ViewProject = () => {
               >
                 General Info
               </Typography>
-
+              {/* Project ID */}
               <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project ID:
                 </Typography>
                 <Typography>{formData.projectid}</Typography>
               </Box>
-
+              {/* Project Name */}
               <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Project Name:
@@ -286,7 +303,74 @@ const ViewProject = () => {
                   />
                 )}
               </Box>
-
+              {/* Start Date */}
+              <Box mb={0.5}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Started Date:
+                </Typography>
+                {isEditing ? (
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={
+                      formData.starteddate
+                        ? dayjs(formData.starteddate, [
+                          "YYYY-MM-DD",
+                          "DD/MM/YYYY",
+                        ])
+                        : null
+                    }
+                    onChange={(date) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        starteddate: date ? date.format("DD/MM/YYYY") : "",
+                      }))
+                    }
+                    sx={{ width: "100%" }}
+                  />
+                ) : (
+                  <Typography>
+                    {formData.starteddate
+                      ? dayjs(formData.starteddate, [
+                        "YYYY-MM-DD",
+                        "DD/MM/YYYY",
+                      ]).format("DD/MM/YYYY")
+                      : "—"}
+                  </Typography>
+                )}
+              </Box>
+              {/* End Date */}
+              <Box mb={0.5}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  End Date:
+                </Typography>
+                {isEditing ? (
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={
+                      formData.enddate
+                        ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"])
+                        : null
+                    }
+                    onChange={(date) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        enddate: date ? date.format("DD/MM/YYYY") : "",
+                      }))
+                    }
+                    sx={{ width: "100%" }}
+                  />
+                ) : (
+                  <Typography>
+                    {formData.enddate
+                      ? dayjs(formData.enddate, [
+                        "YYYY-MM-DD",
+                        "DD/MM/YYYY",
+                      ]).format("DD/MM/YYYY")
+                      : "indefinitely"}
+                  </Typography>
+                )}
+              </Box>
+              {/* Description */}
               <Box mb={0.5}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Description:
@@ -344,73 +428,6 @@ const ViewProject = () => {
                 Technical Info
               </Typography>
 
-              <Box mb={0.5}>
-                <Typography variant="h6" fontWeight="600" gutterBottom>
-                  Started Date:
-                </Typography>
-                {isEditing ? (
-                  <DatePicker
-                    format="DD/MM/YYYY"
-                    value={
-                      formData.starteddate
-                        ? dayjs(formData.starteddate, [
-                            "YYYY-MM-DD",
-                            "DD/MM/YYYY",
-                          ])
-                        : null
-                    }
-                    onChange={(date) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        starteddate: date ? date.format("DD/MM/YYYY") : "",
-                      }))
-                    }
-                    sx={{ width: "100%" }}
-                  />
-                ) : (
-                  <Typography>
-                    {formData.starteddate
-                      ? dayjs(formData.starteddate, [
-                          "YYYY-MM-DD",
-                          "DD/MM/YYYY",
-                        ]).format("DD/MM/YYYY")
-                      : "—"}
-                  </Typography>
-                )}
-              </Box>
-
-              <Box mb={0.5}>
-                <Typography variant="h6" fontWeight="600" gutterBottom>
-                  End Date:
-                </Typography>
-                {isEditing ? (
-                  <DatePicker
-                    format="DD/MM/YYYY"
-                    value={
-                      formData.enddate
-                        ? dayjs(formData.enddate, ["YYYY-MM-DD", "DD/MM/YYYY"])
-                        : null
-                    }
-                    onChange={(date) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        enddate: date ? date.format("DD/MM/YYYY") : "",
-                      }))
-                    }
-                    sx={{ width: "100%" }}
-                  />
-                ) : (
-                  <Typography>
-                    {formData.enddate
-                      ? dayjs(formData.enddate, [
-                          "YYYY-MM-DD",
-                          "DD/MM/YYYY",
-                        ]).format("DD/MM/YYYY")
-                      : "indefinitely"}
-                  </Typography>
-                )}
-              </Box>
-
               {/* Các field khác */}
               {["measurementMethod", "commitments", "technicalIndicators"].map(
                 (field) => (
@@ -459,6 +476,7 @@ const ViewProject = () => {
 
             {/* COLUMN 3 */}
             <Grid item xs={12} md={4}>
+              {/* Documents & Status */}
               <Typography
                 variant="h5"
                 fontWeight="700"
@@ -467,7 +485,7 @@ const ViewProject = () => {
               >
                 Documents & Status
               </Typography>
-
+              {/* Emission Factor */}
               <Box mb={2}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Emission Factor (Kg/Kwh):
@@ -482,26 +500,42 @@ const ViewProject = () => {
                   <Typography>{formData.emissionFactor || "—"}</Typography>
                 )}
               </Box>
-
+              {/* Logo */}
+              {/* Logo */}
               <Box mb={2}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Logo:
                 </Typography>
+
                 {isEditing ? (
-                  <Button
-                    variant="contained"
-                    component="label"
-                    color="info"
-                    fullWidth
-                  >
-                    Upload Logo
-                    <input
-                      hidden
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e, "logo")}
-                    />
-                  </Button>
+                  <>
+                    {/* Nút Upload */}
+                    <Button
+                      variant="contained"
+                      component="label"
+                      color="info"
+                      fullWidth
+                    >
+                      Upload Logo
+                      <input
+                        hidden
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, "logo")}
+                      />
+                    </Button>
+
+                    {/* Preview logo vừa chọn */}
+                    {preview.logo && (
+                      <Box mt={2}>
+                        <img
+                          src={preview.logo}
+                          alt="preview"
+                          style={{ width: 150, borderRadius: 8 }}
+                        />
+                      </Box>
+                    )}
+                  </>
                 ) : formData.logoUrl ? (
                   <Button
                     variant="contained"
@@ -516,37 +550,59 @@ const ViewProject = () => {
                 )}
               </Box>
 
+
+              {/* Legal Docs */}
               <Box mb={2}>
                 <Typography variant="h6" fontWeight="600" gutterBottom>
                   Legal Docs:
                 </Typography>
                 {isEditing ? (
-                  <Button
-                    variant="contained"
-                    component="label"
-                    color="secondary"
-                    fullWidth
-                  >
-                    Upload Document(s)
-                    <input
-                      hidden
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => handleFileUpload(e, "legalDocsFile")}
-                    />
-                  </Button>
+                  <>
+                    <Button
+                      variant="contained"
+                      component="label"
+                      color="secondary"
+                      fullWidth
+                    >
+                      Upload Document(s)
+                      <input
+                        hidden
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => handleFileUpload(e, "legalDocsFile")}
+                      />
+                    </Button>
+
+                    {/* Preview Document List */}
+                    {preview.legalDocs.length > 0 && (
+                      <Box mt={2}>
+                        {preview.legalDocs.map((file, idx) => (
+                          <Box key={idx} mb={1}>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => window.open(file.url)}
+                            >
+                              Preview: {file.name}
+                            </Button>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </>
                 ) : formData.legalDocsUrl?.length ? (
                   formData.legalDocsUrl.map((url, idx) => (
+                    // Hiển thị nút xem từng tài liệu
                     <Button
                       key={idx}
                       variant="contained"
                       color="secondary"
                       size="small"
-                      onClick={() => window.open(url)}
+                      onClick={() => window.open(url)} // Mở file trong tab mới
                       sx={{ mb: 1 }}
                     >
-                      View Document {idx + 1}
+                      View Document
                     </Button>
                   ))
                 ) : (

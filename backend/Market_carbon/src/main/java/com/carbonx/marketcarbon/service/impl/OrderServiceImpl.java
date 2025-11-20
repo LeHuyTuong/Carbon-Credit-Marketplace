@@ -178,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         log.info("Starting order completion process for orderId: {}", orderId);
 
-        // B1-B3: [Giữ nguyên code cũ]
+        // B1 tìm order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
@@ -187,10 +187,12 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
 
+        // B2 tìm list và khóa lại chính id của marketplace đó
         MarketPlaceListing listing = marketplaceListingRepository
                 .findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
 
+        //B3 tìm công ty mua bán
         Company buyerCompany = order.getCompany();
         Company sellerCompany = listing.getCompany();
         CarbonCredit sourceCredit = carbonCreditRepository
@@ -206,6 +208,7 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
+        // B4 bắt đầu giao dịch
         try {
             // B4.1: Lấy ví
             Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
@@ -218,6 +221,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
 
+            // tìm ví seller
             Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
             if (sellerWallet == null) {
                 throw new ResourceNotFoundException("Seller wallet not found");
@@ -232,9 +236,12 @@ public class OrderServiceImpl implements OrderService {
                 updatedListedAmount = BigDecimal.ZERO;
             }
 
+            // số tín chỉ carbon đang tồn tại
             BigDecimal directAvailable = sourceCredit.getCarbonCredit() != null
                     ? sourceCredit.getCarbonCredit()
                     : BigDecimal.ZERO;
+
+            // số tín chỉ carbon sau khi bán
             BigDecimal totalAfterSale = directAvailable.add(updatedListedAmount);
 
             sourceCredit.setListedAmount(updatedListedAmount);
