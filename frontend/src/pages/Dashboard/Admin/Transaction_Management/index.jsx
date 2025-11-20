@@ -136,7 +136,7 @@ const TransactionAdmin = () => {
       <Header title="WITHDRAWAL TRANSACTIONS" subtitle="List of Withdrawal Requests" />
       <Box
         m="40px 0 0 0"
-        height="70vh"
+        height="69vh"
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
           "& .MuiDataGrid-columnHeaders": {

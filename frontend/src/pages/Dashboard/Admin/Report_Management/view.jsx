@@ -85,6 +85,26 @@ const ReportView = () => {
         }
     }, [report?.sellerId]);
 
+    const formatVNDate = (dateString) => {
+        if (!dateString) return "N/A";
+
+        const d = new Date(dateString);
+
+        // Chuyển UTC → VN (UTC+7)
+        const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+
+        const day = String(vnTime.getDate()).padStart(2, "0");
+        const month = String(vnTime.getMonth() + 1).padStart(2, "0");
+        const year = vnTime.getFullYear();
+
+        const time = vnTime.toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        });
+
+        return `${day}/${month}/${year}, ${time}`;
+    };
 
 
 
@@ -120,7 +140,7 @@ const ReportView = () => {
     return (
         <Box
             m="20px"
-            sx={{ marginLeft: "290px", maxWidth: "1210px", width: "100%" }}
+            sx={{ marginLeft: "290px", maxWidth: "1140px", width: "100%" }}
         >
             <Header
                 title="REPORT DETAIL"
@@ -145,7 +165,7 @@ const ReportView = () => {
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Project Name:
                         </Typography>
-                         <TextField
+                        <TextField
                             value={report.projectName || "N/A"}
                             multiline
                             fullWidth
@@ -198,7 +218,7 @@ const ReportView = () => {
                                     size="small"
                                     onClick={() => window.open(report.uploadStorageUrl, "_blank")}
                                 >
-                                    View Uploaded File
+                                    Download CSV File
                                 </Button>
                             ) : (
                                 <Typography>No file uploaded</Typography>
@@ -210,13 +230,8 @@ const ReportView = () => {
                     {kyc && (
                         <Grid item xs={12} md={4}>
                             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
-                                Company Registration
+                                Company KYC
                             </Typography>
-
-                            <Typography variant="h6" fontWeight="600" gutterBottom>
-                                ID:
-                            </Typography>
-                            <Typography mb={2}>{kyc.id || "N/A"}</Typography>
 
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Company Name:
@@ -241,12 +256,12 @@ const ReportView = () => {
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Created At:
                             </Typography>
-                            <Typography mb={2}>{new Date(kyc.createAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+                            <Typography mb={2}>{ formatVNDate(kyc.createAt) }</Typography>
 
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Update At:
                             </Typography>
-                            <Typography mb={2}>{new Date(kyc.updatedAt).toLocaleString("vi-VN") || "N/A"}</Typography>
+                            <Typography mb={2}>{ formatVNDate(kyc.updatedAt) }</Typography>
                         </Grid>
                     )}
 
@@ -283,17 +298,6 @@ const ReportView = () => {
                             Verification & Admin
                         </Typography>
 
-                        {/* <Typography variant="h6" fontWeight="600" gutterBottom>
-                            AI Pre Score:
-                        </Typography>
-                        <Typography mb={2}>{report.aiPreScore || "N/A"}</Typography>
-
-                        <Typography variant="h6" fontWeight="600" gutterBottom>
-                            AI Pre Notes:
-                        </Typography>
-                        <Typography mb={2}>{report.aiPreNotes || "N/A"}</Typography> */}
-
-                        
 
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Verified By:
@@ -303,11 +307,7 @@ const ReportView = () => {
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Verified At:
                         </Typography>
-                        <Typography mb={2}>
-                            {report.verifiedAt
-                                ? new Date(report.verifiedAt).toLocaleString("vi-VN")
-                                : "N/A"}
-                        </Typography>
+                        <Typography mb={2}>{ formatVNDate(report.verifiedAt) }</Typography>
 
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Admin Comment:
@@ -322,8 +322,9 @@ const ReportView = () => {
                             inputProps={{ style: { cursor: "pointer" } }}
                             variant="outlined"
                             size="small"
-                            minRows={3.5}
+                            minRows={2}
                             sx={{
+                                width: "80%",
                                 mb: 2,
                                 backgroundColor: "rgba(255,255,255,0.08)",
                                 borderRadius: "8px",
@@ -342,9 +343,7 @@ const ReportView = () => {
                             Approved At:
                         </Typography>
                         <Typography mb={2}>
-                            {report.approvedAt
-                                ? new Date(report.approvedAt).toLocaleString("vi-VN")
-                                : "N/A"}
+                            { formatVNDate(report.approvedAt) }
                         </Typography>
                     </Grid>
                 </Grid>
