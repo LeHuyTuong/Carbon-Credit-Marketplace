@@ -64,6 +64,7 @@ public enum ErrorCode {
     INVALID_FINAL_APPROVAL_STATUS(400, "Status must be ADMIN_APPROVED or REJECTED.", HttpStatus.BAD_REQUEST),
     DUPLICATE_RESOURCE(409, "Duplicate resource.", HttpStatus.CONFLICT),
     ONE_APPLICATION_PER_PROJECT(409, "Each base project can only have one submission.", HttpStatus.CONFLICT),
+    CREDIT_APPROVED_EXCEEDS_LIMIT(400, "Approved credit quantity exceeds computed maximum", HttpStatus.BAD_REQUEST),
 
     // ==== CSV IMPORT VALIDATION ====
     // 4001xx: lỗi cấu trúc CSV (thiếu header)

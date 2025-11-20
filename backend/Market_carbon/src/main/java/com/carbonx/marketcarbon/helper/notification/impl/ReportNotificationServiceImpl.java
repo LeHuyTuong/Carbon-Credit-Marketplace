@@ -22,15 +22,23 @@ public class ReportNotificationServiceImpl implements ReportNotificationService 
     public void sendCvaDecision(String email, String companyName, Long reportId,
                                 String projectName, String reviewerName,
                                 boolean approved, String note) {
+
         Map<String, Object> vars = new HashMap<>();
         vars.put("companyName", companyName);
         vars.put("projectName", projectName);
         vars.put("reportId", reportId);
         vars.put("reviewerName", reviewerName);
         vars.put("reviewNote", note);
+
         vars.put("decision", approved ? "Approved by CVA" : "Rejected by CVA");
         vars.put("badgeColor", approved ? "#16a34a" : "#dc2626");
         vars.put("approved", approved);
+
+        String waitingFor = approved
+                ? "Waiting for Admin approval — your report has passed CVA verification and is now pending Admin confirmation."
+                : "Rejected by CVA — please review the CVA feedback, correct your data and upload the report again.";
+
+        vars.put("waitingFor", waitingFor);
 
         String subject = approved
                 ? "[CarbonX] Your report was approved by CVA"
@@ -49,15 +57,23 @@ public class ReportNotificationServiceImpl implements ReportNotificationService 
     public void sendAdminDecision(String email, String companyName, Long reportId,
                                   String projectName, String reviewerName,
                                   boolean approved, String note) {
+
         Map<String, Object> vars = new HashMap<>();
         vars.put("companyName", companyName);
         vars.put("projectName", projectName);
         vars.put("reportId", reportId);
         vars.put("reviewerName", reviewerName);
         vars.put("reviewNote", note);
+
         vars.put("decision", approved ? "Final Approval" : "Final Rejection");
         vars.put("badgeColor", approved ? "#16a34a" : "#dc2626");
         vars.put("approved", approved);
+
+        String waitingFor = approved
+                ? "Approved by Admin — your emission report is now ready for credit issuance. You can proceed to request carbon credits."
+                : "Rejected by Admin — please review the Admin’s feedback, fix issues in your emission data, and resubmit the report.";
+
+        vars.put("waitingFor", waitingFor);
 
         String subject = approved
                 ? "[CarbonX] Final approval granted for your report"

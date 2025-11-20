@@ -42,6 +42,12 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
         vars.put("decision", approved ? "Approved by CVA" : "Rejected by CVA");
         vars.put("badgeColor", approved ? "#16a34a" : "#dc2626");
 
+        vars.put("waitingFor",
+                approved
+                        ? "Waiting for Admin approval — your application has passed the CVA review and is pending final approval."
+                        : "Rejected by CVA — please review the CVA’s comments, update your documents, and resubmit.");
+
+
         String subject = approved
                 ? "[CarbonX] Your application was approved by CVA"
                 : "[CarbonX] Your application was rejected by CVA";
@@ -74,6 +80,11 @@ public class ApplicationNotificationServiceImpl implements ApplicationNotificati
         vars.put("reviewNote", note);
         vars.put("decision", approved ? "Final Approval" : "Final Rejection");
         vars.put("badgeColor", approved ? "#16a34a" : "#dc2626");
+
+        vars.put("waitingFor",
+                approved
+                        ? "Your application is fully approved. You may now join the project and start submitting emission reports for credit issuance."
+                        : "Rejected by Admin — please review the Admin feedback, update your documents, and resubmit if applicable.");
 
         String subject = approved
                 ? "[CarbonX] Final approval granted for your application"

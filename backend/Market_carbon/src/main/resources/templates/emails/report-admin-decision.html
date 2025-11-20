@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
-    <title>CarbonX – Admin Decision</title>
+    <title>CarbonX – CVA Decision</title>
     <style>
         body {
             background: #f4f6fb;
@@ -36,16 +36,9 @@
             height: 36px;
             object-fit: contain;
             border-radius: 4px;
-            background: transparent;
         }
-        .content {
-            padding: 28px;
-            line-height: 1.6;
-        }
-        .label {
-            font-weight: 600;
-            color: #111827;
-        }
+        .content { padding: 28px; line-height: 1.6; }
+        .label { font-weight: 600; color: #111827; }
         .badge {
             display: inline-block;
             margin: 12px 0;
@@ -56,9 +49,7 @@
             color: #fff;
             background: #16a34a;
         }
-        .badge.rejected {
-            background: #dc2626;
-        }
+        .badge.rejected { background: #dc2626; }
         .note {
             background: #f9fafb;
             border: 1px solid #e5e7eb;
@@ -82,25 +73,39 @@
 <body>
 <div class="card">
     <div class="header">
-        <img class="logo" src="https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/z7189056163744_90ddda01b07a72bf3494b16a5678f571.jpg" alt="CarbonX Logo" />
-        <span>CarbonX · Admin Decision</span>
+        <img class="logo"
+             src="https://carbonx-storagee.s3.ap-southeast-2.amazonaws.com/z7189056163744_90ddda01b07a72bf3494b16a5678f571.jpg"
+             alt="CarbonX Logo" />
+        <span>CarbonX · CVA Decision</span>
     </div>
+
     <div class="content">
+
         <p><span class="label">Company:</span> <span th:text="${companyName}">Company</span></p>
         <p><span class="label">Project:</span> <span th:text="${projectName}">Project</span></p>
         <p><span class="label">Report ID:</span> <span th:text="${reportId}">123</span></p>
 
-        <span class="badge" th:classappend="${approved} ? '' : 'rejected'"
-              th:text="${decision}">Final Approval</span>
+        <span class="badge" th:classappend="${approved} ? '' : 'rejected'" th:text="${decision}">
+            Approved by CVA
+        </span>
 
-        <p><span class="label">Reviewer:</span> <span th:text="${reviewerName}">Admin</span></p>
-        <p class="label">Admin Note:</p>
+        <p><span class="label">Reviewer:</span> <span th:text="${reviewerName}">CVA Officer</span></p>
+
+        <!-- Review Note -->
+        <p class="label">Review Note:</p>
         <div class="note" th:text="${reviewNote}">
-            Your report has received final approval from the admin.
+            Your report meets the verification standards.
         </div>
+
+        <p class="label" style="margin-top:22px;">Next Step:</p>
+        <div class="note" style="border-left-color:#059669;" th:text="${waitingFor}">
+            Waiting for Admin approval — your report has passed CVA verification.
+        </div>
+
     </div>
+
     <div class="footer">
-        Thank you for contributing to the CarbonX Carbon Credit Verification Program.<br>
+        Thank you for your participation in the CarbonX Verification Program.<br>
         <span style="color:#9ca3af;">This is an automated email. Please do not reply.</span>
     </div>
 </div>
