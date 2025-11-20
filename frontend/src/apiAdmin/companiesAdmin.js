@@ -1,6 +1,6 @@
 import { apiFetch } from "@/utils/apiFetch";
 
-// ===================== GET ALL COMPANY KYC PROFILES =====================
+// GET ALL COMPANY KYC PROFILES
 export const getAllCompanyKYCProfiles = async () => {
   try {
     const res = await apiFetch("/api/v1/kyc/company/listKYCCompany", {

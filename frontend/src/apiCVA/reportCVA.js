@@ -137,3 +137,26 @@ export const getReportDetails = async (
 export async function getCompanyKYCProfile(companyId) {
   return apiFetch(`/api/v1/kyc/${companyId}`, "GET");
 }
+
+/**
+ *  Lấy danh sách rules với scoring guideline và evidence hint
+ *  API: GET /api/v1/reports/rules
+ *  Headers: X-Request-Trace, X-Request-DateTime
+ */
+export const getReportRules = async ({ traceId, traceDateTime } = {}) => {
+  const headers = {};
+  if (traceId) headers["X-Request-Trace"] = traceId;
+  if (traceDateTime) headers["X-Request-DateTime"] = traceDateTime;
+
+  const res = await apiFetch("/api/v1/reports/analysis/rules/rubric", {
+    method: "GET",
+    headers,
+  });
+
+  if (res?.response) return res.response;
+  if (res?.responseData) return res.responseData;
+  if (res?.data?.responseData) return res.data.responseData;
+
+  console.warn("Unexpected response structure:", res);
+  return [];
+};

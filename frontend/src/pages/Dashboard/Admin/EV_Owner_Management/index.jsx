@@ -87,13 +87,26 @@ const EvOwnerTeam = () => {
     headerName: "Status",
     flex: 0.6,
     minWidth: 120,
-    renderCell: ({ row }) => (
-      <Chip
-        size="small"
-        label={row.status === "active" ? "Active" : "Inactive"}
-        color={row.status === "active" ? "success" : "default"}
-        variant={row.status === "active" ? "filled" : "outlined"}
-      />
+    renderCell: ({ row: { status } }) => (
+      // <Chip
+      //   size="small"
+      //   label={row.status === "active" ? "Active" : "Inactive"}
+      //   color={row.status === "active" ? "success" : "default"}
+      //   variant={row.status === "active" ? "filled" : "outlined"}
+      // />
+      <Box
+        sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "left",
+              width: "100%",
+              height: "100%",
+            }}
+        >
+        <Typography color={status === "active" ? "green" : "red"} fontWeight="600">
+          {status === "active" ? "Active" : "Inactive"}
+        </Typography>
+        </Box>
     ),
   },
 ];

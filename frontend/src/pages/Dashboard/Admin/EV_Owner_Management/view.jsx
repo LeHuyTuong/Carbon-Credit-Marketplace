@@ -17,7 +17,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
-import { getUserByEmail, updateUser } from "@/apiAdmin/userAdmin.js";
+import { getUserById, updateUserStatus } from "@/apiAdmin/userAdmin.js";
 
 const ViewEvOwner = () => {
   const theme = useTheme();
@@ -45,7 +45,7 @@ const ViewEvOwner = () => {
     async function fetchUser() {
       setLoading(true);
       try {
-        const res = await getUserByEmail(email);
+        const res = await getUserById(email);
         const data = res?.responseData;
         if (!data) throw new Error("No user data found in responseData");
 
@@ -107,7 +107,7 @@ const ViewEvOwner = () => {
     };
 
     try {
-      await updateUser(editedUser.id, payload);
+      await updateUserStatus(editedUser.id, payload);
       setUser(editedUser);
       setEditMode(false);
       setOpenSnackbar(true);

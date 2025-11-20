@@ -31,3 +31,4 @@ export const analyzeReportData = async (reportId) => {
 
   return res.data || res;
 };
+
