@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.dashboard.MonthlyCreditStatusDto;
+import com.carbonx.marketcarbon.dto.dashboard.MonthlyProjectStatusDto;
 import com.carbonx.marketcarbon.dto.dashboard.MonthlyReportStatusDto;
 import com.carbonx.marketcarbon.dto.dashboard.SummaryValue;
 import com.carbonx.marketcarbon.service.DashboardCardService;
@@ -146,6 +147,25 @@ public class CvaDashboardController {
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Monthly credit status fetched successfully");
         return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
     }
+
+    @Operation(summary = "Get monthly project application status statistics (submitted/approved/rejected)")
+    @GetMapping("/projects/status/monthly")
+    public ResponseEntity<TuongCommonResponse<List<MonthlyProjectStatusDto>>> getMonthlyProjectStatus(
+            @RequestHeader(value = "X-Request-Trace", required = false) String traceHeader,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String dateHeader
+    ) {
+        String trace = traceOrNew(traceHeader);
+        String now = dateOrNow(dateHeader);
+
+        List<MonthlyProjectStatusDto> data = service.getMonthlyProjectStatus();
+        TuongResponseStatus rs = new TuongResponseStatus(
+                StatusCode.SUCCESS.getCode(),
+                "Monthly project status fetched successfully"
+        );
+
+        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+    }
+
 
 
 }

@@ -30,4 +30,16 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
     @Query("SELECT COUNT(p) FROM ProjectApplication p")
     long countAllProjects();
 
+    @Query(value =
+            "SELECT " +
+                    "DATE_FORMAT(submitted_at, '%Y-%m') AS month, " +
+                    "SUM(CASE WHEN status = 'UNDER_REVIEW' THEN 1 ELSE 0 END) AS submitted, " +
+                    "SUM(CASE WHEN status IN ('CVA_APPROVED', 'ADMIN_APPROVED') THEN 1 ELSE 0 END) AS approved, " +
+                    "SUM(CASE WHEN status IN ('CVA_REJECTED', 'ADMIN_REJECTED') THEN 1 ELSE 0 END) AS rejected " +
+                    "FROM project_application " +
+                    "GROUP BY DATE_FORMAT(submitted_at, '%Y-%m') " +
+                    "ORDER BY DATE_FORMAT(submitted_at, '%Y-%m')",
+            nativeQuery = true)
+    List<Object[]> countMonthlyProjectStatusNative();
+
 }

@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.dto.dashboard.MonthlyCreditStatusDto;
+import com.carbonx.marketcarbon.dto.dashboard.MonthlyProjectStatusDto;
 import com.carbonx.marketcarbon.dto.dashboard.MonthlyReportStatusDto;
 import com.carbonx.marketcarbon.dto.dashboard.SummaryValue;
 import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
@@ -70,6 +71,22 @@ public class DashboardCardServiceImpl implements DashboardCardService {
                     ((Number) row[4]).longValue(),
                     ((Number) row[5]).longValue(),
                     ((Number) row[6]).longValue()
+            ));
+        }
+        return result;
+    }
+
+    @Override
+    public List<MonthlyProjectStatusDto> getMonthlyProjectStatus() {
+        List<Object[]> rows = projectAppRepo.countMonthlyProjectStatusNative();
+        List<MonthlyProjectStatusDto> result = new ArrayList<>();
+
+        for (Object[] row : rows) {
+            result.add(new MonthlyProjectStatusDto(
+                    (String) row[0],                     // Month
+                    ((Number) row[1]).longValue(),       // Submitted
+                    ((Number) row[2]).longValue(),       // Approved
+                    ((Number) row[3]).longValue()        // Rejected
             ));
         }
         return result;

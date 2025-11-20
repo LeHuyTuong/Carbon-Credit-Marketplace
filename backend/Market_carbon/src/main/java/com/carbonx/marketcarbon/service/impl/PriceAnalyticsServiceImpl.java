@@ -1,6 +1,5 @@
 package com.carbonx.marketcarbon.service.impl;
 
-import com.carbonx.marketcarbon.common.OrderStatus;
 import com.carbonx.marketcarbon.repository.OrderStatsRepository;
 import com.carbonx.marketcarbon.service.PriceAnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +19,17 @@ public class PriceAnalyticsServiceImpl implements PriceAnalyticsService {
         BigDecimal min = orderStatsRepository.minPrice(companyId, from, to);
         BigDecimal max = orderStatsRepository.maxPrice(companyId, from, to);
         BigDecimal avg = orderStatsRepository.avgPrice(companyId, from, to);
-        return new PriceStats(zeroToNull(avg), zeroToNull(min), zeroToNull(max));
+
+        return new PriceStats(
+                zeroToNull(avg),
+                zeroToNull(min),
+                zeroToNull(max)
+        );
     }
 
-    private static BigDecimal nz(BigDecimal v) { return v == null ? BigDecimal.ZERO : v; }
-    private static BigDecimal zeroToNull(BigDecimal v) { return v.signum()==0 ? null : v; }
+    private static BigDecimal zeroToNull(BigDecimal v) {
+        if (v == null) return null;
+        if (BigDecimal.ZERO.compareTo(v) == 0) return null;
+        return v;
+    }
 }
