@@ -19,8 +19,10 @@ import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 const ApplicationEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  // State quản lý dữ liệu application
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Form data state
   const [formData, setFormData] = useState({
     projectTitle: "",
     companyName: "",
@@ -35,6 +37,7 @@ const ApplicationEdit = () => {
   useEffect(() => {
     const fetchApplication = async () => {
       try {
+        // Gọi API lấy dữ liệu application theo ID
         const res = await getProjectApplicationById(id);
         console.log("Raw API response:", res);
 
@@ -84,13 +87,14 @@ const ApplicationEdit = () => {
         showSnackbar("warning", "Please select a valid status before saving.");
         return;
       }
+      // Chuẩn bị payload
       const payload = {
         approved: formData.status === "ADMIN_APPROVED",
         note: formData.finalReviewNote || "No note provided",
       };
 
       console.log("Sending update payload:", payload);
-
+      // Gọi API cập nhật
       const result = await updateApplicationDecision(id, payload);
       console.log("Update result:", result);
 
@@ -141,19 +145,19 @@ const ApplicationEdit = () => {
 
   // Giao diện form chính
   return (
-    <Box m="20px" sx={{ marginLeft: "290px" }}>
+    <Box m="20px" sx={{ marginLeft: "290px", marginTop: "-10px"}}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
       </Box>
-
+      {/* các field được liệt kê trong page */}
       <Paper sx={{ p: 3, mt: 1 }}>
         <TextField
           label="Project Title"
           value={formData.projectTitle}
           onChange={(e) => handleChange("projectTitle", e.target.value)}
-          fullWidth
-          sx={{ mt: 2 }}
-          InputProps={{ readOnly: true }}
+          fullWidth // chiếm toàn bộ chiều rộng
+          sx={{ mt: 2 }} // khoảng cách trên
+          InputProps={{ readOnly: true }} // chỉ đọc
           inputProps={{ style: { cursor: "pointer" } }}
         />
 
@@ -162,9 +166,9 @@ const ApplicationEdit = () => {
           value={formData.companyName}
           onChange={(e) => handleChange("companyName", e.target.value)}
           fullWidth
-          sx={{ mt: 2 }}
-          InputProps={{ readOnly: true }}
-          inputProps={{ style: { cursor: "pointer" } }}
+          sx={{ mt: 2 }} // khoảng cách trên
+          InputProps={{ readOnly: true }} // chỉ đọc
+          inputProps={{ style: { cursor: "pointer" } }} // Hiển thị con trỏ pointer
         />
 
         <TextField
@@ -181,6 +185,7 @@ const ApplicationEdit = () => {
               {formData.status}
             </MenuItem>
           )}
+          {/* Các tùy chọn duyệt/từ chối */}
           <MenuItem value="ADMIN_APPROVED">ADMIN_APPROVED</MenuItem>
           <MenuItem value="ADMIN_REJECTED">ADMIN_REJECTED</MenuItem>
         </TextField>
@@ -190,8 +195,8 @@ const ApplicationEdit = () => {
           label="Verfication by CVA"
           value={formData.cvaReviewerName || "N/A"}
           onChange={(e) => handleChange("cvaReviewerName", e.target.value)}
-          fullWidth
-          sx={{ mt: 2 }}
+          fullWidth // chiếm toàn bộ chiều rộng
+          sx={{ mt: 2 }} // khoảng cách trên
           InputProps={{ readOnly: true }}
           inputProps={{ style: { cursor: "pointer" } }}
         />
@@ -201,21 +206,11 @@ const ApplicationEdit = () => {
           value={formData.reviewNote || "N/A"}
           onChange={(e) => handleChange("reviewNote", e.target.value)}
           fullWidth
-          multiline
+          multiline // cho phép nhiều dòng
           rows={1}
           sx={{ mt: 2 }}
           InputProps={{ readOnly: true }}
-          inputProps={{ style: { cursor: "pointer" } }}
-        />
-
-        <TextField
-          label="Review by Admin"
-          value={formData.adminReviewerName || "N/A"}
-          onChange={(e) => handleChange("adminReviewerName", e.target.value)}
-          fullWidth
-          sx={{ mt: 2 }}
-          InputProps={{ readOnly: true }}
-          inputProps={{ style: { cursor: "pointer" } }}
+          inputProps={{ style: { cursor: "pointer" } }} // Hiển thị con trỏ pointer
         />
 
         <TextField
@@ -228,15 +223,7 @@ const ApplicationEdit = () => {
           sx={{ mt: 2 }}
         />
 
-        <TextField
-          label="Application Docs URL"
-          value={formData.applicationDocsUrl}
-          onChange={(e) => handleChange("applicationDocsUrl", e.target.value)}
-          fullWidth
-          sx={{ mt: 2 }}
-          InputProps={{ readOnly: true }}
-          inputProps={{ style: { cursor: "pointer" } }}
-        />
+
 
         <Box mt={3} display="flex" gap={2}>
           {/*  Chỉ hiển thị nút Save nếu status KHÔNG phải CVA_REJECTED */}
