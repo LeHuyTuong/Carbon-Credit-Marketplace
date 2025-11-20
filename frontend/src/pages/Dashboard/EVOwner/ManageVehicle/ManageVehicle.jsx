@@ -144,18 +144,6 @@ export default function Manage() {
 
   //submit (thêm hoặc sửa)
   const handleSubmit = async (values) => {
-    //chặn nếu chưa kyc
-    if (!isKycVerified) {
-      showToast(
-        "You must complete KYC verification before adding a vehicle.",
-        "danger"
-      );
-      //điều hướng sang kyc
-      setTimeout(() => {
-        window.location.href = "/kyc";
-      }, 1800);
-      return;
-    }
     try {
       //chuẩn hóa dữ liệu trước khi gửi lên API
       const payload = {
@@ -179,6 +167,29 @@ export default function Manage() {
       setShow(false);
       setEditData(null);
     } catch (err) {
+      // bắt lỗi chưa kyc
+      const code =
+        err?.responseCode || err?.code || err?.response?.responseCode;
+      const msg =
+        err?.responseMessage ||
+        err?.message ||
+        err?.response?.responseMessage ||
+        "";
+
+      //bắt lỗi 404 chưa kyc từ be
+      if (code === "404" && msg.toLowerCase().includes("kyc")) {
+        showToast(
+          "You must complete KYC verification before adding a vehicle.",
+          "danger"
+        );
+
+        //hiện toast lỗi xong điều hướng kyc
+        setTimeout(() => {
+          window.location.href = "/kyc";
+        }, 1800);
+        return;
+      }
+
       //xử lý lỗi
       if (
         err.code === "409" ||
