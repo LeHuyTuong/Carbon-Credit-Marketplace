@@ -45,7 +45,11 @@ public enum ErrorCode {
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
     PAYMENT_DETAILS_NOT_FOUND(404, "Payment details not found.", HttpStatus.NOT_FOUND),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
-    APPLICATION_PROCESSING(202, "Application is being processed.", HttpStatus.PROCESSING),
+    APPLICATION_ALREADY_EXISTS(
+            409,
+            "Your company already has an active application for this project.",
+            HttpStatus.CONFLICT
+    ),
     APPLICATION_DOCS_REQUIRED(404, "Required application doc", HttpStatus.NOT_FOUND),
     REPORT_DETAILS_NOT_FOUND(404, "Report details not found", HttpStatus.NOT_FOUND),
     CREDIT_NOT_FOUND(404, "Credit not found", HttpStatus.NOT_FOUND),

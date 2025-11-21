@@ -139,7 +139,7 @@ class ProjectApplicationServiceImplTest {
         // Act & Assert
         assertThatThrownBy(() -> projectApplicationService.submit(project.getId(), file))
                 .isInstanceOf(AppException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.APPLICATION_PROCESSING);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.APPLICATION_ALREADY_EXISTS);
     }
 
     @Test
