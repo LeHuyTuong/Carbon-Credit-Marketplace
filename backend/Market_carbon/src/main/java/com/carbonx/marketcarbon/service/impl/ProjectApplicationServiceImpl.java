@@ -57,14 +57,20 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
-        boolean exists = applicationRepository.existsByCompanyAndProjectAndStatusIn(company, project,
-                List.of( ApplicationStatus.SUBMITTED,
+        boolean exists = applicationRepository.existsByCompanyAndProjectAndStatusIn(
+                company,
+                project,
+                List.of(
+                        ApplicationStatus.SUBMITTED,
                         ApplicationStatus.UNDER_REVIEW,
+                        ApplicationStatus.NEEDS_REVISION,
                         ApplicationStatus.CVA_APPROVED,
-                        ApplicationStatus.NEEDS_REVISION)
-                );
+                        ApplicationStatus.ADMIN_APPROVED
+                )
+        );
+
         if (exists) {
-            throw new AppException(ErrorCode.APPLICATION_PROCESSING);
+            throw new AppException(ErrorCode.APPLICATION_ALREADY_EXISTS);
         }
 
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "application.pdf";
