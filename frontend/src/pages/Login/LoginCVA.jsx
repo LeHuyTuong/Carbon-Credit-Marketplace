@@ -44,10 +44,44 @@ const CVALogin = () => {
       const res = await apiLogin(form.email, form.password);
       console.log("Login API response:", res);
 
-      if (!res?.jwt) throw new Error("Invalid login response from server");
+      // Lấy đúng dữ liệu từ API
+      const data = res?.responseData;
 
-      // Lưu user vào context (role = CVA)
-      login({ ...res.user, role: "CVA" }, res.jwt, true);
+      if (!data) {
+        showSnackbar("error", "Invalid login response! No responseData returned.");
+        return;
+      }
+
+      // Kiểm tra JWT
+      if (!data.jwt) {
+        showSnackbar("error", "Login failed! No JWT returned.");
+        return;
+      }
+
+      // Kiểm tra roles
+      if (!data.roles || data.roles.length === 0) {
+        showSnackbar("error", "Login failed! No role returned.");
+        return;
+      }
+
+      const role = data.roles[0];
+
+      // Kiểm tra role có phải CVA không
+      if (role !== "CVA") {
+        showSnackbar("error", "Access denied! You are not a CVA user.");
+        setLoading(false);
+        return;
+      }
+
+      // Tạo user để lưu vào AuthContext
+      const userObject = {
+        email: form.email,
+        role: role,
+      };
+
+      // Lưu vào AuthContext
+      login(userObject, data.jwt, true);
+
 
       // Gọi check KYC
       const kycRes = await checkKYCCVA();

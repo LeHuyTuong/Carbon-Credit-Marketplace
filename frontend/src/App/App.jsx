@@ -220,7 +220,7 @@ export default function App() {
         <Route
           path="/admin/*"
           element={
-            <RoleRoute allowedRoles={["Admin"]}>
+            <RoleRoute allowedRoles={["ADMIN"]}>
               <AdminApp />
             </RoleRoute>
           }

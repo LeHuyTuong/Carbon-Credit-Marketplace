@@ -48,8 +48,31 @@ const AdminLogin = () => {
       const res = await apiLogin(form.email, form.password);
 
       if (res?.jwt) {
-        //  Cập nhật AuthContext (ép role = Admin)
-        login({ ...res.user, role: "Admin" }, res.jwt, true);
+        if (!res.roles || res.roles.length === 0) {
+          showSnackbar("error", "Login failed! No role returned.");
+          setLoading(false);
+          return;
+        }
+
+        // Lấy role từ API
+        const role = res.roles?.[0]; // ADMIN
+
+        // Kiểm tra đúng role
+        if (role !== "ADMIN") {
+          showSnackbar("error", "Access denied! You are not an Admin.");
+          setLoading(false);
+          return;
+        }
+
+        // Tạo user để lưu vào AuthContext
+        const userObject = {
+          email: form.email,
+          role: role,
+        };
+
+        // Lưu vào AuthContext
+        login(userObject, res.jwt, true);
+
 
         //  Kiểm tra KYC
         const kycRes = await checkKYCAdmin();
