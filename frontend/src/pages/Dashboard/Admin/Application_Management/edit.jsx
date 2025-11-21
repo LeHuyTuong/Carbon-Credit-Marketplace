@@ -83,8 +83,9 @@ const ApplicationEdit = () => {
   // Gửi cập nhật duyệt (Save)
   const handleUpdate = async () => {
     try {
-      if (!["ADMIN_APPROVED", "ADMIN_REJECTED"].includes(formData.status)) {
-        showSnackbar("warning", "Please select a valid status before saving.");
+      // Kiểm tra status — CHỈ CVA_APPROVED mới được SAVE
+      if (formData.status !== "CVA_APPROVED") {
+        showSnackbar("warning", "Status must be CVA_APPROVED before saving.");
         return;
       }
       // Chuẩn bị payload
@@ -145,7 +146,7 @@ const ApplicationEdit = () => {
 
   // Giao diện form chính
   return (
-    <Box m="20px" sx={{ marginLeft: "290px", marginTop: "-10px"}}>
+    <Box m="20px" sx={{ marginLeft: "290px", marginTop: "-10px" }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="EDIT APPLICATION" subtitle={`ID: ${application.id}`} />
       </Box>
@@ -227,7 +228,7 @@ const ApplicationEdit = () => {
 
         <Box mt={3} display="flex" gap={2}>
           {/*  Chỉ hiển thị nút Save nếu status KHÔNG phải CVA_REJECTED */}
-          {formData.status !== "CVA_REJECTED" && (
+          {formData.status == "CVA_APPROVED" && (
             <Button variant="contained" onClick={handleUpdate}>
               Save
             </Button>
@@ -239,6 +240,12 @@ const ApplicationEdit = () => {
           >
             Cancel
           </Button>
+
+          {formData.status !== "CVA_APPROVED" && (
+            <Typography fontSize="0.9rem" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+              You can only save when status is CVA_APPROVED
+            </Typography>
+          )}
         </Box>
       </Paper>
 

@@ -131,7 +131,7 @@ const ApplicationView = () => {
             maxWidth: "20%",      // giới hạn chiều rộng
           }}>
             <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
-              General Info
+              General Information
             </Typography>
 
             <Typography variant="h6" fontWeight="600" gutterBottom>

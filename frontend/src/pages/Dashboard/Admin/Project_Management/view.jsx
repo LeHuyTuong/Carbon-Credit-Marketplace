@@ -257,7 +257,7 @@ const ViewProject = () => {
                 color="secondary"
                 gutterBottom
               >
-                General Info
+                General Information
               </Typography>
               {/* Project ID */}
               <Box mb={0.5}>
@@ -425,7 +425,7 @@ const ViewProject = () => {
                 color="secondary"
                 gutterBottom
               >
-                Technical Info
+                Technical Information
               </Typography>
 
               {/* Các field khác */}

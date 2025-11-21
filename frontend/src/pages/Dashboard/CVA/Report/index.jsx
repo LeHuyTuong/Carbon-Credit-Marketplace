@@ -10,10 +10,11 @@ import CVADataGrid from "@/components/DataGrid/CVADataGrid.jsx";
 const ReportListCVA = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-
+  // DataGrid state
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  // Total rows from server
   const [rowCount, setRowCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +41,7 @@ const ReportListCVA = () => {
     };
     fetchReports();
   }, [page, pageSize]);
-
+  // DataGrid columns
   const columns = [
     { field: "id", headerName: "Report ID", width: 80 },
     { field: "sellerName", headerName: "Seller Name", flex: 1 },
@@ -107,6 +108,7 @@ const ReportListCVA = () => {
   ];
 
   return (
+    // Main container
     <Box m="20px" sx={{ marginLeft: "280px" }} className="actionadmin">
       <Header title="CVA REPORTS" subtitle="Managing CVA Reports" />
       <Box
@@ -133,7 +135,8 @@ const ReportListCVA = () => {
             alignItems: "flex-start",
           },
         }}
-      >
+      > 
+      {/* DataGrid Component */}
         <CVADataGrid
           rows={rows}
           columns={columns}

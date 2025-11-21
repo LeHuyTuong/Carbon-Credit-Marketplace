@@ -11,7 +11,6 @@ import StatBox from "@/components/Chart/StatBox.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import PieChart from "@/components/Chart/PieChart.jsx";
 
-
 import {
   fetchCvaCards,
   fetchMonthlyReportStatus,
@@ -19,11 +18,18 @@ import {
 } from "@/apiCVA/dashboardCVA";
 
 
-//REPORT LINE CHART 
+//---------------------------------------------------------------
+// Helper: Build LINE CHART DATA (Report Status Chart)
+//---------------------------------------------------------------
+/**
+ * Chuyển định dạng API trả về → format dùng cho LineChart
+ * Nếu chỉ có 1 tháng → thêm 1 tháng giả để tránh chart bị gãy
+ */
 function buildReportSeries(monthly = []) {
   const label = (o) => o?.month ?? o?.monthLabel ?? o?.period ?? o?.label ?? "";
   const num = (o, k) => Number(o?.[k] ?? 0);
 
+  // Nếu chỉ có 1 tháng thì thêm 1 tháng "Previous"
   if (monthly.length === 1) {
     monthly = [{ month: "Previous", approved: 0, pending: 0, rejected: 0 }, ...monthly];
   }
@@ -36,12 +42,16 @@ function buildReportSeries(monthly = []) {
 }
 
 
-// APPLICATION BAR CHART
+//---------------------------------------------------------------
+// Helper: Build PIE CHART DATA (Application Status)
+//---------------------------------------------------------------
+/**
+ * Lấy dữ liệu tháng cuối cùng → hiển thị Pie Chart
+ */
 function buildApplicationPieData(monthly = []) {
   if (!monthly.length) return [];
 
-  // Lấy tháng cuối cùng để hiển thị
-  const last = monthly.at(-1);
+  const last = monthly.at(-1); // tháng gần nhất
 
   return [
     { id: "Approved", label: "Approved", value: last.approved ?? 0, color: "#4CAF50" },
@@ -50,30 +60,40 @@ function buildApplicationPieData(monthly = []) {
   ];
 }
 
-// Helper lấy số
+
+// Helper lấy số từ API response
 const getVal = (obj) => obj?.value ?? obj?.total ?? obj ?? 0;
 
 
-
-//  MAIN COMPONENT
+//---------------------------------------------------------------
+// MAIN COMPONENT: DASHBOARD
+//---------------------------------------------------------------
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { token } = useAuth();
 
+  // State
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [cards, setCards] = useState({});
+
+  // Data chart
   const [reportMonthly, setReportMonthly] = useState([]);
   const [applicationMonthly, setApplicationMonthly] = useState([]);
 
+
+  //-------------------------------------------------------------
+  // Fetch dữ liệu dashboard khi load
+  //-------------------------------------------------------------
   useEffect(() => {
-    let active = true;
+    let active = true; // ngăn setState khi component đã unmount
 
     (async () => {
       try {
         setLoading(true);
 
+        // Gọi tất cả API song song cho nhanh
         const [c, r, a] = await Promise.all([
           fetchCvaCards(token),
           fetchMonthlyReportStatus(token),
@@ -87,6 +107,7 @@ const Dashboard = () => {
         setApplicationMonthly(Array.isArray(a) ? a : []);
 
       } catch (e) {
+        // Xử lý lỗi chung
         setErr(e?.message ?? "Load dashboard failed");
       } finally {
         if (active) setLoading(false);
@@ -96,10 +117,14 @@ const Dashboard = () => {
     return () => (active = false);
   }, [token]);
 
+
+  //-------------------------------------------------------------
+  // Memo hóa để tránh render lại không cần thiết
+  //-------------------------------------------------------------
   const reportSeries = useMemo(() => buildReportSeries(reportMonthly), [reportMonthly]);
   const applicationPie = useMemo(() => buildApplicationPieData(applicationMonthly), [applicationMonthly]);
 
-
+  // Tổng số report tháng gần nhất
   const totalReports = useMemo(() => {
     const last = reportMonthly.at(-1);
     if (!last) return 0;
@@ -108,10 +133,13 @@ const Dashboard = () => {
 
 
 
-  // ================== UI ==================
+  //-------------------------------------------------------------
+  // UI RENDER
+  //-------------------------------------------------------------
   return (
     <Box m="20px" sx={{ marginLeft: "290px" }}>
-
+      
+      {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
           title="DASHBOARD - CARBON VERIFICATION AUTHORITY"
@@ -119,6 +147,7 @@ const Dashboard = () => {
         />
       </Box>
 
+      {/* Loading */}
       {loading && (
         <Box mt={3} display="flex" alignItems="center" gap={1}>
           <CircularProgress size={22} />
@@ -126,21 +155,25 @@ const Dashboard = () => {
         </Box>
       )}
 
+      {/* Error */}
       {err && (
         <Box mt={2}>
           <Alert severity="error">{String(err)}</Alert>
         </Box>
       )}
 
+      {/* Dashboard CONTENT */}
       {!loading && !err && (
         <Box
           display="grid"
-          gridTemplateColumns="repeat(12, 1fr)"
+          gridTemplateColumns="repeat(12, 1fr)" // layout 12 cột
           gridAutoRows="140px"
           gap="20px"
         >
-          {/* Summary Cards */}
-          {/* Reports */}
+          {/*---------------------------------------------------------
+           * 4 CARD THỐNG KÊ TRÊN CÙNG (Reports / Credits / Companies / Projects)
+          ----------------------------------------------------------*/}
+
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.reports).toLocaleString()}
@@ -150,7 +183,6 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Credits */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.credits).toLocaleString()}
@@ -160,7 +192,6 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Companies */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.companies).toLocaleString()}
@@ -170,7 +201,6 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Projects */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.projects).toLocaleString()}
@@ -181,29 +211,40 @@ const Dashboard = () => {
           </Box>
 
 
-          {/* REPORT LINE CHART */}
-          <Box gridColumn="span 6" gridRow="span 2" bgcolor={colors.greenAccent[800]} >
+
+          {/*---------------------------------------------------------
+           * REPORT LINE CHART
+          ----------------------------------------------------------*/}
+          <Box gridColumn="span 6" gridRow="span 2" bgcolor={colors.greenAccent[800]}>
             <Box mt="25px" px="30px">
               <Typography variant="h5" fontWeight="600">Report Status</Typography>
+
               <Typography variant="h3" fontWeight="bold" color={colors.redAccent[500]}>
                 {totalReports.toLocaleString()}
               </Typography>
             </Box>
+
+            {/* Line Chart Container */}
             <Box height="250px" m="-20px 0 0 0">
               <LineChart isDashboard series={reportSeries} />
             </Box>
           </Box>
-          {/* APPLICATION PIE CHART */}
+
+
+
+          {/*---------------------------------------------------------
+           * APPLICATION PIE CHART
+          ----------------------------------------------------------*/}
           <Box gridColumn="span 6" gridRow="span 2" bgcolor={colors.greenAccent[800]} p="30px">
             <Typography variant="h5" fontWeight="600" mb="15px">
               Application Status
             </Typography>
 
-            <Box height="120%" mt="-40px" sx={{ transform: "translateY(-25px)", ml: 5}}>
+            {/* Pie Chart Container */}
+            <Box height="120%" mt="-40px" sx={{ transform: "translateY(-25px)", ml: 5 }}>
               <PieChart data={applicationPie} />
             </Box>
           </Box>
-
 
 
         </Box>
