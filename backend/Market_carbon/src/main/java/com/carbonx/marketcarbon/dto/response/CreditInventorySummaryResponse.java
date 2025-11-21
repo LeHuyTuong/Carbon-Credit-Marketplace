@@ -11,7 +11,7 @@ public record CreditInventorySummaryResponse(
         long available,    // đang còn trong kho
         long reserved,     // đang niêm yết
         long sold,         // đã bán
-        long retired,      // đã nghỉ hưu
+        long retired,      // đã sử dụng
         List<StatusCount> byStatus,
         List<ProjectCount> byProject,
         List<VintageCount> byVintage

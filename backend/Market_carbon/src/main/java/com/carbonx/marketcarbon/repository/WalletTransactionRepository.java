@@ -6,6 +6,7 @@ import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, Long> {
@@ -22,5 +23,11 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     // Tìm giao dịch mua cho một tín chỉ
     List<WalletTransaction> findByOrderCarbonCreditIdAndTransactionType(
             Long creditId, WalletTransactionType transactionType);
+
+    // Tính tổng số lượng tín chỉ đã retire dựa trên lịch sử giao dịch
+    @Query("SELECT COALESCE(SUM(wt.amount), 0) FROM WalletTransaction wt " +
+            "WHERE wt.wallet.company.id = :companyId " +
+            "AND wt.transactionType = 'RETIRE_CREDIT'")
+    BigDecimal sumRetiredCreditsByCompany(@Param("companyId") Long companyId);
 
 }

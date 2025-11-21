@@ -9,5 +9,6 @@ public enum WalletTransactionType {
     EV_OWNER_PAYOUT,
     EV_OWNER_PAYOUT_RECEIVE,
     ISSUE_CREDIT,
-    PROFIT_SHARING
+    PROFIT_SHARING,
+    RETIRE_CREDIT
 }

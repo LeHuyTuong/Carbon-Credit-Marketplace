@@ -11,12 +11,14 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.CarbonCreditRepository;
 import com.carbonx.marketcarbon.repository.CompanyRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
+import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.MyCreditInventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
     private final CarbonCreditRepository creditRepo;
     private final CompanyRepository companyRepo;
     private final UserRepository userRepo;
+    private final WalletTransactionRepository walletTransactionRepository;
 
     // Lấy companyId của user hiện tại
     private Long currentCompanyId() {
@@ -50,8 +53,8 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
         var byProjectRaw = creditRepo.sumAmountByProjectExcluding(companyId, CreditStatus.EXPIRED);
         var byVintageRaw = creditRepo.sumAmountByVintageExcluding(companyId, CreditStatus.EXPIRED);
 
-        //  COUNT(id) riêng cho RETIRED
-        long retiredCount = creditRepo.countByCompanyIdAndStatus(companyId, CreditStatus.RETIRED);
+        BigDecimal totalRetired = walletTransactionRepository.sumRetiredCreditsByCompany(companyId);
+        long retire = totalRetired.longValue();
 
         //  ISSUED trong 30 ngày gần nhất
         OffsetDateTime cutoffDate = OffsetDateTime.now().minusDays(30);
@@ -83,14 +86,6 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                         .count(sum)
                         .build());
             }
-        }
-
-        //  Thêm RETIRED riêng
-        if (retiredCount > 0) {
-            byStatus.add(StatusCount.builder()
-                    .status("RETIRED")
-                    .count(retiredCount)
-                    .build());
         }
 
         //  Thêm ISSUED (30 ngày gần đây)
@@ -132,7 +127,7 @@ public class MyCreditInventoryServiceImpl implements MyCreditInventoryService {
                 .available(available)
                 .reserved(listed)
                 .sold(sold)
-                .retired(retiredCount)
+                .retired(retire)
                 .byStatus(byStatus)
                 .byProject(byProject)
                 .byVintage(byVintage)
