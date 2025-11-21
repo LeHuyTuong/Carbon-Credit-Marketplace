@@ -13,7 +13,7 @@ export default function WalletHistory() {
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { isEv } = useAuth();
+  const { user } = useAuth();
 
   const sectionRef = useRef(null);
   useReveal(sectionRef);
@@ -136,6 +136,7 @@ export default function WalletHistory() {
                   "WITHDRAWAL",
                   "BUY_CARBON_CREDIT",
                   "PROFIT_SHARING",
+                  "RETIRE_CREDIT",
                 ];
                 // logic màu số tiền và prefix cho PROFIT_SHARING dựa vào dấu amount
                 let isIncome = incomeTypes.includes(tx.transactionType);
@@ -196,7 +197,7 @@ export default function WalletHistory() {
 
                       {/*nếu là Profit Sharing → show nút View Details */}
                       {tx.transactionType === "PROFIT_SHARING" &&
-                        isEv !== "EV_OWNER" &&
+                        user?.role !== "EV_OWNER" &&
                         (() => {
                           //tìm pattern "(distribution id)" trong description
                           const match = tx.description?.match(

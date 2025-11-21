@@ -46,7 +46,7 @@ const EditProfileCVA = () => {
   const handleSnackbarClose = () =>
     setSnackbar((prev) => ({ ...prev, open: false }));
 
-  // ===== Handle input changes =====
+  // Handle input changes
   const handleChange = (e) => {
     setCva({ ...cva, [e.target.name]: e.target.value });
   };
@@ -55,20 +55,21 @@ const EditProfileCVA = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setCva((prev) => ({ ...prev, avatar: file }));
+      setCva((prev) => ({ ...prev, avatar: file, avatarUrl: URL.createObjectURL(file) }))
     }
   };
 
   //  Save profile 
   const handleSave = async () => {
   try {
+    // Create form data
     const formData = new FormData();
     formData.append("name", cva.name);
     formData.append("email", cva.email);
     formData.append("organization", cva.organization);
     formData.append("positionTitle", cva.positionTitle);
     if (cva.avatar instanceof File) formData.append("avatar", cva.avatar);
-
+    // Call API to update
     const updated = await updateKYCCVA(formData);
     console.log("Updated CVA:", updated);
     setSnackbar({ open: true, message: "Profile updated!", severity: "success" });
@@ -79,9 +80,9 @@ const EditProfileCVA = () => {
 };
 
 
-  // ===== Render UI =====
+  // Render UI
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="EDIT PROFILE" subtitle="Update CVA Information" />
 
       <Snackbar
@@ -121,7 +122,7 @@ const EditProfileCVA = () => {
             src={
               cva.avatar instanceof File
                 ? URL.createObjectURL(cva.avatar)
-                : cva.avatar
+                : cva.avatarUrl || "/default_avatar.png"
             }
             alt="CVA Avatar"
             sx={{ width: 120, height: 120, border: `3px solid ${colors.greenAccent[400]}` }}
@@ -133,7 +134,7 @@ const EditProfileCVA = () => {
             sx={{ fontSize: "0.85rem", textTransform: "none" }}
           >
             Upload New Avatar
-            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+            <input type="file" hidden accept="image/*" onChange={handleImageUpload} /> {/* Hidden file input */}
           </Button>
         </Box>
 

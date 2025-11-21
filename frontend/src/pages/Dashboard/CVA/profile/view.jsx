@@ -38,10 +38,10 @@ const CVAProfile = ({ onClose }) => {
   }, []);
 
   return (
-    <Box m="20px">
+    <Box m="20px" sx={{ marginLeft: "290px" }}>
       <Header title="CVA PROFILE" subtitle="View CVA Information" />
 
-      {/* ===== PROFILE OVERVIEW ===== */}
+      {/* PROFILE OVERVIEW  */}
       <Paper
   elevation={3}
   sx={{
@@ -57,9 +57,9 @@ const CVAProfile = ({ onClose }) => {
   }}
 >
   <EditListButton section="Profile Overview" handleEdit={() => onClose?.()} />
-
+ {/* Avatar và Name + positionTitle + organization */}
   <Avatar
-    src={cvaData.avatar?.startsWith("data:") ? cvaData.avatar : cvaData.avatar?.replace("@/", "/")}
+    src={cvaData.avatar?.startsWith("data:") ? cvaData.avatarUrl : cvaData.avatarUrl?.replace("@/", "/")}
     alt="CVA Avatar"
     sx={{
       width: 120,
@@ -88,7 +88,7 @@ const CVAProfile = ({ onClose }) => {
 </Paper>
 
 
-      {/* ===== PERSONAL INFORMATION ===== */}
+      {/* PERSONAL INFORMATION */}
       <Paper
         elevation={3}
         sx={{
@@ -101,7 +101,7 @@ const CVAProfile = ({ onClose }) => {
           Personal Information
         </Typography>
         <Divider sx={{ mb: 3, backgroundColor: colors.grey[700] }} />
-
+        {/* Info Items */}
         <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={2}>
           <InfoItem label="Full Name" value={cvaData.name} />
           <InfoItem label="Email" value={cvaData.email} />
@@ -130,7 +130,7 @@ const InfoItem = ({ label, value }) => {
     </Box>
   );
 };
-
+// Button chỉnh sửa ở góc trên bên phải
 const EditListButton = ({ section, handleEdit }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

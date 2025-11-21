@@ -254,7 +254,7 @@ export default function Register() {
               )}
             </Formik>
 
-            <p className="mt-3 text-center mb-0">
+            <p className="mt-3 text-center mb-0" style={{ lineHeight: "1" }}>
               Already have an account? <Link to="/login">Login</Link>
             </p>
           </div>

@@ -15,14 +15,17 @@ export default function ViewRegisteredProject() {
   const sectionRef = useRef(null);
   useReveal(sectionRef);
 
+  //fetch api
   useEffect(() => {
     const fetchApplication = async () => {
       setLoading(true);
       try {
+        // gọi API lấy thông tin application
         const res = await apiFetch(`/api/v1/project-applications/${id}`, {
           method: "GET",
         });
 
+        // chuẩn hoá responseCode và kiểm tra status
         const code =
           res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
 
@@ -32,7 +35,9 @@ export default function ViewRegisteredProject() {
           );
         }
 
+        // gán data application
         setApplication(res?.response || {});
+        // lưu thời gian request để dùng fallback
         setRequestDateTime(res?.requestDateTime || new Date().toISOString()); //lưu thời điểm request
       } catch (err) {
         console.error("Error fetching application:", err);
@@ -43,14 +48,16 @@ export default function ViewRegisteredProject() {
     };
 
     fetchApplication();
-  }, [id]);
+  }, [id]); // chạy lại khi id thay đổi
 
+  //load data
   if (loading)
     return (
       <div
         ref={sectionRef}
         className="reveal d-flex justify-content-center align-items-center vh-100 bg-light"
       >
+        {/* hiển thị spinner khi đang load */}
         <Spinner animation="border" />
       </div>
     );
@@ -58,6 +65,7 @@ export default function ViewRegisteredProject() {
   if (error)
     return (
       <div className="container mt-5">
+        {/* render lỗi */}
         <Alert variant="danger">{error}</Alert>
       </div>
     );
@@ -65,10 +73,12 @@ export default function ViewRegisteredProject() {
   if (!application)
     return (
       <div className="container mt-5">
+        {/* không tìm thấy dữ liệu */}
         <Alert variant="warning">Application not found</Alert>
       </div>
     );
 
+  // chọn màu badge theo status
   const statusColor =
     application.status === "ADMIN_APPROVED"
       ? "success"

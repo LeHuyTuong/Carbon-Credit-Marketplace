@@ -85,14 +85,6 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    const backend =
-      import.meta.env.MODE === "development"
-        ? "http://163.61.111.120:8082"
-        : "https://carbonx.io.vn";
-    window.location.assign(`${backend}/oauth2/authorization/google`);
-  };
-
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="container" style={{ maxWidth: 440 }}>
@@ -195,16 +187,7 @@ export default function Login() {
               )}
             </Formik>
 
-            <div className="text-center text-muted my-3">— or —</div>
-            <button
-              type="button"
-              className="btn btn-outline-secondary w-100"
-              onClick={handleGoogleLogin}
-            >
-              Login with Google
-            </button>
-
-            <p className="mt-3 text-center mb-0">
+            <p className="mt-3 text-center mb-0" style={{ lineHeight: "1" }}>
               Don’t have an account? <Link to="/register">Sign up</Link>
             </p>
           </div>

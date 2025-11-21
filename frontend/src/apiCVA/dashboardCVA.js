@@ -41,7 +41,16 @@ export async function fetchMonthlyCreditStatus(token) {
   const json = await res.json();
   return pickData(json) ?? [];
 }
-
+/** GET /api/cva/dashboard/projects/status/monthly */
+export async function fetchMonthlyApplicationStatus(token) {
+  const res = await fetch("/api/cva/dashboard/projects/status/monthly", {
+    method: "GET",
+    headers: commonHeaders(token),
+  });
+  if (!res.ok) throw new Error(`projects/status/monthly: HTTP ${res.status}`);
+  const json = await res.json();
+  return pickData(json) ?? [];
+}
 /** GET /api/cva/dashboard/reports */
 export async function fetchDashboardReport(token) {
   const res = await fetch("/api/cva/dashboard/reports", {

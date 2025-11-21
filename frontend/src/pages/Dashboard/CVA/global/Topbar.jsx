@@ -31,24 +31,15 @@ const Topbar = () => {
     if (anchorRef.current && anchorRef.current.contains(event.target)) return;
     setOpen(false);
   };
-  const handleChange = (event, newValue) => setValue(newValue);
 
-  // === Notifications ===
-  const anchorNotif = useRef(null);
-  const [openNotif, setOpenNotif] = useState(false);
-  const [unread, setUnread] = useState(2);
-  const handleToggleNotif = () => setOpenNotif((prev) => !prev);
-  const handleCloseNotif = (e) => {
-    if (anchorNotif.current && anchorNotif.current.contains(e.target)) return;
-    setOpenNotif(false);
-  };
-
-  // === CVA User Info ===
+  // CVA User Info 
   const [userInfo, setUserInfo] = useState({
     firstName: "Tin",
     lastName: "Bao",
     role: "CVA",
     avatar: avatar1,
+    avatarUrl: "",
+
   });
 
   useEffect(() => {
@@ -82,77 +73,15 @@ const Topbar = () => {
     fetchCVAInfo();
   }, []);
 
-  const avatarSrc =
-    userInfo.avatar?.startsWith("data:") || userInfo.avatar?.startsWith("http")
-      ? userInfo.avatar
-      : avatar1;
-
   return (
     <Box display="flex" justifyContent="flex-end" p={2}>
-      
+
       {/* ICONS */}
       <Box display="flex">
         {/* DARK / LIGHT MODE */}
         <IconButton onClick={colorMode.toggleColorMode}>
           {theme.palette.mode === "dark" ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
         </IconButton>
-
-        {/* NOTIFICATION */}
-        {/* <Box sx={{ position: "relative" }}>
-          <IconButton ref={anchorNotif} onClick={handleToggleNotif}>
-            <Badge badgeContent={unread} color="primary">
-              <NotificationsOutlinedIcon />
-            </Badge>
-          </IconButton>
-
-          <Popper
-            placement="bottom-end"
-            open={openNotif}
-            anchorEl={anchorNotif.current}
-            transition
-            disablePortal
-            style={{ zIndex: 2000 }}
-          >
-            {({ TransitionProps }) => (
-              <Transitions type="grow" position="top-right" in={openNotif} {...TransitionProps}>
-                <Paper sx={{ boxShadow: 3, width: 320, bgcolor: theme.palette.background.paper }}>
-                  <ClickAwayListener onClickAway={handleCloseNotif}>
-                    <Box>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
-                        <Typography variant="h6">Notifications</Typography>
-                        {unread > 0 && (
-                          <IconButton size="small" color="success" onClick={() => setUnread(0)}>
-                            <CheckCircleOutlined />
-                          </IconButton>
-                        )}
-                      </Box>
-
-                      <List sx={{ p: 0 }}>
-                        <ListItem divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: "success.light", color: "success.dark" }}>
-                              <UserOutlined />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText primary="A new CVA request approved" secondary="2 min ago" />
-                        </ListItem>
-                        <ListItem divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: "primary.light", color: "primary.dark" }}>
-                              <MessageOutlined />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText primary="System update completed" secondary="7 hours ago" />
-                        </ListItem>
-                      </List>
-                    </Box>
-                  </ClickAwayListener>
-                </Paper>
-              </Transitions>
-            )}
-          </Popper>
-        </Box> */}
-
         {/* PROFILE */}
         <Box sx={{ flexShrink: 0, ml: 1 }}>
           <IconButton ref={anchorRef} onClick={handleToggle}>
@@ -186,8 +115,9 @@ const Topbar = () => {
                                   fontWeight: "bold",
                                   color: colors.grey[900],
                                 }}
+                                src={userInfo.avatarUrl || userInfo.avatar || avatar1}
                               >
-                                {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : "?"}
+                                {!userInfo.avatarUrl && (userInfo.name ? userInfo.name.charAt(0).toUpperCase() : "?")}
                               </Avatar>
 
                               <Stack>
