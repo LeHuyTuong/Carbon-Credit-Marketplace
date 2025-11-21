@@ -158,7 +158,8 @@ export default function WalletHistory() {
                 // PROFIT_SHARING và ISSUE_CREDIT luôn xanh dương
                 if (
                   tx.transactionType === "PROFIT_SHARING" ||
-                  tx.transactionType === "ISSUE_CREDIT"
+                  tx.transactionType === "ISSUE_CREDIT" ||
+                  tx.transactionType === "RETIRE_CREDIT"
                 ) {
                   typeClass = "text-info";
                 } else {
@@ -178,9 +179,12 @@ export default function WalletHistory() {
                 // Prefix: BE không trả dấu nên front tự thêm
                 const prefix = isIncome ? "+" : isExpense ? "-" : "";
 
-                //nếu là ISSUE_CREDIT thì hiển thị credits thay vì USD
+                // nếu là ISSUE_CREDIT hoặc RETIRE_CREDIT thì hiển thị credits thay vì USD
                 const unit =
-                  tx.transactionType === "ISSUE_CREDIT" ? "credits" : "USD";
+                  tx.transactionType === "ISSUE_CREDIT" ||
+                  tx.transactionType === "RETIRE_CREDIT"
+                    ? "credits"
+                    : "USD";
 
                 return (
                   <div
