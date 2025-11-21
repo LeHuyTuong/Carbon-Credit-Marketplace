@@ -69,9 +69,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
 
-        // ============================================
-        //  AUTO BATCH DETECTION
-        // ============================================
         // B2 Nếu request có carbonCreditId nhưng ko có batchId
         if (request.getCarbonCreditId() != null && request.getBatchId() == null) {
             log.info("[AUTO-BATCH] Checking if carbonCreditId={} needs batch grouping for quantity={}",

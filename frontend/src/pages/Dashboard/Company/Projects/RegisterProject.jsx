@@ -22,6 +22,7 @@ export default function RegisterProject() {
   const nav = useNavigate();
   const { id: projectId } = useParams(); // lấy id project từ URL
   const { user } = useAuth();
+  // lấy thông tin profile công ty thông qua custom hook
   const { company, loading: companyLoading } = useCompanyProfile();
   const [loading, setLoading] = useState(false);
 
@@ -38,11 +39,13 @@ export default function RegisterProject() {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
+      // FormData để gửi file
       const formData = new FormData();
       if (values.documents && values.documents.length > 0) {
         formData.append("file", values.documents[0]);
       }
 
+      // gọi API submit đơn đăng ký dự án
       const res = await apiFetch(
         `/api/v1/project-applications?projectId=${projectId}`,
         {
@@ -51,9 +54,11 @@ export default function RegisterProject() {
         }
       );
 
+      // chuẩn hóa mã response
       const code =
         res?.responseStatus?.responseCode?.trim?.().toUpperCase?.() || "";
 
+      // xử lý lỗi từ backend
       if (code !== "SUCCESS" && code !== "00000000") {
         throw new Error(
           res?.responseStatus?.responseMessage ||
@@ -62,10 +67,11 @@ export default function RegisterProject() {
       }
 
       toast.success("Application submitted successfully!");
-      nav("/list-projects", { replace: true });
+      nav("/list-projects", { replace: true }); // điều hướng về list
     } catch (err) {
       console.error("Error submitting project application:", err);
 
+      // 404 – chưa KYC
       if (err.status === 404) {
         toast.warn(
           "Please complete your company KYC before registering a project."
@@ -73,6 +79,7 @@ export default function RegisterProject() {
         nav("/kyc-company", { replace: true });
         return;
       }
+      // 409 – đã đăng ký dự án này rồi
       if (err.status === 409) {
         toast.warn("You’ve already registered this project.");
       } else {
@@ -83,6 +90,7 @@ export default function RegisterProject() {
     }
   };
 
+  // loading state khi load profile công ty
   if (companyLoading)
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -90,6 +98,7 @@ export default function RegisterProject() {
       </div>
     );
 
+  // UI Form đăng ký dự án
   return (
     <div className="d-flex align-items-center justify-content-center">
       <div className="card shadow" style={{ maxWidth: "600px", width: "100%" }}>
@@ -112,6 +121,7 @@ export default function RegisterProject() {
               setFieldValue,
             }) => (
               <Form noValidate onSubmit={handleSubmit}>
+                {/* Company Name */}
                 <Form.Group className="mb-3">
                   <Form.Label>Company Name</Form.Label>
                   <Form.Control
@@ -127,6 +137,7 @@ export default function RegisterProject() {
                   </Form.Control.Feedback>
                 </Form.Group>
 
+                {/* Business License */}
                 <Form.Group className="mb-3">
                   <Form.Label>Business Licence</Form.Label>
                   <Form.Control
@@ -144,6 +155,7 @@ export default function RegisterProject() {
                   </Form.Control.Feedback>
                 </Form.Group>
 
+                {/* Tax Code */}
                 <Form.Group className="mb-3">
                   <Form.Label>Tax Code</Form.Label>
                   <Form.Control
@@ -159,6 +171,7 @@ export default function RegisterProject() {
                   </Form.Control.Feedback>
                 </Form.Group>
 
+                {/* Address */}
                 <Form.Group className="mb-3">
                   <Form.Label>Address</Form.Label>
                   <Form.Control
@@ -174,6 +187,7 @@ export default function RegisterProject() {
                   </Form.Control.Feedback>
                 </Form.Group>
 
+                {/* Documents Upload */}
                 <Form.Group className="mb-3">
                   <Form.Label>Legal Documents</Form.Label>
                   <Form.Control
@@ -192,6 +206,7 @@ export default function RegisterProject() {
                   </Form.Control.Feedback>
                 </Form.Group>
 
+                {/* Submit Button */}
                 <div className="text-end">
                   <Button
                     type="submit"

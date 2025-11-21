@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -58,6 +59,7 @@ public class MyCreditServiceImpl implements MyCreditService {
     private final SseService sseService;
     private final StorageService storageService;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletRepository walletRepository;
 
     private Long currentCompanyId() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -364,6 +366,7 @@ public class MyCreditServiceImpl implements MyCreditService {
         log.info("[RETIRE] Starting batch retire - batchCode={}, companyId={}, quantity={}",
                 request.getBatchCode(), companyId, request.getQuantity());
 
+
         // B1: Chỉ tìm batch bằng batchCode
         CreditBatch batch = batchRepo.findByBatchCode(request.getBatchCode())
                 .orElseThrow(() -> new AppException(ErrorCode.CREDIT_BATCH_NOT_FOUND));
@@ -467,6 +470,33 @@ public class MyCreditServiceImpl implements MyCreditService {
             totalRetiredInTx = totalRetiredInTx.add(deduct);
         }
 
+        // Lưu lịch sử giao dịch để sau này tính tổng được
+        if (totalRetiredInTx.compareTo(BigDecimal.ZERO) > 0) {
+            // Tìm ví của công ty
+            Wallet wallet = walletRepository.findByCompany(company)
+                    .orElseThrow(() -> new AppException(ErrorCode.WALLET_NOT_FOUND));
+
+            // lấy số dư hiện tại
+            BigDecimal currentBalance = wallet.getCarbonCreditBalance();
+            BigDecimal newBalance = currentBalance.subtract(totalRetiredInTx);
+
+            WalletTransaction tx = WalletTransaction.builder()
+                    .wallet(wallet)
+                    .transactionType(WalletTransactionType.RETIRE_CREDIT)
+                    .amount(totalRetiredInTx)
+                    .balanceBefore(wallet.getCarbonCreditBalance()) // Lưu số dư credit trc đó
+                    .balanceAfter(wallet.getCarbonCreditBalance().subtract(totalRetiredInTx)) // Lưu số dư sau đó
+                    .creditBatch(batch)
+                    .description("Retired " + totalRetiredInTx + " credits from batch " + batch.getBatchCode())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            // cập nhật lại số dư tín chỉ sau khi retire
+            wallet.setCarbonCreditBalance(newBalance);
+            walletRepository.save(wallet);
+            walletTransactionRepository.save(tx);
+        }
+
         // B6: Save changes
         creditRepo.saveAll(modifiedCredits);
 
@@ -490,7 +520,6 @@ public class MyCreditServiceImpl implements MyCreditService {
 
     /**
      * Hậu xử lý sau khi retire thành công:
-     * - Gửi SSE thông báo tới user công ty (vẫn đang lỗi)
      * - Đảm bảo/tạo certificate cho batch tương ứng
      * - Render PDF certificate + upload, lưu URL
      * - Gửi email xác nhận kèm file PDF

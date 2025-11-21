@@ -218,7 +218,7 @@ const ReportView = () => {
                                     size="small"
                                     onClick={() => window.open(report.uploadStorageUrl, "_blank")}
                                 >
-                                    Download CSV File
+                                    View CSV File
                                 </Button>
                             ) : (
                                 <Typography>No file uploaded</Typography>

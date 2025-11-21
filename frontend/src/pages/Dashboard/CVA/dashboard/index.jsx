@@ -1,25 +1,33 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, IconButton, Typography, useTheme, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, useTheme, CircularProgress, Alert } from "@mui/material";
 import { tokens } from "@/themeCVA";
-import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import WorkIcon from "@mui/icons-material/Work";
 import Header from "@/components/Chart/Header.jsx";
 import LineChart from "@/components/Chart/LineChart.jsx";
-import BarChart from "@/components/Chart/BarChart.jsx";
 import StatBox from "@/components/Chart/StatBox.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
-import { fetchCvaCards, fetchMonthlyReportStatus, fetchMonthlyCreditStatus } from "@/apiCVA/dashboardCVA";
+import PieChart from "@/components/Chart/PieChart.jsx";
 
-//  Helper for LineChart (Report Status) 
+
+import {
+  fetchCvaCards,
+  fetchMonthlyReportStatus,
+  fetchMonthlyApplicationStatus
+} from "@/apiCVA/dashboardCVA";
+
+
+//REPORT LINE CHART 
 function buildReportSeries(monthly = []) {
   const label = (o) => o?.month ?? o?.monthLabel ?? o?.period ?? o?.label ?? "";
   const num = (o, k) => Number(o?.[k] ?? 0);
+
   if (monthly.length === 1) {
     monthly = [{ month: "Previous", approved: 0, pending: 0, rejected: 0 }, ...monthly];
   }
+
   return [
     { id: "Approved", data: monthly.map((m) => ({ x: label(m), y: num(m, "approved") })) },
     { id: "Pending", data: monthly.map((m) => ({ x: label(m), y: num(m, "pending") })) },
@@ -27,23 +35,27 @@ function buildReportSeries(monthly = []) {
   ];
 }
 
-//Helper for BarChart (Credit Status) 
-function buildCreditBarData(monthly = []) {
-  if (!monthly.length) return { data: [], keys: [], indexBy: "month" };
-  const indexBy = "month";
-  const first = monthly[0];
-  const normalize = (row) => ({
-    month: row?.month ?? row?.monthLabel ?? row?.period ?? row?.label ?? "",
-    ...row,
-  });
-  const keys = Object.keys(first).filter((k) => k !== "month" && typeof first[k] === "number");
-  const data = monthly.map(normalize);
-  return { data, keys, indexBy };
+
+// APPLICATION BAR CHART
+function buildApplicationPieData(monthly = []) {
+  if (!monthly.length) return [];
+
+  // Lấy tháng cuối cùng để hiển thị
+  const last = monthly.at(-1);
+
+  return [
+    { id: "Approved", label: "Approved", value: last.approved ?? 0, color: "#4CAF50" },
+    { id: "Submitted", label: "Submitted", value: last.submitted ?? 0, color: "#FFC107" },
+    { id: "Rejected", label: "Rejected", value: last.rejected ?? 0, color: "#F44336" },
+  ];
 }
 
-//  Helper: extract number whether it's .value, .total, or raw 
+// Helper lấy số
 const getVal = (obj) => obj?.value ?? obj?.total ?? obj ?? 0;
 
+
+
+//  MAIN COMPONENT
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -53,33 +65,40 @@ const Dashboard = () => {
   const [err, setErr] = useState(null);
   const [cards, setCards] = useState({});
   const [reportMonthly, setReportMonthly] = useState([]);
-  const [creditMonthly, setCreditMonthly] = useState([]);
+  const [applicationMonthly, setApplicationMonthly] = useState([]);
 
   useEffect(() => {
     let active = true;
+
     (async () => {
       try {
         setLoading(true);
-        const [c, r, cr] = await Promise.all([
+
+        const [c, r, a] = await Promise.all([
           fetchCvaCards(token),
           fetchMonthlyReportStatus(token),
-          fetchMonthlyCreditStatus(token),
+          fetchMonthlyApplicationStatus(token),
         ]);
+
         if (!active) return;
-        setCards(c?.response ?? c ?? {});
+
+        setCards(c || {});
         setReportMonthly(Array.isArray(r) ? r : []);
-        setCreditMonthly(Array.isArray(cr) ? cr : []);
+        setApplicationMonthly(Array.isArray(a) ? a : []);
+
       } catch (e) {
         setErr(e?.message ?? "Load dashboard failed");
       } finally {
         if (active) setLoading(false);
       }
     })();
+
     return () => (active = false);
   }, [token]);
 
   const reportSeries = useMemo(() => buildReportSeries(reportMonthly), [reportMonthly]);
-  const creditBar = useMemo(() => buildCreditBarData(creditMonthly), [creditMonthly]);
+  const applicationPie = useMemo(() => buildApplicationPieData(applicationMonthly), [applicationMonthly]);
+
 
   const totalReports = useMemo(() => {
     const last = reportMonthly.at(-1);
@@ -87,9 +106,12 @@ const Dashboard = () => {
     return (last.approved ?? 0) + (last.pending ?? 0) + (last.rejected ?? 0);
   }, [reportMonthly]);
 
+
+
+  // ================== UI ==================
   return (
     <Box m="20px" sx={{ marginLeft: "290px" }}>
-      {/* HEADER */}
+
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
           title="DASHBOARD - CARBON VERIFICATION AUTHORITY"
@@ -117,7 +139,8 @@ const Dashboard = () => {
           gridAutoRows="140px"
           gap="20px"
         >
-          {/* === ROW 1: SUMMARY CARDS === */}
+          {/* Summary Cards */}
+          {/* Reports */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.reports).toLocaleString()}
@@ -127,6 +150,7 @@ const Dashboard = () => {
             />
           </Box>
 
+          {/* Credits */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.credits).toLocaleString()}
@@ -136,6 +160,7 @@ const Dashboard = () => {
             />
           </Box>
 
+          {/* Companies */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.companies).toLocaleString()}
@@ -145,6 +170,7 @@ const Dashboard = () => {
             />
           </Box>
 
+          {/* Projects */}
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.projects).toLocaleString()}
@@ -153,37 +179,33 @@ const Dashboard = () => {
               icon={<WorkIcon sx={{ color: colors.primary[600], fontSize: 26 }} />}
             />
           </Box>
-          {/* === ROW 2: LINE CHART === */}
-          <Box gridColumn="span 6" gridRow="span 2" bg={colors.greenAccent[800]}>
-            <Box mt="25px" px="30px" display="flex" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="h5" fontWeight="600" color={colors.grey[100]}>
-                  Report Status
-                </Typography>
-                <Typography variant="h3" fontWeight="bold" color={colors.redAccent[500]}>
-                  {totalReports.toLocaleString()}
-                </Typography>
-              </Box>
+
+
+          {/* REPORT LINE CHART */}
+          <Box gridColumn="span 6" gridRow="span 2" bgcolor={colors.greenAccent[800]} >
+            <Box mt="25px" px="30px">
+              <Typography variant="h5" fontWeight="600">Report Status</Typography>
+              <Typography variant="h3" fontWeight="bold" color={colors.redAccent[500]}>
+                {totalReports.toLocaleString()}
+              </Typography>
             </Box>
             <Box height="250px" m="-20px 0 0 0">
               <LineChart isDashboard series={reportSeries} />
             </Box>
           </Box>
-
-          {/* === ROW 2: BAR CHART === */}
-          <Box gridColumn="span 6" gridRow="span 2" bg={colors.greenAccent[800]} p="30px">
+          {/* APPLICATION PIE CHART */}
+          <Box gridColumn="span 6" gridRow="span 2" bgcolor={colors.greenAccent[800]} p="30px">
             <Typography variant="h5" fontWeight="600" mb="15px">
-              Credit Status
+              Application Status
             </Typography>
-            <Box height="100%" mt="-20px">
-              <BarChart
-                isDashboard
-                data={creditBar.data}
-                keys={creditBar.keys}
-                indexBy={creditBar.indexBy}
-              />
+
+            <Box height="120%" mt="-40px" sx={{ transform: "translateY(-25px)", ml: 5}}>
+              <PieChart data={applicationPie} />
             </Box>
           </Box>
+
+
+
         </Box>
       )}
     </Box>

@@ -343,7 +343,7 @@ const ViewReport = ({ report: initialReport }) => {
                   color="info"
                   sx={{ textTransform: "none", fontSize: "0.9rem", ml: 1 }}
                 >
-                  Download
+                  View CSV File
                 </Button>
               ) : (
                 "—"

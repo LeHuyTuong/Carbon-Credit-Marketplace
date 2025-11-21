@@ -51,6 +51,7 @@ export default function ListCredits() {
   const fetchUserCredits = async () => {
     try {
       setLoading(true);
+      // Gọi API lấy ví người dùng
       const res = await apiFetch("/api/v1/wallet", { method: "GET" });
       const wallet = res?.response || {};
       const credits = wallet.carbonCredits || [];
@@ -79,17 +80,21 @@ export default function ListCredits() {
             };
           }
 
+          // Cộng dồn số lượng khả dụng trong batch
           acc[c.batchCode].balance +=
             c.availableQuantity || c.ownedQuantity || 0;
+          // Gom danh sách creditId
           acc[c.batchCode].creditIds.push(c.creditId);
 
           return acc;
         }, {})
       );
 
+      //Map lại thành object chuẩn để render
       const mapped = grouped.map((g) => {
         const sample = credits.find((c) => c.batchCode === g.batchCode) || {};
         const batchCredits = credits.filter((c) => c.batchCode === g.batchCode);
+        // Kiểm tra batch còn AVAILABLE hay không
         const hasAvailable = batchCredits.some((c) => c.status === "AVAILABLE");
         const batchStatus = hasAvailable ? "AVAILABLE" : "TRADED";
         return {
@@ -115,11 +120,13 @@ export default function ListCredits() {
       setLoading(false);
     }
   };
+
+  // Gọi API khi load trang
   useEffect(() => {
     fetchUserCredits();
   }, []);
 
-  // === FETCH COMPANY’S MARKETPLACE LISTINGS ===
+  // Fetch listing công ty đã đăng lên marketplace
   useEffect(() => {
     fetchCredits();
   }, []);
@@ -131,6 +138,7 @@ export default function ListCredits() {
         method: "GET",
       });
       const list = res?.response || [];
+      // Chuẩn hóa object để hiển thị trong bảng
       const mapped = list.map((item) => ({
         id: item.listingId,
         title: item.projectTitle || "Unnamed Project",
@@ -158,15 +166,18 @@ export default function ListCredits() {
     setShow(true);
   };
 
+  //Xử lý edit
   const handleEdit = (credit) => {
     setEditData(credit);
     setShow(true);
   };
 
+  //Xử lý delete
   const handleDeleteClick = (id) => {
     setConfirmDelete({ show: true, id });
   };
 
+  // Xác nhận xóa
   const confirmDeleteAction = async () => {
     try {
       await deleteListing(confirmDelete.id);
@@ -265,11 +276,13 @@ export default function ListCredits() {
     }
   };
 
+  //Toast helper
   const showToast = (message, variant = "success") => {
     setToast({ show: true, message, variant });
     setTimeout(() => setToast({ show: false, message: "", variant }), 3000);
   };
 
+  //UI
   return (
     <div ref={sectionRef} className="reveal">
       {/* Back button */}
@@ -288,6 +301,7 @@ export default function ListCredits() {
         <FaArrowLeft /> Back to Home
       </Button>
 
+      {/* Tiêu đề và nút list */}
       <div className="vehicle-search-section">
         <h1 className="title">List Your Credits For Sale</h1>
         <Button className="mb-3" onClick={handleList}>
@@ -295,12 +309,14 @@ export default function ListCredits() {
         </Button>
       </div>
 
+      {/* Nếu user chưa có credit */}
       {userCredits.length === 0 && (
         <p className="text-warning small">
           You don’t have any available credits to list yet.
         </p>
       )}
 
+      {/* Loading */}
       {loading ? (
         <div className="d-flex justify-content-center align-items-center py-5">
           <Spinner animation="border" />
@@ -361,6 +377,7 @@ export default function ListCredits() {
         </div>
       )}
 
+      {/* Modal CRUD */}
       <CreditModal
         show={show}
         onHide={() => setShow(false)}
@@ -369,6 +386,7 @@ export default function ListCredits() {
         editData={editData}
       />
 
+      {/* Toast thông báo */}
       <ToastContainer position="top-center" className="p-3">
         <Toast
           onClose={() => setToast({ ...toast, show: false })}
@@ -381,6 +399,7 @@ export default function ListCredits() {
         </Toast>
       </ToastContainer>
 
+      {/* Modal xác nhận xóa */}
       <Modal
         show={confirmDelete.show}
         onHide={() => setConfirmDelete({ show: false, id: null })}
@@ -406,6 +425,7 @@ export default function ListCredits() {
   );
 }
 
+// API: update listing
 export const updateListing = async (listingId, data) => {
   return await apiFetch(`/api/v1/marketplace`, {
     method: "PUT",
@@ -418,14 +438,16 @@ export const updateListing = async (listingId, data) => {
   });
 };
 
+// API: delete listing
 export const deleteListing = async (listingId) => {
   return await apiFetch(`/api/v1/marketplace/${listingId}`, {
     method: "DELETE",
   });
 };
 
-// === Modal ===
+// Modal tạo / edit listing
 function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
+  // Giá trị khởi tạo form
   const initialValues = editData
     ? {
         selectedCredit: userCredits[0]?.id || "",
@@ -467,6 +489,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
         }) => (
           <Form noValidate onSubmit={handleSubmit}>
             <Modal.Body>
+              {/* Chọn credit để list */}
               <Form.Group className="mb-3">
                 <Form.Label>Select Credit</Form.Label>
                 <Form.Select
@@ -498,6 +521,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                 </Form.Control.Feedback>
               </Form.Group>
 
+              {/* Nhập số lượng */}
               <Form.Group className="mb-3">
                 <Form.Label>Quantity</Form.Label>
                 <Form.Control
@@ -520,6 +544,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                 </Form.Text>
               </Form.Group>
 
+              {/* Giá mỗi credit */}
               <Form.Group className="mb-3">
                 <Form.Label>Price per Credit ($)</Form.Label>
                 <Form.Control
@@ -535,6 +560,7 @@ function CreditModal({ show, onHide, onSubmit, userCredits, editData }) {
                 </Form.Control.Feedback>
               </Form.Group>
 
+              {/* Hiển thị ngày hết hạn */}
               <Form.Group className="mb-3">
                 <Form.Label>Expiration Date</Form.Label>
                 <Form.Control
