@@ -28,6 +28,7 @@ export default function PurchaseHistory() {
 
         //set data+sort mới nhất
         const formatted = list
+          .filter((o) => o.status === "SUCCESS")
           .map((o) => ({
             id: o.id,
             companyId: o.companyId,
@@ -139,11 +140,7 @@ export default function PurchaseHistory() {
                         {/* hiển thị trạng thái đơn hàng bằng badge màu */}
                         <span
                           className={`badge bg-${
-                            o.status === "SUCCESS"
-                              ? "success"
-                              : o.status === "PENDING"
-                              ? "warning"
-                              : "secondary"
+                            o.status === "SUCCESS" ? "success" : "secondary"
                           }`}
                         >
                           {o.status}

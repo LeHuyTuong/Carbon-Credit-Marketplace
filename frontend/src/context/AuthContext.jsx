@@ -15,6 +15,7 @@ function readPersistedAuth() {
 
   const fromLocal = localStorage.getItem("auth");
   if (fromLocal) return JSON.parse(fromLocal);
+  // Trả về trạng thái mặc định khi chưa đăng nhập
   return { user: null, token: null, role: null };
 }
 
@@ -25,18 +26,21 @@ export function AuthProvider({ children }) {
     ...readPersistedAuth(),
   }));
 
+  // Đăng nhập
   const login = (nextUser, nextToken, remember = false) => {
-
-    
+    // Tạo payload chuẩn hoá dữ liệu trước khi lưu
     const payload = {
       user: nextUser,
       token: nextToken,
+      // role có thể là mảng roles hoặc 1 biến role → chuyển về dạng list hoặc string
       role: Array.isArray(nextUser?.roles)
         ? nextUser.roles.map((r) => r.name)
         : nextUser?.role || null,
+      // nếu user thuộc 1 company → lấy companyId; nếu không → fallback user.id
       companyId: nextUser?.companyId || nextUser?.id || null,
     };
 
+    // Cập nhật state auth
     setAuth(payload);
 
     //lưu vào storage

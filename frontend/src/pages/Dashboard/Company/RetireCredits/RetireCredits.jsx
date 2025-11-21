@@ -130,19 +130,6 @@ export default function RetireCredits() {
           <h2 className="fw-bold text-white mb-0 text-shadow">
             Retire My Carbon Credits
           </h2>
-          <Button
-            variant="outline-info"
-            className="fw-semibold shadow-sm rounded-3"
-            onClick={() => nav("/retired-history")}
-            style={{
-              borderRadius: "10px",
-              background: "rgba(255, 255, 255, 0.85)",
-              backdropFilter: "blur(6px)",
-              zIndex: 20,
-            }}
-          >
-            View Retired History
-          </Button>
         </div>
 
         {/* thẻ hiển thị bảng credits */}

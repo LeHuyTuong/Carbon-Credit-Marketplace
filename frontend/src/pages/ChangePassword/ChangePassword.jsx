@@ -62,6 +62,7 @@ export default function ChangePassword() {
     }
   };
 
+  //UI
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
       <div className="container auth-container" style={{ maxWidth: 500 }}>

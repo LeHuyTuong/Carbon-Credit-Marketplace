@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { apiFetch } from "../../utils/apiFetch";
 
 export default function ChangePasswordForm({ token }) {
+  //validation
   const schema = Yup.object().shape({
     oldPassword: Yup.string().required("Current password is required"),
     newPassword: Yup.string()
@@ -20,6 +21,7 @@ export default function ChangePasswordForm({ token }) {
       .required("Confirm password is required"),
   });
 
+  //call api
   const handleSubmit = async (values, { resetForm, setSubmitting }) => {
     try {
       const res = await apiFetch("/api/v1/change-password", {
