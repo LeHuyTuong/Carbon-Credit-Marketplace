@@ -801,20 +801,6 @@ const ViewReport = ({ report: initialReport }) => {
 
               </Table>
 
-              {/* Tổng điểm cuối */}
-              <Box mt={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography fontWeight="bold">
-                  Total Score:{" "}
-                  {dataAnalysis.response.dataQualityScore +
-                    dataAnalysis.response.fraudRiskScore}{" "}
-                  /{" "}
-                  {dataAnalysis.response.dataQualityMax +
-                    dataAnalysis.response.fraudRiskMax}
-                </Typography>
-                {/* <Typography variant="body2" color="text.secondary">
-                  Response: {dataAnalysis.responseStatus?.responseMessage}
-                </Typography> */}
-              </Box>
             </Box>
           ) : (
             <Typography>No data analysis available.</Typography>
