@@ -22,12 +22,12 @@ const NewProjectForm = () => {
   const { showSnackbar, SnackbarComponent } = useSnackbar();
   const [previewUrl, setPreviewUrl] = useState(null);
   const [s3Url, setS3Url] = useState(null);
-
+  // Xử lý gửi form
   const handleFormSubmit = async (values, { resetForm }) => {
     try {
       setLoading(true);
       const formDataToSend = new FormData();
-
+      // Chèn giá trị form vào FormData
       formDataToSend.append("requestTrace", `trace_${Date.now()}`);
       formDataToSend.append("requestDateTime", new Date().toISOString());
       formDataToSend.append("title", values.title);
@@ -47,18 +47,18 @@ const NewProjectForm = () => {
         const formattedEndDate = `${year}-${month}-${day}`;
         formDataToSend.append("endDate", formattedEndDate);
       }
-
+      // Chuẩn hóa thủ công nếu nhập dd/MM/yyyy
       if (values.startedDate) {
         const [day, month, year] = values.startedDate.split("/");
         const formattedStartDate = `${year}-${month}-${day}`;
         formDataToSend.append("startedDate", formattedStartDate);
       }
 
-
+      // Chèn file nếu có
       if (values.logo) formDataToSend.append("logo", values.logo);
       if (values.legalDocsFile)
         formDataToSend.append("legalDocsFile", values.legalDocsFile);
-
+      // Gọi API tạo project 
       const response = await createProject(formDataToSend);
 
       if (response?.responseStatus?.responseCode === "00000000") {
@@ -75,7 +75,7 @@ const NewProjectForm = () => {
       }
     } catch (error) {
       console.error("Error creating project:", error);
-
+      // Lấy thông điệp lỗi từ phản hồi
       const message =
         error?.response?.data?.responseStatus?.responseDesc ||
         error?.response?.data?.message ||
@@ -117,6 +117,7 @@ const NewProjectForm = () => {
           maxHeight: "calc(100vh - 150px)",
         }}
       >
+        {/* Formik Form */}
         <Formik
           onSubmit={handleFormSubmit}
           initialValues={initialValues}
@@ -373,6 +374,7 @@ const NewProjectForm = () => {
                   name="status"
                   value="OPEN"
                   InputProps={{ readOnly: true }}
+
                 />
               </Box>
 
@@ -399,6 +401,7 @@ const NewProjectForm = () => {
     </Box>
   );
 };
+// Regex để kiểm tra định dạng ngày dd/mm/yyyy
 const dateRegex = /^(0[1-9]|[12][0-9]|3[01])[\/](0[1-9]|1[0-2])[\/]\d{4}$/;
 const checkoutSchema = yup.object().shape({
   title: yup.string().required("Title is required"),
@@ -427,7 +430,7 @@ const checkoutSchema = yup.object().shape({
     ),
 
 });
-
+// Giá trị khởi tạo ban đầu cho Formik
 const initialValues = {
   title: "",
   description: "",

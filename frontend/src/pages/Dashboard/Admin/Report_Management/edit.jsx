@@ -33,11 +33,11 @@ const ViewReport = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-
+  // State quản lý dữ liệu report
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
-
+  // State quản lý trạng thái phê duyệt
   const [approved, setApproved] = useState(false);
   const [issued, setIssued] = useState(false);
 
@@ -83,36 +83,36 @@ const ViewReport = () => {
 
   // Mở preview (gọi API preview, set totalCredits, hiển thị dialog)
   const handleOpenPreview = async () => {
-  try {
-    setLoadingPreview(true);
-    const res = await getCreditPreviewByReportId(id);
-    const data = res.response || res.responseData || res;
+    try {
+      setLoadingPreview(true);
+      const res = await getCreditPreviewByReportId(id);
+      const data = res.response || res.responseData || res;
 
-    setPreviewData(data);
-    setTotalCredits(data.creditsCount || 0);
-    setCreditAmount(String(data.creditsCount || 0));
-    setOpenPreview(true);
+      setPreviewData(data);
+      setTotalCredits(data.creditsCount || 0);
+      setCreditAmount(String(data.creditsCount || 0));
+      setOpenPreview(true);
 
-  } catch (err) {
-    console.error("Preview error:", err);
+    } catch (err) {
+      console.error("Preview error:", err);
 
-    const message =
-      err?.response?.data?.responseStatus?.responseMessage ||
-      err?.response?.data?.message ||
-      err?.message;
+      const message =
+        err?.response?.data?.responseStatus?.responseMessage ||
+        err?.response?.data?.message ||
+        err?.message;
 
-    if (message?.includes("already issued")) {
-      showSnackbar("error", "Credits already issued for this report.");
-      // cập nhật FE locked luôn
-      setIssued(true);
-      return;
+      if (message?.includes("already issued")) {
+        showSnackbar("error", "Credits already issued for this report.");
+        // cập nhật FE locked luôn
+        setIssued(true);
+        return;
+      }
+
+      showSnackbar("error", "Failed to load credit preview!");
+    } finally {
+      setLoadingPreview(false);
     }
-
-    showSnackbar("error", "Failed to load credit preview!");
-  } finally {
-    setLoadingPreview(false);
-  }
-};
+  };
 
   const handleApproval = async (isApproved) => {
     try {
@@ -216,7 +216,8 @@ const ViewReport = () => {
             <TextField label="Seller Name" value={report.sellerName || ""} fullWidth InputProps={{ readOnly: true }} />
           </Grid>
           <Grid item xs={12} md={6}>
-            <TextField label="Project Name" value={report.projectName || ""} fullWidth InputProps={{ readOnly: true }} />
+            <TextField label="Project Name" value={report.projectName || ""} fullWidth InputProps={{ readOnly: true }} multiline
+              rows={1} />
           </Grid>
           <Grid item xs={12} md={6}>
             <TextField label="Reporting Period" value={report.period || ""} fullWidth InputProps={{ readOnly: true }} />
@@ -266,18 +267,19 @@ const ViewReport = () => {
           <Box display="flex" gap={2}>
 
             {/* Nếu report đã hoàn thành cấp tín chỉ → ẩn toàn bộ nút */}
-            {!locked && !approved && !issued && (
+            {!locked && !approved && !issued && report.status?.trim().toUpperCase() === "CVA_APPROVED" && (
               <>
                 <Button
                   variant="contained"
                   color="success"
                   startIcon={<CheckCircleOutlineIcon />}
                   onClick={() => handleApproval(true)}
+                  disabled={report.status?.trim().toUpperCase() !== "CVA_APPROVED"}
                   sx={{ textTransform: "none" }}
                 >
                   Approve
                 </Button>
-
+                
                 <Button
                   variant="contained"
                   color="error"
@@ -302,7 +304,6 @@ const ViewReport = () => {
               </Button>
             )}
           </Box>
-
         </Box>
       </Paper>
 
@@ -325,7 +326,7 @@ const ViewReport = () => {
                 label="Credits to Issue"
                 type="number"
                 value={creditAmount}
-                 onChange={(e) => setCreditAmount(e.target.value)}
+                onChange={(e) => setCreditAmount(e.target.value)}
                 fullWidth
                 error={isNaN(Number(creditAmount)) || Number(creditAmount) <= 0 || Number(creditAmount) > totalCredits}
                 helperText={
