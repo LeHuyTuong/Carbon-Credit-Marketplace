@@ -254,4 +254,10 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 """)
     long sumBuyedAmount(@Param("companyId") Long companyId);
 
+    @Query("""
+    SELECT COALESCE(SUM(c.amount), 0)
+    FROM CarbonCredit c
+    WHERE c.company.id = :companyId
+""")
+    long sumAmountByCompany_Id(@Param("companyId") Long companyId);
 }
