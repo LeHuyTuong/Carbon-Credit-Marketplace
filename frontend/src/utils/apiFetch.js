@@ -1,9 +1,13 @@
+import { toast } from "react-toastify";
+
+//đưa biến ra ngoài, để nó không reset mỗi lần gọi apiFetch
+let is429ToastShown = false;
+
 export async function apiFetch(path, options = {}) {
   const API = import.meta.env.VITE_API_BASE;
 
   // lấy token từ session hoặc localStorage
   let token;
-
 
   //  Ưu tiên token admin trước nếu có
   const adminToken =
@@ -114,6 +118,27 @@ export async function apiFetch(path, options = {}) {
   // HTTP-level error
   if (!res.ok) {
     console.error("API Error:", { path, status: res.status, data });
+
+    //bắt lỗi spam request
+    if (res.status === 429) {
+      if (!is429ToastShown) {
+        is429ToastShown = true;
+
+        toast.error("You are sending requests too quickly. Please try again later.");
+
+        // unlock toast sau 3 giây
+        setTimeout(() => {
+          is429ToastShown = false;
+        }, 3000);
+      }
+
+      const error = new Error("Too Many Requests");
+      error.status = 429;
+      error.response = data;
+      error.code = "429";
+      throw error;
+    }
+
   //ưu tiên message thật từ backend nếu có
   const beMsg =
     data?.responseStatus?.responseMessage ||
