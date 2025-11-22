@@ -335,7 +335,7 @@ const ViewReport = ({ report: initialReport }) => {
             <Typography sx={{ fontSize: "1rem" }}>
               <b>Submission Date:</b>{" "}
               {report.submittedAt
-                ? new Date(report.submittedAt).toLocaleString("vi-VN")
+                ? new Date(report.submittedAt).toDateString("vi-VN")
                 : "—"}
             </Typography>
             <Typography sx={{ fontSize: "1rem" }}>
@@ -398,7 +398,7 @@ const ViewReport = ({ report: initialReport }) => {
                 </Typography>
                 <Typography sx={{ fontSize: "1rem" }}>
                   <b>Created At:</b>{" "}
-                  {new Date(companyProfile.createAt).toLocaleString("vi-VN")}
+                  {new Date(companyProfile.createAt).toDateString("vi-VN")}
                 </Typography>
               </Grid>
             </Grid>
@@ -617,7 +617,7 @@ const ViewReport = ({ report: initialReport }) => {
                     <Typography variant="h6" sx={{ mb: 1 }}>
 
                     </Typography>
-
+                    {/*  Bảng chi tiết rule  */}
                     <Table>
                       <TableHead>
                         <TableRow>

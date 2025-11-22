@@ -28,8 +28,8 @@ const CvaTeam = () => {
             capacityQuota: item.capacityQuota,
             status: item.status,
             notes: item.notes,
-            createdAt: new Date(item.createdAt).toLocaleString(),
-            updatedAt: new Date(item.updatedAt).toLocaleString(),
+            createdAt: new Date(item.createdAt).toDateString(),
+            updatedAt: new Date(item.updatedAt).toDateString(),
           }));
           setData(profiles);
         }
@@ -72,8 +72,8 @@ const CvaTeam = () => {
       ),
     },
 
-    { field: "createdAt", headerName: "Created At", flex: 1 },
-    { field: "updatedAt", headerName: "Updated At", flex: 1 },
+    { field: "createdAt", headerName: "Created Day", flex: 1 },
+    { field: "updatedAt", headerName: "Updated Day", flex: 1 },
   ];
 
   return (
