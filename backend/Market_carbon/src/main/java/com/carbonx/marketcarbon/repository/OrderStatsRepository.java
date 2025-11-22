@@ -3,6 +3,7 @@ package com.carbonx.marketcarbon.repository;
 import com.carbonx.marketcarbon.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,4 +39,29 @@ public interface OrderStatsRepository extends JpaRepository<Order, Long> {
           and coalesce(o.completedAt, o.createdAt) between :from and :to
     """)
     BigDecimal maxPrice(Long companyId, LocalDateTime from, LocalDateTime to);
+
+    @Query("""
+    SELECT MIN(o.unitPrice)
+    FROM Order o
+    WHERE o.orderStatus = com.carbonx.marketcarbon.common.OrderStatus.SUCCESS
+      AND coalesce(o.completedAt, o.createdAt) BETWEEN :from AND :to
+""")
+    BigDecimal minPriceMarket(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+    SELECT MAX(o.unitPrice)
+    FROM Order o
+    WHERE o.orderStatus = com.carbonx.marketcarbon.common.OrderStatus.SUCCESS
+      AND coalesce(o.completedAt, o.createdAt) BETWEEN :from AND :to
+""")
+    BigDecimal maxPriceMarket(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+    SELECT AVG(o.unitPrice)
+    FROM Order o
+    WHERE o.orderStatus = com.carbonx.marketcarbon.common.OrderStatus.SUCCESS
+      AND coalesce(o.completedAt, o.createdAt) BETWEEN :from AND :to
+""")
+    BigDecimal avgPriceMarket(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
 }

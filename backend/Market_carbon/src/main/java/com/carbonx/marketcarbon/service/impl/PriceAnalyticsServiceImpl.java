@@ -27,6 +27,14 @@ public class PriceAnalyticsServiceImpl implements PriceAnalyticsService {
         );
     }
 
+    @Override
+    public PriceStats statsForMarket(LocalDateTime from, LocalDateTime to) {
+        BigDecimal min = orderStatsRepository.minPriceMarket(from, to);
+        BigDecimal max = orderStatsRepository.maxPriceMarket(from, to);
+        BigDecimal avg = orderStatsRepository.avgPriceMarket(from, to);
+        return new PriceStats(avg, min, max);
+    }
+
     private static BigDecimal zeroToNull(BigDecimal v) {
         if (v == null) return null;
         if (BigDecimal.ZERO.compareTo(v) == 0) return null;
