@@ -89,7 +89,7 @@ const CVALogin = () => {
 
       // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {
-        showSnackbar("success", "Login successful! Redirecting to dashboard...");
+        showSnackbar("success", "Login successfull! Redirecting to dashboard...");
         setTimeout(() => navigate("/cva/dashboard", { replace: true }), 3000);
       } else {
         showSnackbar("info", "No KYC found. Redirecting to KYC page...");

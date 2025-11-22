@@ -55,7 +55,7 @@ function buildApplicationPieData(monthly = []) {
 
   return [
     { id: "Approved", label: "Approved", value: last.approved ?? 0, color: "#4CAF50" },
-    { id: "Submitted", label: "Submitted", value: last.submitted ?? 0, color: "#FFC107" },
+    { id: "Under_review", label: "Under_review", value: last.submitted ?? 0, color: "#FFC107" },
     { id: "Rejected", label: "Rejected", value: last.rejected ?? 0, color: "#F44336" },
   ];
 }
@@ -171,7 +171,7 @@ const Dashboard = () => {
           gap="20px"
         >
           {/*---------------------------------------------------------
-           * 4 CARD THỐNG KÊ TRÊN CÙNG (Reports / Credits / Companies / Projects)
+           * 4 CARD THỐNG KÊ TRÊN CÙNG (Reports / Credits / Companies / Applications)
           ----------------------------------------------------------*/}
 
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
@@ -204,7 +204,7 @@ const Dashboard = () => {
           <Box gridColumn="span 3" sx={{ backgroundColor: colors.greenAccent[900] }} display="flex" justifyContent="center" alignItems="center">
             <StatBox
               title={getVal(cards.projects).toLocaleString()}
-              subtitle="Projects"
+              subtitle="Applications"
               progress="0.8"
               icon={<WorkIcon sx={{ color: colors.primary[600], fontSize: 26 }} />}
             />

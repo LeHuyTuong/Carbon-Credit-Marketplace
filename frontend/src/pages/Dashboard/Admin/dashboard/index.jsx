@@ -90,6 +90,11 @@ const Dashboard = () => {
           requestDateTime: new Date().toISOString(),
         });
         setWithdrawHistory(res.response || []);
+        setWithdrawHistory(
+          (res.response || []).sort(
+            (a, b) => new Date(b.processedAt) - new Date(a.processedAt)
+          )
+        );
       } catch (error) {
         console.error("Error fetching withdraw history:", error);
       }
@@ -253,7 +258,7 @@ const Dashboard = () => {
                   <Typography color={colors.grey[100]}>#{item.id}</Typography>
                 </Box>
                 <Box color={colors.grey[100]}>
-                  {item.processedAt ? new Date(item.processedAt).toLocaleString() : "-"}
+                  {item.processedAt ? new Date(item.processedAt).toLocaleString("en-GB") : "-"}
                 </Box>
                 <Box
                   backgroundColor={colors.greenAccent[500]}

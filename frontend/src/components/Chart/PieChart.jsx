@@ -99,7 +99,7 @@ const PieChart = ({ data = [] }) => {
           justify: false,
           translateX: 0,
           translateY: 56,
-          itemsSpacing: 0,
+          itemsSpacing: 20,
           itemWidth: 100,
           itemHeight: 18,
           itemTextColor: "#999",

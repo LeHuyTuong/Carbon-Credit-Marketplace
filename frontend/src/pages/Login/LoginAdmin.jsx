@@ -80,7 +80,7 @@ const AdminLogin = () => {
 
         //  Điều hướng dựa theo KYC có hay chưa
         if (kycRes && kycRes.id) {
-          showSnackbar("success", "Login successful! Redirecting to dashboard...");
+          showSnackbar("success", "Login successfull! Redirecting to dashboard...");
           setTimeout(() => navigate("/admin/dashboard", { replace: true }), 3000);
         } else {
           showSnackbar("info", "No KYC found. Redirecting to KYC page...");

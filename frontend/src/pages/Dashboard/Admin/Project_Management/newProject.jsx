@@ -58,7 +58,7 @@ const NewProjectForm = () => {
       if (values.logo) formDataToSend.append("logo", values.logo);
       if (values.legalDocsFile)
         formDataToSend.append("legalDocsFile", values.legalDocsFile);
-       // Gọi API tạo project 
+      // Gọi API tạo project 
       const response = await createProject(formDataToSend);
 
       if (response?.responseStatus?.responseCode === "00000000") {
@@ -119,9 +119,9 @@ const NewProjectForm = () => {
       >
         {/* Formik Form */}
         <Formik
-          onSubmit={handleFormSubmit} 
+          onSubmit={handleFormSubmit}
           initialValues={initialValues}
-          validationSchema={checkoutSchema} 
+          validationSchema={checkoutSchema}
         >
           {({
             values,
@@ -374,6 +374,7 @@ const NewProjectForm = () => {
                   name="status"
                   value="OPEN"
                   InputProps={{ readOnly: true }}
+
                 />
               </Box>
 
