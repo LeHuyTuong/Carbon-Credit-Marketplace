@@ -25,6 +25,7 @@ export default function RegisterProject() {
   // lấy thông tin profile công ty thông qua custom hook
   const { company, loading: companyLoading } = useCompanyProfile();
   const [loading, setLoading] = useState(false);
+  const isKycDone = !!company?.businessLicense;
 
   //dữ liệu khởi tạo
   const initialValues = {
@@ -129,7 +130,11 @@ export default function RegisterProject() {
                     value={values.companyName}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    isInvalid={touched.companyName && !!errors.companyName}
+                    disabled={isKycDone}
+                    readOnly={isKycDone}
+                    isInvalid={
+                      !isKycDone && touched.companyName && !!errors.companyName
+                    }
                     placeholder="Enter company name"
                   />
                   <Form.Control.Feedback type="invalid">
@@ -145,8 +150,12 @@ export default function RegisterProject() {
                     value={values.businessLicense}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    disabled={isKycDone}
+                    readOnly={isKycDone}
                     isInvalid={
-                      touched.businessLicense && !!errors.businessLicense
+                      !isKycDone &&
+                      touched.businessLicense &&
+                      !!errors.businessLicense
                     }
                     placeholder="Enter business license"
                   />
@@ -163,7 +172,11 @@ export default function RegisterProject() {
                     value={values.taxCode}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    isInvalid={touched.taxCode && !!errors.taxCode}
+                    disabled={isKycDone}
+                    readOnly={isKycDone}
+                    isInvalid={
+                      !isKycDone && touched.taxCode && !!errors.taxCode
+                    }
                     placeholder="Enter tax code"
                   />
                   <Form.Control.Feedback type="invalid">
@@ -179,7 +192,11 @@ export default function RegisterProject() {
                     value={values.address}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    isInvalid={touched.address && !!errors.address}
+                    disabled={isKycDone}
+                    readOnly={isKycDone}
+                    isInvalid={
+                      !isKycDone && touched.address && !!errors.address
+                    }
                     placeholder="Enter address"
                   />
                   <Form.Control.Feedback type="invalid">

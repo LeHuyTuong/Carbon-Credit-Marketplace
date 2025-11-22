@@ -120,6 +120,11 @@ public class VehicleServiceImpl implements VehicleService {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
 
+        //  Kiểm tra trùng biển số
+        if (vehicleRepository.existsByPlateNumber(req.getPlateNumber())) {
+            throw new AppException(ErrorCode.VEHICLE_PLATE_EXISTS);
+        }
+
         Company company = companyRepository.findById(req.getCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found: id = " + req.getCompanyId()));
 
