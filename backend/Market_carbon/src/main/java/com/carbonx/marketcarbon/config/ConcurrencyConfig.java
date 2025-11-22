@@ -14,7 +14,6 @@ public class ConcurrencyConfig {
     /**
      * Định nghĩa một ThreadPoolTaskExecutor
      * TaskExecutor này sẽ được sử dụng cho các tác vụ bất đồng bộ (async)
-     * liên quan đến việc chia lợi nhuận.
      */
     @Bean("profitSharingTaskExecutor")
     public AsyncTaskExecutor profitSharingTaskExecutor() {
