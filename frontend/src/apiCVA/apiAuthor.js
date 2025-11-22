@@ -28,7 +28,7 @@ export const apiLogin = async (email, password) => {
       localStorage.setItem("cva_role", resData.role)
       sessionStorage.setItem("cva_role", resData.role)
     }
-    return resData
+    return { responseData: resData }
   } catch (error) {
     throw error
   }

@@ -150,6 +150,7 @@ const ViewReport = ({ report: initialReport }) => {
       if (!report?.id) return;
       setDetailsLoading(true);
       try {
+        //Gọi API lấy details
         const pageRes = await getReportDetails(report.id, { page, size });
         const pageObj =
           pageRes?.response ||
@@ -178,14 +179,15 @@ const ViewReport = ({ report: initialReport }) => {
     },
     [report?.id, detailsPage, detailsSize]
   );
-
+  // Open details dialog
   const handleOpenDetails = async () => {
     if (!report?.id) return;
     setDetailsOpen(true);
     await fetchDetails(0, detailsSize);
   };
+  // Close details dialog
   const handleCloseDetails = () => setDetailsOpen(false);
-
+  // Pagination handlers
   const handleChangeDetailsPage = async (_e, newPage) => {
     await fetchDetails(newPage, detailsSize);
   };
@@ -200,6 +202,7 @@ const ViewReport = ({ report: initialReport }) => {
     setAiLoading(true);
     showSnackbar("info", "Analyzing report with AI... please wait");
     try {
+      // Gọi API analyze
       const result = await analyzeReportByAI(report.id);
       setAiResult(result);
       setOpenAIDialog(true);
@@ -218,6 +221,7 @@ const ViewReport = ({ report: initialReport }) => {
     setDataLoading(true);
     showSnackbar("info", "Analyzing report data...");
     try {
+      // Gọi API analyze data
       const result = await analyzeReportData(report.id);
       setDataAnalysis(result);
       setOpenDataDialog(true);
@@ -234,6 +238,7 @@ const ViewReport = ({ report: initialReport }) => {
     setRulesOpen(true);
     setRulesLoading(true);
     try {
+      //Gọi API lấy rules
       const data = await getReportRules();
       setRulesData(data || []);
     } catch (err) {
@@ -389,7 +394,7 @@ const ViewReport = ({ report: initialReport }) => {
             >
               Company Registration
             </Typography>
-
+            {/* Show company KYC info */}
             <Grid container spacing={10}>
               <Grid item xs={12} sm={6}>
                 <Typography sx={{ fontSize: "1rem" }}>
@@ -576,7 +581,7 @@ const ViewReport = ({ report: initialReport }) => {
             </Box>
           ) : aiResult ? (
             <>
-              {/* ==== BASIC INFO ==== */}
+              {/*  BASIC INFO */}
               <Typography variant="body1">
                 <strong>Version:</strong> {aiResult.aiVersion || "Unknown"}
               </Typography>
@@ -585,7 +590,7 @@ const ViewReport = ({ report: initialReport }) => {
                 <strong>Score:</strong> {aiResult.aiPreScore ?? aiResult.score ?? "—"} / 10
               </Typography>
 
-              {/* ==== MAIN NOTES ==== */}
+              {/* MAIN NOTES */}
               <Typography sx={{ mt: 2, mb: 2, whiteSpace: "pre-wrap" }}>
                 {(aiResult.aiPreNotes || aiResult.notes || "")
                   .split("\n")
@@ -663,7 +668,6 @@ const ViewReport = ({ report: initialReport }) => {
                   <Typography variant="h6" sx={{ mb: 1 }}>
                     Rubric
                   </Typography>
-
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -749,7 +753,7 @@ const ViewReport = ({ report: initialReport }) => {
                 </Grid>
               </Grid>
 
-              {/* === Bảng chi tiết rule === */}
+              {/*  Bảng chi tiết rule  */}
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Rule Details
               </Typography>
@@ -797,20 +801,6 @@ const ViewReport = ({ report: initialReport }) => {
 
               </Table>
 
-              {/* Tổng điểm cuối */}
-              <Box mt={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
-                <Typography fontWeight="bold">
-                  Total Score:{" "}
-                  {dataAnalysis.response.dataQualityScore +
-                    dataAnalysis.response.fraudRiskScore}{" "}
-                  /{" "}
-                  {dataAnalysis.response.dataQualityMax +
-                    dataAnalysis.response.fraudRiskMax}
-                </Typography>
-                {/* <Typography variant="body2" color="text.secondary">
-                  Response: {dataAnalysis.responseStatus?.responseMessage}
-                </Typography> */}
-              </Box>
             </Box>
           ) : (
             <Typography>No data analysis available.</Typography>
@@ -843,7 +833,7 @@ const ViewReport = ({ report: initialReport }) => {
                 <TableRow>
                   <TableCell>Rule ID</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell sx={{width: 100}}>Max Score</TableCell>
+                  <TableCell sx={{ width: 100 }}>Max Score</TableCell>
                   <TableCell>Description</TableCell>
                   <TableCell>Scoring Guideline</TableCell>
                   <TableCell>Evidence Hint</TableCell>

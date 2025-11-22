@@ -159,7 +159,7 @@ const ReportView = () => {
                     {/* COLUMN 1: General Info */}
                     <Grid item xs={12} md={4}>
                         <Typography variant="h5" fontWeight="700" color="secondary" gutterBottom>
-                            General Info
+                            General Information
                         </Typography>
 
                         <Typography variant="h6" fontWeight="600" gutterBottom>

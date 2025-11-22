@@ -97,11 +97,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
 
         if (accept) {
-            if (wallet.getBalance().compareTo(amountToWithdraw) < 0) {
-                withdrawalRequest.setStatus(Status.FAILED);
-                withdrawalRepository.save(withdrawalRequest);
-                throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
-            }
+//            if (wallet.getBalance().compareTo(amountToWithdraw) < 0) {
+//                withdrawalRequest.setStatus(Status.FAILED);
+//                withdrawalRepository.save(withdrawalRequest);
+//                throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+//            }
 
             withdrawalRequest.setStatus(Status.SUCCEEDED);
             Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);
