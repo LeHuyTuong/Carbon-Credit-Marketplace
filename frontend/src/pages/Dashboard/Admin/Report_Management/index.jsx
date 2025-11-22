@@ -75,7 +75,7 @@ const ReportsList = () => {
     { field: "totalCo2", headerName: "Total CO₂", flex: 1 },
     {
       field: "submittedAt",
-      headerName: "Submitted At",
+      headerName: "Submitted Day",
       flex: 1.2,
       renderCell: ({ value }) => {
         if (!value) return "—";
@@ -83,8 +83,8 @@ const ReportsList = () => {
         const day = String(date.getDate()).padStart(2, "0");
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const year = date.getFullYear();
-        const time = date.toLocaleTimeString();
-        return `${day}/${month}/${year}, ${time}`;
+       
+        return `${day}/${month}/${year}`;
       },
     },
     {

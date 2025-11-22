@@ -103,7 +103,7 @@ const ReportView = () => {
             second: "2-digit",
         });
 
-        return `${day}/${month}/${year}, ${time}`;
+        return `${day}/${month}/${year}`;
     };
 
 
@@ -251,17 +251,36 @@ const ReportView = () => {
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Address:
                             </Typography>
-                            <Typography mb={2}>{kyc.address || "N/A"}</Typography>
+                            <TextField
+                                value={kyc.address || "N/A"}
+                                multiline
+                                fullWidth
+                                InputProps={{
+                                    readOnly: true,
+                                }}
+                                inputProps={{ style: { cursor: "pointer" } }}
+                                variant="outlined"
+                                size="small"
+                                minRows={1}
+                                sx={{
+                                    mb: 2,
+                                    backgroundColor: "rgba(255,255,255,0.08)",
+                                    borderRadius: "8px",
+                                    "& .MuiInputBase-input.Mui-disabled": {
+                                        WebkitTextFillColor: "#ccc", // màu chữ nếu theme tối
+                                    },
+                                }}
+                            />
 
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Created At:
                             </Typography>
-                            <Typography mb={2}>{ formatVNDate(kyc.createAt) }</Typography>
+                            <Typography mb={2}>{formatVNDate(kyc.createAt)}</Typography>
 
                             <Typography variant="h6" fontWeight="600" gutterBottom>
                                 Update At:
                             </Typography>
-                            <Typography mb={2}>{ formatVNDate(kyc.updatedAt) }</Typography>
+                            <Typography mb={2}>{formatVNDate(kyc.updatedAt)}</Typography>
                         </Grid>
                     )}
 
@@ -307,7 +326,7 @@ const ReportView = () => {
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Verified At:
                         </Typography>
-                        <Typography mb={2}>{ formatVNDate(report.verifiedAt) }</Typography>
+                        <Typography mb={2}>{formatVNDate(report.verifiedAt)}</Typography>
 
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Admin Comment:
@@ -343,7 +362,7 @@ const ReportView = () => {
                             Approved At:
                         </Typography>
                         <Typography mb={2}>
-                            { formatVNDate(report.approvedAt) }
+                            {formatVNDate(report.approvedAt)}
                         </Typography>
                     </Grid>
                 </Grid>

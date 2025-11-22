@@ -223,13 +223,13 @@ const ApplicationView = () => {
               </Typography>
               <Typography mb={1}>
                 {kyc.createAt
+                   //Định dạng ngày tháng nay theo dd/mm/yyyy
                   ? (() => {
                     const date = new Date(kyc.createAt);
                     const day = String(date.getDate()).padStart(2, "0");
                     const month = String(date.getMonth() + 1).padStart(2, "0");
                     const year = date.getFullYear();
-                    const time = date.toLocaleTimeString();
-                    return `${day}/${month}/${year}, ${time}`;
+                    return `${day}/${month}/${year}`;
                   })()
                   : "N/A"}
               </Typography>
@@ -239,13 +239,13 @@ const ApplicationView = () => {
               </Typography>
               <Typography mb={2}>
                 {kyc.updatedAt
+                  //Định dạng ngày tháng nay theo dd/mm/yyyy
                   ? (() => {
                     const date = new Date(kyc.updatedAt);
                     const day = String(date.getDate()).padStart(2, "0");
                     const month = String(date.getMonth() + 1).padStart(2, "0");
                     const year = date.getFullYear();
-                    const time = date.toLocaleTimeString();
-                    return `${day}/${month}/${year}, ${time}`;
+                    return `${day}/${month}/${year}`;
                   })()
                   : "N/A"}
               </Typography>
@@ -325,8 +325,7 @@ const ApplicationView = () => {
                   const day = String(date.getDate()).padStart(2, "0");
                   const month = String(date.getMonth() + 1).padStart(2, "0");
                   const year = date.getFullYear();
-                  const time = date.toLocaleTimeString();
-                  return `${day}/${month}/${year}, ${time}`;
+                  return `${day}/${month}/${year}`;
                 })()
                 : "N/A"}
             </Typography>

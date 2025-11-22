@@ -29,8 +29,7 @@ const CompanyTeam = () => {
             const day = String(date.getDate()).padStart(2, "0");
             const month = String(date.getMonth() + 1).padStart(2, "0");
             const year = date.getFullYear();
-            const time = date.toLocaleTimeString();
-            return `${day}/${month}/${year}, ${time}`;
+            return `${day}/${month}/${year}`;
           };
 
           return {
@@ -80,8 +79,8 @@ const CompanyTeam = () => {
         </Typography>
       ),
     },
-    { field: "createdAt", headerName: "Created At", flex: 1 },
-    { field: "updatedAt", headerName: "Updated At", flex: 1 },
+    { field: "createdAt", headerName: "Created Day", flex: 1 },
+    { field: "updatedAt", headerName: "Updated Day", flex: 1 },
   ];
 
   return (

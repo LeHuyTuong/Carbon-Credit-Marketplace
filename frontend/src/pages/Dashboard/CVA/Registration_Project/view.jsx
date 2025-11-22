@@ -167,7 +167,7 @@ const ApplicationView = () => {
             <Typography sx={{ fontSize: "1rem" }}>
               <b>Submitted At:</b>{" "}
               {application.submittedAt
-                ? new Date(application.submittedAt).toLocaleDateString("vi-VN")
+                ? new Date(application.submittedAt).toDateString("vi-VN")
                 : "N/A"}
             </Typography>
           </Grid>
@@ -231,7 +231,7 @@ const ApplicationView = () => {
                   <b>Address:</b> {kyc.address}
                 </Typography>
                 <Typography sx={{ fontSize: "1rem" }}>
-                  <b>Created At:</b> {new Date(kyc.createAt).toLocaleString("vi-VN")}
+                  <b>Created At:</b> {new Date(kyc.createAt).toDateString("vi-VN")}
                 </Typography>
               </Grid>
             </Grid>
