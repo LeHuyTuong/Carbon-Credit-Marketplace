@@ -363,22 +363,6 @@ const ViewReport = ({ report: initialReport }) => {
           </Grid>
         </Grid>
 
-        {/* Note khi bị reject */}
-        {report.status === "REJECTED" && (
-          <Box mt={2}>
-            <Typography sx={{ fontSize: "1rem", fontWeight: "bold" }}>Note:</Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Enter rejection reason..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-        )}
-
         {/* COMPANY KYC SECTION  */}
         {companyProfile && (
           <>

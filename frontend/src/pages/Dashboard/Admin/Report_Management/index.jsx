@@ -18,7 +18,7 @@ const ReportsList = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await getAllReportsAdmin({ page: 0, size: 50 });
+        const res = await getAllReportsAdmin({ page: 0, size: 500 });
         console.log("Raw API response:", res);
         if (res?.response) {
           const formatted = res.response.map((item, index) => ({
