@@ -24,10 +24,13 @@ public class VertexWebClientConfig {
 
     private GoogleCredentials credentials() throws Exception {
         // Yêu cầu biến môi trường: GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
-        GoogleCredentials creds = GoogleCredentials.getApplicationDefault()
-                .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
-        creds.refreshIfExpired();
-        return creds;
+        java.io.File keyFile = new java.io.File("carbonx-ai-6060f3108572.json");
+        try (java.io.FileInputStream serviceAccountStream = new java.io.FileInputStream(keyFile)) {
+            GoogleCredentials creds = GoogleCredentials.fromStream(serviceAccountStream)
+                    .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
+            creds.refreshIfExpired();
+            return creds;
+        }
     }
 
     @Bean("vertexWebClient")
