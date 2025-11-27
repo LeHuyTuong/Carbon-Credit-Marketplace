@@ -107,7 +107,7 @@ const ApplicationList = () => {
     },
     {
       field: "submittedAt",
-      headerName: "Submitted At",
+      headerName: "Submitted Day",
       flex: 1.2,
       renderCell: (params) => {
         const date = params?.value ? new Date(params.value) : null;
@@ -117,10 +117,9 @@ const ApplicationList = () => {
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const year = date.getFullYear();
 
-        // giữ nguyên phần giờ phút giây mặc định
-        const time = date.toLocaleTimeString();
+        
 
-        return `${day}/${month}/${year}, ${time}`;
+        return `${day}/${month}/${year}`;
       },
 
     },

@@ -159,7 +159,11 @@ const ViewProject = () => {
         ...prev,
         logo: URL.createObjectURL(file)
       }));
-      handleChange("logoFile", file);
+      setFormData((prev) => ({
+        ...prev,
+        logo: file        // phải set đúng tên đang dùng trong update
+      }));
+
     }
 
     if (type === "legalDocsFile") {
@@ -172,7 +176,11 @@ const ViewProject = () => {
         ...prev,
         legalDocs: previews
       }));
-      handleChange("legalDocsFile", files);
+      setFormData((prev) => ({
+        ...prev,
+        legalDocsFile: files
+      }));
+
     }
   };
 

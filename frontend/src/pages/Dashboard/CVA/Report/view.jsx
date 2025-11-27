@@ -335,7 +335,7 @@ const ViewReport = ({ report: initialReport }) => {
             <Typography sx={{ fontSize: "1rem" }}>
               <b>Submission Date:</b>{" "}
               {report.submittedAt
-                ? new Date(report.submittedAt).toLocaleString("vi-VN")
+                ? new Date(report.submittedAt).toDateString("vi-VN")
                 : "—"}
             </Typography>
             <Typography sx={{ fontSize: "1rem" }}>
@@ -362,22 +362,6 @@ const ViewReport = ({ report: initialReport }) => {
             </Typography>
           </Grid>
         </Grid>
-
-        {/* Note khi bị reject */}
-        {report.status === "REJECTED" && (
-          <Box mt={2}>
-            <Typography sx={{ fontSize: "1rem", fontWeight: "bold" }}>Note:</Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Enter rejection reason..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-        )}
 
         {/* COMPANY KYC SECTION  */}
         {companyProfile && (
@@ -414,7 +398,7 @@ const ViewReport = ({ report: initialReport }) => {
                 </Typography>
                 <Typography sx={{ fontSize: "1rem" }}>
                   <b>Created At:</b>{" "}
-                  {new Date(companyProfile.createAt).toLocaleString("vi-VN")}
+                  {new Date(companyProfile.createAt).toDateString("vi-VN")}
                 </Typography>
               </Grid>
             </Grid>
@@ -633,7 +617,7 @@ const ViewReport = ({ report: initialReport }) => {
                     <Typography variant="h6" sx={{ mb: 1 }}>
 
                     </Typography>
-
+                    {/*  Bảng chi tiết rule  */}
                     <Table>
                       <TableHead>
                         <TableRow>
