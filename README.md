@@ -126,6 +126,29 @@ docker/
 ```
 
 ---
+---
+
+## 🔑 Demo Accounts (For Testing)
+
+To quickly explore the platform without creating new accounts, use the following demo users:
+Link CVA : https://carbonx.io.vn/cva/carbonX/mkp/login 
+Link ADMIN: https://carbonx.io.vn/admin/carbonX/mkp/login
+Link CarbonX: https://carbonx.io.vn/login
+| Role     | Email               | Password     | Notes                                  |
+|----------|-------------------|------------|----------------------------------------|
+| Admin    | admin1@gmail.com     | Tuong2005@  | Access full dashboard and user management |
+| Company  | company@example.com   | Password@1| Can list, buy, and retire carbon credits |
+| CVA      | cva@example.com       | Password@1    | Can verify company emissions and audit documents |
+
+**How to use:**
+1. Run the project locally or access the deployed demo.
+2. Log in using the above credentials.
+3. Explore the core features for each role:
+   - **Admin**: Dashboard, user management, finance overview.
+   - **Company**: Marketplace, listing creation, credit retirement.
+   - **CVA**: Verification workflow, document approval, audit logs.
+
+> ⚠️ Note: These demo accounts are reset periodically and are intended for testing only.
 
 ## 🚀 Quick Start (Development)
 
