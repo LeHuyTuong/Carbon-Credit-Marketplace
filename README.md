@@ -24,10 +24,6 @@ Carbon Credit Marketplace is a platform enabling Electric Vehicle (EV) owners, c
 The system includes multi-role authentication, wallet system, marketplace listing, payment integrations (VNPay, Stripe, PayPal), CVA verification flow, and real‑time operations.
 
 ---
-
-# 🧱 Architecture Diagram
-![img_1.png](img_1.png)
----
 ## 💻 Tech Stack
 
 ### 🧠 Backend – Java Spring Boot
@@ -211,7 +207,6 @@ PAYPAL_SECRET=...
 ### Frontend `.env`
 ```
 VITE_API_BASE=https://yourdomain/api/v1
-VITE_GOOGLE_CLIENT_ID=xxx
 ```
 
 ---
