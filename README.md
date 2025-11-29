@@ -58,7 +58,7 @@ The system includes multi-role authentication, wallet system, marketplace listin
 - **VNPay Gateway**
 - **Stripe**
 - **PayPal**
-- AWS S3 (image & document storage)
+- **AWS S3** (image & document storage)
 
 ---
 
@@ -107,19 +107,27 @@ The system includes multi-role authentication, wallet system, marketplace listin
 ```
 backend/
  ├── Market_carbon/
+ │    ├── common/
+ │    ├── certificate/
  │    ├── controller/
+ │    ├── mapper/
+ │    ├── exception/
  │    ├── service/
  │    ├── repository/
  │    ├── dto/
  │    ├── config/
- │    ├── security/
+ │    ├── scheduler/
+ │    ├── utils/
  │    └── model/
 frontend/
  ├── src/
  │    ├── pages/
  │    ├── components/
  │    ├── hooks/
- │    └── services/
+ │    ├── assets/
+ │    ├── context/
+ │    ├── styles/
+ │    └── utils/
 docker/
  ├── docker-compose.yml
  └── nginx/
