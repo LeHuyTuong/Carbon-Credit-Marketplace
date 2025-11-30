@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import useRipple from "../../hooks/useRipple";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { toast } from "react-toastify";
@@ -28,6 +28,9 @@ export default function Login() {
   const btnRippleRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+
+  const location = useLocation();
+  const preset = location.state?.preset || null;
 
   // gửi request login
   const handleLogin = async (values) => {
@@ -94,7 +97,10 @@ export default function Login() {
 
             <Formik
               validationSchema={schema}
-              initialValues={{ email: "", password: "" }}
+              initialValues={{
+                email: preset?.email || "",
+                password: preset?.password || "",
+              }}
               onSubmit={handleLogin}
             >
               {({

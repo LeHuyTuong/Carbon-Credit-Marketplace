@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { apiLogin, checkKYCAdmin } from "@/apiAdmin/apiLogin.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
@@ -23,10 +23,21 @@ const AdminLogin = () => {
 
   const { showSnackbar, SnackbarComponent } = useSnackbar(); // hook snackbar
 
-
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const location = useLocation();
+  const preset = location.state?.preset || null;
+
+  useEffect(() => {
+    if (preset) {
+      setForm({
+        email: preset.email || "",
+        password: preset.password || "",
+      });
+    }
+  }, [preset]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -73,22 +84,29 @@ const AdminLogin = () => {
         // Lưu vào AuthContext
         login(userObject, res.jwt, true);
 
-
         //  Kiểm tra KYC
         const kycRes = await checkKYCAdmin();
         console.log(" Full KYC check:", kycRes);
 
         //  Điều hướng dựa theo KYC có hay chưa
         if (kycRes && kycRes.id) {
-          showSnackbar("success", "Login successfull! Redirecting to dashboard...");
-          setTimeout(() => navigate("/admin/dashboard", { replace: true }), 3000);
+          showSnackbar(
+            "success",
+            "Login successfull! Redirecting to dashboard..."
+          );
+          setTimeout(
+            () => navigate("/admin/dashboard", { replace: true }),
+            3000
+          );
         } else {
           showSnackbar("info", "No KYC found. Redirecting to KYC page...");
           setTimeout(() => navigate("/admin/kyc", { replace: true }), 3000);
         }
-
       } else {
-        showSnackbar("error", res?.message || "Login failed. Please try again.");
+        showSnackbar(
+          "error",
+          res?.message || "Login failed. Please try again."
+        );
       }
     } catch (err) {
       console.error(" Login error:", err);
