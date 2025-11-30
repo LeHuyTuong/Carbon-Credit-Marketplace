@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { apiLogin, checkKYCCVA } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx"; // import hook snackbar
@@ -24,6 +24,18 @@ const CVALogin = () => {
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+
+  const location = useLocation();
+  const preset = location.state?.preset || null;
+
+  useEffect(() => {
+    if (preset) {
+      setForm({
+        email: preset.email || "",
+        password: preset.password || "",
+      });
+    }
+  }, [preset]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -48,7 +60,10 @@ const CVALogin = () => {
       const data = res?.responseData;
 
       if (!data) {
-        showSnackbar("error", "Invalid login response! No responseData returned.");
+        showSnackbar(
+          "error",
+          "Invalid login response! No responseData returned."
+        );
         return;
       }
 
@@ -82,14 +97,16 @@ const CVALogin = () => {
       // Lưu vào AuthContext
       login(userObject, data.jwt, true);
 
-
       // Gọi check KYC
       const kycRes = await checkKYCCVA();
       console.log("Full KYC check:", kycRes);
 
       // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {
-        showSnackbar("success", "Login successfull! Redirecting to dashboard...");
+        showSnackbar(
+          "success",
+          "Login successfull! Redirecting to dashboard..."
+        );
         setTimeout(() => navigate("/cva/dashboard", { replace: true }), 3000);
       } else {
         showSnackbar("info", "No KYC found. Redirecting to KYC page...");

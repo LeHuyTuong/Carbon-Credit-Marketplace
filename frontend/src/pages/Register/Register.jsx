@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { apiFetch } from "../../utils/apiFetch";
+import QuickAccountSelect from "../../components/QuickAccountSelect";
 
 //validate
 const schema = Yup.object().shape({
@@ -92,6 +93,17 @@ export default function Register() {
 
   return (
     <div className="auth-hero min-vh-100 d-flex align-items-center justify-content-center">
+      <div
+        className="d-none d-md-block"
+        style={{
+          position: "absolute",
+          top: "90px",
+          right: "20px",
+          zIndex: 10,
+        }}
+      >
+        <QuickAccountSelect />
+      </div>
       <div className="container px-3" style={{ maxWidth: 500 }}>
         <div className="card shadow-sm">
           <div className="card-body p-3 p-md-4">
