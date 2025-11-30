@@ -51,6 +51,11 @@ public class DataInitializer {
     static final String COMPANY_PASSWORD = "Password@1";
     // --- End New Company Constants ---
 
+    @NonFinal
+    static final String CVA_USER_EMAIL = "cva@example.com";
+    @NonFinal
+    static final String CVA_PASSWORD = "Password@1";
+
     @Bean("databaseInitializer")
     @Transactional
     ApplicationRunner applicationRunner(UserRepository userRepository,
@@ -139,6 +144,17 @@ public class DataInitializer {
                         .build();
                 userRepository.save(companyUser);
                 log.info("Created new Company user: {}", COMPANY_USER_EMAIL);
+            }
+
+            User cvaUser = userRepository.findByEmail(CVA_USER_EMAIL);
+            if(cvaUser == null ){
+                cvaUser = User.builder()
+                        .passwordHash(passwordEncoder.encode(CVA_PASSWORD))
+                        .roles(new HashSet<>(Set.of(cvaRole)))
+                        .status(USER_STATUS.ACTIVE)
+                        .build();
+                userRepository.save(cvaUser);
+                log.info("Created new CVA user: {}", CVA_USER_EMAIL);
             }
 //
 //            // --- Initialize Company Entity and Wallet for the new user ---
