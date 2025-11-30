@@ -136,8 +136,13 @@ docker/
 
 To quickly explore the platform without creating new accounts, use the following demo users:
 Link CVA : https://carbonx.io.vn/cva/carbonX/mkp/login 
+
 Link ADMIN: https://carbonx.io.vn/admin/carbonX/mkp/login
+
 Link CarbonX: https://carbonx.io.vn/login
+**Quick Login Click Sign Up And Choice Account** 
+<img width="1906" height="882" alt="image" src="https://github.com/user-attachments/assets/03a46407-d3ff-4271-bb10-b16c9c2823de" />
+
 | Role     | Email               | Password     | Notes                                  |
 |----------|-------------------|------------|----------------------------------------|
 | Admin    | admin1@gmail.com     | Tuong2005@  | Access full dashboard and user management |
