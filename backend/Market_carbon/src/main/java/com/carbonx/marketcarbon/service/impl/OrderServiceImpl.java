@@ -75,7 +75,7 @@ public class OrderServiceImpl implements OrderService {
         Company buyerCompany = currentCompany(user);
 
         //1 find listing user want to buy
-        MarketPlaceListing listing = marketplaceListingRepository.findById(request.getListingId())
+        MarketPlaceListing listing = marketplaceListingRepository.findByIdWithDetails(request.getListingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
 
         // 2 check conditional > 0
@@ -179,7 +179,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("Starting order completion process for orderId: {}", orderId);
 
         // B1 tìm order
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
@@ -189,7 +189,7 @@ public class OrderServiceImpl implements OrderService {
 
         // B2 tìm list và khóa lại chính id của marketplace đó
         MarketPlaceListing listing = marketplaceListingRepository
-                .findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
+                .findByIdWithPessimisticLockAndDetails(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
 
         //B3 tìm công ty mua bán
@@ -211,7 +211,7 @@ public class OrderServiceImpl implements OrderService {
         // B4 bắt đầu giao dịch
         try {
             // B4.1: Lấy ví
-            Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
+            Wallet buyerWallet = walletRepository.findByCompanyIdWithDetails(buyerCompany.getId());
             if (buyerWallet == null) {
                 throw new ResourceNotFoundException("Buyer wallet not found");
             }
@@ -222,7 +222,7 @@ public class OrderServiceImpl implements OrderService {
             }
 
             // tìm ví seller
-            Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
+            Wallet sellerWallet = walletRepository.findByCompanyIdWithDetails(sellerCompany.getId());
             if (sellerWallet == null) {
                 throw new ResourceNotFoundException("Seller wallet not found");
             }

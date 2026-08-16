@@ -149,6 +149,7 @@ public class DataInitializer {
             User cvaUser = userRepository.findByEmail(CVA_USER_EMAIL);
             if(cvaUser == null ){
                 cvaUser = User.builder()
+                        .email(CVA_USER_EMAIL)
                         .passwordHash(passwordEncoder.encode(CVA_PASSWORD))
                         .roles(new HashSet<>(Set.of(cvaRole)))
                         .status(USER_STATUS.ACTIVE)

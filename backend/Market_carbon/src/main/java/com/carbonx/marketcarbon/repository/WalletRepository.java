@@ -13,6 +13,22 @@ import java.util.Optional;
 
 public interface WalletRepository extends JpaRepository<Wallet, Long> {
     Wallet findByUserId(Long userId);
+
+    // Eager-load user and company in a single query to eliminate N+1
+    // from @OneToOne EAGER default fetch on user and company
+    @Query("SELECT w FROM Wallet w " +
+           "LEFT JOIN FETCH w.user " +
+           "LEFT JOIN FETCH w.company " +
+           "WHERE w.user.id = :userId")
+    Wallet findByUserIdWithDetails(@Param("userId") Long userId);
+
+    // Eager-load user and company by company_id
+    @Query("SELECT w FROM Wallet w " +
+           "LEFT JOIN FETCH w.user " +
+           "LEFT JOIN FETCH w.company " +
+           "WHERE w.company.id = :companyId")
+    Wallet findByCompanyIdWithDetails(@Param("companyId") Long companyId);
+
     Optional<Wallet> findByCompany(Company company);
 
     // Thêm phương thức tìm kiếm với khóa pessimistic

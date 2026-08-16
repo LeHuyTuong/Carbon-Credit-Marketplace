@@ -11,7 +11,7 @@ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.MarketplaceService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -388,8 +388,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<MarketplaceListingResponse> getActiveListing() {
-        List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDate.now());
+        List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfterWithDetails(ListingStatus.AVAILABLE, LocalDate.now());
 
         return activeListings.stream()
                 .map(this::buildListingResponse)
@@ -398,12 +399,13 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<MarketplaceListingResponse> getALlCreditListingsByCompanyID() {
 
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
 
-        List<MarketPlaceListing> companyListings = marketplaceListingRepository.findByCompanyId(sellerCompany.getId());
+        List<MarketPlaceListing> companyListings = marketplaceListingRepository.findByCompanyIdWithDetails(sellerCompany.getId());
 
         return companyListings.stream()
                 .map(this::buildListingResponse)
