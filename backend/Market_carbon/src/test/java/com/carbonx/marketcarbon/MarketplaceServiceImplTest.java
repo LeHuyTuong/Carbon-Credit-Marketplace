@@ -153,8 +153,10 @@ class MarketplaceServiceImplTest {
 	void listCreditsForSale_Success_FromCreditID_NewListing() {
 		// Arrange
 		// (Sử dụng credit1: 100 available, 0 listed)
-		when(carbonCreditRepository.findByIdAndCompanyId(101L, 10L)).thenReturn(Optional.of(credit1));
-		when(marketplaceListingRepository.findByCompanyIdAndCarbonCreditIdAndStatus(10L, 101L, ListingStatus.AVAILABLE))
+		// P1.1: lenient — the insufficient-quantity path throws from the chain-sufficiency
+		// query before some of these stubs are consumed
+		lenient().when(carbonCreditRepository.findByIdAndCompanyId(101L, 10L)).thenReturn(Optional.of(credit1));
+		lenient().when(marketplaceListingRepository.findByCompanyIdAndCarbonCreditIdAndStatus(10L, 101L, ListingStatus.AVAILABLE))
 				.thenReturn(Collections.emptyList());
 
 		when(marketplaceListingRepository.save(any(MarketPlaceListing.class)))
@@ -260,8 +262,10 @@ class MarketplaceServiceImplTest {
 	void listCreditsForSale_Fail_InsufficientInCreditID() {
 		// Arrange
 		// (Sử dụng credit1: 100 available, 0 listed)
-		when(carbonCreditRepository.findByIdAndCompanyId(101L, 10L)).thenReturn(Optional.of(credit1));
-		when(marketplaceListingRepository.findByCompanyIdAndCarbonCreditIdAndStatus(10L, 101L, ListingStatus.AVAILABLE))
+		// P1.1: lenient — the insufficient-quantity path throws from the chain-sufficiency
+		// query before some of these stubs are consumed
+		lenient().when(carbonCreditRepository.findByIdAndCompanyId(101L, 10L)).thenReturn(Optional.of(credit1));
+		lenient().when(marketplaceListingRepository.findByCompanyIdAndCarbonCreditIdAndStatus(10L, 101L, ListingStatus.AVAILABLE))
 				.thenReturn(Collections.emptyList());
 
 		CreditListingRequest request = CreditListingRequest.builder()
@@ -271,9 +275,12 @@ class MarketplaceServiceImplTest {
 				.build();
 
 		// Act & Assert
+		// P1.1: resolveOwnedCredit throws the specific NO_AVAILABLE_CREDITS when the
+		// credit/chain cannot satisfy the requested quantity (deliberate refinement
+		// of the generic AMOUNT_IS_NOT_ENOUGH)
 		assertThatThrownBy(() -> marketplaceService.listCreditsForSale(request))
 				.isInstanceOf(AppException.class)
-				.hasFieldOrPropertyWithValue("errorCode", ErrorCode.AMOUNT_IS_NOT_ENOUGH);
+				.hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_AVAILABLE_CREDITS);
 	}
 
 	@Test

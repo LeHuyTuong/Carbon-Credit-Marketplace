@@ -204,10 +204,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 // giữ total nhất quán: amount = available + listed
                 c.setAmount(availAfter.add(c.getListedAmount()));
 
-                // hết available => coi như đã list hết credit này
-                if (availAfter.compareTo(BigDecimal.ZERO) == 0) {
-                    c.setStatus(CreditStatus.LISTED);
-                }
+                // P1.1: dùng chung updateCreditStatus với single-credit path — trước đây
+                // batch-mode chỉ set LISTED khi available về đúng 0, nên credit bị list
+                // MỘT PHẦN vẫn giữ AVAILABLE => cùng trạng thái business mà 2 path cho
+                // 2 status khác nhau.
+                updateCreditStatus(c, availAfter, c.getListedAmount());
 
                 log.debug("[BATCH-MODE] Updated credit {} - deduct={}, availBefore={}, availAfter={}, listed={}",
                         c.getId(), deduct, availBefore, availAfter, c.getListedAmount());
