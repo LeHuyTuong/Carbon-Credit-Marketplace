@@ -86,6 +86,7 @@ public class KycController {
     }
 
     @Operation(summary = "Get all User KYC", description = "Admin get all user KYC profiles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @GetMapping("/user/listKYC")
     public ResponseEntity<TuongCommonResponse<List<KycResponse>>> listUserKyc(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -102,6 +103,7 @@ public class KycController {
     }
 
     @Operation(summary = "Get all KYC users", description = "View list of all KYC user profiles (for ADMIN or CVA)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @GetMapping("/listEvowner")
     public ResponseEntity<TuongCommonResponse<List<KycResponse>>> getAllKYCUsers(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -181,6 +183,7 @@ public class KycController {
     }
 
     @Operation(summary = "Get all Company KYC", description = "Admin get all company KYC profiles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @GetMapping("/company/listKYCCompany")
     public ResponseEntity<TuongCommonResponse<List<KycCompanyResponse>>> listCompanyKyc(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -198,6 +201,7 @@ public class KycController {
 
 
     @Operation(summary = "Create KYC for CVA", description = "Create KYC profile for CVA (current user)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @PostMapping(value = "/cva/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> createCva(
             @Valid @ModelAttribute KycCvaRequest req,
@@ -216,6 +220,7 @@ public class KycController {
 
 
     @Operation(summary = "Update KYC for CVA", description = "Update KYC profile for CVA (current user)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @PutMapping(value = "/cva", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> updateCva(
             @Valid @ModelAttribute KycCvaRequest req,
@@ -249,6 +254,7 @@ public class KycController {
     }
 
     @Operation(summary = "Get all CVA KYC", description = "Admin get all CVA KYC profiles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CVA')")
     @GetMapping("/cva/list")
     public ResponseEntity<TuongCommonResponse<List<KycCvaResponse>>> listCvaProfiles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -265,6 +271,7 @@ public class KycController {
     }
 
     @Operation(summary = "Create KYC for Admin", description = "Create KYC profile for Admin (current user)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> createAdmin(
             @ModelAttribute @Valid KycAdminRequest req,
@@ -282,6 +289,7 @@ public class KycController {
     }
 
     @Operation(summary = "Update KYC for Admin", description = "Update KYC profile for Admin (current user)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TuongCommonResponse<Long>> updateAdmin(
             @ModelAttribute @Valid KycAdminRequest req,
