@@ -207,8 +207,9 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal totalPrice = order.getTotalPrice();
 
         if (listing.getQuantity().compareTo(quantityToBuy) < 0) {
-            order.setOrderStatus(OrderStatus.ERROR);
-            orderRepository.save(order);
+            // P0-B/B4: no status mutation here — this transaction is about to roll back,
+            // so any write would be discarded. The ERROR transition is persisted by
+            // OrderStatusRecorder (new transaction) from the controller's catch.
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
@@ -220,8 +221,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResourceNotFoundException("Buyer wallet not found");
             }
             if (buyerWallet.getBalance().compareTo(totalPrice) < 0) {
-                order.setOrderStatus(OrderStatus.ERROR);
-                orderRepository.save(order);
+                // P0-B/B4: see note above — ERROR is recorded post-rollback by OrderStatusRecorder
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
 
@@ -329,9 +329,11 @@ public class OrderServiceImpl implements OrderService {
                     actualCreditsCreated, totalPrice);
 
         } catch (Exception e) {
+            // P0-B/B4: do NOT write status here — this transaction is rolling back, so the
+            // save below would be discarded (the pre-B4 bug: orders stayed PENDING forever).
+            // The ERROR transition is persisted by OrderStatusRecorder after this method's
+            // transaction has fully rolled back (see OrderController.completeOrder).
             log.error("Error completing order: {}", orderId, e);
-            order.setOrderStatus(OrderStatus.ERROR);
-            orderRepository.save(order);
             throw e;
         }
     }

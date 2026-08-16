@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 import com.carbonx.marketcarbon.service.OrderService;
+import com.carbonx.marketcarbon.service.impl.OrderStatusRecorder;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
 import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
 import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderStatusRecorder orderStatusRecorder;
 
     @Operation(summary = "Buyer company create a new Order" , description = "Buyer company creates a Pending order based on marketplace listing")
     @PostMapping
@@ -56,7 +58,16 @@ public class OrderController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        orderService.completeOrder(orderId);
+        try {
+            orderService.completeOrder(orderId);
+        } catch (Exception e) {
+            // P0-B/B4: the settlement transaction has now fully rolled back (locks released),
+            // so it is finally safe to persist the ERROR transition in an independent
+            // transaction. Doing this inside completeOrder would deadlock on the order-row
+            // lock that completeOrder itself holds.
+            orderStatusRecorder.markOrderError(orderId, e.getMessage());
+            throw e;
+        }
 
         MessageResponse message = new MessageResponse("Order " + orderId + " completed successfully");
         TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
