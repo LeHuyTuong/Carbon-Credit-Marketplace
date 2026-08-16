@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.OtpPurpose;
+import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
@@ -28,11 +29,19 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
+
+    // P0-A (N1): public self-registration may only create these roles.
+    // ADMIN/CVA accounts must be provisioned through the admin flow, never self-registered.
+    private static final Set<String> PUBLIC_REGISTRATION_ROLES = Set.of(
+            PredefinedRole.USER_ROLE,
+            PredefinedRole.COMPANY_ROLE
+    );
 
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
@@ -60,6 +69,12 @@ public class AuthServiceImpl implements AuthService {
 
         Role role = roleRepository.findByName(requested)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+
+        // P0-A (N1): only self-service roles may be created through public registration.
+        // ADMIN/CVA accounts must be provisioned through the admin flow, never self-registered.
+        if (!PUBLIC_REGISTRATION_ROLES.contains(requested)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
         newUser.getRoles().add(role);
         // Sinh OTP
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
