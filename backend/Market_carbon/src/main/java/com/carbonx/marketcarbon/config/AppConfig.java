@@ -50,7 +50,10 @@ public class AppConfig {
             "/api/v1/projects/{id}",          // Cho phép xem chi tiết dự án
             "/api/v1/reports/files/download", // Cho phép tải file/ảnh (Logo)
             "/api/v1/marketplace",            // Cho phép xem chợ tín chỉ
-            "/files/**"
+            "/files/**",
+            "/error",                         // Boot error dispatch (P0-A: default-deny)
+            "/oauth2/**",                     // OAuth2 login flow entry points
+            "/login/oauth2/**"
     };
 
     @Bean
@@ -78,7 +81,8 @@ public class AppConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .anyRequest().permitAll()
+                        // P0-A (SC3): deny-by-default — anything not explicitly public above requires authentication
+                        .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(jwtTokenValidator, UsernamePasswordAuthenticationFilter.class)
