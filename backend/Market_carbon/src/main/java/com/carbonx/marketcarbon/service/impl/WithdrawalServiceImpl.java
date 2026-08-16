@@ -1,6 +1,8 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
@@ -12,6 +14,7 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
 import com.carbonx.marketcarbon.service.SseService;
+import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +27,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,6 +38,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final WalletRepository walletRepository;
     private final ApplicationNotificationService applicationNotificationService;
     private final SseService sseService;
+    private final WalletTransactionService walletTransactionService;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -83,13 +86,15 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Override
     @Transactional
     public Withdrawal processWithdrawal(Long withdrawalId, boolean accept) throws Exception {
-        Optional<Withdrawal> withdrawal = withdrawalRepository.findById(withdrawalId);
+        // P0-A (N3): lock the row so concurrent process attempts serialize,
+        // then guard the state transition — only a PENDING withdrawal may be processed.
+        Withdrawal withdrawalRequest = withdrawalRepository.findByIdWithPessimisticLock(withdrawalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Withdrawal not found with id: " + withdrawalId));
 
-        if (withdrawal.isEmpty()) {
-            throw new ResourceNotFoundException("Withdrawal not found with id: " + withdrawalId);
+        if (withdrawalRequest.getStatus() != Status.PENDING) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        Withdrawal withdrawalRequest = withdrawal.get();
         withdrawalRequest.setProcessedAt(LocalDateTime.now(VIETNAM_ZONE));
         String reason = ""; // reason
         User user = withdrawalRequest.getUser();
@@ -126,8 +131,16 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         } else {
             withdrawalRequest.setStatus(Status.REJECTED);
             reason = "Withdrawal request rejected by administrator."; // Lý do bị từ chối
-            wallet.setBalance(wallet.getBalance().add(amountToWithdraw));
-            walletRepository.save(wallet);
+            // P0-A (N3): refund through the audited transaction path (ledger row + balance
+            // update in one mechanism) instead of a bare setBalance. The PENDING guard above
+            // makes this refund happen exactly once even under concurrent/replayed calls.
+            walletTransactionService.createTransaction(WalletTransactionRequest.builder()
+                    .wallet(wallet)
+                    .type(WalletTransactionType.WITHDRAWAL_REFUND)
+                    .description("Withdrawal #" + withdrawalRequest.getId()
+                            + " rejected — amount returned to wallet")
+                    .amount(amountToWithdraw)
+                    .build());
         }
         // Lưu trạng thái FAILED hoặc REJECTED
         Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawalRequest);

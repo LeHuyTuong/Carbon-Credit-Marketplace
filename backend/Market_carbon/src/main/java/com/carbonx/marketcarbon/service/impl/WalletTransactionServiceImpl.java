@@ -78,7 +78,8 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             balanceAfter = balanceBefore.subtract(amount);
         }
         else if (request.getType() == WalletTransactionType.ADD_MONEY ||
-        request.getType() == WalletTransactionType.SELL_CARBON_CREDIT)
+        request.getType() == WalletTransactionType.SELL_CARBON_CREDIT ||
+        request.getType() == WalletTransactionType.WITHDRAWAL_REFUND)
         {
             // phải dương
             if (amount.compareTo(BigDecimal.ZERO) < 0) {
