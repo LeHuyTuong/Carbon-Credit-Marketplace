@@ -41,6 +41,8 @@ public class OrderServiceImpl implements OrderService {
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
     private final CreditIssuanceService creditIssuanceService;
+    // P0-B/B3: wallet row locks during settlement
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Value("${trading_fee}")
     private BigDecimal tradingFee;
@@ -178,8 +180,10 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         log.info("Starting order completion process for orderId: {}", orderId);
 
-        // B1 tìm order
-        Order order = orderRepository.findByIdWithDetails(orderId)
+        // B1 tìm order — P0-B/B3: WITH pessimistic lock, so the SUCCESS idempotency check
+        // below runs under lock. Before, two concurrent completeOrder(orderId) calls both
+        // read PENDING and both settled the same order (double debit/credit/issuance).
+        Order order = orderRepository.findByIdWithPessimisticLockAndDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
@@ -226,6 +230,14 @@ public class OrderServiceImpl implements OrderService {
             if (sellerWallet == null) {
                 throw new ResourceNotFoundException("Seller wallet not found");
             }
+
+            // P0-B/B3: pre-lock BOTH wallets in ascending id order BEFORE mutating balances.
+            // createTransaction re-acquires these locks (no-op for the same tx); the
+            // deterministic order prevents an A↔B / B↔A deadlock between two reverse trades.
+            Wallet firstWallet = buyerWallet.getId() <= sellerWallet.getId() ? buyerWallet : sellerWallet;
+            Wallet secondWallet = firstWallet == buyerWallet ? sellerWallet : buyerWallet;
+            entityManager.find(Wallet.class, firstWallet.getId(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            entityManager.find(Wallet.class, secondWallet.getId(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
             // B4.2: Cập nhật sourceCredit (bên bán)
             BigDecimal currentListedAmount = sourceCredit.getListedAmount() != null

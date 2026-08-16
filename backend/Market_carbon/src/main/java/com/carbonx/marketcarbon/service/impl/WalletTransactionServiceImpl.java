@@ -9,6 +9,8 @@ import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WalletTransactionRepository;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -28,6 +30,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    // P0-B/B3: every balance mutation goes through createTransaction — locking the
+    // wallet row HERE makes debit/credit safe no matter which caller invokes it.
+    private final EntityManager entityManager;
 
     private User currentUser(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -45,8 +50,15 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         // check wallet
         Wallet wallet;
         if (request.getWallet() != null && request.getWallet().getId() != null) {
-            wallet = walletRepository.findById(request.getWallet().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId()));
+            // P0-B/B3: SELECT ... FOR UPDATE on the wallet row. This is the chokepoint for
+            // balance mutations (deposits, withdrawals, buy/sell settlement), so locking here
+            // closes the lost-update window for every caller at once. Re-acquiring a lock the
+            // current transaction already holds (settlement pre-locks wallets first) is a no-op.
+            Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId(), LockModeType.PESSIMISTIC_WRITE);
+            if (locked == null) {
+                throw new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId());
+            }
+            wallet = locked;
         } else {
             throw new IllegalArgumentException("Wallet ID must be provided in WalletTransactionRequest");
         }

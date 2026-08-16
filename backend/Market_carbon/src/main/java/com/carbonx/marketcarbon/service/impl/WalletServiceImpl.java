@@ -322,19 +322,18 @@ public class WalletServiceImpl implements WalletService {
         }
 
         try {
-            // 1. Khóa và Tải ví nguồn (Sử dụng PESSIMISTIC_WRITE lock)
-            // Tương đương "SELECT ... FOR UPDATE" trong SQL.
-            // Luồng khác sẽ phải đợi nếu muốn tác động vào ví này.
-            Wallet lockedFromWallet = entityManager.find(Wallet.class, fromWallet.getId(), LockModeType.PESSIMISTIC_WRITE);
-            if (lockedFromWallet == null) {
+            // 1+2. Khóa và Tải cả hai ví theo thứ tự ID tăng dần (P0-B/B3: lock ordering —
+            // mọi luồng khóa ví theo cùng một thứ tự toàn cục thì không thể xảy ra deadlock
+            // vòng A→B đấu với B→A).
+            Wallet firstById = fromWallet.getId() <= toWallet.getId() ? fromWallet : toWallet;
+            Wallet secondById = firstById == fromWallet ? toWallet : fromWallet;
+            Wallet lockedFirst = entityManager.find(Wallet.class, firstById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            Wallet lockedSecond = entityManager.find(Wallet.class, secondById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            if (lockedFirst == null || lockedSecond == null) {
                 throw new AppException(ErrorCode.WALLET_NOT_FOUND);
             }
-
-            // 2. Khóa và Tải ví đích
-            Wallet lockedToWallet = entityManager.find(Wallet.class, toWallet.getId(), LockModeType.PESSIMISTIC_WRITE);
-            if (lockedToWallet == null) {
-                throw new AppException(ErrorCode.WALLET_NOT_FOUND);
-            }
+            Wallet lockedFromWallet = lockedFirst == fromWallet || lockedFirst.getId().equals(fromWallet.getId()) ? lockedFirst : lockedSecond;
+            Wallet lockedToWallet = lockedFromWallet == lockedFirst ? lockedSecond : lockedFirst;
 
             BigDecimal fromBefore = lockedFromWallet.getBalance();
             BigDecimal toBefore = lockedToWallet.getBalance();
