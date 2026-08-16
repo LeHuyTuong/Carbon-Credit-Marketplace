@@ -6,7 +6,6 @@ import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
 import com.carbonx.marketcarbon.dto.response.WalletResponse;
 import com.carbonx.marketcarbon.dto.response.WalletTransactionResponse;
 import com.carbonx.marketcarbon.exception.WalletException;
-import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.service.*;
@@ -76,28 +75,26 @@ public class WalletController {
 //        return ResponseEntity.ok(response);
 //    }
 
-    @Operation(summary = "Set status pending to success ", description = "API change status to confirm money in wallet ")
+    @Operation(summary = "Confirm a deposit after gateway redirect", description = "Verifies the payment with the provider server-side and credits the wallet exactly once. The client-supplied payment_id is accepted for backward compatibility but never trusted.")
     @PostMapping("/deposit")
     public ResponseEntity<TuongCommonResponse<WalletResponse>> addMoneyToWallet(
             @RequestParam(name = "order_id") Long orderId,
-            @RequestParam(name = "payment_id") String paymentId,
+            @RequestParam(name = "payment_id", required = false) String paymentId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws WalletException{
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
-        Boolean status = paymentService.processPaymentOrder(orderId, paymentId);
 
-        WalletResponse walletDto = null;
-        if (status) {
-            // If payment succeeded, add balance to the wallet and get the updated wallet DTO
-            PaymentOrder order = paymentService.getPaymentOrderById(orderId);
-            walletDto = walletService.addBalanceToWallet(order.getAmount()); // addBalanceToWallet now returns DTO
-        } else {
-            // If payment failed or was already processed, just get the current wallet state
-            log.warn("Payment order {} status was not updated or already processed. Fetching current wallet state.", orderId);
-            walletDto = walletService.getUserWallet(); // Get current wallet DTO without adding balance
-        }
+        // P0-B/B1: the backend establishes payment success, not the frontend.
+        // Step 1 (no tx): ownership + provider verification. Throws on failure.
+        paymentService.assertDepositVerifiable(orderId);
+
+        // Step 2 (one tx): lock order, PENDING → SUCCEEDED, credit wallet + ledger.
+        // Idempotent: replayed or concurrent calls credit exactly once.
+        paymentService.applyVerifiedDeposit(orderId);
+
+        WalletResponse walletDto = walletService.getUserWallet();
 
         TuongResponseStatus rs =  new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
