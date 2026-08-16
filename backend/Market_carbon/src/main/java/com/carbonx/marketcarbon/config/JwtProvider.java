@@ -21,9 +21,12 @@
     @Service
     public class JwtProvider {
 
-        private final SecretKey key = Keys.hmacShaKeyFor(
-                JwtConstant.SECRET_KEY.getBytes(StandardCharsets.UTF_8)
-        );
+        private final SecretKey key;
+
+        // P0-A (N4): secret injected from configuration (jwt.secret / JWT_SECRET env).
+        public JwtProvider(@org.springframework.beans.factory.annotation.Value("${jwt.secret}") String secret) {
+            this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        }
 
         /**
          *  Tạo token đăng nhập (token chính)

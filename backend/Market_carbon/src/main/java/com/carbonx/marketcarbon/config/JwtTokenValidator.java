@@ -24,6 +24,13 @@ import java.util.List;
 @Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
+    // P0-A (N4): secret injected from configuration (jwt.secret / JWT_SECRET env).
+    private final SecretKey signingKey;
+
+    public JwtTokenValidator(@org.springframework.beans.factory.annotation.Value("${jwt.secret}") String secret) {
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/register",
             "/api/v1/auth/verify-otp",
@@ -65,7 +72,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         jwt = jwt.substring(7);
 
         try {
-            SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+            SecretKey key = signingKey;
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
