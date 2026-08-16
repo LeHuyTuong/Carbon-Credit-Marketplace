@@ -39,3 +39,7 @@ carbonx-ai-6060f3108572.json
 
 
 
+
+# P0-A (N5): local secret files, never commit
+.env
+backend/Market_carbon/.env
