@@ -125,3 +125,24 @@ N1 RESOLVED · N2 RESOLVED · N3 RESOLVED · N4 RESOLVED (rotation pending exter
 - P0-A tests: 9 new test classes (26 tests).
 - Documentation: this file + P0_A_SECRET_ROTATION.md (+ audit docs from prior phases, committed separately).
 - Unrelated: **none** — the pre-existing working-tree changes (pom.xml, DataInitializer, 4 repositories, Marketplace/Order/Wallet ServiceImpl, logback, spy.properties, seed_large.py, application-local.properties) were present before P0-A and are left uncommitted and untouched.
+
+## Final Security Re-Audit (post-commit, against git HEAD)
+
+Re-verified every blocker directly in the committed tree (`git grep`/`git ls-tree` on HEAD, 2026-08-16):
+
+| Blocker | Committed-source evidence | Status |
+|---|---|---|
+| N1 | `AuthServiceImpl:41` `PUBLIC_REGISTRATION_ROLES = {EV_OWNER, COMPANY}`; guard at `:75` | RESOLVED |
+| N2 | `WithdrawalController` — 2 `@PreAuthorize("hasRole('ADMIN')")` (process + list) | RESOLVED |
+| N3 | `WithdrawalServiceImpl:95` non-PENDING → `INVALID_STATUS_TRANSITION`; `:139` refund via `WITHDRAWAL_REFUND` ledger; `findByIdWithPessimisticLock` | RESOLVED |
+| N4 | `JwtConstant` — `SECRET_KEY` constant absent; `jwt.secret=${JWT_SECRET}` (no fallback) in prod profile | RESOLVED — **rotation pending external action** |
+| N5 | `git grep` on HEAD for old JWT secret / Gmail app password / compose passwords → **zero matches**; compose uses `${VAR:?…}` | RESOLVED — **rotation pending external action** |
+| N8 | `KycController` — 11 `@PreAuthorize` (listings → CVA/ADMIN; cva create/update → ADMIN/CVA; admin create/update → ADMIN) | RESOLVED |
+| N9 | `CvaDashboardController` — class-level `hasAnyRole('CVA','ADMIN')` | RESOLVED |
+| N10 | `ChatAiController:16` — single mapping `/api/v1/ai` | RESOLVED |
+| SC3 | `AppConfig:85` `.anyRequest().authenticated()`; `FileUploadTestController` absent from HEAD tree | RESOLVED |
+| SC5 | `GlobalExceptionHandler` — 500 returns generic message | RESOLVED |
+
+**Final suite state**: 13 test classes, 63 tests — all 26 P0-A regression tests green; the 6 failures are the pre-existing baseline set (verified identical at clean HEAD `cee196b` before P0-A).
+
+**Authorization matrix (doc 19) re-verified**: rows previously marked FIX for N1/N2/N8/N9/SC3/SC5/N10 are now enforced in source; remaining FIX rows (deposit ownership/verification, order complete/read ownership, `/users/by-email` scope, `countAllTransactions` role) are explicitly P0-B/P1 scope and unchanged by this phase.
