@@ -68,6 +68,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         if (request.getQuantity() == null || request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
+        // P0-B/B5: credits are discrete units — listings must be whole-number quantities too
+        if (request.getQuantity().stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.QUANTITY_MUST_BE_WHOLE);
+        }
 
         // B2 Nếu request có carbonCreditId nhưng ko có batchId
         if (request.getCarbonCreditId() != null && request.getBatchId() == null) {

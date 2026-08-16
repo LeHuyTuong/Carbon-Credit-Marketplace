@@ -87,6 +87,13 @@ public class OrderServiceImpl implements OrderService {
         if (request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
         }
+        // P0-B/B5: carbon credits are discrete 1-unit assets (unique serial each, integer
+        // issuance formula). Fractional quantities must be rejected at the earliest entry
+        // point — settlement assumes integers (intValueExact) and would otherwise fail late
+        // with a confusing error and a stuck order.
+        if (request.getQuantity().stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.QUANTITY_MUST_BE_WHOLE);
+        }
         if (listing.getQuantity().compareTo(request.getQuantity()) < 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
@@ -280,8 +287,10 @@ public class OrderServiceImpl implements OrderService {
                     issuedBy
             );
 
-            // Số credits thực tế = phần nguyên của quantity (vì mỗi credit = 1 unit)
-            int actualCreditsCreated = quantityToBuy.intValue();
+            // Số credits thực tế = quantity — P0-B/B5: intValueExact() fails loudly if a
+            // fractional quantity ever reaches settlement (defense in depth behind the
+            // creation-time validation) instead of silently truncating paid quantity.
+            int actualCreditsCreated = quantityToBuy.intValueExact();
 
             // B5.1: Cập nhật số dư tín chỉ trong ví
             BigDecimal currentBuyerCredit = buyerWallet.getCarbonCreditBalance() != null
