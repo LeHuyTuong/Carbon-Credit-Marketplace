@@ -135,7 +135,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .carbonCredit(BigDecimal.ONE)
                     .tCo2e(BigDecimal.ONE)
                     .name("Carbon Credit")
-                    .currentPrice(0.0)
+                    .currentPrice(BigDecimal.ZERO)
                     .build());
         }
         creditRepo.saveAll(credits);
@@ -389,7 +389,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .carbonCredit(BigDecimal.ONE)
                     .tCo2e(BigDecimal.ONE)
                     .name("Carbon Credit")
-                    .currentPrice(0.0)
+                    .currentPrice(BigDecimal.ZERO)
                     .build());
         }
         creditRepo.saveAll(credits);
@@ -606,7 +606,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
                     .tCo2e(sourceCredit.getTCo2e()) // (Hoặc tCo2e/quantity)
                     .amount(BigDecimal.ONE)       // LUÔN LÀ 1
                     .name(sourceCredit.getName())
-                    .currentPrice(pricePerUnit != null ? pricePerUnit.doubleValue() : sourceCredit.getCurrentPrice())
+                    .currentPrice(pricePerUnit != null ? pricePerUnit : sourceCredit.getCurrentPrice())
                     .vintageYear(sourceCredit.getVintageYear())
                     .issuedAt(OffsetDateTime.now())
                     .issuedBy(issuer)
