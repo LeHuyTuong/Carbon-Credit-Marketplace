@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.Status;
 import com.carbonx.marketcarbon.config.VNPayConfig;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VNPayService {
@@ -75,7 +77,9 @@ public class VNPayService {
                         hashData.append('&');
                     }
                 } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
+                    // Dropping a field would sign the request over incomplete data.
+                    log.error("Cannot URL-encode VNPay field {}", fieldName, e);
+                    throw new IllegalStateException("Cannot build VNPay payment request", e);
                 }
             }
         }
@@ -121,6 +125,7 @@ public class VNPayService {
                 return 0; // Failed
             }
         } else {
+            log.warn("VNPay callback signature mismatch for txnRef={} - rejecting", request.getParameter("vnp_TxnRef"));
             return -1; // Invalid signature
         }
     }

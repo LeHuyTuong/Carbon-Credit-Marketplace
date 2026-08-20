@@ -501,6 +501,7 @@ Nếu bạn muốn giải thích chi tiết từng bước, hãy nói: “mô t�
             DecimalFormat df = new DecimalFormat("#,##0.########");
             return df.format(v) + " /tín chỉ";
         } catch (Exception e) {
+            log.debug("Could not format money value {}", v, e);
             return "—";
         }
     }
@@ -511,6 +512,7 @@ Nếu bạn muốn giải thích chi tiết từng bước, hãy nói: “mô t�
             BigDecimal percent = v.multiply(BigDecimal.valueOf(100));
             return percent.stripTrailingZeros().toPlainString() + "%";
         } catch (Exception e) {
+            log.debug("Could not format percentage value {}", v, e);
             return "0%";
         }
     }
@@ -521,6 +523,7 @@ Nếu bạn muốn giải thích chi tiết từng bước, hãy nói: “mô t�
             if (BigDecimal.ZERO.compareTo(v) == 0) return "0";
             return v.stripTrailingZeros().toPlainString();
         } catch (Exception e) {
+            log.debug("Could not format decimal value {}", v, e);
             return "—";
         }
     }

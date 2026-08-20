@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import lombok.extern.slf4j.Slf4j;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Collections;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class VertexWebClientConfig {
@@ -85,10 +87,9 @@ public class VertexWebClientConfig {
                     .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
             creds.refreshIfExpired();
             AccessToken token = creds.getAccessToken();
-            System.out.println("[VertexAI] Auth OK. Token prefix: "
-                    + token.getTokenValue().substring(0, 20) + "...");
+            log.info("Vertex AI credentials resolved, token expires at {}", token.getExpirationTime());
         } catch (Exception e) {
-            System.err.println("[VertexAI]  Auth failed: " + e.getMessage());
+            log.error("Vertex AI authentication failed at startup; AI features will be unavailable", e);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.UserRepository;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SseServiceImpl implements SseService {
@@ -67,7 +69,8 @@ public class SseServiceImpl implements SseService {
         try{
             emitter.send(SseEmitter.event().name("init").data("Connection established for user " + userId));
         }catch (IOException e){
-            // Lỗi thì xóa emitter
+            // Client disconnected before the handshake completed - expected, not an error.
+            log.debug("SSE init event failed for user {}; dropping emitter", userId, e);
             emitters.remove(userId, emitter);
         }
         return emitter;
@@ -86,6 +89,7 @@ public class SseServiceImpl implements SseService {
         try {
             emitter.send(SseEmitter.event().name("notification").data(message));
         } catch (IOException e) {
+            log.debug("SSE send failed for user {}; dropping emitter", userId, e);
             emitters.remove(userId, emitter);
         }
     }
@@ -99,6 +103,7 @@ public class SseServiceImpl implements SseService {
             try {
                 emitter.send(SseEmitter.event().name("notification").data(message));
             } catch (IOException e) {
+                log.debug("SSE broadcast failed for user {}; dropping emitter", userId, e);
                 emitters.remove(userId, emitter);
             }
         });

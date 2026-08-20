@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import java.util.Arrays;
 import java.util.Collections;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
@@ -117,7 +119,7 @@ public class AppConfig {
                                     ? "http://localhost:5173"
                                     : "https://carbonx.io.vn";
 
-                            System.out.println("[OAuth2 SUCCESS] email=" + email + ", redirect=" + frontendUrl);
+                            log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendUrl);
                             res.sendRedirect(frontendUrl + "/oauth-success?token=" + token);
                         })
                         .failureHandler((req, res, ex) -> {

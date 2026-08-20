@@ -263,6 +263,7 @@ public class PaymentServiceImpl implements PaymentService {
             po.setProviderRef(session.getId());
             paymentOrderRepository.save(po);
         });
+        log.debug("Stripe checkout session created: {}", session.getId());
 
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url(session.getUrl());

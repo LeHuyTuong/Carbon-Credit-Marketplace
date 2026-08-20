@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import lombok.extern.slf4j.Slf4j;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Component
 public class JwtTokenValidator extends OncePerRequestFilter {
 
@@ -94,12 +96,12 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            System.out.println("[JWT OK] User: " + email + " | Roles: " + auths);
+            log.debug("JWT accepted for user {} with roles {}", email, auths);
 
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            System.err.println("[JWT Expired] " + e.getClaims().getExpiration());
+            log.warn("JWT rejected: expired at {}", e.getClaims().getExpiration());
         } catch (Exception e) {
-            System.err.println("[JWT Invalid] " + e.getMessage());
+            log.warn("JWT rejected: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

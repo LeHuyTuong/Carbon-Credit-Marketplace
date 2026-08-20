@@ -527,6 +527,9 @@ public class EmissionReportServiceImpl implements EmissionReportService {
             for (byte b : digest) sb.append(String.format("%02x", b));
             return sb.toString();
         } catch (Exception e) {
+            // uploadSha256 is the integrity fingerprint of the evidence file a CVA verifies
+            // against - losing it silently would leave an unverifiable report.
+            log.error("Could not compute SHA-256 for uploaded file {}", file.getOriginalFilename(), e);
             return null;
         }
     }

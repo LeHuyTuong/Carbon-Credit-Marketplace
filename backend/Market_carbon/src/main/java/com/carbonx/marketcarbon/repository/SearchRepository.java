@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.dto.response.PageResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Component
 public class SearchRepository {
 
@@ -77,7 +79,7 @@ public class SearchRepository {
         }
 
         Long totalElements = (Long) selectCountQuery.getSingleResult();// in ra 1 gia tri
-        System.out.println("totalElements: " + totalElements);
+        log.debug("totalElements: {}", totalElements);
 
         Page<?> page = new PageImpl<>(vehicles, PageRequest.of(pageNo, pageSize), totalElements);
 
