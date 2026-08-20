@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
@@ -21,16 +23,16 @@ public class FileUploadTestController {
 
     @PostMapping(value = "/upload1e", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<String> uploadTest(@RequestParam("files") List<MultipartFile> files) {
-        System.out.println("=== [TEST-UPLOAD] Nhận được " + files.size() + " file ===");
+        log.debug("Test upload received {} file(s)", files.size());
         List<String> urls = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            System.out.println("Uploading: " + file.getOriginalFilename());
+            log.debug("Uploading: {}", file.getOriginalFilename());
             String url = s3Service.uploadFile(file);
             urls.add(url);
         }
 
-        System.out.println(" Hoàn tất upload thử, trả về URL list.");
+        log.debug("Test upload finished, returning URL list.");
         return urls;
     }
 }

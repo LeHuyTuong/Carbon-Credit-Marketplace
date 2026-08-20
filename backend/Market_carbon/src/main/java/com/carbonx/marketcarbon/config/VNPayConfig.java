@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.config;
 
 
+import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class VNPayConfig {
@@ -46,10 +48,9 @@ public class VNPayConfig {
                 sb.append(String.format("%02x", b & 0xff));
             }
             digest = sb.toString();
-        } catch (UnsupportedEncodingException ex) {
-            digest = "";
-        } catch (NoSuchAlgorithmException ex) {
-            digest = "";
+        } catch (UnsupportedEncodingException | NoSuchAlgorithmException ex) {
+            log.error("MD5 digest failed - algorithm unavailable or unsupported encoding", ex);
+            throw new IllegalStateException("Cannot compute MD5 digest", ex);
         }
         return digest;
     }
@@ -64,10 +65,9 @@ public class VNPayConfig {
                 sb.append(String.format("%02x", b & 0xff));
             }
             digest = sb.toString();
-        } catch (UnsupportedEncodingException ex) {
-            digest = "";
-        } catch (NoSuchAlgorithmException ex) {
-            digest = "";
+        } catch (UnsupportedEncodingException | NoSuchAlgorithmException ex) {
+            log.error("SHA-256 digest failed - algorithm unavailable or unsupported encoding", ex);
+            throw new IllegalStateException("Cannot compute SHA-256 digest", ex);
         }
         return digest;
     }
@@ -112,7 +112,11 @@ public class VNPayConfig {
             return sb.toString();
 
         } catch (Exception ex) {
-            return "";
+            // Returning "" here would hand VNPay an empty signature, or make an incoming
+            // callback fail verification, with nothing in the logs to explain why.
+            // A missing HmacSHA512 is an environment fault, not a business outcome.
+            log.error("HmacSHA512 signing failed - VNPay signature cannot be computed", ex);
+            throw new IllegalStateException("Cannot compute VNPay HmacSHA512 signature", ex);
         }
     }
 
@@ -124,7 +128,8 @@ public class VNPayConfig {
                 ipAdress = request.getLocalAddr();
             }
         } catch (Exception e) {
-            ipAdress = "Invalid IP:" + e.getMessage();
+            log.warn("Could not resolve client IP for VNPay request", e);
+            ipAdress = "0.0.0.0";
         }
         return ipAdress;
     }
