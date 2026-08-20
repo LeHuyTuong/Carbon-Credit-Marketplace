@@ -282,6 +282,11 @@ Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `PAYP
 Schema is managed by `spring.jpa.hibernate.ddl-auto=update`, so the first boot against an empty
 `core_ccm` database creates the tables.
 
+`DataInitializer` then seeds the roles and the three demo accounts. Their credentials are
+overridable — `carbonx.seed.admin-email` / `-password`, and the same pair for `company-` and `cva-`.
+Left unset, they fall back to the development defaults and the app logs a warning naming each
+account still using one.
+
 **Frontend:**
 
 ```bash

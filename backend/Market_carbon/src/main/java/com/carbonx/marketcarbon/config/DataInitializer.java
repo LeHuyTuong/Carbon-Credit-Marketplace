@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,22 +40,41 @@ public class DataInitializer {
 
     PasswordEncoder passwordEncoder;
 
-    @NonFinal
-    static final String ADMIN_USER_NAME = "admin@gmail.com";
-    @NonFinal
-    static final String ADMIN_PASSWORD = "Password@1";
-
-    // --- New Company Constants ---
-    @NonFinal
-    static final String COMPANY_USER_EMAIL = "company@example.com";
-    @NonFinal
-    static final String COMPANY_PASSWORD = "Password@1";
-    // --- End New Company Constants ---
+    /*
+     * Demo seed accounts. Credentials come from the environment so a deployment can
+     * set its own; the literals below are the local-development fallback only and are
+     * never intended for anything reachable from outside a dev machine. Startup logs a
+     * warning for every account still using a fallback password.
+     */
+    static final String DEFAULT_SEED_PASSWORD = "Password@1";
 
     @NonFinal
-    static final String CVA_USER_EMAIL = "cva@example.com";
+    @Value("${carbonx.seed.admin-email:admin@gmail.com}")
+    String adminEmail;
     @NonFinal
-    static final String CVA_PASSWORD = "Password@1";
+    @Value("${carbonx.seed.admin-password:" + DEFAULT_SEED_PASSWORD + "}")
+    String adminPassword;
+
+    @NonFinal
+    @Value("${carbonx.seed.company-email:company@example.com}")
+    String companyEmail;
+    @NonFinal
+    @Value("${carbonx.seed.company-password:" + DEFAULT_SEED_PASSWORD + "}")
+    String companyPassword;
+
+    @NonFinal
+    @Value("${carbonx.seed.cva-email:cva@example.com}")
+    String cvaEmail;
+    @NonFinal
+    @Value("${carbonx.seed.cva-password:" + DEFAULT_SEED_PASSWORD + "}")
+    String cvaPassword;
+
+    private void warnIfDefaultPassword(String label, String password) {
+        if (DEFAULT_SEED_PASSWORD.equals(password)) {
+            log.warn("Seed account '{}' is using the built-in development password. "
+                    + "Set carbonx.seed.{}-password before exposing this instance.", label, label);
+        }
+    }
 
     @Bean("databaseInitializer")
     @Transactional
@@ -66,6 +86,9 @@ public class DataInitializer {
                                         WalletRepository walletRepository,
                                         MarketplaceListingRepository marketplaceListingRepository) {
         log.info("Initializing application.....");
+        warnIfDefaultPassword("admin", adminPassword);
+        warnIfDefaultPassword("company", companyPassword);
+        warnIfDefaultPassword("cva", cvaPassword);
 
         return args -> {
             // Initialize Roles
@@ -82,16 +105,16 @@ public class DataInitializer {
                     .orElseGet(() -> roleRepository.save(Role.builder().name(PredefinedRole.CVA_ROLE).description("CVA role").build()));
 
             // Initialize Admin User
-            User adminUser = userRepository.findByEmail(ADMIN_USER_NAME);
+            User adminUser = userRepository.findByEmail(adminEmail);
             if (adminUser == null) {
                 adminUser = User.builder()
-                        .email(ADMIN_USER_NAME)
-                        .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .email(adminEmail)
+                        .passwordHash(passwordEncoder.encode(adminPassword))
                         .roles(new HashSet<>(Set.of(adminRole)))
                         .status(USER_STATUS.ACTIVE)
                         .build();
                 userRepository.save(adminUser);
-                log.warn("Admin user created with default password.");
+                log.info("Created new Admin user: {}", adminEmail);
             }
 
             final User finalAdminUser = adminUser;
@@ -134,28 +157,28 @@ public class DataInitializer {
 //                    });
 
             // --- Initialize New Company User ---
-            User companyUser = userRepository.findByEmail(COMPANY_USER_EMAIL);
+            User companyUser = userRepository.findByEmail(companyEmail);
             if (companyUser == null) {
                 companyUser = User.builder()
-                        .email(COMPANY_USER_EMAIL)
-                        .passwordHash(passwordEncoder.encode(COMPANY_PASSWORD))
+                        .email(companyEmail)
+                        .passwordHash(passwordEncoder.encode(companyPassword))
                         .roles(new HashSet<>(Set.of(companyRole)))
                         .status(USER_STATUS.ACTIVE)
                         .build();
                 userRepository.save(companyUser);
-                log.info("Created new Company user: {}", COMPANY_USER_EMAIL);
+                log.info("Created new Company user: {}", companyEmail);
             }
 
-            User cvaUser = userRepository.findByEmail(CVA_USER_EMAIL);
+            User cvaUser = userRepository.findByEmail(cvaEmail);
             if(cvaUser == null ){
                 cvaUser = User.builder()
-                        .email(CVA_USER_EMAIL)
-                        .passwordHash(passwordEncoder.encode(CVA_PASSWORD))
+                        .email(cvaEmail)
+                        .passwordHash(passwordEncoder.encode(cvaPassword))
                         .roles(new HashSet<>(Set.of(cvaRole)))
                         .status(USER_STATUS.ACTIVE)
                         .build();
                 userRepository.save(cvaUser);
-                log.info("Created new CVA user: {}", CVA_USER_EMAIL);
+                log.info("Created new CVA user: {}", cvaEmail);
             }
 //
 //            // --- Initialize Company Entity and Wallet for the new user ---
