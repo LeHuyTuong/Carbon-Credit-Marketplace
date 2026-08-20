@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.certificate;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -10,6 +11,7 @@ import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@Slf4j
 @Component
 public class ImageBase64Cache {
 
@@ -32,6 +34,7 @@ public class ImageBase64Cache {
                 return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(b);
             }
         } catch (Exception e) {
+            log.warn("Could not inline image {} into certificate; rendering without it", u, e);
             return null;
         }
     }

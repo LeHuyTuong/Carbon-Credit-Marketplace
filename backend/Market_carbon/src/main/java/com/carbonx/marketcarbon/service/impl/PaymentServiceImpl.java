@@ -162,7 +162,7 @@ public class PaymentServiceImpl implements PaymentService {
                                 .build())
                 .build();
         Session session = Session.create(params);
-        System.out.println("session____ " + session);
+        log.debug("Stripe checkout session created: {}", session.getId());
 
         PaymentOrderResponse res = new PaymentOrderResponse();
         res.setPayment_url(session.getUrl());

@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.common.validator;
 
+import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.annotation.PlateNumber;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class PlateNumberValidator implements ConstraintValidator<PlateNumber, String> {
 
@@ -36,7 +38,7 @@ public class PlateNumberValidator implements ConstraintValidator<PlateNumber, St
             else if(plateNumber.matches(PLATE_REGEX)) return true;
             else return false;
         }catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Plate number validation failed for input '{}'", plateNumber, e);
             return false;
         }
     }

@@ -5,8 +5,8 @@ import com.carbonx.marketcarbon.dto.analysis.AnalysisResult;
 import com.carbonx.marketcarbon.dto.analysis.RuleResult;
 import com.carbonx.marketcarbon.dto.analysis.RuleRubric;
 import com.carbonx.marketcarbon.service.analysis.ReportAnalysisService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +30,7 @@ public class ReportAnalysisController {
     @PreAuthorize("hasAnyRole('ADMIN','CVA','COMPANY')")
     @Operation(summary = "Analyze report (no-CO2 profile)", description = "Data quality + fraud-lite without CO₂/factor checks")
     @PostMapping("/{id}/analyze")
-    public ResponseEntity<TuongCommonResponse<AnalysisResult>> analyze(
+    public ResponseEntity<ApiResponse<AnalysisResult>> analyze(
             @PathVariable("id") Long id,
             @RequestParam(defaultValue = "true") boolean persist,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -41,8 +41,8 @@ public class ReportAnalysisController {
 
         AnalysisResult result = analysisService.analyzeNoCo2(id, persist);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<AnalysisResult> response = new TuongCommonResponse<>(trace, now, rs, result);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<AnalysisResult> response = new ApiResponse<>(trace, now, rs, result);
         return ResponseEntity.ok(response);
     }
 
@@ -52,7 +52,7 @@ public class ReportAnalysisController {
             description = "Returns the detailed scoring for each validation rule"
     )
     @GetMapping("/{id}/analysis/rules")
-    public ResponseEntity<TuongCommonResponse<List<RuleResult>>> getRuleDetails(
+    public ResponseEntity<ApiResponse<List<RuleResult>>> getRuleDetails(
             @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -63,11 +63,11 @@ public class ReportAnalysisController {
 
         AnalysisResult ar = analysisService.analyzeNoCo2(id, false);
 
-        TuongCommonResponse<List<RuleResult>> response =
-                new TuongCommonResponse<>(
+        ApiResponse<List<RuleResult>> response =
+                new ApiResponse<>(
                         trace,
                         now,
-                        new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage()),
+                        new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage()),
                         ar.getDetails()
                 );
 
@@ -80,7 +80,7 @@ public class ReportAnalysisController {
             description = "Returns the list of rules with scoring guidelines and evidence hints for manual or AI-based evaluation."
     )
     @GetMapping("/analysis/rules/rubric")
-    public ResponseEntity<TuongCommonResponse<List<RuleRubric>>> getRuleRubricTemplate(
+    public ResponseEntity<ApiResponse<List<RuleRubric>>> getRuleRubricTemplate(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
@@ -92,13 +92,13 @@ public class ReportAnalysisController {
 
         List<RuleRubric> data = analysisService.getRuleRubrics();
 
-        TuongResponseStatus status = new TuongResponseStatus(
+        ResponseStatus status = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage()
         );
 
-        TuongCommonResponse<List<RuleRubric>> response =
-                new TuongCommonResponse<>(trace, now, status, data);
+        ApiResponse<List<RuleRubric>> response =
+                new ApiResponse<>(trace, now, status, data);
 
         return ResponseEntity.ok(response);
     }

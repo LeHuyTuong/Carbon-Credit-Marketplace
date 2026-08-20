@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.utils.Tuong;
+package com.carbonx.marketcarbon.utils.common;
 
 
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TuongCommonRequest<T> {
+public class ApiRequest<T> {
     private String requestTrace;
     private String requestDateTime;
 

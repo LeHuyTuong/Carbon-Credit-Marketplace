@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.utils.Tuong;
+package com.carbonx.marketcarbon.utils.common;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,10 +8,10 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TuongCommonResponse<T> {
+public class ApiResponse<T> {
     String requestTrace;
     String requestDateTime;
-    TuongResponseStatus responseStatus;
+    ResponseStatus responseStatus;
     T response;
 
 }

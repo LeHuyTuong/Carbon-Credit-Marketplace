@@ -5,9 +5,9 @@ import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
 import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
 import com.carbonx.marketcarbon.service.MarketplaceService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +29,8 @@ public class MarketplaceController {
     @Operation(summary = "The list credit of Market place" , description = "API to list carbon credits")
     @PostMapping
     @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<TuongCommonResponse<MarketplaceListingResponse>> listCreditsForSale(
-            @Valid @RequestBody TuongCommonRequest<@Valid CreditListingRequest> req,
+    public ResponseEntity<ApiResponse<MarketplaceListingResponse>> listCreditsForSale(
+            @Valid @RequestBody ApiRequest<@Valid CreditListingRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
@@ -39,15 +39,15 @@ public class MarketplaceController {
 
         MarketplaceListingResponse data = marketplaceService.listCreditsForSale(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<MarketplaceListingResponse> response = new TuongCommonResponse<>(trace, now , rs , data);
+        ApiResponse<MarketplaceListingResponse> response = new ApiResponse<>(trace, now , rs , data);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "The list credit of Market place" , description = "API to list carbon credits")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<MarketplaceListingResponse>>> getActiveListing(
+    public ResponseEntity<ApiResponse<List<MarketplaceListingResponse>>> getActiveListing(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
@@ -56,15 +56,15 @@ public class MarketplaceController {
 
         List<MarketplaceListingResponse> listings = marketplaceService.getActiveListing();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<MarketplaceListingResponse>> response = new TuongCommonResponse<>(trace, now , rs , listings);
+        ApiResponse<List<MarketplaceListingResponse>> response = new ApiResponse<>(trace, now , rs , listings);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "The list credit of Market place by company " , description = "API to list carbon credits")
     @GetMapping("/company")
-    public ResponseEntity<TuongCommonResponse<List<MarketplaceListingResponse>>> getCreditListingByCompany(
+    public ResponseEntity<ApiResponse<List<MarketplaceListingResponse>>> getCreditListingByCompany(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
@@ -73,17 +73,17 @@ public class MarketplaceController {
 
         List<MarketplaceListingResponse> listings = marketplaceService.getALlCreditListingsByCompanyID();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<MarketplaceListingResponse>> response = new TuongCommonResponse<>(trace, now , rs , listings);
+        ApiResponse<List<MarketplaceListingResponse>> response = new ApiResponse<>(trace, now , rs , listings);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update marketplace listing", description = "API to update listing price")
     @PutMapping
     @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<TuongCommonResponse<MarketplaceListingResponse>> updateListing(
-            @Valid @RequestBody TuongCommonRequest<@Valid CreditListingUpdateRequest> req,
+    public ResponseEntity<ApiResponse<MarketplaceListingResponse>> updateListing(
+            @Valid @RequestBody ApiRequest<@Valid CreditListingUpdateRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
@@ -92,16 +92,16 @@ public class MarketplaceController {
 
         MarketplaceListingResponse data = marketplaceService.updateListCredits(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<MarketplaceListingResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        ApiResponse<MarketplaceListingResponse> response = new ApiResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Cancel marketplace listing", description = "API to cancel an active listing")
     @DeleteMapping("/{listingId}")
     @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<TuongCommonResponse<MarketplaceListingResponse>> cancelListing(
+    public ResponseEntity<ApiResponse<MarketplaceListingResponse>> cancelListing(
             @PathVariable("listingId") Long listingId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -111,9 +111,9 @@ public class MarketplaceController {
 
         MarketplaceListingResponse data = marketplaceService.deleteListCredits(listingId);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<MarketplaceListingResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        ApiResponse<MarketplaceListingResponse> response = new ApiResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 }

@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.config;
 
+import lombok.extern.slf4j.Slf4j;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import lombok.Data;
@@ -20,6 +21,7 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 @Data
+@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "ai.gemini")
 public class AiConfig {
@@ -74,7 +76,7 @@ public class AiConfig {
     // =============================
     private ExchangeFilterFunction logRequest() {
         return (request, next) -> {
-            System.out.println("[AI Request] " + request.method() + " " + request.url());
+            log.debug("AI request {} {}", request.method(), request.url());
             return next.exchange(request);
         };
     }
@@ -88,6 +90,9 @@ public class AiConfig {
                         .build();
                 return next.exchange(newRequest);
             } catch (IOException e) {
+                // Proceed unauthenticated so the caller sees Vertex's own 401 rather than
+                // an opaque filter failure - but never silently.
+                log.warn("Could not obtain Vertex AI access token; sending request unauthenticated", e);
                 return next.exchange(request);
             }
         };
