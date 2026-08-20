@@ -8,9 +8,9 @@ import com.carbonx.marketcarbon.dto.response.KycCvaResponse;
 import com.carbonx.marketcarbon.dto.response.KycResponse;
 import com.carbonx.marketcarbon.model.EVOwner;
 import com.carbonx.marketcarbon.service.KycService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +37,8 @@ public class KycController {
 
     @Operation(summary = "Create KYC for User", description = "Create KYC profile for the current user")
     @PostMapping("/user")
-    public ResponseEntity<TuongCommonResponse<Long>> createUser(
-            @Valid @RequestBody TuongCommonRequest<@Valid KycRequest> req,
+    public ResponseEntity<ApiResponse<Long>> createUser(
+            @Valid @RequestBody ApiRequest<@Valid KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -47,15 +47,15 @@ public class KycController {
 
         Long userId = kycService.createUser(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, userId);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, userId);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update KYC for User", description = "Update KYC profile for the current user")
     @PutMapping("/user")
-    public ResponseEntity<TuongCommonResponse<Long>> updateUser(
-            @Valid @Validated(KycRequest.Update.class) @RequestBody TuongCommonRequest<KycRequest> req,
+    public ResponseEntity<ApiResponse<Long>> updateUser(
+            @Valid @Validated(KycRequest.Update.class) @RequestBody ApiRequest<KycRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -64,14 +64,14 @@ public class KycController {
 
         Long updatedUserId = kycService.updateUser(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, updatedUserId);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, updatedUserId);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get KYC of current User", description = "Get KYC profile of the current user")
     @GetMapping("/user")
-    public ResponseEntity<TuongCommonResponse<EVOwner>> getUserKyc(
+    public ResponseEntity<ApiResponse<EVOwner>> getUserKyc(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -80,14 +80,14 @@ public class KycController {
 
         EVOwner kyc = kycService.getByUserId();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<EVOwner> response = new TuongCommonResponse<>(trace, now, rs, kyc);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<EVOwner> response = new ApiResponse<>(trace, now, rs, kyc);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all User KYC", description = "Admin get all user KYC profiles")
     @GetMapping("/user/listKYC")
-    public ResponseEntity<TuongCommonResponse<List<KycResponse>>> listUserKyc(
+    public ResponseEntity<ApiResponse<List<KycResponse>>> listUserKyc(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -96,14 +96,14 @@ public class KycController {
 
         List<KycResponse> list = kycService.getAllKYCUser();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<KycResponse>> response = new TuongCommonResponse<>(trace, now, rs, list);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<KycResponse>> response = new ApiResponse<>(trace, now, rs, list);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all KYC users", description = "View list of all KYC user profiles (for ADMIN or CVA)")
     @GetMapping("/listEvowner")
-    public ResponseEntity<TuongCommonResponse<List<KycResponse>>> getAllKYCUsers(
+    public ResponseEntity<ApiResponse<List<KycResponse>>> getAllKYCUsers(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -113,8 +113,8 @@ public class KycController {
         // Gọi service để lấy danh sách
         List<KycResponse> kycList = kycService.getAllKYCUser();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<KycResponse>> response = new TuongCommonResponse<>(trace, now, rs, kycList);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<KycResponse>> response = new ApiResponse<>(trace, now, rs, kycList);
 
         return ResponseEntity.ok(response);
     }
@@ -122,8 +122,8 @@ public class KycController {
 
     @Operation(summary = "Create KYC for Company", description = "Create KYC profile for the company of current user")
     @PostMapping("/company")
-    public ResponseEntity<TuongCommonResponse<Long>> createCompany(
-            @Valid @Validated(KycCompanyRequest.Create.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+    public ResponseEntity<ApiResponse<Long>> createCompany(
+            @Valid @Validated(KycCompanyRequest.Create.class) @RequestBody ApiRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -132,16 +132,16 @@ public class KycController {
 
         Long id = kycService.createCompany(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'COMPANY')")
     @Operation(summary = "Update KYC for Company", description = "Update KYC profile for the company of current user")
     @PutMapping("/company")
-    public ResponseEntity<TuongCommonResponse<Long>> updateCompany(
-            @Valid @Validated(KycCompanyRequest.Update.class) @RequestBody TuongCommonRequest<KycCompanyRequest> req,
+    public ResponseEntity<ApiResponse<Long>> updateCompany(
+            @Valid @Validated(KycCompanyRequest.Update.class) @RequestBody ApiRequest<KycCompanyRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -150,8 +150,8 @@ public class KycController {
 
         Long id = kycService.updateCompany(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
@@ -167,22 +167,22 @@ public class KycController {
 
     @Operation(summary = "Get Company KYC", description = "Get KYC profile of the current user's company")
     @GetMapping("/company")
-    public ResponseEntity<TuongCommonResponse<KycCompanyResponse>> getKycCompany(
+    public ResponseEntity<ApiResponse<KycCompanyResponse>> getKycCompany(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         KycCompanyResponse kyc = kycService.getByCompanyId();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<KycCompanyResponse> response = new TuongCommonResponse<>(trace, now, rs, kyc);
+        ApiResponse<KycCompanyResponse> response = new ApiResponse<>(trace, now, rs, kyc);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all Company KYC", description = "Admin get all company KYC profiles")
     @GetMapping("/company/listKYCCompany")
-    public ResponseEntity<TuongCommonResponse<List<KycCompanyResponse>>> listCompanyKyc(
+    public ResponseEntity<ApiResponse<List<KycCompanyResponse>>> listCompanyKyc(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -191,15 +191,15 @@ public class KycController {
 
         List<KycCompanyResponse> list = kycService.getAllKYCCompany();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<KycCompanyResponse>> response = new TuongCommonResponse<>(trace, now, rs, list);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<KycCompanyResponse>> response = new ApiResponse<>(trace, now, rs, list);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Create KYC for CVA", description = "Create KYC profile for CVA (current user)")
     @PostMapping(value = "/cva/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<Long>> createCva(
+    public ResponseEntity<ApiResponse<Long>> createCva(
             @Valid @ModelAttribute KycCvaRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -209,15 +209,15 @@ public class KycController {
 
         Long id = kycService.createCva(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Update KYC for CVA", description = "Update KYC profile for CVA (current user)")
     @PutMapping(value = "/cva", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<Long>> updateCva(
+    public ResponseEntity<ApiResponse<Long>> updateCva(
             @Valid @ModelAttribute KycCvaRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -227,14 +227,14 @@ public class KycController {
 
         Long id = kycService.updateCva(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get CVA KYC (me)", description = "Get KYC profile of the current CVA user")
     @GetMapping("/cva")
-    public ResponseEntity<TuongCommonResponse<KycCvaResponse>> getCvaProfile(
+    public ResponseEntity<ApiResponse<KycCvaResponse>> getCvaProfile(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -243,14 +243,14 @@ public class KycController {
 
         KycCvaResponse data = kycService.getCvaProfile();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<KycCvaResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<KycCvaResponse> response = new ApiResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get all CVA KYC", description = "Admin get all CVA KYC profiles")
     @GetMapping("/cva/list")
-    public ResponseEntity<TuongCommonResponse<List<KycCvaResponse>>> listCvaProfiles(
+    public ResponseEntity<ApiResponse<List<KycCvaResponse>>> listCvaProfiles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -259,14 +259,14 @@ public class KycController {
 
         List<KycCvaResponse> list = kycService.getAllCvaProfiles();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<KycCvaResponse>> response = new TuongCommonResponse<>(trace, now, rs, list);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<KycCvaResponse>> response = new ApiResponse<>(trace, now, rs, list);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Create KYC for Admin", description = "Create KYC profile for Admin (current user)")
     @PostMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<Long>> createAdmin(
+    public ResponseEntity<ApiResponse<Long>> createAdmin(
             @ModelAttribute @Valid KycAdminRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -276,14 +276,14 @@ public class KycController {
 
         Long id = kycService.createAdmin(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC created successfully");
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC created successfully");
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update KYC for Admin", description = "Update KYC profile for Admin (current user)")
     @PutMapping(value = "/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<Long>> updateAdmin(
+    public ResponseEntity<ApiResponse<Long>> updateAdmin(
             @ModelAttribute @Valid KycAdminRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -293,15 +293,15 @@ public class KycController {
 
         Long id = kycService.updateAdmin(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC updated successfully");
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, id);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Admin KYC updated successfully");
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, id);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Get Admin KYC (me)", description = "Get KYC profile of the current Admin user")
     @GetMapping("/admin")
-    public ResponseEntity<TuongCommonResponse<KycAdminResponse>> getAdminProfile(
+    public ResponseEntity<ApiResponse<KycAdminResponse>> getAdminProfile(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -310,14 +310,14 @@ public class KycController {
 
         KycAdminResponse data = kycService.getAdminProfile();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<KycAdminResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<KycAdminResponse> response = new ApiResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Create KYC for EV Owner", description = "EV Owner submits identification information for verification")
     @PostMapping("/kycEv")
-    public ResponseEntity<TuongCommonResponse<Long>> createKyc(
+    public ResponseEntity<ApiResponse<Long>> createKyc(
             @Valid @RequestBody KycEvOwnerRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -326,9 +326,9 @@ public class KycController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         Long id = kycService.createKycEVOwner(req); // gọi logic cũ trong service
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "KYC created successfully");
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "KYC created successfully");
 
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, id));
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, id));
     }
 
 }

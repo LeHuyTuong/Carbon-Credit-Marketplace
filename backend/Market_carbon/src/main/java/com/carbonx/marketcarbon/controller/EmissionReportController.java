@@ -7,8 +7,8 @@ import com.carbonx.marketcarbon.dto.response.EmissionReportResponse;
 import com.carbonx.marketcarbon.service.EmissionReportService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +49,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('COMPANY')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<EmissionReportResponse>> upload(
+    public ResponseEntity<ApiResponse<EmissionReportResponse>> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "projectId", required = false) Long projectId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -60,8 +60,8 @@ public class EmissionReportController {
 
         EmissionReportResponse data = service.uploadCsvAsReport(file, projectId);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Report uploaded successfully");
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Report uploaded successfully");
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, data));
     }
 
 
@@ -71,7 +71,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('CVA')")
     @GetMapping("/list-cva-check")
-    public ResponseEntity<TuongCommonResponse<Page<EmissionReportResponse>>> listForCva(
+    public ResponseEntity<ApiResponse<Page<EmissionReportResponse>>> listForCva(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -83,11 +83,11 @@ public class EmissionReportController {
 
         Page<EmissionReportResponse> p = service.listReportsForCva(PageRequest.of(page, size));
 
-        TuongResponseStatus rs = new TuongResponseStatus(
+        ResponseStatus rs = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 "Reports fetched successfully for CVA"
         );
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, p));
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, p));
     }
 
 
@@ -125,7 +125,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('CVA')")
     @PutMapping("/{reportId}/verify")
-    public ResponseEntity<TuongCommonResponse<EmissionReportResponse>> verify(
+    public ResponseEntity<ApiResponse<EmissionReportResponse>> verify(
             @PathVariable Long reportId,
             @RequestParam("approved") boolean approved,
             @RequestParam(value = "comment", required = false) String comment,
@@ -138,8 +138,8 @@ public class EmissionReportController {
         EmissionReportResponse data = service.verifyReport(reportId, approved, comment);
 
         String msg = approved ? "Report verified successfully" : "Report rejected by CVA";
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), msg);
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), msg);
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, data));
     }
 
     @Operation(
@@ -148,7 +148,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{reportId}/approve")
-    public ResponseEntity<TuongCommonResponse<EmissionReportResponse>> approve(
+    public ResponseEntity<ApiResponse<EmissionReportResponse>> approve(
             @PathVariable Long reportId,
             @RequestParam("approved") boolean approved,
             @RequestParam(value = "note", required = false) String note,
@@ -161,8 +161,8 @@ public class EmissionReportController {
         EmissionReportResponse data = service.adminApproveReport(reportId, approved, note);
 
         String msg = approved ? "Report approved by Admin" : "Report rejected by Admin";
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), msg);
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), msg);
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, data));
     }
 
     @Operation(
@@ -171,7 +171,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/list")
-    public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listReportsForAdmin(
+    public ResponseEntity<ApiResponse<List<EmissionReportResponse>>> listReportsForAdmin(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -184,8 +184,8 @@ public class EmissionReportController {
         Page<EmissionReportResponse> p = service.listReportsForAdmin(status, PageRequest.of(page, size));
         List<EmissionReportResponse> data = p.getContent();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Reports listed successfully");
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Reports listed successfully");
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, data));
     }
 
     @Operation(
@@ -194,7 +194,7 @@ public class EmissionReportController {
     )
     @PreAuthorize("hasRole('COMPANY')")
     @GetMapping("/my-reports")
-    public ResponseEntity<TuongCommonResponse<List<EmissionReportResponse>>> listMyReports(
+    public ResponseEntity<ApiResponse<List<EmissionReportResponse>>> listMyReports(
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "projectId", required = false) Long projectId,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
@@ -204,8 +204,8 @@ public class EmissionReportController {
         String now = dateOrNow(date);
 
         List<EmissionReportResponse> data = service.listReportsForCompany(status, projectId);
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "My reports fetched successfully");
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, t, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "My reports fetched successfully");
+        return ResponseEntity.ok(new ApiResponse<>(now, t, rs, data));
     }
 
     @Operation(
@@ -225,7 +225,7 @@ public class EmissionReportController {
     )
     @GetMapping("/{reportId}/details")
     @PreAuthorize("hasAnyRole('CVA','COMPANY')") // thêm 'ADMIN' nếu cần
-    public ResponseEntity<TuongCommonResponse<Page<EmissionReportDetailResponse>>> getReportDetails(
+    public ResponseEntity<ApiResponse<Page<EmissionReportDetailResponse>>> getReportDetails(
             @PathVariable Long reportId,
             @RequestParam(required = false) String plateContains,
             Pageable pageable,
@@ -238,11 +238,11 @@ public class EmissionReportController {
         Page<EmissionReportDetailResponse> page =
                 service.getReportDetails(reportId, plateContains, pageable);
 
-        TuongResponseStatus rs = new TuongResponseStatus(
+        ResponseStatus rs = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 "Emission report details fetched successfully"
         );
-        return ResponseEntity.ok(new TuongCommonResponse<>(now, trace, rs, page));
+        return ResponseEntity.ok(new ApiResponse<>(now, trace, rs, page));
     }
 
 

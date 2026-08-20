@@ -8,7 +8,7 @@ import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.utils.CommonResponse;
 import com.carbonx.marketcarbon.utils.ResponseUtil;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;

@@ -4,9 +4,9 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.PaymentDetailsRequest;
 import com.carbonx.marketcarbon.model.PaymentDetails;
 import com.carbonx.marketcarbon.service.impl.PaymentDetailsServiceImpl;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,24 +25,24 @@ public class PaymentDetailsController {
 
     @Operation(summary = "Create a method to withdrawal" , description = "Add bankAccount to withdrawal")
     @PostMapping
-    public ResponseEntity<TuongCommonResponse<PaymentDetails>> createPaymentDetails(
-            @Valid  @RequestBody TuongCommonRequest<PaymentDetailsRequest> req,
+    public ResponseEntity<ApiResponse<PaymentDetails>> createPaymentDetails(
+            @Valid  @RequestBody ApiRequest<PaymentDetailsRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
             ) {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         PaymentDetails paymentDetails = paymentDetailsService.addPaymentDetails(req.getData());
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentDetails> res = new TuongCommonResponse<>(trace, now , rs , paymentDetails);
+        ApiResponse<PaymentDetails> res = new ApiResponse<>(trace, now , rs , paymentDetails);
         return ResponseEntity.ok(res);
     }
 
     @Operation(summary = "Update method to withdrawal" , description = "Update bankAccount to withdrawal")
     @PutMapping
-    public ResponseEntity<TuongCommonResponse<PaymentDetails>> updatePaymentDetails(
-            @Valid  @RequestBody TuongCommonRequest<PaymentDetailsRequest> req,
+    public ResponseEntity<ApiResponse<PaymentDetails>> updatePaymentDetails(
+            @Valid  @RequestBody ApiRequest<PaymentDetailsRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
@@ -51,16 +51,16 @@ public class PaymentDetailsController {
 
         PaymentDetails paymentDetails = paymentDetailsService.updatePaymentDetails(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentDetails> res = new TuongCommonResponse<>(trace, now , rs , paymentDetails);
+        ApiResponse<PaymentDetails> res = new ApiResponse<>(trace, now , rs , paymentDetails);
         return ResponseEntity.ok(res);
     }
 
     @Operation(summary = "Delete a method to withdrawal" , description = "Delete bankAccount to withdrawal")
     @DeleteMapping
-    public ResponseEntity<TuongCommonResponse<PaymentDetails>> deletePaymentDetails(
-            @Valid  @RequestBody TuongCommonRequest<PaymentDetailsRequest> req,
+    public ResponseEntity<ApiResponse<PaymentDetails>> deletePaymentDetails(
+            @Valid  @RequestBody ApiRequest<PaymentDetailsRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) {
@@ -69,24 +69,24 @@ public class PaymentDetailsController {
 
         paymentDetailsService.deletePaymentDetails(req.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentDetails> res = new TuongCommonResponse<>(trace, now , rs , null);
+        ApiResponse<PaymentDetails> res = new ApiResponse<>(trace, now , rs , null);
         return ResponseEntity.ok(res);
     }
 
     @Operation(summary = "View bankAccount", description = "API to view all of bankAccount to withdrawl")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<PaymentDetails>> getPaymentDetails(
+    public ResponseEntity<ApiResponse<PaymentDetails>> getPaymentDetails(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         PaymentDetails paymentDetails = paymentDetailsService.getUserPaymentDetails();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentDetails> res = new TuongCommonResponse<>(trace,now,rs,paymentDetails);
+        ApiResponse<PaymentDetails> res = new ApiResponse<>(trace,now,rs,paymentDetails);
         return ResponseEntity.ok(res);
     }
 }

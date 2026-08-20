@@ -5,9 +5,9 @@ import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.response.MessageResponse;
 import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
 import com.carbonx.marketcarbon.service.OrderService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +30,8 @@ public class OrderController {
     @Operation(summary = "Buyer company create a new Order" , description = "Buyer company creates a Pending order based on marketplace listing")
     @PostMapping
     @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<TuongCommonResponse<CreditTradeResponse>> createOrder(
-            @Valid  @RequestBody TuongCommonRequest<OrderRequest> request,
+    public ResponseEntity<ApiResponse<CreditTradeResponse>> createOrder(
+            @Valid  @RequestBody ApiRequest<OrderRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
             ) {
@@ -40,15 +40,15 @@ public class OrderController {
 
         CreditTradeResponse order = orderService.createOrder(request.getData());
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<CreditTradeResponse> response = new TuongCommonResponse<>(now,trace,rs, order);
+        ApiResponse<CreditTradeResponse> response = new ApiResponse<>(now,trace,rs, order);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "System complete a PENDING Order", description = "System executes the financial transaction for a PENDING order. This moves funds and transfers carbon credits.")
     @PostMapping("/{id}/complete")
-    public ResponseEntity<TuongCommonResponse<MessageResponse>> completeOrder(
+    public ResponseEntity<ApiResponse<MessageResponse>> completeOrder(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -59,17 +59,17 @@ public class OrderController {
         orderService.completeOrder(orderId);
 
         MessageResponse message = new MessageResponse("Order " + orderId + " completed successfully");
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
 
-        TuongCommonResponse<MessageResponse> response = new TuongCommonResponse<>(now,trace,rs,message);
+        ApiResponse<MessageResponse> response = new ApiResponse<>(now,trace,rs,message);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Get Order by ID", description = "Retrieves the details of a specific order.")
     @GetMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<CreditTradeResponse>> getOrderById(
+    public ResponseEntity<ApiResponse<CreditTradeResponse>> getOrderById(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -78,15 +78,15 @@ public class OrderController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         CreditTradeResponse responseData = orderService.getOrderById(orderId);
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<CreditTradeResponse> response = new TuongCommonResponse<>(trace, now, rs, responseData);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<CreditTradeResponse> response = new ApiResponse<>(trace, now, rs, responseData);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get User's Order History", description = "Retrieves all orders placed by the current user's company.")
     @GetMapping
     @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<TuongCommonResponse<List<CreditTradeResponse>>> getUserOrders(
+    public ResponseEntity<ApiResponse<List<CreditTradeResponse>>> getUserOrders(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
@@ -94,15 +94,15 @@ public class OrderController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         List<CreditTradeResponse> orders = orderService.getUserOrders();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<CreditTradeResponse>> response = new TuongCommonResponse<>(trace, now, rs, orders);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<CreditTradeResponse>> response = new ApiResponse<>(trace, now, rs, orders);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Cancel a PENDING Order", description = "Cancels an order that has not yet been completed.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<MessageResponse>> cancelOrder(
+    public ResponseEntity<ApiResponse<MessageResponse>> cancelOrder(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -113,8 +113,8 @@ public class OrderController {
         orderService.cancelOrder(orderId);
 
         MessageResponse message = new MessageResponse("Order " + orderId + " has been cancelled.");
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<MessageResponse> response = new TuongCommonResponse<>(trace, now, rs, message);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<MessageResponse> response = new ApiResponse<>(trace, now, rs, message);
 
         return ResponseEntity.ok(response);
     }

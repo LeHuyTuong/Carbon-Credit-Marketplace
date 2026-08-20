@@ -11,9 +11,9 @@ import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.WalletTransaction;
 import com.carbonx.marketcarbon.service.*;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class WalletController {
 
     @Operation(summary = "User wallet" , description = "API get own wallet")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<WalletResponse>> getUserWallet (
+    public ResponseEntity<ApiResponse<WalletResponse>> getUserWallet (
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws WalletException
@@ -49,15 +49,15 @@ public class WalletController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         WalletResponse wallet = walletService.getUserWallet();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<WalletResponse> response = new TuongCommonResponse<>(trace, now , rs ,wallet );
+        ApiResponse<WalletResponse> response = new ApiResponse<>(trace, now , rs ,wallet );
         return ResponseEntity.ok(response);
     }
 
 //    @Operation(summary = "API add money to Wallet   " , description = "API deposit money ")
 //    @PutMapping("/deposit/amount/{amount}")
-//    public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> depositMoney(
+//    public ResponseEntity<ApiResponse<PaymentOrderResponse>> depositMoney(
 //            @PathVariable("amount") Long amount,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
 //            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -70,15 +70,15 @@ public class WalletController {
 //        res.setPayment_url("deposit success");
 //        res.setAmount(amount);
 //        res.setAmountInVnd(amountInVnd);
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
 //                StatusCode.SUCCESS.getMessage());
-//        TuongCommonResponse<PaymentOrderResponse> response = new TuongCommonResponse<>(trace,now,rs , res);
+//        ApiResponse<PaymentOrderResponse> response = new ApiResponse<>(trace,now,rs , res);
 //        return ResponseEntity.ok(response);
 //    }
 
     @Operation(summary = "Set status pending to success ", description = "API change status to confirm money in wallet ")
     @PostMapping("/deposit")
-    public ResponseEntity<TuongCommonResponse<WalletResponse>> addMoneyToWallet(
+    public ResponseEntity<ApiResponse<WalletResponse>> addMoneyToWallet(
             @RequestParam(name = "order_id") Long orderId,
             @RequestParam(name = "payment_id") String paymentId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -99,15 +99,15 @@ public class WalletController {
             walletDto = walletService.getUserWallet(); // Get current wallet DTO without adding balance
         }
 
-        TuongResponseStatus rs =  new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs =  new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<WalletResponse> response = new TuongCommonResponse<>(trace,now,rs,walletDto);
+        ApiResponse<WalletResponse> response = new ApiResponse<>(trace,now,rs,walletDto);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get history of transactions", description = "API Get history of transaction")
     @GetMapping("/transactions")
-    public ResponseEntity<TuongCommonResponse<List<WalletTransactionResponse>>> getTransactions (
+    public ResponseEntity<ApiResponse<List<WalletTransactionResponse>>> getTransactions (
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ){
@@ -116,15 +116,15 @@ public class WalletController {
 
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactions(); // Call service method returning DTO list
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<WalletTransactionResponse>> response = new TuongCommonResponse<>(trace, now , rs ,transactionDtos );
+        ApiResponse<List<WalletTransactionResponse>> response = new ApiResponse<>(trace, now , rs ,transactionDtos );
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Count My Transactions", description = "API to count transactions for the current user's wallet")
     @GetMapping("/transactions/my/count")
-    public ResponseEntity<TuongCommonResponse<Long>> countMyTransactions(
+    public ResponseEntity<ApiResponse<Long>> countMyTransactions(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -133,15 +133,15 @@ public class WalletController {
 
         long count = walletTransactionService.countMyTransactions();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, count);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Count All Transactions (Admin)", description = "API for Admin to count all wallet transactions in the system")
     @GetMapping("/transactions/count")
 //    @PreAuthorize("hasRole('ADMIN')") // Chỉ Admin mới được truy cập
-    public ResponseEntity<TuongCommonResponse<Long>> countAllTransactions(
+    public ResponseEntity<ApiResponse<Long>> countAllTransactions(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -150,15 +150,15 @@ public class WalletController {
 
         long count = walletTransactionService.countAllTransactions();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Long> response = new TuongCommonResponse<>(trace, now, rs, count);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Long> response = new ApiResponse<>(trace, now, rs, count);
         return ResponseEntity.ok(response);
     }
 
 /*
 
     @PutMapping("/order/{orderId}/pay")
-    public ResponseEntity<TuongCommonResponse<Wallet>> payOrder(
+    public ResponseEntity<ApiResponse<Wallet>> payOrder(
             @PathVariable("orderId") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime

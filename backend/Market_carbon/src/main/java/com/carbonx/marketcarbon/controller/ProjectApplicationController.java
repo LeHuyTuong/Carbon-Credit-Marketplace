@@ -4,9 +4,9 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProjectApplicationRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectApplicationResponse;
 import com.carbonx.marketcarbon.service.ProjectApplicationService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class ProjectApplicationController {
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "Submit application to join a project (Company only)")
     @PostMapping
-    public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> submitApplication(
+    public ResponseEntity<ApiResponse<ProjectApplicationResponse>> submitApplication(
             @RequestParam("projectId") Long projectId,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -45,26 +45,26 @@ public class ProjectApplicationController {
                 : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         if (file == null || file.isEmpty()) {
-            TuongResponseStatus rs = new TuongResponseStatus("400", "File is required");
-            return ResponseEntity.badRequest().body(new TuongCommonResponse<>(trace, now, rs, null));
+            ResponseStatus rs = new ResponseStatus("400", "File is required");
+            return ResponseEntity.badRequest().body(new ApiResponse<>(trace, now, rs, null));
         }
 
         ProjectApplicationResponse data = projectApplicationService.submit(projectId, file);
 
-        TuongResponseStatus rs = new TuongResponseStatus(
+        ResponseStatus rs = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 "Application uploaded & submitted successfully"
         );
 
         return ResponseEntity.ok(
-                new TuongCommonResponse<>(trace, now, rs, data)
+                new ApiResponse<>(trace, now, rs, data)
         );
     }
 
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "List all my submitted applications (Company only)")
     @GetMapping("/my")
-    public ResponseEntity<TuongCommonResponse<List<ProjectApplicationResponse>>> listMyApplications(
+    public ResponseEntity<ApiResponse<List<ProjectApplicationResponse>>> listMyApplications(
             @RequestParam(required = false) String status,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -74,15 +74,15 @@ public class ProjectApplicationController {
 
         List<ProjectApplicationResponse> data = projectApplicationService.listMyApplications(status);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
 
     @PreAuthorize("hasRole('CVA')")
     @Operation(summary = "CVA approve or reject application")
     @PutMapping("/{applicationId}/cva-decision")
-    public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> cvaDecision(
+    public ResponseEntity<ApiResponse<ProjectApplicationResponse>> cvaDecision(
             @PathVariable Long applicationId,
             @RequestParam boolean approved,
             @RequestParam(required = false) String note,
@@ -94,19 +94,19 @@ public class ProjectApplicationController {
 
         ProjectApplicationResponse data = projectApplicationService.cvaDecision(applicationId, approved, note);
 
-        TuongResponseStatus rs = new TuongResponseStatus(
+        ResponseStatus rs = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 approved ? "CVA approved application" : "CVA rejected application"
         );
 
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
 
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Admin final decision (approve or reject)")
     @PutMapping("/{applicationId}/admin-decision")
-    public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> adminFinalDecision(
+    public ResponseEntity<ApiResponse<ProjectApplicationResponse>> adminFinalDecision(
             @PathVariable Long applicationId,
             @RequestParam boolean approved,
             @RequestParam(required = false) String note,
@@ -118,18 +118,18 @@ public class ProjectApplicationController {
 
         ProjectApplicationResponse data = projectApplicationService.adminFinalDecision(applicationId, approved, note);
 
-        TuongResponseStatus rs = new TuongResponseStatus(
+        ResponseStatus rs = new ResponseStatus(
                 StatusCode.SUCCESS.getCode(),
                 approved ? "Admin approved application and issued carbon credits"
                         : "Admin rejected application"
         );
 
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
     @Operation(summary = "Get all applications (for Admin debug or audit)")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<ProjectApplicationResponse>>> listAll(
+    public ResponseEntity<ApiResponse<List<ProjectApplicationResponse>>> listAll(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -138,13 +138,13 @@ public class ProjectApplicationController {
 
         List<ProjectApplicationResponse> data = projectApplicationService.listAll();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
     @Operation(summary = "Get application by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<ProjectApplicationResponse>> getById(
+    public ResponseEntity<ApiResponse<ProjectApplicationResponse>> getById(
             @PathVariable Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -154,14 +154,14 @@ public class ProjectApplicationController {
 
         ProjectApplicationResponse data = projectApplicationService.getById(id);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
     @PreAuthorize("hasRole('CVA')")
     @Operation(summary = "List applications awaiting CVA review")
     @GetMapping("/pending-cva")
-    public ResponseEntity<TuongCommonResponse<List<ProjectApplicationResponse>>> listPendingForCva(
+    public ResponseEntity<ApiResponse<List<ProjectApplicationResponse>>> listPendingForCva(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -170,7 +170,7 @@ public class ProjectApplicationController {
 
         List<ProjectApplicationResponse> data = projectApplicationService.listPendingForCva();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 }

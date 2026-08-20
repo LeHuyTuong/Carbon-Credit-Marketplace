@@ -11,9 +11,9 @@ import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.WithdrawalService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawal money ")
     @PostMapping("/{amount}")
-    public ResponseEntity<TuongCommonResponse<WalletTransactionResponse>> withdrawalRequest(
+    public ResponseEntity<ApiResponse<WalletTransactionResponse>> withdrawalRequest(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
@@ -69,15 +69,15 @@ public class WithdrawalController {
         // 4. Create the transaction (this service call now returns a DTO)
         WalletTransactionResponse createdTransaction = walletTransactionService.createTransaction(transactionRequest);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<WalletTransactionResponse> response = new TuongCommonResponse<>(trace, now , rs, createdTransaction);
+        ApiResponse<WalletTransactionResponse> response = new ApiResponse<>(trace, now , rs, createdTransaction);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Admin accept withdrawal" , description = "API process withdrawal , admin accept")
     @PatchMapping("/admin/{id}/process/{accept}")
-    public ResponseEntity<TuongCommonResponse<Withdrawal>> processWithdrawal(
+    public ResponseEntity<ApiResponse<Withdrawal>> processWithdrawal(
             @PathVariable("id") Long id,
             @PathVariable("accept") boolean accept,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -88,39 +88,39 @@ public class WithdrawalController {
 
         Withdrawal withdrawal = withdrawalService.processWithdrawal(id, accept);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Withdrawal> response = new TuongCommonResponse<>(trace,now,rs,withdrawal);
+        ApiResponse<Withdrawal> response = new ApiResponse<>(trace,now,rs,withdrawal);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get withdrawal history" , description = "API to get all history of User withdrawal request")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<Withdrawal>>> getWithdrawalHistory(
+    public ResponseEntity<ApiResponse<List<Withdrawal>>> getWithdrawalHistory(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) throws Exception{
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         List<Withdrawal> withdrawals = withdrawalService.getUsersWithdrawalHistory();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<Withdrawal>> response = new TuongCommonResponse<>(trace,now,rs,withdrawals);
+        ApiResponse<List<Withdrawal>> response = new ApiResponse<>(trace,now,rs,withdrawals);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get withdrawal history by admin" , description = "API admin to get all history of User withdrawal request")
     @GetMapping("/admin")
-    public ResponseEntity<TuongCommonResponse<List<Withdrawal>>> getALlWithdrawalRequest(
+    public ResponseEntity<ApiResponse<List<Withdrawal>>> getALlWithdrawalRequest(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
     ) throws Exception{
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         List<Withdrawal> withdrawals = withdrawalService.getAllWithdrawalRequest();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<Withdrawal>> response = new TuongCommonResponse<>(trace,now,rs,withdrawals);
+        ApiResponse<List<Withdrawal>> response = new ApiResponse<>(trace,now,rs,withdrawals);
         return ResponseEntity.ok(response);
     }
 
