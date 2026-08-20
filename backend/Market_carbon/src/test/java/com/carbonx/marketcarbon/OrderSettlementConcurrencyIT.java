@@ -168,7 +168,7 @@ class OrderSettlementConcurrencyIT extends MysqlIntegrationTestBase {
         jdbc.update("SET FOREIGN_KEY_CHECKS = 0");
         jdbc.update("DELETE FROM carbon_credits WHERE source_credit_id = ?", sourceCreditId);
         jdbc.update("DELETE FROM carbon_credits WHERE id = ?", sourceCreditId);
-        jdbc.update("DELETE FROM credit_serial_counter WHERE project_id = ?", projectId);
+        jdbc.update("DELETE FROM credit_serial_counters WHERE project_id = ?", projectId);
         jdbc.update("DELETE FROM orders WHERE id = ?", orderId);
         jdbc.update("DELETE FROM marketplace_listings WHERE id = ?", listingId);
         jdbc.update("DELETE FROM wallet_transaction WHERE wallet_id IN (?, ?)", buyerWalletId, sellerWalletId);
@@ -233,6 +233,9 @@ class OrderSettlementConcurrencyIT extends MysqlIntegrationTestBase {
                 .filter(t -> t.getWallet().getId().equals(buyerWalletId)
                         || t.getWallet().getId().equals(sellerWalletId))
                 .toList();
+        ledger.forEach(t -> System.out.println("P13-ROW wallet=" + t.getWallet().getId()
+                + " type=" + t.getTransactionType() + " amount=" + t.getAmount()
+                + " before=" + t.getBalanceBefore() + " after=" + t.getBalanceAfter()));
         assertThat(ledger).as("exactly one BUY + one SELL row").hasSize(2);
         assertThat(ledger).anySatisfy(t -> {
             assertThat(t.getTransactionType()).isEqualTo(WalletTransactionType.BUY_CARBON_CREDIT);

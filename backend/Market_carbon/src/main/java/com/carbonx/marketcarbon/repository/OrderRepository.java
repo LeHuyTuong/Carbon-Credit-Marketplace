@@ -26,9 +26,17 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
            "WHERE o.id = :id")
     Optional<Order> findByIdWithDetails(@Param("id") Long id);
 
-    // P0-B/B3: same fetch graph, plus a pessimistic lock on the order row so the
-    // SUCCESS idempotency check happens under lock — two concurrent completeOrder
-    // calls for the same order can no longer both pass "not SUCCESS yet" and settle twice.
+    // P1.3: single-statement guarded read — plain SELECT ... FOR UPDATE (no fetch joins,
+    // so the lock is inline, not follow-on). This is the only lock callers may use for
+    // read-status-then-decide logic.
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id")
+    Optional<Order> findByIdWithPessimisticLock(@Param("id") Long id);
+
+    // WARNING (P1.3, proven by OrderSettlementConcurrencyIT): @Lock + JOIN FETCH degrades to
+    // Hibernate follow-on locking — the SELECT reads WITHOUT a lock, rows are locked after.
+    // Do NOT use for guards that must read-then-decide. Use findById(id, PESSIMISTIC_WRITE).
+    // Retained for other read paths only.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.company c " +

@@ -187,10 +187,11 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         log.info("Starting order completion process for orderId: {}", orderId);
 
-        // B1 tìm order — P0-B/B3: WITH pessimistic lock, so the SUCCESS idempotency check
-        // below runs under lock. Before, two concurrent completeOrder(orderId) calls both
-        // read PENDING and both settled the same order (double debit/credit/issuance).
-        Order order = orderRepository.findByIdWithPessimisticLockAndDetails(orderId)
+        // B1 tìm order — P1.3: khóa bằng MỘT câu lệnh duy nhất (findById + LockMode).
+        // Biến thể fetch-join + @Lock bị Hibernate "follow-on locking": SELECT chạy KHÔNG
+        // khóa trước (cả 2 thread đều đọc PENDING), row bị khóa sau đó — hai settlement
+        // song song vẫn lọt (chứng minh bằng OrderSettlementConcurrencyIT trên MySQL thật).
+        Order order = orderRepository.findByIdWithPessimisticLock(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
@@ -198,9 +199,10 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
 
-        // B2 tìm list và khóa lại chính id của marketplace đó
+        // B2 tìm list và khóa — dùng biến thể KHÔNG fetch-join để FOR UPDATE nằm ngay
+        // trong câu lệnh; graph (company/carbonCredit) nạp lazy trong tx sau khi đã khóa.
         MarketPlaceListing listing = marketplaceListingRepository
-                .findByIdWithPessimisticLockAndDetails(order.getMarketplaceListing().getId())
+                .findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
 
         //B3 tìm công ty mua bán
@@ -222,29 +224,35 @@ public class OrderServiceImpl implements OrderService {
 
         // B4 bắt đầu giao dịch
         try {
-            // B4.1: Lấy ví
-            Wallet buyerWallet = walletRepository.findByCompanyIdWithDetails(buyerCompany.getId());
-            if (buyerWallet == null) {
+            // B4.1: Lấy ví — P1.3: load ID trước (projection, KHÔNG nạp state), rồi khóa ví
+            // bằng entityManager.find(PESSIMISTIC_WRITE) theo thứ tự ID tăng dần. Đây là lần
+            // CHẠM ĐẦU tới entity trong tx ⇒ đọc state MỚI NHẤT dưới khóa. Nếu nạp sẵn bằng
+            // findByCompanyIdWithDetails (không khóa) rồi mới khóa, persistence context giữ
+            // bản stale — 2 thread cùng ghi before=200 (lost-update, IT đã chứng minh).
+            Long buyerWalletId = walletRepository.findIdByCompanyId(buyerCompany.getId());
+            if (buyerWalletId == null) {
                 throw new ResourceNotFoundException("Buyer wallet not found");
             }
+            Long sellerWalletId = walletRepository.findIdByCompanyId(sellerCompany.getId());
+            if (sellerWalletId == null) {
+                throw new ResourceNotFoundException("Seller wallet not found");
+            }
+            Long firstWalletId = Math.min(buyerWalletId, sellerWalletId);
+            Long secondWalletId = Math.max(buyerWalletId, sellerWalletId);
+            Wallet lockedFirst = entityManager.find(Wallet.class, firstWalletId,
+                    jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            Wallet lockedSecond = entityManager.find(Wallet.class, secondWalletId,
+                    jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            Wallet buyerWallet = buyerWalletId.equals(firstWalletId) ? lockedFirst : lockedSecond;
+            Wallet sellerWallet = sellerWalletId.equals(firstWalletId) ? lockedFirst : lockedSecond;
+            if (buyerWallet == null || sellerWallet == null) {
+                throw new ResourceNotFoundException("Wallet not found");
+            }
+
             if (buyerWallet.getBalance().compareTo(totalPrice) < 0) {
                 // P0-B/B4: see note above — ERROR is recorded post-rollback by OrderStatusRecorder
                 throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
-
-            // tìm ví seller
-            Wallet sellerWallet = walletRepository.findByCompanyIdWithDetails(sellerCompany.getId());
-            if (sellerWallet == null) {
-                throw new ResourceNotFoundException("Seller wallet not found");
-            }
-
-            // P0-B/B3: pre-lock BOTH wallets in ascending id order BEFORE mutating balances.
-            // createTransaction re-acquires these locks (no-op for the same tx); the
-            // deterministic order prevents an A↔B / B↔A deadlock between two reverse trades.
-            Wallet firstWallet = buyerWallet.getId() <= sellerWallet.getId() ? buyerWallet : sellerWallet;
-            Wallet secondWallet = firstWallet == buyerWallet ? sellerWallet : buyerWallet;
-            entityManager.find(Wallet.class, firstWallet.getId(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-            entityManager.find(Wallet.class, secondWallet.getId(), jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
             // B4.2: Cập nhật sourceCredit (bên bán)
             BigDecimal currentListedAmount = sourceCredit.getListedAmount() != null

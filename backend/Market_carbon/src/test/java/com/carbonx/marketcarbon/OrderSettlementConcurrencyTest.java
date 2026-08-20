@@ -38,6 +38,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -127,27 +128,33 @@ class OrderSettlementConcurrencyTest {
     }
 
     private void stubHappyPath(Order orderState) {
-        when(orderRepository.findByIdWithPessimisticLockAndDetails(401L)).thenReturn(Optional.of(orderState));
-        when(marketplaceListingRepository.findByIdWithPessimisticLockAndDetails(201L)).thenReturn(Optional.of(listing));
+        when(orderRepository.findByIdWithPessimisticLock(401L))
+                .thenReturn(Optional.of(orderState));
+        when(marketplaceListingRepository.findByIdWithPessimisticLock(201L)).thenReturn(Optional.of(listing));
         when(carbonCreditRepository.findByIdWithPessimisticLock(301L)).thenReturn(Optional.of(sourceCredit));
-        when(walletRepository.findByCompanyIdWithDetails(101L)).thenReturn(buyerWallet);
-        when(walletRepository.findByCompanyIdWithDetails(102L)).thenReturn(sellerWallet);
+        lenient().when(walletRepository.findIdByCompanyId(101L)).thenReturn(buyerWallet.getId());
+        lenient().when(walletRepository.findIdByCompanyId(102L)).thenReturn(sellerWallet.getId());
+        lenient().when(entityManager.find(Wallet.class, 808L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(sellerWallet);
+        lenient().when(entityManager.find(Wallet.class, 909L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(buyerWallet);
     }
 
     @Test
-    void settlement_locksOrderRowWithPessimisticLock() {
+    void settlement_locksOrderRowWithSingleStatementPessimisticLock() {
         stubHappyPath(order);
+        lenient().when(walletRepository.findIdByCompanyId(any())).thenReturn(909L, 808L);
 
         service.completeOrder(401L);
 
-        verify(orderRepository).findByIdWithPessimisticLockAndDetails(401L);
-        verify(orderRepository, never()).findByIdWithDetails(401L);
+        // guard must use the single-statement locked read (no fetch-join → no follow-on locking)
+        verify(orderRepository).findByIdWithPessimisticLock(401L);
+        verify(marketplaceListingRepository).findByIdWithPessimisticLock(201L);
     }
 
     @Test
     void settlement_alreadySuccess_isIdempotentNoOp() {
         order.setOrderStatus(OrderStatus.SUCCESS);
-        when(orderRepository.findByIdWithPessimisticLockAndDetails(401L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithPessimisticLock(401L))
+                .thenReturn(Optional.of(order));
 
         service.completeOrder(401L);
 
@@ -159,6 +166,8 @@ class OrderSettlementConcurrencyTest {
     @Test
     void settlement_locksBothWalletsInAscendingIdOrder() {
         stubHappyPath(order);
+        when(walletRepository.findIdByCompanyId(101L)).thenReturn(909L); // buyer
+        when(walletRepository.findIdByCompanyId(102L)).thenReturn(808L); // seller
 
         service.completeOrder(401L);
 

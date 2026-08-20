@@ -22,7 +22,7 @@
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<!-- P1.2: override Boot 3.3 BOM pin (1.19.x) — its docker-java client pings with
 		     API 1.32, which modern Docker daemons (>=25, here 29.x) reject -->
-		<testcontainers.version>1.21.3</testcontainers.version>
+		<testcontainers.version>1.20.4</testcontainers.version>
 		<lombok.version>1.18.34</lombok.version>
 	</properties>
 

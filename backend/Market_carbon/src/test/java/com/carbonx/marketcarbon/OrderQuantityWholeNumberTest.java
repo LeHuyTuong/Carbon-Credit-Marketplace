@@ -146,8 +146,8 @@ class OrderQuantityWholeNumberTest {
                 .unitPrice(new BigDecimal("2.00")).totalPrice(new BigDecimal("5.00"))
                 .platformFee(new BigDecimal("0.25")).sellerPayout(new BigDecimal("5.00"))
                 .build();
-        when(orderRepository.findByIdWithPessimisticLockAndDetails(401L)).thenReturn(Optional.of(order));
-        when(marketplaceListingRepository.findByIdWithPessimisticLockAndDetails(201L))
+        when(orderRepository.findByIdWithPessimisticLock(401L)).thenReturn(Optional.of(order));
+        when(marketplaceListingRepository.findByIdWithPessimisticLock(201L))
                 .thenReturn(Optional.of(listing));
         when(carbonCreditRepository.findByIdWithPessimisticLock(301L))
                 .thenReturn(Optional.of(listing.getCarbonCredit()));
@@ -158,8 +158,10 @@ class OrderQuantityWholeNumberTest {
         com.carbonx.marketcarbon.model.Wallet sellerWallet = new com.carbonx.marketcarbon.model.Wallet();
         sellerWallet.setId(2L); sellerWallet.setBalance(new BigDecimal("0.00"));
         sellerWallet.setCarbonCreditBalance(new BigDecimal("10"));
-        when(walletRepository.findByCompanyIdWithDetails(101L)).thenReturn(buyerWallet);
-        when(walletRepository.findByCompanyIdWithDetails(102L)).thenReturn(sellerWallet);
+        when(walletRepository.findIdByCompanyId(101L)).thenReturn(buyerWallet.getId());
+        when(walletRepository.findIdByCompanyId(102L)).thenReturn(sellerWallet.getId());
+        lenient().when(entityManager.find(com.carbonx.marketcarbon.model.Wallet.class, 1L, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)).thenReturn(buyerWallet);
+        lenient().when(entityManager.find(com.carbonx.marketcarbon.model.Wallet.class, 2L, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)).thenReturn(sellerWallet);
 
         assertThatThrownBy(() -> service.completeOrder(401L))
                 .isInstanceOf(ArithmeticException.class);

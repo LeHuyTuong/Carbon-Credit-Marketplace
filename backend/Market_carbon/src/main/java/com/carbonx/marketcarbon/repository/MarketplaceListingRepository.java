@@ -47,6 +47,8 @@ public interface MarketplaceListingRepository extends JpaRepository<MarketPlaceL
     @Query("SELECT m FROM MarketPlaceListing m WHERE m.id = :id")
     Optional<MarketPlaceListing> findByIdWithPessimisticLock(@Param("id") Long id);
 
+    // WARNING (P1.3): @Lock + JOIN FETCH degrades to follow-on locking (SELECT runs unlocked,
+    // rows locked afterwards) — use findByIdWithPessimisticLock (plain) for guard-then-decide.
     // PESSIMISTIC_WRITE lock + eager-load company and carbonCredit in a single query
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT DISTINCT m FROM MarketPlaceListing m " +
