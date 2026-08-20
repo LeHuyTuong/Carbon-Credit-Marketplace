@@ -58,26 +58,32 @@ flowchart LR
 
 ### Flow 1 — Deposit (gateway → wallet)
 
-`POST /api/v1/payment` creates a `PaymentOrder(PENDING)` and returns a gateway checkout URL
-(Stripe Session / PayPal approval link / VNPay redirect). After the user pays, the return URL calls
-`POST /api/v1/wallet/deposit?order_id&payment_id`, which:
+`POST /api/v1/payment` creates a `PaymentOrder(PENDING)` and returns a gateway checkout URL. The
+provider's own reference (the Stripe session id, the PayPal payment id, the VNPay `vnp_TxnRef`) is
+stored on the order **server-side at creation time** — the browser only ever receives the URL.
 
-1. Loads the `PaymentOrder` **with a pessimistic lock** (`findByIdWithLock`) and short-circuits if it
-   is already `SUCCEEDED` — this is the idempotency guard against a replayed return URL.
-2. Marks the order `SUCCEEDED`.
-3. Calls `WalletService.addBalanceToWallet`, which delegates to
-   `WalletTransactionService.createTransaction(ADD_MONEY)` — the only code path allowed to touch
-   `wallet.balance`.
+After the user pays, the return URL calls `POST /api/v1/wallet/deposit?order_id`, which runs in two
+deliberate steps:
 
-`PaymentServiceImpl` → `WalletServiceImpl` → `WalletTransactionServiceImpl`. Note that step 3 is what
-actually credits the wallet: `processPaymentOrder` only settles the `PaymentOrder` and never touches
-a balance itself.
+1. `assertDepositVerifiable(orderId)` — outside any transaction. Checks the order belongs to the
+   caller, then asks the provider whether that reference is actually paid, for the expected amount
+   (`verifyStripePaid` / `verifyPaypalApproved`). Throws if not.
+2. `applyVerifiedDeposit(orderId)` — one transaction. Locks the order row, transitions
+   `PENDING → SUCCEEDED`, and credits the wallet through
+   `WalletTransactionService.createTransaction(ADD_MONEY)`.
+
+The split is the point: **the backend establishes that payment happened, the frontend never asserts
+it.** A replayed or concurrent return URL credits exactly once, because the state transition happens
+under the row lock and only from `PENDING`. Landing on the success page without paying credits
+nothing, because step 1 asks the provider rather than trusting the redirect.
 
 ### Flow 2 — Marketplace purchase (buyer wallet → seller wallet)
 
 `POST /api/v1/orders` creates an `Order(PENDING)` after checking listing availability, quantity, and
-that the buyer is not the seller. Settlement is a separate, explicit step —
-`POST /api/v1/orders/{id}/complete`:
+that the buyer is not the seller. Quantities must be whole numbers — one credit is one indivisible
+unit, so a fractional order is rejected at creation instead of failing late during issuance.
+
+Settlement is a separate, explicit step — `POST /api/v1/orders/{id}/complete`:
 
 ```mermaid
 sequenceDiagram
@@ -85,10 +91,13 @@ sequenceDiagram
     participant O as OrderServiceImpl
     participant DB as MySQL
     C->>O: POST /orders/{id}/complete
-    O->>DB: SELECT order
-    Note over O: already SUCCESS? → return (idempotent)
+    O->>DB: SELECT order FOR UPDATE
+    Note over O: status already SUCCESS? → return (idempotent)
     O->>DB: SELECT listing FOR UPDATE
     O->>DB: SELECT carbon_credit FOR UPDATE
+    O->>DB: SELECT id FROM wallets (projection, no state)
+    O->>DB: find(Wallet, min(id), PESSIMISTIC_WRITE)
+    O->>DB: find(Wallet, max(id), PESSIMISTIC_WRITE)
     O->>O: check listing qty, check buyer balance
     O->>DB: issue new credit rows to buyer, decrement seller inventory
     O->>DB: update listing qty / soldQuantity / status
@@ -97,10 +106,24 @@ sequenceDiagram
     O->>DB: WalletTransaction SELL_CARBON_CREDIT (credit seller)
 ```
 
-The two hot rows — the listing and the seller's `CarbonCredit` inventory — are taken with
-`PESSIMISTIC_WRITE` (`SELECT … FOR UPDATE`) *before* any balance is read, so two buyers racing for
-the last credit on a listing serialise instead of overselling. The whole method is one
-`@Transactional`; a failure anywhere marks the order `ERROR` and rolls the money back.
+Every row settlement touches is locked with `PESSIMISTIC_WRITE` before it is read: the order row
+itself (so the `SUCCESS` idempotency check runs *under* the lock), the listing, the seller's
+`CarbonCredit` inventory, and both wallets. Two buyers racing for the last credit serialise instead
+of overselling; a replayed `complete` call settles once.
+
+Three details in that ordering were learned the hard way, from ITs against a real MySQL rather than
+from mocks — see [§7](#7-what-the-concurrency-tests-caught):
+
+- the locking finders deliberately **do not** fetch-join, so `FOR UPDATE` is part of the same
+  statement;
+- wallets are located by an **id projection first**, then loaded under the lock, so the lock is the
+  first touch of the entity in the transaction;
+- both wallets are locked in **ascending id order**, so two opposite trades between the same pair of
+  companies cannot deadlock.
+
+On failure the transaction rolls back and the `ERROR` status is written afterwards, from the
+controller's catch, by `OrderStatusRecorder` in its own `REQUIRES_NEW` transaction — writing it
+inside would try to update the very row the rolled-back transaction still has locked.
 
 ### Flow 3 — Profit sharing (company wallet → many EV owner wallets)
 
@@ -120,9 +143,12 @@ factor 0.6) → cash payout, then pays each owner in **its own `REQUIRES_NEW` tr
 ### Flow 4 — Withdrawal (wallet → off-platform, admin-gated)
 
 `POST /api/v1/withdrawal/{amount}` checks the balance and creates a `Withdrawal(PENDING)`. An admin
-then calls `PATCH /api/v1/withdrawal/admin/{id}/process/{accept}`, which either marks it `SUCCEEDED`
-or `REJECTED` and returns the amount to the wallet. Both outcomes notify the user by email and over
-SSE.
+then calls `PATCH /api/v1/withdrawal/admin/{id}/process/{accept}` — an `ADMIN`-only endpoint.
+
+That handler locks the withdrawal row and refuses any status other than `PENDING`, so an admin
+double-click cannot process the same request twice. On rejection the refund goes through
+`createTransaction(WITHDRAWAL_REFUND)` rather than a bare `setBalance`, so the money movement lands
+in the ledger like every other one. Both outcomes notify the user by email and over SSE.
 
 ---
 
@@ -236,13 +262,21 @@ JWT access/refresh via `jjwt`, Google OAuth2 login, email OTP verification, role
 (`ADMIN` / `COMPANY` / `EV_OWNER` / `CVA`), and a token-bucket rate limiter
 (`app.rate-limit.capacity=20` per minute).
 
+The filter chain is **deny-by-default**: a route nobody remembered to map requires authentication
+rather than falling through to public. Self-registration can only create `EV_OWNER` or `COMPANY` — a
+client cannot ask for `ADMIN` or `CVA` in the signup payload. The JWT signing secret comes from
+`JWT_SECRET`; the `prod` profile has no fallback and refuses to start without it. Error responses
+carry a code and a safe message, never an internal exception string.
+
 ---
 
 ## 6. Running locally
 
-**Docker Compose (everything, recommended):**
+Secrets are never committed. `docker-compose.yml` reads them from a git-ignored `.env` and fails
+fast with a named error if one is missing, so start there:
 
 ```bash
+cp .env.example .env      # then fill in MYSQL_ROOT_PASSWORD, SPRING_MAIL_*, JWT_SECRET
 docker compose up --build -d
 # MySQL      localhost:3307   (db core_ccm)
 # backend    localhost:8082
@@ -258,15 +292,15 @@ export SPRING_PROFILES_ACTIVE=local
 ./mvnw spring-boot:run
 ```
 
-Config is entirely environment-driven — `application.properties` contains only `${VAR}` placeholders,
-no defaults for secrets. The minimum to boot:
+`application.properties` is `${VAR}` placeholders throughout. The minimum to boot:
 
 ```bash
 SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3307/core_ccm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=12345
+SPRING_DATASOURCE_PASSWORD=...
 SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
 SERVER_PORT=8082
+JWT_SECRET=...                 # dev falls back to an insecure literal; prod refuses to start
 SPRING_MAIL_HOST=smtp.gmail.com
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=...
@@ -296,8 +330,55 @@ cd frontend && npm install && npm run dev
 **Tests:**
 
 ```bash
-cd backend/Market_carbon && ./mvnw test
+cd backend/Market_carbon && ./mvnw test    # 93 unit tests, no infrastructure needed
+
+# the concurrency ITs spin up a real MySQL, so they need Docker and are not part
+# of `mvnw test` (surefire only picks up *Test); run one explicitly:
+cd backend/Market_carbon && ./mvnw test -Dtest=OrderSettlementConcurrencyIT
 ```
+
+---
+
+## 7. What the concurrency tests caught
+
+The money-movement paths are covered twice: fast unit tests against mocks, and integration tests that
+run the real settlement against a real MySQL in a Testcontainer. The second kind exists because the
+first kind cannot see the two bugs below — a mocked repository has no lock semantics and no
+persistence context, so both paths looked correct and both were wrong.
+
+**Hibernate follow-on locking.** The original finder combined a fetch-join with `@Lock`, which reads
+naturally enough:
+
+```java
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("select o from Order o join fetch o.company where o.id = :id")
+Optional<Order> findByIdWithPessimisticLockAndDetails(Long id);
+```
+
+Hibernate cannot append `FOR UPDATE` to a query with a join fetch, so it issues the `SELECT`
+**unlocked** and locks the rows in a second statement afterwards. Two concurrent
+`completeOrder(orderId)` calls both read `PENDING` in that unlocked window and both settled the same
+order — double debit, double credit, double issuance.
+
+Settlement now uses the plain `findByIdWithPessimisticLock` variants, where `FOR UPDATE` is part of
+the same statement, and lets the associations load lazily afterwards once the row is already locked.
+The fetch-join variants are still declared — and `OrderSettlementConcurrencyTest` asserts with
+Mockito `never()` that the settlement path does not call them, so the trap cannot quietly come back.
+
+**A stale entity beats a correct lock.** Loading a wallet unlocked and *then* calling
+`entityManager.find(Wallet.class, id, PESSIMISTIC_WRITE)` acquires the database lock but returns the
+instance already cached in the persistence context — the stale one. Both threads computed
+`balanceBefore = 200` from that cached copy and wrote conflicting `balanceAfter` values: a textbook
+lost update, with a correctly-locked row. The fix is to project only the wallet **id** first, so that
+`find(..., PESSIMISTIC_WRITE)` is the first touch of the entity in the transaction and therefore
+reads the newest committed state.
+
+Both are visible in `OrderSettlementConcurrencyIT`. Neither was visible in
+`OrderSettlementConcurrencyTest`, which passed throughout.
+
+A written audit of the codebase — current architecture, technical debt, target design, and the
+security findings behind the `fix(security)` commits — lives in
+[`docs/architecture/`](docs/architecture/).
 
 ---
 
