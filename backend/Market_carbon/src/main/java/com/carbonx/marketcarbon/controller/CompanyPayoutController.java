@@ -4,8 +4,8 @@ import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.response.*;
 import com.carbonx.marketcarbon.service.CompanyPayoutQueryService;
 import com.carbonx.marketcarbon.service.ReportService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class CompanyPayoutController {
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "Cho công ty biết họ đang dùng công thức nào để trả tiền.",
             description = "xem công ty này trả tiền theo kWh (số điện) hay theo CREDIT (tín chỉ carbon), và đơn giá là bao nhiêu.")
-    public ResponseEntity<TuongCommonResponse<PayoutFormulaResponse>> getPayoutFormula(
+    public ResponseEntity<ApiResponse<PayoutFormulaResponse>> getPayoutFormula(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
@@ -46,15 +46,15 @@ public class CompanyPayoutController {
 
         PayoutFormulaResponse data = companyPayoutQueryService.getPayoutFormula();
 
-        TuongResponseStatus status = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PayoutFormulaResponse> response = new TuongCommonResponse<>(trace, now, status, data);
+        ResponseStatus status = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<PayoutFormulaResponse> response = new ApiResponse<>(trace, now, status, data);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/ev-owners")
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "List EV owners contributing to a company during a period")
-    public ResponseEntity<TuongCommonResponse<PageResponse<List<CompanyEVOwnerSummaryResponse>>>> listCompanyOwners(
+    public ResponseEntity<ApiResponse<PageResponse<List<CompanyEVOwnerSummaryResponse>>>> listCompanyOwners(
             @RequestParam String period,
             @RequestParam(defaultValue = "0") int page,
             @Min(1) @RequestParam(defaultValue = "20") int size,
@@ -67,9 +67,9 @@ public class CompanyPayoutController {
         PageResponse<List<CompanyEVOwnerSummaryResponse>> data = companyPayoutQueryService
                 .listCompanyOwners( period, page, size, search);
 
-        TuongResponseStatus status = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PageResponse<List<CompanyEVOwnerSummaryResponse>>> response =
-                new TuongCommonResponse<>(trace, now, status, data);
+        ResponseStatus status = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<PageResponse<List<CompanyEVOwnerSummaryResponse>>> response =
+                new ApiResponse<>(trace, now, status, data);
         return ResponseEntity.ok(response);
     }
 
@@ -77,7 +77,7 @@ public class CompanyPayoutController {
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "Preview EV owner payouts for an emission report",
               description = "Tính toán tổng số tiền công ty phải trả cho từng EV owner theo chính sách payout (USD).")
-    public ResponseEntity<TuongCommonResponse<CompanyReportOwnersResponse>> listCompanyOwnersForReport(
+    public ResponseEntity<ApiResponse<CompanyReportOwnersResponse>> listCompanyOwnersForReport(
             @PathVariable Long reportId,
             @RequestParam(defaultValue = "0") int page,
             @Min(1) @RequestParam(defaultValue = "20") int size,
@@ -105,10 +105,10 @@ public class CompanyPayoutController {
                 ownerSharePct,
                 scale);
         // buoc 4: khoi tao status mac dinh thanh cong
-        TuongResponseStatus status = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ResponseStatus status = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
         // buoc 5: dong goi ket qua vao dinh dang chung cua he thong
-        TuongCommonResponse<CompanyReportOwnersResponse> response =
-                new TuongCommonResponse<>(trace, now, status, data);
+        ApiResponse<CompanyReportOwnersResponse> response =
+                new ApiResponse<>(trace, now, status, data);
         // buoc 6: tra ve http 200 kem trang du lieu
         return ResponseEntity.ok(response);
     }
@@ -116,7 +116,7 @@ public class CompanyPayoutController {
     @GetMapping("/payouts/{distributionId}/summary")
     @PreAuthorize("hasRole('COMPANY')")
     @Operation(summary = "Get payout summary for a distribution")
-    public ResponseEntity<TuongCommonResponse<CompanyPayoutSummaryResponse>> getPayoutSummary(
+    public ResponseEntity<ApiResponse<CompanyPayoutSummaryResponse>> getPayoutSummary(
             @PathVariable Long distributionId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -126,8 +126,8 @@ public class CompanyPayoutController {
 
         CompanyPayoutSummaryResponse data = companyPayoutQueryService.getDistributionSummary( distributionId);
 
-        TuongResponseStatus status = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<CompanyPayoutSummaryResponse> response = new TuongCommonResponse<>(trace, now, status, data);
+        ResponseStatus status = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<CompanyPayoutSummaryResponse> response = new ApiResponse<>(trace, now, status, data);
         return ResponseEntity.ok(response);
     }
 

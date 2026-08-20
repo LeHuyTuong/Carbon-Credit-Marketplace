@@ -6,9 +6,9 @@ import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
 import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.service.PaymentService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import com.paypal.base.rest.PayPalRESTException;
 import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,8 +30,8 @@ public class PaymentController {
 
     @Operation(summary = "API to request deposit")
     @PostMapping
-    public ResponseEntity<TuongCommonResponse<PaymentOrderResponse>> paymentHandler(
-            @Valid @RequestBody TuongCommonRequest<@Valid PaymentOrderRequest> req,
+    public ResponseEntity<ApiResponse<PaymentOrderResponse>> paymentHandler(
+            @Valid @RequestBody ApiRequest<@Valid PaymentOrderRequest> req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws StripeException, PayPalRESTException {
@@ -49,14 +49,14 @@ public class PaymentController {
         response.setAmount(order.getAmount());
         response.setAmountInVnd(order.getAmountInVnd());
         response.setId(order.getId());
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<PaymentOrderResponse> resp = new TuongCommonResponse<>(trace, now , rs, response);
+        ApiResponse<PaymentOrderResponse> resp = new ApiResponse<>(trace, now , rs, response);
         return ResponseEntity.ok(resp);
     }
 
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<PaymentOrder>>> getAllPaymentsByUser(
+    public ResponseEntity<ApiResponse<List<PaymentOrder>>> getAllPaymentsByUser(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws StripeException {
@@ -64,9 +64,9 @@ public class PaymentController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
         List<PaymentOrder> order = paymentService.getAllPaymentByUser();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<PaymentOrder>> resp = new TuongCommonResponse<>(trace, now , rs, order);
+        ApiResponse<List<PaymentOrder>> resp = new ApiResponse<>(trace, now , rs, order);
         return ResponseEntity.ok(resp);
     }
 

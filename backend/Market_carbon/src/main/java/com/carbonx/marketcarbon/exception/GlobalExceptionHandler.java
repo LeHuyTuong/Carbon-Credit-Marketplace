@@ -1,7 +1,7 @@
 package com.carbonx.marketcarbon.exception;
 
 import com.carbonx.marketcarbon.utils.CommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
 import jakarta.validation.ConstraintDefinitionException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;

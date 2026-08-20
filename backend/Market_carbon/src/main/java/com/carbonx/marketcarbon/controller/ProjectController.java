@@ -6,9 +6,9 @@ import com.carbonx.marketcarbon.dto.request.ProjectUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.ProjectDetailResponse;
 import com.carbonx.marketcarbon.dto.response.ProjectResponse;
 import com.carbonx.marketcarbon.service.ProjectService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class ProjectController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Project (Admin only)")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<ProjectResponse>> create(
+    public ResponseEntity<ApiResponse<ProjectResponse>> create(
             @ModelAttribute @Valid ProjectRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -42,14 +42,14 @@ public class ProjectController {
 
         ProjectResponse data = projectService.createProject(req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Create project successfully");
-        TuongCommonResponse<ProjectResponse> response = new TuongCommonResponse<>(trace, now, rs, data);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Create project successfully");
+        ApiResponse<ProjectResponse> response = new ApiResponse<>(trace, now, rs, data);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update Project Information (Admin only)")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<TuongCommonResponse<Void>> update(
+    public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable("id") Long id,
             @ModelAttribute @Valid ProjectUpdateRequest req,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -60,14 +60,14 @@ public class ProjectController {
 
         projectService.updateProject(id, req);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Update project successfully");
-        TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace, now, rs, null);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Update project successfully");
+        ApiResponse<Void> response = new ApiResponse<>(trace, now, rs, null);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete Project by ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<Void>> delete(
+    public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -77,14 +77,14 @@ public class ProjectController {
 
         projectService.deleteProject(id);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<Void> response = new TuongCommonResponse<>(trace, now, rs, null);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<Void> response = new ApiResponse<>(trace, now, rs, null);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get All Project (Summary View)")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<ProjectResponse>>> getAllProjects(
+    public ResponseEntity<ApiResponse<List<ProjectResponse>>> getAllProjects(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -93,15 +93,15 @@ public class ProjectController {
 
         List<ProjectResponse> list = projectService.listAll();
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        TuongCommonResponse<List<ProjectResponse>> response = new TuongCommonResponse<>(trace, now, rs, list);
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        ApiResponse<List<ProjectResponse>> response = new ApiResponse<>(trace, now, rs, list);
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "List All Projects (Summary View)")
     @GetMapping("/all")
-    public ResponseEntity<TuongCommonResponse<List<ProjectResponse>>> listAll(
+    public ResponseEntity<ApiResponse<List<ProjectResponse>>> listAll(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
 
@@ -109,13 +109,13 @@ public class ProjectController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         List<ProjectResponse> data = projectService.listAll();
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
     @Operation(summary = "Get Project by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<ProjectResponse>> getById(
+    public ResponseEntity<ApiResponse<ProjectResponse>> getById(
             @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime) {
@@ -124,8 +124,8 @@ public class ProjectController {
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         ProjectResponse data = projectService.getById(id);
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
 }

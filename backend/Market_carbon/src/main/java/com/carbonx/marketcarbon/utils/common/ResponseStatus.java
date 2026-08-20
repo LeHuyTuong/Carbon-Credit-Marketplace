@@ -1,4 +1,4 @@
-package com.carbonx.marketcarbon.utils.Tuong;
+package com.carbonx.marketcarbon.utils.common;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TuongResponseStatus {
+public class ResponseStatus {
     String responseCode;
     String responseMessage;
 }

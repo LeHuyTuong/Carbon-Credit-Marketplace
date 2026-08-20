@@ -14,9 +14,9 @@ import com.carbonx.marketcarbon.model.CarbonCredit;
 import com.carbonx.marketcarbon.service.CreditQuery;
 import com.carbonx.marketcarbon.service.MyCreditService;
 import com.carbonx.marketcarbon.service.MyCreditInventoryService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiRequest;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get My Carbon Credits",
             description = "Returns paginated list of carbon credits owned by current company, optionally filtered by project or status.")
     @GetMapping
-    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> listMyCredits(
+    public ResponseEntity<ApiResponse<List<CarbonCreditResponse>>> listMyCredits(
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) Integer vintageYear,
             @RequestParam(required = false) String status,
@@ -66,10 +66,10 @@ public class MyCreditController {
 
         List<CarbonCreditResponse> result = creditService.listMyCredits(query);
 
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get my credits successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get my credits successfully"),
                 result
         );
 
@@ -80,7 +80,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get Credit by ID",
             description = "Retrieve details of a specific carbon credit owned by the current company.")
     @GetMapping("/{id}")
-    public ResponseEntity<TuongCommonResponse<CarbonCreditResponse>> getCreditById(
+    public ResponseEntity<ApiResponse<CarbonCreditResponse>> getCreditById(
             @PathVariable("id") Long id,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
@@ -90,10 +90,10 @@ public class MyCreditController {
 
         CarbonCreditResponse data = creditService.getMyCreditById(id);
 
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get credit details successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get credit details successfully"),
                 data
         );
         return ResponseEntity.ok(response);
@@ -102,7 +102,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get My Credit Batches",
             description = "Returns paginated list of credit batches belonging to the company.")
     @GetMapping("/batches")
-    public ResponseEntity<TuongCommonResponse<Page<CreditBatchLiteResponse>>> listMyBatches(
+    public ResponseEntity<ApiResponse<Page<CreditBatchLiteResponse>>> listMyBatches(
             @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) Integer vintageYear,
             Pageable pageable,
@@ -114,10 +114,10 @@ public class MyCreditController {
 
         Page<CreditBatchLiteResponse> result = creditService.listMyBatches(projectId, vintageYear, pageable);
 
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get my credit batches successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get my credit batches successfully"),
                 result
         );
         return ResponseEntity.ok(response);
@@ -126,7 +126,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Credit Inventory Summary",
             description = "Returns aggregated totals by status, project, and vintage year.")
     @GetMapping("/summary")
-    public ResponseEntity<TuongCommonResponse<CreditInventorySummaryResponse>> getInventorySummary(
+    public ResponseEntity<ApiResponse<CreditInventorySummaryResponse>> getInventorySummary(
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -134,10 +134,10 @@ public class MyCreditController {
         String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         var data = inventoryService.getMyInventorySummary();
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get credit inventory summary successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get credit inventory summary successfully"),
                 data
         );
         return ResponseEntity.ok(response);
@@ -147,7 +147,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get Available Credit Balance",
             description = "Returns total available credits (SUM of amount with status AVAILABLE).")
     @GetMapping("/balance")
-    public ResponseEntity<TuongCommonResponse<Long>> getAvailableBalance(
+    public ResponseEntity<ApiResponse<Long>> getAvailableBalance(
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -155,10 +155,10 @@ public class MyCreditController {
         String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         long balance = inventoryService.getMyAvailableBalance();
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get available balance successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get available balance successfully"),
                 balance
         );
         return ResponseEntity.ok(response);
@@ -167,7 +167,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get Credits in a Batch",
             description = "Returns list of carbon credits owned by company that belong to a specific batch.")
     @GetMapping("/batch/{batchId}")
-    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> getCreditsInBatch(
+    public ResponseEntity<ApiResponse<List<CarbonCreditResponse>>> getCreditsInBatch(
             @PathVariable("batchId") Long batchId,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
@@ -178,10 +178,10 @@ public class MyCreditController {
         // Gọi service để lấy danh sách credit thuộc batch này và thuộc công ty hiện tại
         List<CarbonCreditResponse> credits = creditService.getMyCreditsByBatchId(batchId);
 
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get credits by batch successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get credits by batch successfully"),
                 credits
         );
         return ResponseEntity.ok(response);
@@ -190,7 +190,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get credits eligible for retirement",
             description = "Returns credits owned by company that are not expired, retired, or listed.")
     @GetMapping("/retirable")
-    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse>>> listRetirableCredits(
+    public ResponseEntity<ApiResponse<List<CarbonCreditResponse>>> listRetirableCredits(
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -198,10 +198,10 @@ public class MyCreditController {
         String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         List<CarbonCreditResponse> data = creditService.getMyRetirableCredits();
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable credits successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable credits successfully"),
                 data
         );
         return ResponseEntity.ok(response);
@@ -210,8 +210,8 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Retire a carbon credit block",
             description = "Retires a quantity from the specified carbon credit. When the quantity reaches zero, the credit is marked as RETIRED.")
     @PostMapping("/retire")
-    public ResponseEntity<TuongCommonResponse<List<CarbonCreditResponse> >> retireCredit(
-            @Valid @RequestBody TuongCommonRequest<RetireBatchRequest> request,
+    public ResponseEntity<ApiResponse<List<CarbonCreditResponse> >> retireCredit(
+            @Valid @RequestBody ApiRequest<RetireBatchRequest> request,
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -220,10 +220,10 @@ public class MyCreditController {
 
         List<CarbonCreditResponse> data = creditService.retireCreditsFromBatch (request.getData());
 
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Retire carbon credit successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Retire carbon credit successfully"),
                 data
         );
 
@@ -233,7 +233,7 @@ public class MyCreditController {
     @Operation(summary = "[COMPANY] Get Batches eligible for retirement",
             description = "Returns batches owned by company that contain credits eligible for retirement, grouped by batch.")
     @GetMapping("/retirable-batches")
-    public ResponseEntity<TuongCommonResponse<List<RetirableBatchResponse>>> listRetirableCreditsByBatch(
+    public ResponseEntity<ApiResponse<List<RetirableBatchResponse>>> listRetirableCreditsByBatch(
             @RequestHeader(value = "X-Request-Trace", required = false) String trace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String dateTime
     ) {
@@ -241,10 +241,10 @@ public class MyCreditController {
         String now = dateTime != null ? dateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
         List<RetirableBatchResponse> data = creditService.getMyRetirableCreditsBatch();
-        var response = new TuongCommonResponse<>(
+        var response = new ApiResponse<>(
                 traceId,
                 now,
-                new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable batches successfully"),
+                new ResponseStatus(StatusCode.SUCCESS.getCode(), "Get retirable batches successfully"),
                 data
         );
         return ResponseEntity.ok(response);

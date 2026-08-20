@@ -7,9 +7,9 @@
 //import com.carbonx.marketcarbon.exception.WalletException;
 //import com.carbonx.marketcarbon.model.CarbonCredit;
 //import com.carbonx.marketcarbon.service.CarbonCreditService;
-//import com.carbonx.marketcarbon.utils.Tuong.TuongCommonRequest;
-//import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-//import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+//import com.carbonx.marketcarbon.utils.common.ApiRequest;
+//import com.carbonx.marketcarbon.utils.common.ApiResponse;
+//import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 //import io.swagger.v3.oas.annotations.Operation;
 //import jakarta.validation.Valid;
 //import lombok.RequiredArgsConstructor;
@@ -33,8 +33,8 @@
 //    @Operation(summary = "Company requests carbon credit issuance ",
 //            description = "Endpoint for a Company to request credit issuance from charging data. The system will calculate and create a new credit batch with 'PENDING' status for Admin approval.")
 //    @PostMapping("/issue")
-//    public ResponseEntity<TuongCommonResponse<CarbonCredit>> issueCredits(
-//            @Valid @RequestBody TuongCommonRequest<CreditIssuanceRequest> request,
+//    public ResponseEntity<ApiResponse<CarbonCredit>> issueCredits(
+//            @Valid @RequestBody ApiRequest<CreditIssuanceRequest> request,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
 //            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
 //            ) throws WalletException {
@@ -43,16 +43,16 @@
 //
 //        CarbonCredit carbonCredit = carbonCreditService.issueCredits(request.getData());
 //
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
 //                StatusCode.SUCCESS.getMessage());
-//        TuongCommonResponse<CarbonCredit> resp = new TuongCommonResponse<>(trace, now , rs, carbonCredit);
+//        ApiResponse<CarbonCredit> resp = new ApiResponse<>(trace, now , rs, carbonCredit);
 //        return ResponseEntity.ok(resp);
 //    }
 //
 //    @Operation(summary = "Admin approves a carbon credit batch" ,
 //            description = "Upon approval, the credit batch status will change to 'APPROVED', and the corresponding credit amount will be added to the owner company's wallet.")
 //    @PostMapping("{creditId}/approve")
-//    public ResponseEntity<TuongCommonResponse<CarbonCredit>> approveDataOfProject(
+//    public ResponseEntity<ApiResponse<CarbonCredit>> approveDataOfProject(
 //            @PathVariable @Valid Long creditId,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
 //            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -62,9 +62,9 @@
 //
 //        CarbonCredit approveCredit = carbonCreditService.approveCarbonCredit(creditId);
 //
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
 //                StatusCode.SUCCESS.getMessage());
-//        TuongCommonResponse<CarbonCredit> resp = new TuongCommonResponse<>(trace, now , rs, approveCredit);
+//        ApiResponse<CarbonCredit> resp = new ApiResponse<>(trace, now , rs, approveCredit);
 //        return ResponseEntity.ok(resp);
 //    }
 //
@@ -73,7 +73,7 @@
 //            description = "Endpoint for an Admin to give the final approval or rejection for a project that has already been approved by a CVA."
 //    )
 //    @PostMapping("/{projectId}/final-review")
-//    public ResponseEntity<TuongCommonResponse<ProjectResponse>> finalApproveProject(
+//    public ResponseEntity<ApiResponse<ProjectResponse>> finalApproveProject(
 //            @PathVariable Long projectId,
 //            @RequestParam ProjectStatus status,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -84,8 +84,8 @@
 //
 //        ProjectResponse projectResponse = carbonCreditService.finalApprove(projectId, status);
 //
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), "Project final review completed successfully.");
-//        TuongCommonResponse<ProjectResponse> resp = new TuongCommonResponse<>(trace, now, rs, projectResponse);
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), "Project final review completed successfully.");
+//        ApiResponse<ProjectResponse> resp = new ApiResponse<>(trace, now, rs, projectResponse);
 //        return ResponseEntity.ok(resp);
 //    }
 //
@@ -95,7 +95,7 @@
 //            description = "Retrieves a paginated list of all projects with status 'CVA_APPROVED', which are pending final review from the Admin"
 //    )
 //    @GetMapping("/pending")
-//    public ResponseEntity<TuongCommonResponse<Page<ProjectResponse> >> getAdminInbox(
+//    public ResponseEntity<ApiResponse<Page<ProjectResponse> >> getAdminInbox(
 //            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
 //            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
@@ -105,9 +105,9 @@
 //
 //        Page<ProjectResponse> data = carbonCreditService.adminInbox(pageable);
 //
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
 //                StatusCode.SUCCESS.getMessage());
-//        TuongCommonResponse<Page<ProjectResponse> > resp = new TuongCommonResponse<>(trace, now , rs, data);
+//        ApiResponse<Page<ProjectResponse> > resp = new ApiResponse<>(trace, now , rs, data);
 //        return ResponseEntity.ok(resp);
 //    }
 //
@@ -116,7 +116,7 @@
 //            description = "Retrieves a paginated list of projects (both approved and rejected) that were reviewed by a specific CVA, identified by their name."
 //    )
 //    @GetMapping
-//    public ResponseEntity<TuongCommonResponse<Page<ProjectResponse> >> listProjectsReviewedByCva(
+//    public ResponseEntity<ApiResponse<Page<ProjectResponse> >> listProjectsReviewedByCva(
 //            @RequestParam Long reviewerId,
 //            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
 //            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -127,9 +127,9 @@
 //
 //        Page<ProjectResponse> data = carbonCreditService.adminListReviewedByCva(reviewerId, pageable);
 //
-//        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(),
+//        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
 //                StatusCode.SUCCESS.getMessage());
-//        TuongCommonResponse<Page<ProjectResponse> > resp = new TuongCommonResponse<>(trace, now , rs, data);
+//        ApiResponse<Page<ProjectResponse> > resp = new ApiResponse<>(trace, now , rs, data);
 //        return ResponseEntity.ok(resp);
 //    }
 //

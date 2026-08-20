@@ -4,8 +4,8 @@ package com.carbonx.marketcarbon.controller;
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.response.ProjectApplicationResponse;
 import com.carbonx.marketcarbon.service.ProjectApplicationService;
-import com.carbonx.marketcarbon.utils.Tuong.TuongCommonResponse;
-import com.carbonx.marketcarbon.utils.Tuong.TuongResponseStatus;
+import com.carbonx.marketcarbon.utils.common.ApiResponse;
+import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,7 +32,7 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List CVA-approved applications with pagination (Admin only)")
     @GetMapping("/check-cva-approved")
-    public ResponseEntity<TuongCommonResponse<Page<ProjectApplicationResponse>>> listCvaApprovedApplications(
+    public ResponseEntity<ApiResponse<Page<ProjectApplicationResponse>>> listCvaApprovedApplications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "submittedAt,DESC") String[] sort,
@@ -47,8 +47,8 @@ public class AdminController {
 
         Page<ProjectApplicationResponse> data = projectApplicationService.listCvaApprovedApplications(pageable);
 
-        TuongResponseStatus rs = new TuongResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
-        return ResponseEntity.ok(new TuongCommonResponse<>(trace, now, rs, data));
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, data));
     }
 
 }
