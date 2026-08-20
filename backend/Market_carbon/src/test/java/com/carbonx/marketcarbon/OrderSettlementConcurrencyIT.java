@@ -131,7 +131,7 @@ class OrderSettlementConcurrencyIT extends MysqlIntegrationTestBase {
                 .tCo2e(BigDecimal.ONE)
                 .vintageYear(2026)
                 .name("P13 source credit")
-                .currentPrice(2.0)
+                .currentPrice(new BigDecimal("2.00"))
                 .build());
         sourceCreditId = sourceCredit.getId();
 

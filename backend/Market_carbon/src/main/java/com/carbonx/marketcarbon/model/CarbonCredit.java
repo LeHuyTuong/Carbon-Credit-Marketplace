@@ -74,7 +74,9 @@ public class CarbonCredit extends BaseEntity{
     private String name = "Carbon Credit";
 
     @JsonProperty("current_price")
-    private double currentPrice;
+    @Column(name = "current_price", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal currentPrice = BigDecimal.ZERO;
 
 
     @Column(name = "vintage_year", nullable = false)
