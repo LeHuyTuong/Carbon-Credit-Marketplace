@@ -146,6 +146,25 @@ Quy tắc: **mọi đồng rút khỏi một ví phải xuất hiện ở ví kh
 Nguyên tắc bất kể phương án nào: **order phải chụp snapshot** cả `feeRate` lẫn `feeAmount`
 ngay lúc tạo — đối soát luôn dùng snapshot, không dùng giá trị config hiện hành.
 
+**Spec chuẩn nghiệp vụ cho phương án ② — ai được làm gì:**
+
+| Hành động | Endpoint | Ai | Ghi chú |
+|---|---|---|---|
+| Xem phí **hiện hành** (đã công bố) | `GET /api/v1/fees/current` | mọi user đăng nhập | Sàn thật **công bố biểu phí** — trader phải biết phí trước khi đặt lệnh |
+| Xem lịch sử phí + ai đổi | `GET /api/v1/admin/fee-config/history` | `ADMIN` | |
+| **Đề nghị** đổi phí | `PUT /api/v1/admin/fee-config` (status=PENDING) | `ADMIN` (maker) | kèm `reason` + `valid_from` (≥ hôm nay), rate trong guardrail |
+| **Phê duyệt** đề nghị | `POST /api/v1/admin/fee-config/{id}/approve` | `ADMIN` **khác** người đề nghị (checker) | maker–checker / nguyên tắc 4 mắt |
+
+Yêu cầu "chuẩn nghiệp vụ" đi kèm (theo thứ tự ưu tiên):
+1. **Snapshot trên order** (nguyên tắc gốc ở trên) — đổi phí không hồi tố lệnh cũ.
+2. **Audit trail append-only**: `config_audit(id, key, old_value, new_value, changed_by,
+   approved_by, reason, changed_at)` — chỉ INSERT, không UPDATE/DELETE.
+3. **Guardrails khi validate**: `0 ≤ rate ≤ max_rate` (vd 10%), `valid_from ≥ today`; sai → 400,
+   không bao giờ nhận giá trị rác vào tham số tiền.
+4. **Maker ≠ checker**: một admin không tự đề nghị rồi tự duyệt — cùng họ với dual-control
+   cần làm cho withdrawal phê duyệt (HARD).
+5. **Không DELETE** config — chỉ thay bằng bản mới (append-only như ledger, bài học L11).
+
 **Bước 1 — tính đúng lúc tạo đơn** (`createOrder`):
 
 ```java
