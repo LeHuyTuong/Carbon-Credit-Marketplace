@@ -102,6 +102,9 @@ PR đỏ = chặn merge. Đây là "lưới an toàn" Phase P1 của roadmap tea
 - `application-local.properties` hiện **untracked** → fresh clone thiếu placeholder
   (`AI_GEMINI_API_KEY`, `AWS_S3_BUCKET`, `STRIPE_API_KEY`... đều không default trong
   `application.properties`) có thể fail startup.
+- Case đã xác nhận cụ thể: `trading_fee` chỉ định nghĩa trong file untracked này, trong khi
+  `@Value("${trading_fee}")` không có default (`OrderServiceImpl.java:47`) → fresh clone chắc chắn
+  chết lúc start. Đã xử lý trong FIX-P0-2 Bước 0 (`trading.fee-rate` có default).
 - Chọn 1: (a) commit `application-local.properties.example` + README chỉ dẫn copy; hoặc
   (b) thêm default no-op cho mọi placeholder (`${AI_GEMINI_API_KEY:}` + enabled=false).
 - Kiểm chứng: clone mới về, chỉ `cp .env.example .env`, `docker compose up --build` → backend UP.

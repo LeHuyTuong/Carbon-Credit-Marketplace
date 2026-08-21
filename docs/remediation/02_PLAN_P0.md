@@ -95,14 +95,24 @@ nếu sửa vội thành "seller nhận ít hơn" mà không tìm nơi nhận fe
 `SUM(wallet_transactions)` không còn ≈ 0 và query đối soát (README §4b) báo drift.
 
 ### 🔬 Nguyên nhân
-`OrderServiceImpl.java:118-119` — phí được **tính và lưu** nhưng payout ghi full giá:
 
-```java
-.platformFee(tradingFee)        // 0.05 × totalPrice — chỉ để trang trí
-.sellerPayout(totalPrice)       // ← BUG: phải là totalPrice - tradingFee
+**Nơi con số 5% sống rất bấp bênh** (truy vết sau audit):
+
+```mermaid
+flowchart LR
+    A["@Value(&quot;${trading_fee}&quot;)<br/>OrderServiceImpl.java:47-48<br/>KHÔNG default"] --> B["trading_fee=0.05<br/>chỉ trong application-local.properties:62"]
+    B --> C["⚠️ file CHƯA track git"]
+    C --> D["Fresh clone → placeholder không resolve<br/>→ backend KHÔNG boot được"]
 ```
 
-Và lúc settle, `:377-386` cộng cho seller đúng `totalPrice`.
+- `OrderServiceImpl.java:47-48` — `@Value("${trading_fee}")` **không có giá trị mặc định**.
+- Giá trị chỉ tồn tại trong `application-local.properties` (untracked) → đổi phí phải sửa file local
+  + rebuild; **không có API setting nào cả** (chính là điểm bạn nghi ngờ — chính xác).
+- ⚠️ **Bẫy ngữ nghĩa:** cột `Order.platformFee` (`Order.java:54`) đang lưu **TỶ LỆ** (0.05) chứ không
+  phải số tiền phí — `:118` gán `.platformFee(tradingFee)` thẳng từ config. Khi fix phải tách rõ
+  `feeRate` vs `feeAmount`, kẻo người kế nhiệm hiểu sai cột và hồi tố sai lệnh cũ.
+- Phí được tính+lưu nhưng payout ghi full giá (`:118-119`), settle cộng seller đúng `totalPrice`
+  (`:377-386`):
 
 ```mermaid
 flowchart LR
@@ -120,15 +130,32 @@ Quy tắc: **mọi đồng rút khỏi một ví phải xuất hiện ở ví kh
 
 ### 🛠️ Sửa
 
+**Bước 0 — đưa phí ra cấu hình chuẩn (làm ngay, chưa cần UI):**
+1. `application.properties` (file TRACKED) thêm: `trading.fee-rate=${TRADING_FEE_RATE:0.05}`
+   — có default → hết cảnh fresh-clone chết placeholder; `.env`/compose override được.
+2. `@Value` sửa thành `@Value("${trading.fee-rate:0.05}")`; đổi tên field `tradingFee` → `tradingFeeRate`.
+
+**Bước 0b — thiết kế "setting phí" dài hạn (sau P0, không chặn fix này):**
+
+| Phương án | Cách | Khi nào cần |
+|---|---|---|
+| ① Env config (Bước 0) | `TRADING_FEE_RATE` trong `.env`/compose | Đủ hiện tại — đổi phí = restart |
+| ② Bảng `fee_config` versioned | `(id, fee_rate, valid_from)` + endpoint ADMIN `GET/PUT /api/v1/admin/fee-config`, ghi audit ai-đổi-khi-nào | Đổi phí không cần restart; order vẫn dùng **snapshot** nên lệnh cũ không bị hồi tố |
+| ③ Bậc thang theo khối lượng | tier theo qty/tổng giá | Khi có thị trường thật |
+
+Nguyên tắc bất kể phương án nào: **order phải chụp snapshot** cả `feeRate` lẫn `feeAmount`
+ngay lúc tạo — đối soát luôn dùng snapshot, không dùng giá trị config hiện hành.
+
 **Bước 1 — tính đúng lúc tạo đơn** (`createOrder`):
 
 ```java
-BigDecimal platformFee  = totalPrice.multiply(TRADING_FEE_RATE)      // new BigDecimal("0.05")
+BigDecimal feeAmount     = totalPrice.multiply(tradingFeeRate)
         .setScale(2, RoundingMode.HALF_UP);
-BigDecimal sellerPayout = totalPrice.subtract(platformFee);
+BigDecimal sellerPayout  = totalPrice.subtract(feeAmount);
 ...
-.platformFee(platformFee)
-.sellerPayout(sellerPayout)      // dùng field đã có, giờ mới đúng nghĩa
+.platformFee(feeAmount)          // ⚠️ cột này trước nay lưu RATE — giờ chuyển sang AMOUNT;
+                                 //    nếu muốn giữ rate: thêm cột fee_rate riêng, migrate data cũ
+.sellerPayout(sellerPayout)
 ```
 
 **Bước 2 — tạo Platform wallet 1 lần** trong `DataInitializer` (seed như role):
@@ -147,7 +174,7 @@ walletTransactionService.createTransaction(WalletTransactionRequest.builder()
         .wallet(platformWallet)                 // load trong tx, nằm trong thứ tự khóa id tăng dần
         .type(WalletTransactionType.PLATFORM_FEE)
         .description("Platform fee for order #" + order.getId())
-        .amount(platformFee)
+        .amount(feeAmount)                      // snapshot đã chụp lúc tạo đơn
         .build());
 ```
 
@@ -160,7 +187,8 @@ walletTransactionService.createTransaction(WalletTransactionRequest.builder()
 1. `settle_createsThreeLedgerRows_buyerMinus_sellerPlusPayout_platformPlusFee`
 2. `sumOfAmounts_forOneTrade_isZero` ← đây chính là "bảo toàn tiền" đóng gói thành test
 3. `platformFee_isFivePercent_roundedHalfUp` (case totalPrice lẻ)
-4. Chạy thêm `OrderSettlementConcurrencyIT` cũ: 2 buyer chốt đơn cuối vẫn không oversell.
+4. `order_storesFeeSnapshot_rateAndAmount_atCreation` — đổi config sau khi tạo đơn không đổi được fee của đơn đã tạo
+5. Chạy thêm `OrderSettlementConcurrencyIT` cũ: 2 buyer chốt đơn cuối vẫn không oversell.
 
 ### ✅ Nghiệm thu
 Query đối soát README §4a & §4b rỗng/≈0 trên DB seed chạy đủ luồng deposit→trade.
