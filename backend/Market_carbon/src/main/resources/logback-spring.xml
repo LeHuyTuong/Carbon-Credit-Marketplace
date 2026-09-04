@@ -1,0 +1,25 @@
+<configuration>
+    <appender name="PSPY" class="ch.qos.logback.core.FileAppender">
+        <file>logs/p6spy.log</file>
+        <encoder>
+            <pattern>%d{MMM dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="p6spy" level="INFO" additivity="false">
+        <appender-ref ref="PSPY" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <logger name="org.hibernate.SQL" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>

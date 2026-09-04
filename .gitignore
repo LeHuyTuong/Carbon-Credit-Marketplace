@@ -64,3 +64,11 @@ local-assets/
 .freebuff/
 scratchpad-audit/
 *.code-workspace
+
+# Local dev profile — machine-specific ports/credentials, not shared.
+# The `**/application.properties` rule above does not match the -local suffix.
+**/application-local.properties
+
+# Personal engineering notes (kept on disk, not shared with collaborators)
+CV_METRICS.md
+OPTIMIZATION_LOG.md
