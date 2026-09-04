@@ -48,6 +48,7 @@ class EmissionReportServiceImplTest {
     @Mock private AiScoringService aiScoringService;
     @Mock private CvaRepository cvaRepository;
     @Mock private ReportNotificationService notificationService;
+    @Mock private com.carbonx.marketcarbon.repository.AdminRepository adminRepository;
 
     @Mock private SecurityContext securityContext;
     @Mock private Authentication authentication;
@@ -84,6 +85,8 @@ class EmissionReportServiceImplTest {
     }
 
     private void mockSecurityContext(User user) {
+        // P1.1: production checks isAuthenticated() — a Mockito mock defaults to false
+        lenient().when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(user.getEmail());
         lenient().when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
     }
@@ -192,6 +195,11 @@ class EmissionReportServiceImplTest {
     void adminApproveReport_Success() {
         // Arrange
         submittedReport.setStatus(EmissionStatus.CVA_APPROVED); // Điều kiện: CVA đã duyệt
+        // P1.1: adminApproveReport verifies the caller — provide the ADMIN identity
+        mockSecurityContext(adminUser);
+        com.carbonx.marketcarbon.model.Admin admin = com.carbonx.marketcarbon.model.Admin.builder()
+                .id(30L).user(adminUser).name("Test Admin").build();
+        when(adminRepository.findByUserId(adminUser.getId())).thenReturn(Optional.of(admin));
         when(reportRepository.findById(submittedReport.getId())).thenReturn(Optional.of(submittedReport));
         doNothing().when(notificationService).sendAdminDecision(any(), any(), any(), any(), any(), eq(true), any());
         ArgumentCaptor<EmissionReport> captor = ArgumentCaptor.forClass(EmissionReport.class);
@@ -213,6 +221,12 @@ class EmissionReportServiceImplTest {
     void adminApproveReport_Fail_NotCvaApproved() {
         // Arrange
         submittedReport.setStatus(EmissionStatus.SUBMITTED); // [Test Case] Chưa qua CVA
+        // P1.1: legitimate caller identity — the guard under test is the STATUS rule,
+        // so the ADMIN auth check must pass first
+        mockSecurityContext(adminUser);
+        com.carbonx.marketcarbon.model.Admin admin = com.carbonx.marketcarbon.model.Admin.builder()
+                .id(30L).user(adminUser).name("Test Admin").build();
+        when(adminRepository.findByUserId(adminUser.getId())).thenReturn(Optional.of(admin));
         when(reportRepository.findById(submittedReport.getId())).thenReturn(Optional.of(submittedReport));
 
         // Act & Assert

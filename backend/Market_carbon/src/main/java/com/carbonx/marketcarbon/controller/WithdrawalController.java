@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -76,6 +77,7 @@ public class WithdrawalController {
     }
 
     @Operation(summary = "Admin accept withdrawal" , description = "API process withdrawal , admin accept")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/{id}/process/{accept}")
     public ResponseEntity<ApiResponse<Withdrawal>> processWithdrawal(
             @PathVariable("id") Long id,
@@ -110,6 +112,7 @@ public class WithdrawalController {
     }
 
     @Operation(summary = "Get withdrawal history by admin" , description = "API admin to get all history of User withdrawal request")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<List<Withdrawal>>> getALlWithdrawalRequest(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

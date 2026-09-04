@@ -74,7 +74,7 @@ public class WalletServiceImpl implements WalletService {
     public WalletResponse getUserWallet() throws WalletException {
         // B1 Tim wallet
         User user = currentUser();
-        Wallet wallet = walletRepository.findByUserId(user.getId());
+        Wallet wallet = walletRepository.findByUserIdWithDetails(user.getId());
         //B2 nếu không có ví thì sẽ tự gen ra ví
         if (wallet == null) {
             wallet = generateWallet(user);
@@ -83,7 +83,7 @@ public class WalletServiceImpl implements WalletService {
         // Fetch updated transactions DTOs
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(wallet.getId());
         // Map entity to DTO
-        return mapToWalletResponse( transactionDtos);
+        return mapToWalletResponse(wallet, transactionDtos);
     }
 
     @Override
@@ -120,7 +120,7 @@ public class WalletServiceImpl implements WalletService {
 
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(updatedWallet.getId());
         // Map updated entity to DTO
-        return mapToWalletResponse( transactionDtos);
+        return mapToWalletResponse(updatedWallet, transactionDtos);
     }
 
 
@@ -132,7 +132,7 @@ public class WalletServiceImpl implements WalletService {
         // Fetch transaction DTOs for the wallet
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(wallet.getId());
         // Map entity to DTO
-        return mapToWalletResponse( transactionDtos);
+        return mapToWalletResponse(wallet, transactionDtos);
     }
 
     @Override
@@ -149,16 +149,11 @@ public class WalletServiceImpl implements WalletService {
     }
 
     // Helper method to map Wallet entity to WalletResponse DTO
-    private WalletResponse mapToWalletResponse( List<WalletTransactionResponse> transactions) {
-        User user = currentUser();
-        Long id = user.getId();
-
-        Wallet wallet = walletRepository.findByUserId(id);
-
+    private WalletResponse mapToWalletResponse(Wallet wallet, List<WalletTransactionResponse> transactions) {
         if (wallet == null) {
             return null;
         }
-        List<WalletCarbonCreditResponse> creditSummaries = resolveCarbonCreditSummaries();
+        List<WalletCarbonCreditResponse> creditSummaries = resolveCarbonCreditSummaries(wallet);
 
         return WalletResponse.builder()
                 .id(wallet.getId())
@@ -170,18 +165,14 @@ public class WalletServiceImpl implements WalletService {
                 .build();
     }
 
-    private List<WalletCarbonCreditResponse> resolveCarbonCreditSummaries() {
-        User user = currentUser();
-        Long id = user.getId();
-
-        Wallet wallet = walletRepository.findByUserId(id);
-        if (wallet == null) {
-            return Collections.emptyList();
-        }
-
+    private List<WalletCarbonCreditResponse> resolveCarbonCreditSummaries(Wallet wallet) {
         Company company = wallet.getCompany();
         if (company == null) {
-            company = companyRepository.findByUserId(id).orElse(null);
+            User user = wallet.getUser();
+            if (user == null) {
+                return Collections.emptyList();
+            }
+            company = companyRepository.findByUserId(user.getId()).orElse(null);
             if (company == null) {
                 return Collections.emptyList();
             }
@@ -189,7 +180,7 @@ public class WalletServiceImpl implements WalletService {
             walletRepository.save(wallet);
         }
 
-        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyId(company.getId());
+        List<CarbonCredit> credits = carbonCreditRepository.findByCompanyIdWithDetails(company.getId());
 
         List<WalletCarbonCreditResponse> response = new ArrayList<>();
 
@@ -331,19 +322,18 @@ public class WalletServiceImpl implements WalletService {
         }
 
         try {
-            // 1. Khóa và Tải ví nguồn (Sử dụng PESSIMISTIC_WRITE lock)
-            // Tương đương "SELECT ... FOR UPDATE" trong SQL.
-            // Luồng khác sẽ phải đợi nếu muốn tác động vào ví này.
-            Wallet lockedFromWallet = entityManager.find(Wallet.class, fromWallet.getId(), LockModeType.PESSIMISTIC_WRITE);
-            if (lockedFromWallet == null) {
+            // 1+2. Khóa và Tải cả hai ví theo thứ tự ID tăng dần (P0-B/B3: lock ordering —
+            // mọi luồng khóa ví theo cùng một thứ tự toàn cục thì không thể xảy ra deadlock
+            // vòng A→B đấu với B→A).
+            Wallet firstById = fromWallet.getId() <= toWallet.getId() ? fromWallet : toWallet;
+            Wallet secondById = firstById == fromWallet ? toWallet : fromWallet;
+            Wallet lockedFirst = entityManager.find(Wallet.class, firstById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            Wallet lockedSecond = entityManager.find(Wallet.class, secondById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            if (lockedFirst == null || lockedSecond == null) {
                 throw new AppException(ErrorCode.WALLET_NOT_FOUND);
             }
-
-            // 2. Khóa và Tải ví đích
-            Wallet lockedToWallet = entityManager.find(Wallet.class, toWallet.getId(), LockModeType.PESSIMISTIC_WRITE);
-            if (lockedToWallet == null) {
-                throw new AppException(ErrorCode.WALLET_NOT_FOUND);
-            }
+            Wallet lockedFromWallet = lockedFirst == fromWallet || lockedFirst.getId().equals(fromWallet.getId()) ? lockedFirst : lockedSecond;
+            Wallet lockedToWallet = lockedFromWallet == lockedFirst ? lockedSecond : lockedFirst;
 
             BigDecimal fromBefore = lockedFromWallet.getBalance();
             BigDecimal toBefore = lockedToWallet.getBalance();
@@ -385,8 +375,11 @@ public class WalletServiceImpl implements WalletService {
                     // .currency(lockedToWallet.getCurrency())
                     .transactionType(WalletTransactionType.valueOf(type))
                     .description(creditDescription)
-                    .balanceBefore(fromBefore)
-                    .balanceAfter(fromAfter)
+                    // P0-B/B2: the receiver's ledger row must show the RECEIVER's balances.
+                    // This previously copied the sender's fromBefore/fromAfter (copy-paste bug),
+                    // corrupting every profit-sharing credit row for audit/reconciliation.
+                    .balanceBefore(toBefore)
+                    .balanceAfter(toAfter)
                     // .status("COMPLETED")
                     .distribution(distribution)
                     .createdAt(LocalDateTime.now())

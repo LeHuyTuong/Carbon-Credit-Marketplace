@@ -11,7 +11,7 @@ import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.MarketplaceService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -67,6 +67,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         // B1: Kiểm tra đầu vào
         if (request.getQuantity() == null || request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
+        }
+        // P0-B/B5: credits are discrete units — listings must be whole-number quantities too
+        if (request.getQuantity().stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.QUANTITY_MUST_BE_WHOLE);
         }
 
         // B2 Nếu request có carbonCreditId nhưng ko có batchId
@@ -200,10 +204,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 // giữ total nhất quán: amount = available + listed
                 c.setAmount(availAfter.add(c.getListedAmount()));
 
-                // hết available => coi như đã list hết credit này
-                if (availAfter.compareTo(BigDecimal.ZERO) == 0) {
-                    c.setStatus(CreditStatus.LISTED);
-                }
+                // P1.1: dùng chung updateCreditStatus với single-credit path — trước đây
+                // batch-mode chỉ set LISTED khi available về đúng 0, nên credit bị list
+                // MỘT PHẦN vẫn giữ AVAILABLE => cùng trạng thái business mà 2 path cho
+                // 2 status khác nhau.
+                updateCreditStatus(c, availAfter, c.getListedAmount());
 
                 log.debug("[BATCH-MODE] Updated credit {} - deduct={}, availBefore={}, availAfter={}, listed={}",
                         c.getId(), deduct, availBefore, availAfter, c.getListedAmount());
@@ -388,8 +393,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<MarketplaceListingResponse> getActiveListing() {
-        List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfter(ListingStatus.AVAILABLE, LocalDate.now());
+        List<MarketPlaceListing> activeListings = marketplaceListingRepository.findByStatusAndExpiresAtAfterWithDetails(ListingStatus.AVAILABLE, LocalDate.now());
 
         return activeListings.stream()
                 .map(this::buildListingResponse)
@@ -398,12 +404,13 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public List<MarketplaceListingResponse> getALlCreditListingsByCompanyID() {
 
         User currentUser = currentUser();
         Company sellerCompany = currentCompany(currentUser);
 
-        List<MarketPlaceListing> companyListings = marketplaceListingRepository.findByCompanyId(sellerCompany.getId());
+        List<MarketPlaceListing> companyListings = marketplaceListingRepository.findByCompanyIdWithDetails(sellerCompany.getId());
 
         return companyListings.stream()
                 .map(this::buildListingResponse)

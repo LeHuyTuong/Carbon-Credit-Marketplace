@@ -41,4 +41,10 @@ public class PaymentOrder extends BaseEntity{
 
     @Column(unique = true)
     private String vnpTxnRef; // Mã giao dịch của VNPay
+
+    // P0-B/B1: provider payment reference (Stripe Checkout session id / PayPal payment id)
+    // saved server-side at link creation, so success can later be verified with the provider.
+    // Client-supplied payment ids are never trusted for crediting.
+    @Column(name = "provider_ref")
+    private String providerRef;
 }

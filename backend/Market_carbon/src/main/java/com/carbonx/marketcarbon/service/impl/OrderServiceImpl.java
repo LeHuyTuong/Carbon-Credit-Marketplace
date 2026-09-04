@@ -41,6 +41,8 @@ public class OrderServiceImpl implements OrderService {
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CarbonCreditRepository carbonCreditRepository;
     private final CreditIssuanceService creditIssuanceService;
+    // P0-B/B3: wallet row locks during settlement
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Value("${trading_fee}")
     private BigDecimal tradingFee;
@@ -75,7 +77,7 @@ public class OrderServiceImpl implements OrderService {
         Company buyerCompany = currentCompany(user);
 
         //1 find listing user want to buy
-        MarketPlaceListing listing = marketplaceListingRepository.findById(request.getListingId())
+        MarketPlaceListing listing = marketplaceListingRepository.findByIdWithDetails(request.getListingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Marketplace listing not found"));
 
         // 2 check conditional > 0
@@ -84,6 +86,13 @@ public class OrderServiceImpl implements OrderService {
         }
         if (request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_VALID);
+        }
+        // P0-B/B5: carbon credits are discrete 1-unit assets (unique serial each, integer
+        // issuance formula). Fractional quantities must be rejected at the earliest entry
+        // point — settlement assumes integers (intValueExact) and would otherwise fail late
+        // with a confusing error and a stuck order.
+        if (request.getQuantity().stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.QUANTITY_MUST_BE_WHOLE);
         }
         if (listing.getQuantity().compareTo(request.getQuantity()) < 0) {
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
@@ -178,8 +187,11 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         log.info("Starting order completion process for orderId: {}", orderId);
 
-        // B1 tìm order
-        Order order = orderRepository.findById(orderId)
+        // B1 tìm order — P1.3: khóa bằng MỘT câu lệnh duy nhất (findById + LockMode).
+        // Biến thể fetch-join + @Lock bị Hibernate "follow-on locking": SELECT chạy KHÔNG
+        // khóa trước (cả 2 thread đều đọc PENDING), row bị khóa sau đó — hai settlement
+        // song song vẫn lọt (chứng minh bằng OrderSettlementConcurrencyIT trên MySQL thật).
+        Order order = orderRepository.findByIdWithPessimisticLock(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
@@ -187,7 +199,8 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
 
-        // B2 tìm list và khóa lại chính id của marketplace đó
+        // B2 tìm list và khóa — dùng biến thể KHÔNG fetch-join để FOR UPDATE nằm ngay
+        // trong câu lệnh; graph (company/carbonCredit) nạp lazy trong tx sau khi đã khóa.
         MarketPlaceListing listing = marketplaceListingRepository
                 .findByIdWithPessimisticLock(order.getMarketplaceListing().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
@@ -203,28 +216,42 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal totalPrice = order.getTotalPrice();
 
         if (listing.getQuantity().compareTo(quantityToBuy) < 0) {
-            order.setOrderStatus(OrderStatus.ERROR);
-            orderRepository.save(order);
+            // P0-B/B4: no status mutation here — this transaction is about to roll back,
+            // so any write would be discarded. The ERROR transition is persisted by
+            // OrderStatusRecorder (new transaction) from the controller's catch.
             throw new AppException(ErrorCode.AMOUNT_IS_NOT_ENOUGH);
         }
 
         // B4 bắt đầu giao dịch
         try {
-            // B4.1: Lấy ví
-            Wallet buyerWallet = walletRepository.findByUserId(buyerCompany.getUser().getId());
-            if (buyerWallet == null) {
+            // B4.1: Lấy ví — P1.3: load ID trước (projection, KHÔNG nạp state), rồi khóa ví
+            // bằng entityManager.find(PESSIMISTIC_WRITE) theo thứ tự ID tăng dần. Đây là lần
+            // CHẠM ĐẦU tới entity trong tx ⇒ đọc state MỚI NHẤT dưới khóa. Nếu nạp sẵn bằng
+            // findByCompanyIdWithDetails (không khóa) rồi mới khóa, persistence context giữ
+            // bản stale — 2 thread cùng ghi before=200 (lost-update, IT đã chứng minh).
+            Long buyerWalletId = walletRepository.findIdByCompanyId(buyerCompany.getId());
+            if (buyerWalletId == null) {
                 throw new ResourceNotFoundException("Buyer wallet not found");
             }
-            if (buyerWallet.getBalance().compareTo(totalPrice) < 0) {
-                order.setOrderStatus(OrderStatus.ERROR);
-                orderRepository.save(order);
-                throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+            Long sellerWalletId = walletRepository.findIdByCompanyId(sellerCompany.getId());
+            if (sellerWalletId == null) {
+                throw new ResourceNotFoundException("Seller wallet not found");
+            }
+            Long firstWalletId = Math.min(buyerWalletId, sellerWalletId);
+            Long secondWalletId = Math.max(buyerWalletId, sellerWalletId);
+            Wallet lockedFirst = entityManager.find(Wallet.class, firstWalletId,
+                    jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            Wallet lockedSecond = entityManager.find(Wallet.class, secondWalletId,
+                    jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            Wallet buyerWallet = buyerWalletId.equals(firstWalletId) ? lockedFirst : lockedSecond;
+            Wallet sellerWallet = sellerWalletId.equals(firstWalletId) ? lockedFirst : lockedSecond;
+            if (buyerWallet == null || sellerWallet == null) {
+                throw new ResourceNotFoundException("Wallet not found");
             }
 
-            // tìm ví seller
-            Wallet sellerWallet = walletRepository.findByUserId(sellerCompany.getUser().getId());
-            if (sellerWallet == null) {
-                throw new ResourceNotFoundException("Seller wallet not found");
+            if (buyerWallet.getBalance().compareTo(totalPrice) < 0) {
+                // P0-B/B4: see note above — ERROR is recorded post-rollback by OrderStatusRecorder
+                throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
             }
 
             // B4.2: Cập nhật sourceCredit (bên bán)
@@ -268,8 +295,10 @@ public class OrderServiceImpl implements OrderService {
                     issuedBy
             );
 
-            // Số credits thực tế = phần nguyên của quantity (vì mỗi credit = 1 unit)
-            int actualCreditsCreated = quantityToBuy.intValue();
+            // Số credits thực tế = quantity — P0-B/B5: intValueExact() fails loudly if a
+            // fractional quantity ever reaches settlement (defense in depth behind the
+            // creation-time validation) instead of silently truncating paid quantity.
+            int actualCreditsCreated = quantityToBuy.intValueExact();
 
             // B5.1: Cập nhật số dư tín chỉ trong ví
             BigDecimal currentBuyerCredit = buyerWallet.getCarbonCreditBalance() != null
@@ -317,9 +346,11 @@ public class OrderServiceImpl implements OrderService {
                     actualCreditsCreated, totalPrice);
 
         } catch (Exception e) {
+            // P0-B/B4: do NOT write status here — this transaction is rolling back, so the
+            // save below would be discarded (the pre-B4 bug: orders stayed PENDING forever).
+            // The ERROR transition is persisted by OrderStatusRecorder after this method's
+            // transaction has fully rolled back (see OrderController.completeOrder).
             log.error("Error completing order: {}", orderId, e);
-            order.setOrderStatus(OrderStatus.ERROR);
-            orderRepository.save(order);
             throw e;
         }
     }

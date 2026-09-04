@@ -1,14 +1,17 @@
+# P0-A (N5): credentials moved to environment injection (read from a local .env file,
+# see .env.example). Values that were previously committed must be considered exposed
+# and rotated — see docs/architecture/P0_A_SECRET_ROTATION.md.
 services:
   db:
     image: mysql:8.0
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
       MYSQL_DATABASE: core_ccm
     volumes:
-      - db_data:/var/lib/mysql 
+      - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p12345"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -26,13 +29,14 @@ services:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/core_ccm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 12345
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
 
       SERVER_PORT: 8082
-      SPRING_MAIL_USERNAME: hoang106408@donga.edu.vn
-      SPRING_MAIL_PASSWORD: vzzvzqynxjyvouvr
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:?set SPRING_MAIL_USERNAME in .env}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:?set SPRING_MAIL_PASSWORD in .env}
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       
     ports:
       - "8082:8082"  

@@ -115,12 +115,13 @@ public class GlobalExceptionHandler {
     }
 
     // 500 - Fallback
+    // P0-A (SC5): never return raw exception messages to clients — they can leak SQL,
+    // class names, file paths or infrastructure details. Full detail stays in the server log.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse<Object>> handleOther(Exception ex) {
         log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildErrorResponse("500", errorMsg));
+                .body(buildErrorResponse("500", "An unexpected error occurred. Please try again later."));
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)

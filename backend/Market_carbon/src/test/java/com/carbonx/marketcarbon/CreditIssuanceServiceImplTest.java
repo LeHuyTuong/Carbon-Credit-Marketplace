@@ -320,7 +320,9 @@ class CreditIssuanceServiceImplTest {
         CarbonCredit firstNewCredit = newCredits.get(0);
         assertThat(firstNewCredit.getCompany()).isEqualTo(buyerCompany);
         assertThat(firstNewCredit.getSourceCredit()).isEqualTo(sourceCredit);
-        assertThat(firstNewCredit.getStatus()).isEqualTo(CreditStatus.TRADED);
+        // P1.1: newly issued buyer credits are AVAILABLE (usable/re-listable);
+        // TRADED describes the SELLER's source credit after a full sale (settlement's job)
+        assertThat(firstNewCredit.getStatus()).isEqualTo(CreditStatus.AVAILABLE);
         assertThat(firstNewCredit.getAmount()).isEqualByComparingTo(BigDecimal.ONE); // 1 credit
         assertThat(firstNewCredit.getCarbonCredit()).isEqualByComparingTo(BigDecimal.ONE); // 1 available
         assertThat(firstNewCredit.getCreditCode()).isEqualTo("NEW-CODE-000001");

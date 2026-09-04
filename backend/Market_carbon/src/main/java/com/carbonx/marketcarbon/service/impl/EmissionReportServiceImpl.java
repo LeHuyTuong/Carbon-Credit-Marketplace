@@ -320,6 +320,12 @@ public class EmissionReportServiceImpl implements EmissionReportService {
         EmissionReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
+        // P1.1: two-stage approval — ADMIN may only decide reports already CVA-approved.
+        // Without this guard an admin could approve a SUBMITTED report, bypassing CVA.
+        if (report.getStatus() != EmissionStatus.CVA_APPROVED) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
         report.setApprovedAt(LocalDateTime.now());
         report.setComment(note);
         report.setStatus(approved ? EmissionStatus.ADMIN_APPROVED : EmissionStatus.ADMIN_REJECTED);

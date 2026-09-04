@@ -1,8 +1,13 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
+import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
+import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
+import com.carbonx.marketcarbon.exception.BadRequestException;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.model.PaymentOrder;
 import com.carbonx.marketcarbon.model.User;
@@ -11,7 +16,10 @@ import com.carbonx.marketcarbon.repository.PaymentOrderRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.PaymentService;
+import com.carbonx.marketcarbon.service.PaymentVerificationService;
 import com.carbonx.marketcarbon.service.SseService;
+import com.carbonx.marketcarbon.service.WalletService;
+import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
@@ -29,8 +37,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -41,6 +51,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final SseService sseService;
+    private final PaymentVerificationService verificationService;
+    private final WalletService walletService;
+    private final WalletTransactionService walletTransactionService;
 
     @Value("${payment_success_url}")
     private String successUrl;
@@ -110,33 +123,115 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentOrderRepository.findPaymentById(id);
     }
 
+    // =====================================================================
+    // P0-B/B1 — server-side deposit confirmation
+    //
+    // Step 1 (NO transaction): assertDepositVerifiable — ownership check +
+    //        provider-side verification. External HTTP must never sit inside a
+    //        financial DB transaction (connection held for seconds = pool death).
+    // Step 2 (ONE transaction): applyVerifiedDeposit — pessimistic lock on the
+    //        payment order, PENDING → SUCCEEDED guard, wallet credit + ledger row.
+    //        Concurrent or replayed calls serialize on the lock; the status guard
+    //        makes the credit exactly-once.
+    // =====================================================================
+
+    @Override
+    public void assertDepositVerifiable(Long orderId) {
+        User user = currentUser();
+        PaymentOrder order = paymentOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment order not found with id: " + orderId));
+
+        if (!Objects.equals(order.getUser().getId(), user.getId())) {
+            // BOLA: without this check any user could confirm someone else's order and
+            // have the amount credited to their own wallet.
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        if (order.getStatus() == Status.SUCCEEDED) {
+            return; // idempotent fast path: already credited
+        }
+        if (order.getStatus() != Status.PENDING) {
+            throw new BadRequestException("Payment order " + orderId + " is no longer pending (status=" + order.getStatus() + ")");
+        }
+
+        String providerRef = order.getProviderRef();
+        if (providerRef == null || providerRef.isBlank()) {
+            throw new BadRequestException("Payment order " + orderId + " has no stored provider reference to verify");
+        }
+
+        boolean verified;
+        switch (order.getPaymentMethod()) {
+            case STRIPE -> verified = verificationService.verifyStripePaid(providerRef, order.getAmount());
+            case PAYPAL -> verified = verificationService.verifyPaypalApproved(providerRef, order.getAmount());
+            default -> {
+                // VNPay orders are credited only through the signature-verified return flow
+                throw new BadRequestException("Payment method " + order.getPaymentMethod()
+                        + " must be confirmed through its provider callback, not this endpoint");
+            }
+        }
+        if (!verified) {
+            throw new BadRequestException("Payment could not be verified with the provider for order " + orderId);
+        }
+    }
+
     @Override
     @Transactional
-    public Boolean processPaymentOrder(Long orderId, String paymentId) {
+    public Wallet applyVerifiedDeposit(Long orderId) {
         PaymentOrder order = paymentOrderRepository.findByIdWithLock(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment order not found with id: " + orderId));
 
-        // Nếu đơn đã xử lý rồi thì bỏ qua
-        if (order.getStatus() == Status.SUCCEEDED) {
-            log.warn("Payment order {} already processed.", order.getId());
-            return false;
+        if (order.getStatus() != Status.PENDING) {
+            // SUCCEEDED (already credited once) or terminal — never credit again
+            log.info("Deposit for order {} already processed (status={}), skipping credit", orderId, order.getStatus());
+            return walletRepository.findByUserId(order.getUser().getId());
         }
 
-        // Giả lập xác nhận thanh toán thành công (hoặc gọi API Stripe/VNPay thật ở đây)
-        boolean paymentConfirmed = true; // hoặc verifyPaymentFromGateway(paymentId)
+        // Stripe/PayPal orders store whole USD
+        creditWalletForOrder(order, BigDecimal.valueOf(order.getAmount()));
+        order.setStatus(Status.SUCCEEDED);
+        paymentOrderRepository.save(order);
+        log.info("Deposit credited for order {} ({} USD) to user {}", orderId, order.getAmount(), order.getUser().getId());
+        return walletRepository.findByUserId(order.getUser().getId());
+    }
 
-        if (paymentConfirmed) {
-            // Cập nhật trạng thái đơn
-            order.setStatus(Status.SUCCEEDED);
-            paymentOrderRepository.save(order);
-            // Lấy wallet của user
-            Wallet wallet = walletRepository.findByUserId(order.getUser().getId());
-            if (wallet == null) {
-                throw new ResourceNotFoundException("Wallet not found for user " + order.getUser().getId());
-            }
-            return true;
+    @Override
+    @Transactional
+    public boolean applyVnPayDeposit(String vnpTxnRef) {
+        PaymentOrder order = paymentOrderRepository.findByVnpTxnRefWithLock(vnpTxnRef)
+                .orElse(null);
+        if (order == null || order.getStatus() != Status.PENDING) {
+            return false; // unknown or already processed — idempotent
         }
-        return false;
+
+        // VNPay orders store VND; wallet balance is USD → convert before crediting.
+        BigDecimal amountUsd = BigDecimal.valueOf(order.getAmount())
+                .divide(CurrencyConverter.getUsdToVndRate(), 2, RoundingMode.HALF_UP);
+
+        creditWalletForOrder(order, amountUsd);
+        order.setStatus(Status.SUCCEEDED);
+        paymentOrderRepository.save(order);
+        log.info("VNPay deposit credited for txnRef {} ({} VND → {} USD) to user {}",
+                vnpTxnRef, order.getAmount(), amountUsd, order.getUser().getId());
+        return true;
+    }
+
+    /**
+     * Credit the order owner's wallet and write the ledger row — caller must hold
+     * the payment-order lock and have re-checked PENDING. Runs inside the caller's
+     * transaction so status flip + credit + ledger commit or roll back together.
+     */
+    private void creditWalletForOrder(PaymentOrder order, BigDecimal amountUsd) {
+        User owner = order.getUser();
+        Wallet wallet = walletRepository.findByUserId(owner.getId());
+        if (wallet == null) {
+            wallet = walletService.generateWallet(owner);
+        }
+        walletTransactionService.createTransaction(WalletTransactionRequest.builder()
+                .wallet(wallet)
+                .type(WalletTransactionType.ADD_MONEY)
+                .description("Deposit via " + order.getPaymentMethod() + " (order #" + order.getId() + "): "
+                        + amountUsd + " USD")
+                .amount(amountUsd)
+                .build());
     }
 
 
@@ -162,6 +257,12 @@ public class PaymentServiceImpl implements PaymentService {
                                 .build())
                 .build();
         Session session = Session.create(params);
+        // P0-B/B1: remember the provider reference server-side so success can be verified
+        // with Stripe later — the frontend only gets the URL and never proves payment.
+        paymentOrderRepository.findById(orderId).ifPresent(po -> {
+            po.setProviderRef(session.getId());
+            paymentOrderRepository.save(po);
+        });
         log.debug("Stripe checkout session created: {}", session.getId());
 
         PaymentOrderResponse res = new PaymentOrderResponse();
@@ -208,6 +309,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Create the payment
         com.paypal.api.payments.Payment createdPayment = payment.create(apiContext);
+
+        // P0-B/B1: store the PayPal payment id server-side for later verification
+        paymentOrderRepository.findById(orderId).ifPresent(po -> {
+            po.setProviderRef(createdPayment.getId());
+            paymentOrderRepository.save(po);
+        });
 
         // Extract approval URL
         String approvalUrl = null;

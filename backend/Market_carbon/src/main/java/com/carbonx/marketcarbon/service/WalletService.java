@@ -28,6 +28,9 @@ public interface WalletService {
 
     Wallet findWalletByUser(User user);
 
+    /** Provision a wallet for a user (idempotent-safe: callers check existence first). */
+    Wallet generateWallet(User user);
+
     void transferFunds(
             Wallet fromWallet,
             Wallet toWallet,

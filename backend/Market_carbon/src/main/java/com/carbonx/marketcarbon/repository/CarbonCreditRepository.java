@@ -27,6 +27,17 @@ public interface CarbonCreditRepository extends JpaRepository<CarbonCredit, Long
 
     List<CarbonCredit> findByCompanyId(Long companyId);
 
+    // Eager-load batch, batch.company, sourceCredit, sourceCredit.company, and company
+    // in a single query to eliminate N+1 lazy loads when building wallet credit summaries
+    @Query("SELECT DISTINCT c FROM CarbonCredit c " +
+           "LEFT JOIN FETCH c.batch b " +
+           "LEFT JOIN FETCH b.company bc " +
+           "LEFT JOIN FETCH b.certificate " +
+           "LEFT JOIN FETCH c.sourceCredit sc " +
+           "LEFT JOIN FETCH sc.company scc " +
+           "WHERE c.company.id = :companyId")
+    List<CarbonCredit> findByCompanyIdWithDetails(@Param("companyId") Long companyId);
+
     List<CarbonCredit> findByStatusNot(CreditStatus status);
 
     List<CarbonCredit> findByBatch_IdAndCompany_Id(Long batchId, Long companyId);

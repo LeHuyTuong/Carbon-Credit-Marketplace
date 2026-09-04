@@ -115,7 +115,10 @@ public class VNPayService {
             String vnp_TxnRef = request.getParameter("vnp_TxnRef");
             // Check if the transaction was successful
             if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                orderService.updateOrderStatus(vnp_TxnRef, Status.SUCCEEDED);
+                // P0-B/B1: the HMAC signature above IS the server-side proof of payment.
+                // Credit the wallet and mark SUCCEEDED atomically (idempotent) instead of
+                // only flipping status and leaving the credit to an unverified endpoint.
+                orderService.applyVnPayDeposit(vnp_TxnRef);
                 return 1; // Success
             } else {
                 orderService.updateOrderStatus(vnp_TxnRef, Status.FAILED);

@@ -42,6 +42,19 @@ public class VertexWebClientConfig {
         HttpClient http = HttpClient.create()
                 .responseTimeout(Duration.ofMillis(cfg.getTimeoutMs()));
 
+        // P1.2: when Vertex is disabled (tests, or deployments without AI), build a plain
+        // client WITHOUT touching Google auth — application startup must not depend on an
+        // external identity provider being reachable/valid. AI calls are gated by
+        // cfg.isEnabled() at the service layer and will simply report "disabled".
+        if (!cfg.isEnabled()) {
+            return WebClient.builder()
+                    .baseUrl(baseUrl)
+                    .clientConnector(new ReactorClientHttpConnector(http))
+                    .defaultHeader("Content-Type", "application/json")
+                    .defaultHeader("Accept", "application/json")
+                    .build();
+        }
+
         GoogleCredentials creds = credentials();
 
         //  Filter tự động chèn Bearer Token IAM vào mỗi request

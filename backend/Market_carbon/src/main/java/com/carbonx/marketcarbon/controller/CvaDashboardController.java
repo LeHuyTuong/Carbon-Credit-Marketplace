@@ -11,6 +11,7 @@ import com.carbonx.marketcarbon.utils.common.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/cva/dashboard")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CVA', 'ADMIN')") // P0-A (N9)
 public class CvaDashboardController {
 
     private final DashboardCardService service;

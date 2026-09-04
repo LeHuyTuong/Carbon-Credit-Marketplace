@@ -12,6 +12,7 @@ import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CreditIssuanceService;
 import com.carbonx.marketcarbon.service.EmailService;
+import com.carbonx.marketcarbon.service.FileStorageService;
 import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.StorageService;
 import com.carbonx.marketcarbon.service.credit.SerialNumberService;
@@ -56,6 +57,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final SseService sseService;
+    private final FileStorageService fileStorageService;
 
     @Value("${app.frontendBaseUrl:https://your-frontend.com}")
     private String frontendBaseUrl;
@@ -255,12 +257,10 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
             batchRepo.save(batch);
 
         // Tải bytes để đính kèm email
-        byte[] pdf;
-        try (InputStream in = new java.net.URL(pdfUrl).openStream()) {
-            pdf = in.readAllBytes();
-        } catch (IOException ioEx) {
-            throw new UncheckedIOException("Cannot download PDF from " + pdfUrl, ioEx);
-        }
+        // P1.1: read the object back through the storage abstraction (by key) instead of
+        // opening the public/presigned URL — unit tests must never perform network I/O,
+        // and getObject() keeps the download on the storage adapter boundary.
+        byte[] pdf = fileStorageService.getObject(stored.key());
 
         try {
             String subject = "Your Carbon Credit Certificate is Ready!";
@@ -510,12 +510,10 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         batch.setCertificate(cert);
         batchRepo.save(batch);
 
-        byte[] pdf;
-        try (InputStream in = new java.net.URL(pdfUrl).openStream()) {
-            pdf = in.readAllBytes();
-        } catch (IOException ioEx) {
-            throw new UncheckedIOException("Cannot download PDF from " + pdfUrl, ioEx);
-        }
+        // P1.1: read the object back through the storage abstraction (by key) instead of
+        // opening the public/presigned URL — unit tests must never perform network I/O,
+        // and getObject() keeps the download on the storage adapter boundary.
+        byte[] pdf = fileStorageService.getObject(stored.key());
 
         try {
             String subject = "Your Carbon Credit Certificate is Ready!";

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/api/v1/ai", "/v1/ai"})
+@RequestMapping("/api/v1/ai") // P0-A (N10): /v1/ai removed — it bypassed the /api/** rate limiter
 @RequiredArgsConstructor
 public class ChatAiController {
 

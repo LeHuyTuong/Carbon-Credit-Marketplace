@@ -132,6 +132,7 @@ public enum ErrorCode {
     EMISSION_REPORT_NOT_APPROVED(400, "Emission Report not approved", HttpStatus.BAD_REQUEST),
     MONEY_MUST_POSITIVE(400, "Money must be positive", HttpStatus.BAD_REQUEST),
     WALLET_NOT_FOUND(400, "Wallet not found.", HttpStatus.NOT_FOUND),
+    QUANTITY_MUST_BE_WHOLE(400, "Credit quantity must be a whole number (each credit is one discrete unit).", HttpStatus.BAD_REQUEST),
     ;
 
 
