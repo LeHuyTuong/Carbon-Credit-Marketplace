@@ -1,23 +1,33 @@
 <configuration>
-    <appender name="PSPY" class="ch.qos.logback.core.FileAppender">
-        <file>logs/p6spy.log</file>
-        <encoder>
-            <pattern>%d{MMM dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="p6spy" level="INFO" additivity="false">
-        <appender-ref ref="PSPY" />
-        <appender-ref ref="CONSOLE" />
-    </logger>
+    <!--
+      p6spy SQL tracing is a local diagnostics tool, not a runtime feature: it opens
+      logs/p6spy.log at startup and turns Hibernate SQL up to DEBUG, which would echo
+      every statement in prod. Scoped to the local profile so other environments get
+      console logging at INFO and nothing else. The PSPY appender lives inside the
+      block too — an appender-ref to an undefined appender is an error on profiles
+      where it would not exist.
+    -->
+    <springProfile name="local">
+        <appender name="PSPY" class="ch.qos.logback.core.FileAppender">
+            <file>logs/p6spy.log</file>
+            <encoder>
+                <pattern>%d{MMM dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
 
-    <logger name="org.hibernate.SQL" level="DEBUG" />
+        <logger name="p6spy" level="INFO" additivity="false">
+            <appender-ref ref="PSPY" />
+            <appender-ref ref="CONSOLE" />
+        </logger>
+
+        <logger name="org.hibernate.SQL" level="DEBUG" />
+    </springProfile>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
