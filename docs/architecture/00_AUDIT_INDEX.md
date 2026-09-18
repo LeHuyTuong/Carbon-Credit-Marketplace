@@ -61,6 +61,8 @@ The multi-file set supersedes the earlier consolidated `docs/ARCHITECTURE_AUDIT.
 
 **Second-audit verdict: NOT PRODUCTION-READY** (see 18). Nine blockers, several newly discovered:
 
+> **Post-audit fixes (2026-09-18, commit `bf08364`):** N7 (order ownership) and P2 (exception leak) resolved; `18_PRODUCTION_READINESS.md` below not yet re-scored — re-audit pending.
+
 1. **N1** Self-service admin: registration accepts any role including ADMIN (`AuthServiceImpl:59-63`).
 2. **N2/N3** Withdrawal admin endpoints lack role checks AND the rejection refund is replayable → infinite mint (`WithdrawalServiceImpl:125-130`).
 3. **N4** JWT signing secret hardcoded and committed — tokens forgeable for any account (public repo).
@@ -77,5 +79,5 @@ The multi-file set supersedes the earlier consolidated `docs/ARCHITECTURE_AUDIT.
 |-------|--------|
 | 0–12 First audit (docs 01-16) | ✅ Complete |
 | Second audit (docs 17-30) | ✅ Complete |
-| 13 Implementation | ⛔ Not started — begin with **P0-A security batch** (29) after roadmap approval |
-| 14–16 Testing / Verification / Re-audit | ⛔ Not started |
+| 13 Implementation | ✅ Partial — P0-A security batch (N1–N10, SC3, SC5) complete in commit `bf08364`; P0-B/P1/P2 in progress (see `P0_A_IMPLEMENTATION.md`) |
+| 14–16 Testing / Verification / Re-audit | ✅ Complete (docs 14, 15, 16 authored; see also `OrderSettlementConcurrencyTest`, `OrderQuantityWholeNumberTest`) |
