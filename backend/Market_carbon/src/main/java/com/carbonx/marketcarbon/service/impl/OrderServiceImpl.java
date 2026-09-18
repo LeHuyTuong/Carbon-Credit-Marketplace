@@ -68,6 +68,26 @@ public class OrderServiceImpl implements OrderService {
                         () -> new ResourceNotFoundException("Company not found with userid: " + user.getId()));
     }
 
+    // P0-B/N7: caller must be the buyer company OR an ADMIN/CVA system user.
+    // Check admin/CVA via authorities BEFORE currentCompany() (admin users may
+    // have no company record and would otherwise be rejected by the lookup).
+    // Null/unauthenticated security context → 401 (never NPE).
+    private void assertCallerCanAccessOrder(Order order) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        boolean adminOrCva = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ROLE_CVA".equals(a.getAuthority()));
+        if (adminOrCva) {
+            return;
+        }
+        Company callerCompany = currentCompany(currentUser());
+        if (!order.getCompany().getId().equals(callerCompany.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
     @Transactional
     @Override
     public CreditTradeResponse createOrder(OrderRequest request) {
@@ -136,6 +156,9 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId).orElseThrow(
                 () -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
+        // P0-B/N7: only the buyer company, ADMIN, or CVA may read order details
+        assertCallerCanAccessOrder(order);
+
         return CreditTradeResponse.builder()
                 .id(order.getId())
                 .companyId(order.getCompany().getId())
@@ -193,6 +216,9 @@ public class OrderServiceImpl implements OrderService {
         // song song vẫn lọt (chứng minh bằng OrderSettlementConcurrencyIT trên MySQL thật).
         Order order = orderRepository.findByIdWithPessimisticLock(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        // P0-B/N7: only the buyer company or ADMIN may complete the order
+        assertCallerCanAccessOrder(order);
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
             log.info("Order already completed: {}", orderId);

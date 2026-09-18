@@ -64,8 +64,10 @@ public class GlobalExceptionHandler {
     // 404 - Not Found (custom)
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<CommonResponse<Object>> handleNotFound(NotFoundException ex) {
+        // P2: generic message — raw ex.getMessage() may leak internal IDs/details.
+        log.error("Not found", ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(buildErrorResponse("404", ex.getMessage()));
+                .body(buildErrorResponse("404", "Resource not found"));
     }
 
     // AppException -> dùng ErrorCode trong dự án
@@ -158,34 +160,31 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<CommonResponse<Object>> DataIntegrityViolationException(Exception ex) {
+        // P2: never return raw DB/constraint messages — they leak schema details.
         log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", errorMsg));
+                .body(buildErrorResponse("400", "Unable to process request. Please try again later."));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<CommonResponse<Object>> ResourceNotFoundException(Exception ex) {
         log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("404", errorMsg));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(buildErrorResponse("404", "Resource not found"));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<CommonResponse<Object>> BadCredentialsException(Exception ex) {
         log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", errorMsg));
+                .body(buildErrorResponse("400", "Invalid credentials"));
     }
 
     @ExceptionHandler(ConstraintDefinitionException.class)
     public ResponseEntity<CommonResponse<Object>> ConstraintDefinitionException(Exception ex) {
         log.error("Unhandled error", ex);
-        String errorMsg = ex.getMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(buildErrorResponse("400", errorMsg));
+                .body(buildErrorResponse("400", "Invalid request configuration"));
     }
 
     @ExceptionHandler(CsvBatchException.class)

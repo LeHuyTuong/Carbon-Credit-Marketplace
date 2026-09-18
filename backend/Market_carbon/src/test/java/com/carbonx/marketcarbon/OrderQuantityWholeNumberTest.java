@@ -87,6 +87,7 @@ class OrderQuantityWholeNumberTest {
                 .build();
 
         when(authentication.getName()).thenReturn(buyer.getEmail());
+        lenient().when(authentication.isAuthenticated()).thenReturn(true);
         lenient().when(userRepository.findByEmail(buyer.getEmail())).thenReturn(buyer);
         lenient().when(companyRepository.findByUserId(buyer.getId())).thenReturn(Optional.of(buyerCompany));
         lenient().when(marketplaceListingRepository.findByIdWithDetails(201L)).thenReturn(Optional.of(listing));

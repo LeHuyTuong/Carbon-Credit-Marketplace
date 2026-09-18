@@ -37,6 +37,11 @@ services:
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      # P0-B/B1: PaymentVerificationService (@Value) — server-side trust boundary
+      STRIPE_API_KEY: ${STRIPE_API_KEY:?set STRIPE_API_KEY in .env}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:?set PAYPAL_CLIENT_ID in .env}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:?set PAYPAL_CLIENT_SECRET in .env}
+      PAYPAL_MODE: ${PAYPAL_MODE:sandbox}
       
     ports:
       - "8082:8082"  

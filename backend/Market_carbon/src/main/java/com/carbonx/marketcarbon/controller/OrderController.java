@@ -50,6 +50,7 @@ public class OrderController {
 
     @Operation(summary = "System complete a PENDING Order", description = "System executes the financial transaction for a PENDING order. This moves funds and transfers carbon credits.")
     @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('COMPANY', 'ADMIN')")
     public ResponseEntity<ApiResponse<MessageResponse>> completeOrder(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -80,6 +81,7 @@ public class OrderController {
 
     @Operation(summary = "Get Order by ID", description = "Retrieves the details of a specific order.")
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('COMPANY', 'ADMIN', 'CVA')")
     public ResponseEntity<ApiResponse<CreditTradeResponse>> getOrderById(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -113,6 +115,7 @@ public class OrderController {
 
     @Operation(summary = "Cancel a PENDING Order", description = "Cancels an order that has not yet been completed.")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<ApiResponse<MessageResponse>> cancelOrder(
             @PathVariable("id") Long orderId,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

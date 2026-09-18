@@ -1,8 +1,9 @@
 # Architecture Audit Index — CarbonX (carbon-credit-marketplace)
 
-> Generated: 2026-08-16 · Branch audited: `refactor/cleancode` (including uncommitted N+1-optimization diff)
+> Generated: 2026-08-16 · Updated by source review 2026-09-18 · Branch audited: `refactor/cleancode` → current `chore/rename-common-dto-and-readme`
 > Method: full read of money-path code + structural analysis of all packages + external best-practice research + measured performance baselines
 > Audit mode: READ-ONLY — **no application source code was modified**
+> **Source review (2026-09-18):** all P0-A blockers (N1–N10, SC3, SC5) verified present in source at HEAD `bf9f5c5`. N4/N5 key rotation pending external action. Phase 13 **NOT** "Not started" — P0-A implementation complete and committed; see `P0_A_IMPLEMENTATION.md`.
 
 This is the entry point of the architecture audit. Each document is independently readable.
 The multi-file set supersedes the earlier consolidated `docs/ARCHITECTURE_AUDIT.md` (kept for reference; same findings).
