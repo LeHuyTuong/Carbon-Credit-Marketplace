@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme, Button, Tooltip } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,7 +20,7 @@ const ListProjects = () => {
       try { 
         // Gọi API lấy danh sách project
         const res = await apiFetch("/api/v1/projects/all", { method: "GET" });
-        console.log("API Project List:", res);
+        devLog("API Project List:", res);
         // Chuyển đổi dữ liệu để phù hợp với DataGrid
         const projects = (res?.response || []).map((item, idx) => ({
           id: item.id || idx,

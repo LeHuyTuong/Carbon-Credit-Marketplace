@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devLog } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -56,7 +57,7 @@ const ApplicationEdit = () => {
         note: finalReviewNote || (approved ? "Approved by CVA" : "Rejected by CVA"),
       };
 
-      console.log(" Sending decision payload:", payload);
+      devLog(" Sending decision payload:", payload);
       const result = await updateApplicationDecision(id, payload);
 
       const code = result?.responseStatus?.responseCode;

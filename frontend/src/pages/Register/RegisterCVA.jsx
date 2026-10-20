@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { devLog } from "@/utils/devLog";
 import {
     Box,
     Button,
@@ -64,7 +65,7 @@ const CVARegisterWithOTP = () => {
                 form.rePassword,
                 "CVA"
             );
-            console.log("Register success:", res);
+            devLog("Register success:", res);
             setStep("otp");
         } catch (err) {
             console.error("Register API Error:", err);
@@ -88,7 +89,7 @@ const CVARegisterWithOTP = () => {
 
         try {
             setLoading(true);
-            console.log("Sending OTP verify request:", {
+            devLog("Sending OTP verify request:", {
                 email: form.email,
                 otpCode: otpStr,
             });

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -83,7 +84,7 @@ const AdminKYC = () => {
       });
 
       const res = await apiKYCAdmin(formData);
-      console.log(" Full KYC response:", res);
+      devLog(" Full KYC response:", res);
 
       //  Kiểm tra mã phản hồi thành công từ backend
       if (

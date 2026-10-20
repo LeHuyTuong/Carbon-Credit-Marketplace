@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { devLog } from "@/utils/devLog";
 import "../../EVOwner/ManageVehicle/manage.css";
 import { Button, Modal, Toast, ToastContainer, Form } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
@@ -37,8 +38,8 @@ export default function UploadReport() {
       });
 
       const data = res?.response || [];
-      console.log("API data:", data);
-      console.log("projectId param:", projectId);
+      devLog("API data:", data);
+      devLog("projectId param:", projectId);
 
       //lọc theo projectId
       const filtered = data.filter((r) => r.projectId === Number(projectId));
@@ -83,7 +84,7 @@ export default function UploadReport() {
   //upload report
   const handleUpload = async (e) => {
     e.preventDefault();
-    console.log("projectId from params:", projectId);
+    devLog("projectId from params:", projectId);
 
     // lấy file từ input
     const file = e.target.file?.files[0];
@@ -93,7 +94,7 @@ export default function UploadReport() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("projectId", projectId);
-    console.log("Uploading with projectId:", projectId);
+    devLog("Uploading with projectId:", projectId);
 
     try {
       setUploading(true); // bật trạng thái đang upload

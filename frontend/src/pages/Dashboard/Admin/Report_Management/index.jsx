@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
@@ -19,7 +20,7 @@ const ReportsList = () => {
     const fetchReports = async () => {
       try {
         const res = await getAllReportsAdmin({ page: 0, size: 500 });
-        console.log("Raw API response:", res);
+        devLog("Raw API response:", res);
         if (res?.response) {
           const formatted = res.response.map((item, index) => ({
             id: item.id ?? `report-${index}`, // fallback id nếu null
@@ -33,8 +34,8 @@ const ReportsList = () => {
             submittedAt: item.submittedAt,
           }));
           setData(formatted);
-          console.log("Formatted data:", formatted);
-          console.log("IDs:", formatted.map(d => d.id));
+          devLog("Formatted data:", formatted);
+          devLog("IDs:", formatted.map(d => d.id));
         }
       } catch (error) {
         console.error("Failed to fetch reports:", error);

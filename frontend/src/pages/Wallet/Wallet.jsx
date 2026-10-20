@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { devLog } from "@/utils/devLog";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import useWalletData from "./components/useWalletData";
@@ -54,7 +55,7 @@ export default function Wallet() {
   //khi trở lại từ Order.jsx với state.refreshCredits
   useEffect(() => {
     if (location.state?.refreshCredits) {
-      console.log("Refreshing credits after purchase...");
+      devLog("Refreshing credits after purchase...");
       fetchIssuedCredits();
       fetchPurchasedCredits();
       nav("/wallet", { replace: true });

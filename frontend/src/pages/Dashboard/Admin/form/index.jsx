@@ -10,6 +10,7 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -65,7 +66,7 @@ const RegisterForm = () => {
       };
 
       const res = await registerUser(payload);
-      console.log(" Register success:", res);
+      devLog(" Register success:", res);
 
       setUserEmail(values.email);
       setOpenOtpDialog(true);
@@ -97,7 +98,7 @@ const RegisterForm = () => {
         otpCode: otpCode,
       });
 
-      console.log(" OTP verified:", res);
+      devLog(" OTP verified:", res);
       if (res?.responseStatus?.responseCode === "200") {
         setOpenOtpDialog(false);
         showSnackbar("success", "Account verified successfully!");

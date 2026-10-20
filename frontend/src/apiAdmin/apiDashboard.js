@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devLog } from "@/utils/devLog";
 
 /**
  * Đếm số lượng phương tiện (vehicle) của user hoặc company
@@ -53,10 +54,10 @@ export const countWalletTransactions = async (params = {}) => {
       },
     });
 
-    console.log("countWalletTransactions() full API response:", res);
+    devLog("countWalletTransactions() full API response:", res);
 
     const count = res.response ?? res?.response?.response ?? 0;
-    console.log("countWalletTransactions() normalized count:", count);
+    devLog("countWalletTransactions() normalized count:", count);
 
     return count;
   } catch (error) {
@@ -80,8 +81,8 @@ export const countUsers = async (params = {}) => {
 
     // Chuẩn hóa dữ liệu trả về
     const count = res?.response ?? res?.data ?? res ?? 0;
-    console.log("countUsers() API response:", res);
-    console.log("countUsers() normalized count:", count);
+    devLog("countUsers() API response:", res);
+    devLog("countUsers() normalized count:", count);
     return count;
   } catch (error) {
     console.error("Error in countUsers():", error);

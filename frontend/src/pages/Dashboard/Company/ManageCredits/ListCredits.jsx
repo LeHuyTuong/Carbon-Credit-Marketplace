@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { devLog } from "@/utils/devLog";
 import "../../EVOwner/ManageVehicle/manage.css";
 import {
   Button,
@@ -248,7 +249,7 @@ export default function ListCredits() {
           payload.carbonCreditIds = selectedIds;
         }
       }
-      console.log("selectedCreditObj", selectedCreditObj);
+      devLog("selectedCreditObj", selectedCreditObj);
 
       // --- Gửi lên backend ---
       if (editData) {

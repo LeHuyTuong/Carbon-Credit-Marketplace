@@ -1,4 +1,5 @@
 import { Box, Button, TextField, MenuItem, Snackbar, Alert } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -15,8 +16,8 @@ const Form = () => {
       formData.append(key, values[key]);
     });
 
-    console.log("Uploaded avatar:", values.avatar);
-    console.log("All form values:", values);
+    devLog("Uploaded avatar:", values.avatar);
+    devLog("All form values:", values);
 
     // Gửi formData qua API ở đây nếu cần
     // axios.post("/api/users", formData, { headers: { "Content-Type": "multipart/form-data" } });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { devLog } from "@/utils/devLog";
 import {
   Box,
   TextField,
@@ -71,7 +72,7 @@ const EditProfileCVA = () => {
     if (cva.avatar instanceof File) formData.append("avatar", cva.avatar);
     // Call API to update
     const updated = await updateKYCCVA(formData);
-    console.log("Updated CVA:", updated);
+    devLog("Updated CVA:", updated);
     setSnackbar({ open: true, message: "Profile updated!", severity: "success" });
     setTimeout(() => navigate("/cva/view_profile_cva"), 1000);
   } catch (err) {

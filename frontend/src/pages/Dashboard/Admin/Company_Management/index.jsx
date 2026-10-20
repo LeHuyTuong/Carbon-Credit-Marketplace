@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
@@ -16,7 +17,7 @@ const CompanyTeam = () => {
     async function fetchCompanies() {
       try {
         const response = await getAllCompanyKYCProfiles();
-        console.log("API Company KYC Response:", response);
+        devLog("API Company KYC Response:", response);
 
         const list = Array.isArray(response?.response)
           ? response.response

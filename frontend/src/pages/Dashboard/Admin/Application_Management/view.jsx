@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devLog } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -36,10 +37,10 @@ const ApplicationView = () => {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        console.log(" View page ID:", id);
+        devLog(" View page ID:", id);
         const res = await getProjectApplicationById(id);
         const data = res?.response || res;
-        console.log(" Raw API response:", data);
+        devLog(" Raw API response:", data);
 
         if (data && data.id) setApplication(data);
         else throw new Error("No valid data received");

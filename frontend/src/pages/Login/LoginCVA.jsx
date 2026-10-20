@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -51,10 +52,10 @@ const CVALogin = () => {
 
     try {
       setLoading(true);
-      console.log("Attempting login with:", form.email);
+      devLog("Attempting login with:", form.email);
 
       const res = await apiLogin(form.email, form.password);
-      console.log("Login API response:", res);
+      devLog("Login API response:", res);
 
       // Lấy đúng dữ liệu từ API
       const data = res?.responseData;
@@ -99,7 +100,7 @@ const CVALogin = () => {
 
       // Gọi check KYC
       const kycRes = await checkKYCCVA();
-      console.log("Full KYC check:", kycRes);
+      devLog("Full KYC check:", kycRes);
 
       // Điều hướng dựa theo KYC
       if (kycRes && kycRes.id) {

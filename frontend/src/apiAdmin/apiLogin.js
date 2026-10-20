@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devLog } from "@/utils/devLog";
 
 /**  Admin Login API */
 export const apiLogin = async (email, password) => {
@@ -84,7 +85,7 @@ export const checkKYCAdmin = async () => {
       },
     });
 
-    console.log(" Full KYC check response:", data);
+    devLog(" Full KYC check response:", data);
     
 
     if (
@@ -127,7 +128,7 @@ export const updateKYCAdmin = async (formData) => {
       throw new Error(message);
     }
 
-    console.log("KYC updated successfully:", data.response);
+    devLog("KYC updated successfully:", data.response);
     return data.response;
   } catch (error) {
     console.error("Update KYC API Error:", error.message);
@@ -161,7 +162,7 @@ export const apiLogout = async () => {
       throw new Error(message);
     }
 
-    console.log(" Admin logout successful:", data.responseData);
+    devLog(" Admin logout successful:", data.responseData);
 
     //  Dọn token & thông tin admin sau khi logout
     localStorage.removeItem("admin_token");

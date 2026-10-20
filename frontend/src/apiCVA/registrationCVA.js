@@ -1,16 +1,17 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devLog } from "@/utils/devLog";
 
 // Lấy danh sách project applications
 export const getProjectApplications = async () => {
   try {
     const res = await apiFetch("/api/v1/project-applications");
-    console.log("Raw API response:", res);
+    devLog("Raw API response:", res);
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
       //  Chọn đúng mảng data từ responseData hoặc response
       const data = res.responseData || res.response || [];
-      console.log(" Project Applications API:", data);
+      devLog(" Project Applications API:", data);
       return data;
     } else {
       console.warn(" API returned non-success code:", code);

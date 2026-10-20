@@ -1,9 +1,10 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devLog } from "@/utils/devLog";
 
 export const getProjectApplications = async () => {
   try {
     const res = await apiFetch("/api/v1/project-applications");
-    console.log("Raw API response:", res);
+    devLog("Raw API response:", res);
 
     const code = res?.responseStatus?.responseCode;
 
@@ -23,7 +24,7 @@ export const getProjectApplications = async () => {
 export const getProjectApplicationById = async (id) => {
   try {
     const res = await apiFetch(`/api/v1/project-applications/${id}`);
-    console.log("Raw API response (detail):", res);
+    devLog("Raw API response (detail):", res);
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
