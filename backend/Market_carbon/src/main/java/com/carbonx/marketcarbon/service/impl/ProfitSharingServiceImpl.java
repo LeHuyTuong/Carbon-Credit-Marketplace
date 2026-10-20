@@ -868,8 +868,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         // transaction sau sẽ thấy SUCCESS đã commit nên đánh SKIPPED thay vì trả lần hai.
         Long firstWalletId = Math.min(threadSafeCompanyWallet.getId(), ownerWallet.getId());
         Long secondWalletId = Math.max(threadSafeCompanyWallet.getId(), ownerWallet.getId());
-        walletRepository.findByIdForUpdate(firstWalletId);
-        walletRepository.findByIdForUpdate(secondWalletId);
+        Optional<Wallet> lockedFirst = walletRepository.findByIdForUpdate(firstWalletId);
+        Optional<Wallet> lockedSecond = walletRepository.findByIdForUpdate(secondWalletId);
+        if (lockedFirst.isEmpty() || lockedSecond.isEmpty()) {
+            return "Wallet not found for payout";
+        }
 
         if (detail == null) {
             detail = new ProfitDistributionDetail();
