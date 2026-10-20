@@ -417,7 +417,7 @@ public class WalletServiceImpl implements WalletService {
      * lại đúng giá trị đã commit dưới khoá, nên phải trả tiền trên số dư thật.</p>
      */
     private Wallet lockAndReload(Long id) {
-        Wallet wallet = entityManager.find(Wallet.class, id);
+        Wallet wallet = entityManager.find(Wallet.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (wallet == null) {
             return null;
         }

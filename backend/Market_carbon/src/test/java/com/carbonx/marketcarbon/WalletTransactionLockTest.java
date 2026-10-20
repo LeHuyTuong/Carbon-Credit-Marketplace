@@ -58,12 +58,12 @@ class WalletTransactionLockTest {
 
     @Test
     void createTransaction_locksWalletRowBeforeMutatingBalance() {
-        when(entityManager.find(Wallet.class, 5L)).thenReturn(wallet);
+        when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
         when(walletTransactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.createTransaction(request(WalletTransactionType.BUY_CARBON_CREDIT, new BigDecimal("40.00")));
 
-        verify(entityManager).find(Wallet.class, 5L);
+        verify(entityManager).find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE);
         // The row is locked AND re-read under the lock: find(..., PESSIMISTIC_WRITE) alone
         // would keep the stale in-memory balance of an already managed entity.
         verify(entityManager).refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
@@ -73,7 +73,7 @@ class WalletTransactionLockTest {
 
     @Test
     void createTransaction_debitBeyondBalance_throwsBeforeAnySave() {
-        when(entityManager.find(Wallet.class, 5L)).thenReturn(wallet);
+        when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
 
         assertThatThrownBy(() -> service.createTransaction(
                 request(WalletTransactionType.BUY_CARBON_CREDIT, new BigDecimal("150.00"))))
@@ -85,7 +85,7 @@ class WalletTransactionLockTest {
 
     @Test
     void createTransaction_creditRecordsBeforeAndAfterOnLockedWallet() {
-        when(entityManager.find(Wallet.class, 5L)).thenReturn(wallet);
+        when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
         when(walletTransactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.createTransaction(request(WalletTransactionType.ADD_MONEY, new BigDecimal("30.00")));

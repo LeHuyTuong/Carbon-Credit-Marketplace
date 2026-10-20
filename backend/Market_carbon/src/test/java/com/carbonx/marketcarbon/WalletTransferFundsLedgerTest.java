@@ -78,8 +78,8 @@ class WalletTransferFundsLedgerTest {
     private void stubLocks() {
         // Khoá + đọc lại: find() lấy entity, refresh(..., PESSIMISTIC_WRITE) khoá row và
         // nạp lại số dư đã commit (nếu không, số dư trong memory có thể cũ).
-        when(entityManager.find(Wallet.class, 11L)).thenReturn(from);
-        when(entityManager.find(Wallet.class, 22L)).thenReturn(to);
+        when(entityManager.find(Wallet.class, 11L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(from);
+        when(entityManager.find(Wallet.class, 22L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(to);
     }
 
     @Test

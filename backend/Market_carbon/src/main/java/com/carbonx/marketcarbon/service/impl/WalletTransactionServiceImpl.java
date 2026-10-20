@@ -59,7 +59,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             // lý: nó trả về bản ghi cũ đã load trước đó. Số dư dùng để cộng/trừ vì thế có
             // thể cũ (lost update) dù row đã khoá. refresh(..., PESSIMISTIC_WRITE) đọc lại
             // đúng giá trị đã commit dưới khoá.
-            Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId());
+            Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId(), LockModeType.PESSIMISTIC_WRITE);
             if (locked == null) {
                 throw new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId());
             }
