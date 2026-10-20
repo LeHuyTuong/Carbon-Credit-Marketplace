@@ -97,7 +97,8 @@ class WalletTransferFundsLedgerTest {
 
         // Both wallets are locked AND their committed balance is re-read under the lock:
         // entityManager.find with a lock mode does not refresh an already managed entity,
-        // so the transfer could run on a stale balance.
+        // so the transfer could run on a stale balance. The lock itself is taken by the
+        // native 'SELECT balance ... FOR UPDATE'.
         verify(entityManager).find(Wallet.class, 11L, LockModeType.PESSIMISTIC_WRITE);
         verify(entityManager).find(Wallet.class, 22L, LockModeType.PESSIMISTIC_WRITE);
         verify(walletRepository).findBalanceByIdForUpdate(11L);

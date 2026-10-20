@@ -328,14 +328,20 @@ they are missing — they are required, not optional:
 | Variable | Needed by |
 | --- | --- |
 | `TRADING_FEE` | fee applied when a marketplace order settles |
+| `JPA_DDL_AUTO` | overrides the prod schema mode (defaults to `validate`; never set it to `update` in production) |
+| `SHOW_SQL` | logs the SQL statements (off in production) |
 | `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL` | where the payment provider returns the browser |
 | `SWAGGER_TITLE`, `SWAGGER_VERSION`, `SWAGGER_DESCRIPTION` | OpenAPI/Swagger metadata |
 | `SERVER_URL`, `SERVER_DESCRIPTION` | OpenAPI server info |
-| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID` / `_SECRET` | Google login (an empty id aborts the boot) |
+| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID`, `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET` | Google login (an empty id aborts the boot) |
+| `VNPAY_TMNCODE`, `VNPAY_HASH_SECRET` | VNPay checkout |
+| `CARBONX_SEED_ADMIN_EMAIL`, `CARBONX_SEED_ADMIN_PASSWORD`, `CARBONX_SEED_COMPANY_EMAIL`, `CARBONX_SEED_COMPANY_PASSWORD`, `CARBONX_SEED_CVA_EMAIL`, `CARBONX_SEED_CVA_PASSWORD`, `CARBONX_SEED_WALLET_BALANCE` | the accounts created on an empty database — **no default password in production**, so an empty database cannot be seeded with a well-known password |
 | `STRIPE_API_KEY` | `PaymentServiceImpl`, `PaymentVerificationService` (Stripe checkout/verification) |
-| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_REGION` | `S3Config`, `S3StorageServiceImpl` (S3 upload) |
+| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_REGION`, `AWS_REGION`, `AWS_PUBLIC_URL` | `S3Config`, `S3StorageServiceImpl` (S3 upload) |
 | `AWS_S3_PUBLIC_BASE_URL` | public URL prefix for uploaded files |
 | `AI_GEMINI_API_KEY`, `AI_GEMINI_MODEL` | Gemini AI scoring/chat (only when the AI feature is enabled) |
+| `AI_VERTEX_ENABLED`, `GOOGLE_APPLICATION_CREDENTIALS` | Vertex AI (disabled by default; the credentials file is read from the env, never hardcoded) |
+| `PROFIT_SHARING_DEFAULT_PRICING_MODE`, `PROFIT_SHARING_DEFAULT_OWNER_SHARE_PCT`, `PROFIT_SHARING_DEFAULT_MIN_PAYOUT`, `PROFIT_SHARING_DEFAULT_CURRENCY`, `PROFIT_SHARING_STALE_PROCESSING_MINUTES` | the default profit-sharing policy — without it `/share` pays nobody while still answering 200 |
 | `APP_CORS_ALLOWED_ORIGINS` | comma-separated browser origins; the default list only covers the usual local dev ports |
 | `APP_FRONTEND_BASE_URL` | where the OAuth2 login redirects the browser |
 

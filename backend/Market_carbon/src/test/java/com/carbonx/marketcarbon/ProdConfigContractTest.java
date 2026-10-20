@@ -118,6 +118,56 @@ class ProdConfigContractTest {
     }
 
     @Test
+    void everyRequiredProdEnvVarIsDocumentedInTheReadme() throws Exception {
+        // Một biến bắt buộc không có trong README thì không ai set được, và app không
+        // boot được (placeholder không resolve).
+        String prod = readClasspathFile("application-prod.properties");
+        java.util.Set<String> documented = readReadme();
+        java.util.List<String> missing = new java.util.ArrayList<>();
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("\\$\\{([A-Z][A-Z0-9_]*)(\\}|:)").matcher(prod);
+        while (matcher.find()) {
+            String name = matcher.group(1);
+            if (!documented.contains(name)) {
+                missing.add(name);
+            }
+        }
+        assertThat(missing)
+                .as("every required env var of the prod profile must be listed in README.md")
+                .isEmpty();
+    }
+
+    @Test
+    void everyProfileDefinesAProfitSharingPolicy() {
+        // Không có chính sách thì resolveForCompany() ném lỗi và /share không trả tiền cho
+        // ai, trong khi API vẫn trả 200.
+        for (String profile : List.of("application.properties", "application-prod.properties")) {
+            String props = readClasspathFile(profile);
+            assertThat(lineStartingWith(props, "profit-sharing.default-policy.pricing-mode"))
+                    .as("%s must define the default profit-sharing pricing mode", profile)
+                    .isNotEmpty();
+            assertThat(lineStartingWith(props, "profit-sharing.default-policy.owner-share-pct"))
+                    .as("%s must define the default owner share", profile)
+                    .isNotEmpty();
+        }
+    }
+
+    private java.util.Set<String> readReadme() throws Exception {
+        java.nio.file.Path readme = java.nio.file.Path.of("..", "..", "README.md");
+        if (!java.nio.file.Files.exists(readme)) {
+            readme = java.nio.file.Path.of("README.md");
+        }
+        String text = java.nio.file.Files.readString(readme);
+        java.util.Set<String> names = new java.util.HashSet<>();
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("\\b([A-Z][A-Z0-9_]{3,})\\b").matcher(text);
+        while (matcher.find()) {
+            names.add(matcher.group(1));
+        }
+        return names;
+    }
+
+    @Test
     void lineStartingWith_returnsLastActiveValueBecausePropertiesLoadIsLastWins() {
         String props = String.join("\n",
                 "# paypal.mode=commented-out",

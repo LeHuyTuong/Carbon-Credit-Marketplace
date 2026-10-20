@@ -69,6 +69,11 @@ public class DataInitializer {
     @Value("${carbonx.seed.cva-password:" + DEFAULT_SEED_PASSWORD + "}")
     String cvaPassword;
 
+    /** Số dư nạp sẵn cho ví seed (prod để 0: tài khoản demo không cần tiền). */
+    @NonFinal
+    @Value("${carbonx.seed.wallet-balance:1000000}")
+    java.math.BigDecimal seedWalletBalance;
+
     private void warnIfDefaultPassword(String label, String password) {
         if (DEFAULT_SEED_PASSWORD.equals(password)) {
             log.warn("Seed account '{}' is using the built-in development password. "
@@ -136,7 +141,7 @@ public class DataInitializer {
                 log.info("Creating a wallet for admin user...");
                 Wallet newWallet = Wallet.builder()
                         .user(adminUser)
-                        .balance(BigDecimal.valueOf(1_000_000))
+                        .balance(seedWalletBalance)
                         .carbonCreditBalance(BigDecimal.ZERO)
                         .company(adminCompany)
                         .build();
