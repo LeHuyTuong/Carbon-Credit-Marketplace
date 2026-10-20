@@ -323,38 +323,10 @@ PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-SET @current_type = (
-    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'payment_details' AND COLUMN_NAME = 'bank_code'
-);
-SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(5)',
-    'ALTER TABLE `payment_details` MODIFY COLUMN `bank_code` VARCHAR(5) NOT NULL',
-    'SELECT 1');
-PREPARE stmt FROM @ddl;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @current_type = (
-    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'payment_details' AND COLUMN_NAME = 'account_holder_name'
-);
-SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(25)',
-    'ALTER TABLE `payment_details` MODIFY COLUMN `account_holder_name` VARCHAR(25) NOT NULL',
-    'SELECT 1');
-PREPARE stmt FROM @ddl;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @current_type = (
-    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'roles' AND COLUMN_NAME = 'name'
-);
-SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(255)',
-    'ALTER TABLE `roles` MODIFY COLUMN `name` VARCHAR(255) NOT NULL',
-    'SELECT 1');
-PREPARE stmt FROM @ddl;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+-- payment_details.bank_code / account_holder_name are NOT narrowed on purpose: the
+-- entity maps them from the bean-validation @Size, but Hibernate's validator only
+-- compares the JDBC type code (VARCHAR), not the width. Narrowing a live column would
+-- abort the migration on rows that are longer than the new width (or truncate them).
 
 -- wallet_transaction.transaction_type: the enum must contain every value the
 -- WalletTransactionType enum can write, otherwise the withdrawal-refund insert is

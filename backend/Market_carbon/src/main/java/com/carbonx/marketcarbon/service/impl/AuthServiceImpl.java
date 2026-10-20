@@ -44,6 +44,11 @@ public class AuthServiceImpl implements AuthService {
             PredefinedRole.COMPANY_ROLE
     );
 
+    // Hạn OTP theo luồng: đăng ký 5 phút, quên mật khẩu 30 phút (khớp với
+    // UserServiceImplementation). Dùng để suy ra thời điểm phát OTP.
+    private static final int REGISTRATION_OTP_MINUTES = 5;
+    private static final int FORGOT_PASSWORD_OTP_MINUTES = 30;
+
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -134,13 +139,10 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
-        // Chống spam: chỉ chặn khi chính mã OTP ĐĂNG KÝ còn hiệu lực. Nếu luồng quên
-        // mật khẩu đã ghi đè OTP (purpose FORGOT_PASSWORD, hạn 30 phút) thì chặn theo hạn
-        // đó sẽ khoá người dùng khỏi đăng ký tới 30 phút dù họ chưa từng nhận được mã.
-        boolean registrationOtpStillValid = user.getOtpPurpose() == OtpPurpose.REGISTER
-                && user.getOtpExpiryDate() != null
-                && user.getOtpExpiryDate().isAfter(LocalDateTime.now().plusSeconds(60));
-        if (registrationOtpStillValid) {
+        // Chống spam: chỉ chặn khi MÃ HIỆN TẠI vừa được phát (dưới 60 giây). Không
+        // dùng hạn hết mã (5 phút) làm ngưỡng: người dùng bấm "Gửi lại" sau 60 giây
+        // như UI cho phép sẽ bị từ chối tới 4 phút và không lấy được mã mới.
+        if (otpIssuedLessThanSecondsAgo(user, 60)) {
             throw new AppException(ErrorCode.OTP_STILL_VALID);
         }
 
@@ -169,6 +171,24 @@ public class AuthServiceImpl implements AuthService {
 
     private String generateRegistrationOtp() {
         return String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+    }
+
+    /**
+     * Mã OTP hiện tại có vừa được phát trong {@code seconds} giây gần đây không?
+     *
+     * <p>User không lưu thời điểm phát OTP, nhưng hạn mã là hằng số theo từng luồng
+     * (đăng ký 5 phút, quên mật khẩu 30 phút) nên thời điểm phát được suy ra từ
+     * {@code otpExpiryDate}.</p>
+     */
+    private boolean otpIssuedLessThanSecondsAgo(User user, int seconds) {
+        if (user.getOtpExpiryDate() == null) {
+            return false;
+        }
+        int lifetimeMinutes = user.getOtpPurpose() == OtpPurpose.FORGOT_PASSWORD
+                ? FORGOT_PASSWORD_OTP_MINUTES
+                : REGISTRATION_OTP_MINUTES;
+        LocalDateTime issuedAt = user.getOtpExpiryDate().minusMinutes(lifetimeMinutes);
+        return issuedAt.isAfter(LocalDateTime.now().minusSeconds(seconds));
     }
 
     private void sendRegistrationOtp(String email, String otp) throws Exception {

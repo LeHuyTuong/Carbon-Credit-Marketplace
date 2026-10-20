@@ -347,9 +347,9 @@ CREATE TABLE IF NOT EXISTS `wallets` (
 CREATE TABLE IF NOT EXISTS `payment_details` (
                                                  `id`                  BIGINT NOT NULL AUTO_INCREMENT,
                                                  `user_id`             BIGINT,
-                                                 `bank_code`           VARCHAR(5) NOT NULL,
+                                                 `bank_code`           VARCHAR(20) NOT NULL,
                                                  `account_number`      VARCHAR(255) NOT NULL,
-                                                 `account_holder_name` VARCHAR(25) NOT NULL,
+                                                 `account_holder_name` VARCHAR(100) NOT NULL,
                                                  `customer_name`       VARCHAR(255) NOT NULL,
                                                  PRIMARY KEY (`id`),
                                                  CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)

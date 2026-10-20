@@ -16,6 +16,10 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,24 +107,15 @@ class CoreSchemaMatchesEntitiesTest {
             if (sqlType == null) {
                 continue;
             }
-            if (basic.getJavaType() == BigDecimal.class && column != null && column.precision() > 0) {
-                String expected = "decimal(" + column.precision() + "," + column.scale() + ")";
-                if (!normalize(sqlType).startsWith(expected)) {
-                    problems.add(type.getJavaType().getSimpleName() + "." + columnName
-                            + " maps BigDecimal(" + column.precision() + "," + column.scale()
-                            + ") but core_ccm.sql declares " + normalize(sqlType));
-                }
-            } else if (basic.getJavaType() == String.class && column != null && column.length() > 0
-                    && column.columnDefinition().isEmpty()) {
-                String expected = "varchar(" + column.length() + ")";
-                if (!normalize(sqlType).startsWith(expected)) {
-                    problems.add(type.getJavaType().getSimpleName() + "." + columnName
-                            + " maps String(" + column.length() + ")"
-                            + " but core_ccm.sql declares " + normalize(sqlType));
-                }
-            }
+            String sqlFamily = family(sqlType);
             jakarta.persistence.Enumerated enumerated =
                     field.getAnnotation(jakarta.persistence.Enumerated.class);
+            List<String> expectedFamilies = expectedFamilies(basic, column, enumerated);
+            if (expectedFamilies != null && !expectedFamilies.contains(sqlFamily)) {
+                problems.add(type.getJavaType().getSimpleName() + "." + columnName
+                        + " maps " + expectedFamilies + " but core_ccm.sql declares " + sqlFamily
+                        + " (" + normalize(sqlType) + ")");
+            }
             if (enumerated != null && basic.getJavaType().isEnum()) {
                 List<String> expectedValues = new ArrayList<>();
                 for (Object constant : basic.getJavaType().getEnumConstants()) {
@@ -134,6 +129,101 @@ class CoreSchemaMatchesEntitiesTest {
                 }
             }
         }
+    }
+
+    /**
+     * Họ kiểu JDBC mà Hibernate dùng để validate. Validator của Hibernate so sánh MÃ
+     * KIỂU (type code), không so sánh độ dài hay độ chính xác — nên một cột VARCHAR(20)
+     * vẫn hợp lệ với mapping String(255), còn DOUBLE thay cho DECIMAL thì không.
+     */
+    private List<String> expectedFamilies(BasicType<?> basic, Column column,
+                                         jakarta.persistence.Enumerated enumerated) {
+        Class<?> javaType = basic.getJavaType();
+        if (javaType == BigDecimal.class) {
+            return List.of("decimal");
+        }
+        if (javaType == String.class) {
+            // columnDefinition = "text" cố ý đổi kiểu, nên không so sánh.
+            return column != null && !column.columnDefinition().isEmpty() ? null : List.of("varchar");
+        }
+        if (javaType == Integer.class) {
+            return List.of("int");
+        }
+        if (javaType == Long.class) {
+            return List.of("bigint");
+        }
+        if (javaType == Short.class) {
+            return List.of("smallint");
+        }
+        if (javaType == Byte.class) {
+            return List.of("tinyint");
+        }
+        if (javaType == Boolean.class) {
+            return List.of("boolean", "bit", "tinyint");
+        }
+        if (javaType == LocalDate.class) {
+            return List.of("date");
+        }
+        if (javaType == LocalDateTime.class || javaType == OffsetDateTime.class
+                || javaType == Instant.class) {
+            return List.of("datetime");
+        }
+        if (javaType.isEnum()) {
+            // Enum lưu theo chuỗi thì cột là ENUM/VARCHAR; theo thứ tự thì là số nhỏ.
+            boolean ordinal = enumerated == null
+                    || enumerated.value() == jakarta.persistence.EnumType.ORDINAL;
+            return ordinal ? List.of("tinyint", "int", "smallint") : List.of("enum", "varchar");
+        }
+        return null;
+    }
+
+    /** Họ kiểu của khai báo SQL trong core_ccm.sql. */
+    private String family(String sqlType) {
+        String normalized = normalize(sqlType);
+        if (normalized.startsWith("enum(")) {
+            return "enum";
+        }
+        if (normalized.startsWith("decimal(")) {
+            return "decimal";
+        }
+        if (normalized.startsWith("varchar(")) {
+            return "varchar";
+        }
+        if (normalized.startsWith("text")) {
+            return "text";
+        }
+        if (normalized.startsWith("int")) {
+            return "int";
+        }
+        if (normalized.startsWith("tinyint")) {
+            return "tinyint";
+        }
+        if (normalized.startsWith("smallint")) {
+            return "smallint";
+        }
+        if (normalized.startsWith("bigint")) {
+            return "bigint";
+        }
+        if (normalized.startsWith("double")) {
+            return "double";
+        }
+        if (normalized.startsWith("float")) {
+            return "float";
+        }
+        if (normalized.startsWith("datetime")) {
+            return "datetime";
+        }
+        if (normalized.startsWith("date")) {
+            return "date";
+        }
+        if (normalized.startsWith("bit")) {
+            return "boolean";
+        }
+        if (normalized.startsWith("binary") || normalized.startsWith("varbinary")
+                || normalized.startsWith("blob")) {
+            return "binary";
+        }
+        return normalized;
     }
 
     private void requireColumn(EntityType<?> type, Map<String, String> columns,

@@ -182,7 +182,8 @@ class AuthServiceRegisterRoleTest {
         user.setOtpPurpose(OtpPurpose.FORGOT_PASSWORD);
         // The forgot-password flow leaves a 30-minute OTP behind; the resend must not be
         // blocked by that expiry, otherwise the account stays locked out for 30 minutes.
-        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(30));
+        // (A code issued more than a minute ago is already outside the spam window.)
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(29));
         when(userRepository.findByEmail("user@example.com")).thenReturn(user);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -236,6 +237,22 @@ class AuthServiceRegisterRoleTest {
                 .as("verifyOtp must not roll back the pending-user cleanup")
                 .isNotNull();
         assertThat(transactional.dontRollbackOn()).contains(AppException.class);
+    }
+
+    @Test
+    void resendRegistrationOtp_isThrottledOnlyRightAfterTheCodeWasIssued() {
+        // A code issued 10 seconds ago: resending now would be spam.
+        User user = pendingUser();
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5).minusSeconds(10));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.OTP_STILL_VALID));
     }
 
     private User pendingUser() {
