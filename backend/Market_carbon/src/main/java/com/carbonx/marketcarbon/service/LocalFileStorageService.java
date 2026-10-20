@@ -15,10 +15,11 @@ import java.nio.file.*;
 @Profile("local") // dùng profile để tránh đụng bean khi có S3; hoặc bỏ nếu bạn dùng @Qualifier
 public class LocalFileStorageService implements FileStorageService {
 
-    @Value("${storage.local.base-dir:uploads}")
+    // H4: required properties — defined in application.properties with env-overridable defaults.
+    @Value("${storage.local.base-dir}")
     private String baseDir;
 
-    @Value("${storage.local.public-base-url:http://localhost:8082/files}")
+    @Value("${storage.local.public-base-url}")
     private String publicBaseUrl;
 
     private Path root;

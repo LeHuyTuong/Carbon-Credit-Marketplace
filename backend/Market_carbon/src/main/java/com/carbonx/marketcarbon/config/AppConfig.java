@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.USER_ROLE;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -31,6 +32,13 @@ public class AppConfig {
 
     private final JwtTokenValidator jwtTokenValidator;
     private final JwtProvider jwtProvider;
+
+    // H3: externalized frontend redirect target and CORS origin list.
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @Value("${app.cors.allowed-origins}")
+    private String corsAllowedOrigins;
 
     private static final String[] PUBLIC_ENDPOINT = {
             "/api/v1/auth/register",
@@ -115,12 +123,8 @@ public class AppConfig {
 
                             String token = jwtProvider.generateToken(email, USER_ROLE.EV_OWNER);
 
-                            String frontendUrl = req.getServerName().contains("localhost")
-                                    ? "http://localhost:5173"
-                                    : "https://carbonx.io.vn";
-
-                            log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendUrl);
-                            res.sendRedirect(frontendUrl + "/oauth-success?token=" + token);
+                            log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendBaseUrl);
+                            res.sendRedirect(frontendBaseUrl + "/oauth-success?token=" + token);
                         })
                         .failureHandler((req, res, ex) -> {
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -135,14 +139,9 @@ public class AppConfig {
     private CorsConfigurationSource corsConfigurationSource() {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
-            cfg.setAllowedOrigins(Arrays.asList(
-                    "http://localhost:3000",
-                    "http://localhost:4200",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:*",
-                    "http://192.168.*.*:*",
-                    "https://carbonx.io.vn"
-            ));
+            cfg.setAllowedOrigins(Arrays.stream(corsAllowedOrigins.split(","))
+                    .map(String::trim)
+                    .toList());
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
             cfg.setAllowedHeaders(Collections.singletonList("*"));

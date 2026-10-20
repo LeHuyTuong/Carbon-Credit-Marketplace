@@ -14,17 +14,15 @@ import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.*;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -58,17 +56,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     private final ProfitSharingProperties profitSharingProperties;
     private final EmailService emailService;
     private final DynamicPricingService dynamicPricingService;
+    private final PlatformTransactionManager transactionManager;
 
-    @Autowired
-    private ApplicationContext applicationContext;
+    // TransactionTemplate REQUIRES_NEW dùng chung, khởi tạo sau khi inject transactionManager.
+    // Thay cho self-proxy trước đây (gọi @Transactional qua chính bean).
+    private TransactionTemplate requiresNewTransaction;
 
-    /**
-     * Helper để lấy instance của chính bean này từ ApplicationContext.
-     * Mục đích: Để gọi các method có @Transactional (như processPayoutForOwner) từ bên trong cùng class
-     * mà vẫn kích hoạt được Spring AOP Proxy (đảm bảo Transaction hoạt động đúng).
-     */
-    private ProfitSharingServiceImpl getSelf() {
-        return applicationContext.getBean(ProfitSharingServiceImpl.class);
+    @PostConstruct
+    void initTransactionTemplate() {
+        this.requiresNewTransaction = new TransactionTemplate(transactionManager);
+        this.requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     // DTO nội bộ dùng để cộng dồn năng lượng và tín chỉ cho từng Owner
@@ -117,17 +114,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     /**
      * Hàm xử lý chính: Chia sẻ lợi nhuận.
      * Chạy ASYNC (bất đồng bộ) để không block luồng chính của user khi xử lý danh sách lớn.
+     *
+     * <p>{@code companyUserId} được controller xác thực và truyền vào, vì async thread
+     * không có SecurityContext.</p>
      */
     @Async("profitSharingTaskExecutor")
     @Override
-    public void shareCompanyProfit(ProfitSharingRequest request) {
-        // B1: Xác thực user hiện tại (Company Admin)
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User companyUser = userRepository.findByEmail(authentication.getName());
-        if (companyUser == null) {
-            log.error("Authentication failed, user not found for email: {}", authentication.getName());
-            return;
-        }
+    public void shareCompanyProfit(Long companyUserId, ProfitSharingRequest request) {
+        // B1: Load lại company user theo ID (không đọc SecurityContext trong async thread)
+        User companyUser = userRepository.findById(companyUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Company company = companyRepository.findByUserId(companyUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
@@ -148,7 +144,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
 
         // B3: Tạo bản ghi theo dõi đợt phân phối (Status: PROCESSING)
-        ProfitDistribution distributionEvent = getSelf().createDistributionEvent(request, companyUser);
+        ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
 
         try {
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
@@ -277,9 +273,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
 
             // B9: Thực hiện chuyển tiền tuần tự cho từng Owner
-            // Gọi qua getSelf() để đảm bảo Transactional (REQUIRES_NEW) hoạt động
+            // Mỗi owner chạy trong transaction REQUIRES_NEW riêng để lỗi 1 owner không rollback owner khác
             for (OwnerPayoutData payout : payoutPlan) {
-                getSelf().processPayoutForOwner(
+                processPayoutForOwner(
                         distributionEvent,
                         payout,
                         companyWallet,
@@ -292,7 +288,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             log.info("All sequential payouts processed.");
 
             // B10: Cập nhật trạng thái Report -> PAID_OUT
-            getSelf().updateReportsToPaidOut(reportsToProcess);
+            updateReportsToPaidOut(reportsToProcess);
 
             // B11: Gửi email tổng kết cho Công ty
             try {
@@ -327,12 +323,26 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
     /**
      * Xử lý chuyển tiền cho MỘT Owner cụ thể.
-     * IMPORTANT: Sử dụng Propagation.REQUIRES_NEW để tạo một transaction hoàn toàn mới.
-     * Nếu transaction này fail (ví dụ lỗi mạng, lỗi ví), nó chỉ rollback cho Owner này,
-     * KHÔNG ảnh hưởng đến các Owner khác đã được trả tiền.
+     * IMPORTANT: dùng TransactionTemplate với Propagation.REQUIRES_NEW để tạo một transaction
+     * hoàn toàn mới. Nếu transaction này fail (ví dụ lỗi mạng, lỗi ví), nó chỉ rollback cho
+     * Owner này, KHÔNG ảnh hưởng đến các Owner khác đã được trả tiền.
+     *
+     * <p>Method là private vì được gọi nội bộ qua {@code this}; transaction được mở tường minh
+     * bằng {@link #requiresNewTransaction} thay vì self-proxy.</p>
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processPayoutForOwner(
+    private void processPayoutForOwner(
+            ProfitDistribution event,
+            OwnerPayoutData payout,
+            Wallet companyWallet,
+            Long reportId,
+            ResolvedPolicy policy,
+            Company company
+    ) {
+        requiresNewTransaction.executeWithoutResult(status ->
+                doProcessPayoutForOwner(event, payout, companyWallet, reportId, policy, company));
+    }
+
+    private void doProcessPayoutForOwner(
             ProfitDistribution event,
             OwnerPayoutData payout,
             Wallet companyWallet,
@@ -359,13 +369,13 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         // Load lại ví Company để đảm bảo thread-safe và số dư mới nhất
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
-            getSelf().saveFailedDetail(event, payout, "Company wallet not found");
+            saveFailedDetail(event, payout, "Company wallet not found");
             return;
         }
 
         EVOwner owner = evOwnerRepository.findById(payout.getEvOwnerId()).orElse(null);
         if (owner == null || owner.getUser() == null) {
-            getSelf().saveFailedDetail(event, payout, "EVOwner not found");
+            saveFailedDetail(event, payout, "EVOwner not found");
             return;
         }
 
@@ -376,7 +386,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 ownerWallet = ((WalletServiceImpl) walletService).generateWallet(owner.getUser());
                 log.info("Generated new wallet for EVOwner ID {}", payout.getEvOwnerId());
             } catch (Exception e) {
-                getSelf().saveFailedDetail(event, payout, "Failed to create wallet: " + e.getMessage());
+                saveFailedDetail(event, payout, "Failed to create wallet: " + e.getMessage());
                 return;
             }
         }
@@ -441,35 +451,38 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
     // Tạo bản ghi sự kiện phân phối trong transaction riêng
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
-        ProfitDistribution event = new ProfitDistribution();
-        event.setCompanyUser(companyUser);
-        if (request.getProjectId() != null) {
-            Project project = projectRepository.findById(request.getProjectId())
-                    .orElseThrow(() -> new BadRequestException("Project ID not found: " + request.getProjectId()));
-            event.setProject(project);
-        }
-        event.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        event.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
-        event.setStatus(ProfitDistributionStatus.PROCESSING);
-        return profitDistributionRepository.save(event);
+    private ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
+        return requiresNewTransaction.execute(status -> {
+            ProfitDistribution event = new ProfitDistribution();
+            event.setCompanyUser(companyUser);
+            if (request.getProjectId() != null) {
+                Project project = projectRepository.findById(request.getProjectId())
+                        .orElseThrow(() -> new BadRequestException("Project ID not found: " + request.getProjectId()));
+                event.setProject(project);
+            }
+            event.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            event.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
+            event.setStatus(ProfitDistributionStatus.PROCESSING);
+            return profitDistributionRepository.save(event);
+        });
     }
 
-    // Lưu log lỗi khi không thể bắt đầu process payout (vd: ko tìm thấy user)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
+    // Lưu log lỗi khi không thể bắt đầu process payout (vd: ko tìm thấy user).
+    // REQUIRES_NEW: phải commit được kể cả khi transaction payout bên ngoài rollback.
+    private void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
         try {
-            EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
-            ProfitDistributionDetail detail = new ProfitDistributionDetail();
-            detail.setDistribution(event);
-            detail.setEvOwner(ownerRef);
-            detail.setMoneyAmount(payout.getPayoutAmount());
-            detail.setCreditAmount(payout.getCreditContribution());
-            detail.setEnergyAmount(payout.getEnergyContribution());
-            detail.setStatus("FAILED");
-            detail.setErrorMessage(errorMessage.substring(0, Math.min(errorMessage.length(), 254)));
-            profitDistributionDetailRepository.save(detail);
+            requiresNewTransaction.executeWithoutResult(status -> {
+                EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
+                ProfitDistributionDetail detail = new ProfitDistributionDetail();
+                detail.setDistribution(event);
+                detail.setEvOwner(ownerRef);
+                detail.setMoneyAmount(payout.getPayoutAmount());
+                detail.setCreditAmount(payout.getCreditContribution());
+                detail.setEnergyAmount(payout.getEnergyContribution());
+                detail.setStatus("FAILED");
+                detail.setErrorMessage(errorMessage.substring(0, Math.min(errorMessage.length(), 254)));
+                profitDistributionDetailRepository.save(detail);
+            });
         } catch (Exception e) {
             log.error("CRITICAL: Failed to save failure detail for owner {}: {}", payout.getEvOwnerId(), e.getMessage());
         }
@@ -490,15 +503,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
     // Update status report trong transaction riêng
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateReportsToPaidOut(List<EmissionReport> reports) {
+    private void updateReportsToPaidOut(List<EmissionReport> reports) {
         if (reports == null || reports.isEmpty()) return;
-        List<Long> reportIds = reports.stream().map(EmissionReport::getId).toList();
-        List<EmissionReport> freshReports = emissionReportRepository.findAllById(reportIds);
-        for (EmissionReport report : freshReports) {
-            report.setStatus(EmissionStatus.PAID_OUT);
-        }
-        emissionReportRepository.saveAll(freshReports);
+        requiresNewTransaction.executeWithoutResult(status -> {
+            List<Long> reportIds = reports.stream().map(EmissionReport::getId).toList();
+            List<EmissionReport> freshReports = emissionReportRepository.findAllById(reportIds);
+            for (EmissionReport report : freshReports) {
+                report.setStatus(EmissionStatus.PAID_OUT);
+            }
+            emissionReportRepository.saveAll(freshReports);
+        });
     }
 
     private void markDistributionCompleted(ProfitDistribution event) {

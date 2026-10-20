@@ -47,7 +47,7 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.mail.display-name:CarbonX team}")
     String displayName;
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendEmail(String subject, String content, List<String> toList) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper;
@@ -86,7 +86,7 @@ public class EmailServiceImpl implements EmailService {
         return templateEngine.process("emails/admin-decision.html", ctx);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     @Override
     public void send(String to, String subject, String body) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
@@ -109,7 +109,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     @Override
     public void sendHtml(String to, String subject, String html) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
@@ -193,7 +193,7 @@ public class EmailServiceImpl implements EmailService {
         return templateEngine.process("emails/payout-summary.html", ctx);
     }
 
-    @Async("profitSharingTaskExecutor")
+    @Async("emailTaskExecutor")
     @Override
     public void sendPayoutSuccessToOwner(String toEmail,
             String ownerName,
@@ -244,7 +244,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    @Async("profitSharingTaskExecutor")
+    @Async("emailTaskExecutor")
     @Override
     public void sendDistributionSummaryToCompany(String toEmail,
             String companyName,

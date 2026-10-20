@@ -101,7 +101,9 @@ export async function apiFetch(path, options = {}) {
   }
   const url = `${API}${cleanPath}`;
 
-  console.log("Fetching:", url, config);
+  if (import.meta.env.DEV) {
+    console.debug("Fetching:", url, config);
+  }
 
   //gọi api
   const res = await fetch(url, config);
@@ -173,7 +175,9 @@ export async function apiFetch(path, options = {}) {
       successValues.some((val) => code.includes(val) || message.includes(val));
   }
 
-  console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
+  if (import.meta.env.DEV) {
+    console.debug("[apiFetch] Parsed status:", { code, message, isSuccess });
+  }
 
   //nếu be trả lỗi logic
   if (!isSuccess) {
