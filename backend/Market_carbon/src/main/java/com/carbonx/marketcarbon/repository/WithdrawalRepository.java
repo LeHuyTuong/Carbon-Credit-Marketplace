@@ -23,6 +23,9 @@ public interface WithdrawalRepository extends JpaRepository<Withdrawal,Long> {
     @Query("SELECT w FROM Withdrawal w LEFT JOIN FETCH w.paymentDetails")
     List<Withdrawal> findAllWithPaymentDetails();
 
+    /** Các đơn rút tiền đang trỏ tới một tài khoản ngân hàng cụ thể. */
+    List<Withdrawal> findByPaymentDetailsId(Long paymentDetailsId);
+
     // P0-A (N3): lock the withdrawal row so concurrent process/reject attempts serialize
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM Withdrawal w WHERE w.id = :id")

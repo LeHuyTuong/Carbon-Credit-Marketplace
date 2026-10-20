@@ -44,6 +44,7 @@ public enum ErrorCode {
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
     PAYMENT_DETAILS_NOT_FOUND(404, "Payment details not found.", HttpStatus.NOT_FOUND),
+    PAYMENT_DETAILS_IN_USE(409, "This bank account is used by a pending withdrawal.", HttpStatus.CONFLICT),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_ALREADY_EXISTS(
             409,

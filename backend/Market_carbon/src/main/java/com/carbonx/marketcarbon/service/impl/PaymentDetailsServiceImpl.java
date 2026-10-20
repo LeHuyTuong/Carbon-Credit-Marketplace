@@ -4,12 +4,16 @@ import com.carbonx.marketcarbon.dto.request.PaymentDetailsRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.PaymentDetails;
+import com.carbonx.marketcarbon.model.Withdrawal;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.PaymentDetailsRepository;
+import com.carbonx.marketcarbon.repository.WithdrawalRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.PaymentDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+
+import java.util.List;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class PaymentDetailsServiceImpl implements PaymentDetailsService {
 
     private final PaymentDetailsRepository paymentDetailsRepository;
+    private final WithdrawalRepository withdrawalRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -72,6 +77,22 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         PaymentDetails paymentDetails = paymentDetailsRepository
                 .findByUserIdAndAccountNumber(user.getId(), request.getAccountNumber())
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
+
+        // Đơn rút tiền đã xử lý thì không còn cần tài khoản này nữa: bỏ liên kết để
+        // xoá được (nếu giữ liên kết thì xoá sẽ luôn bị FK chặn và người dùng không
+        // bao giờ xoá được tài khoản của mình). Đơn còn PENDING thì phải giữ tài khoản
+        // để admin còn biết chuyển tiền đi đâu.
+        List<Withdrawal> withdrawals = withdrawalRepository.findByPaymentDetailsId(paymentDetails.getId());
+        List<Withdrawal> pending = withdrawals.stream()
+                .filter(w -> w.getStatus() == com.carbonx.marketcarbon.common.Status.PENDING)
+                .toList();
+        if (!pending.isEmpty()) {
+            throw new AppException(ErrorCode.PAYMENT_DETAILS_IN_USE);
+        }
+        for (Withdrawal withdrawal : withdrawals) {
+            withdrawal.setPaymentDetails(null);
+            withdrawalRepository.save(withdrawal);
+        }
 
         paymentDetailsRepository.delete(paymentDetails);
     }

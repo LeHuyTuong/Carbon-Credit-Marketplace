@@ -122,8 +122,8 @@ export default function ShareProfit({ show, onHide, initialData }) {
         {distributions.length > 0 && (
           <div className="mb-3">
             <h6 className="mb-2">Payout history</h6>
-            <ul className="list-unstyled mb-0">
-              {distributions.slice(0, 5).map((item) => (
+            <ul className="list-unstyled mb-0" style={{ maxHeight: 180, overflowY: "auto" }}>
+              {distributions.map((item) => (
                 <li
                   key={item.id}
                   className="d-flex justify-content-between align-items-center border-bottom py-1"
