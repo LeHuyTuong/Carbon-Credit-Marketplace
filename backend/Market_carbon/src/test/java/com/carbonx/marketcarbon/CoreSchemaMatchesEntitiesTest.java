@@ -57,9 +57,11 @@ class CoreSchemaMatchesEntitiesTest {
     @Test
     void coreSqlCreatesEveryTableAndColumnTheEntitiesMap() throws Exception {
         Map<String, Map<String, String>> sql = parseCoreSql();
+        List<String> migrationTargets = applyMigrations(sql);
         List<String> problems = new ArrayList<>();
 
         Metamodel metamodel = entityManager.getMetamodel();
+        Map<String, java.util.Set<String>> mappedColumns = new LinkedHashMap<>();
         for (EntityType<?> type : metamodel.getEntities()) {
             String tableName = tableName(type);
             Map<String, String> columns = sql.get(tableName);
@@ -68,13 +70,65 @@ class CoreSchemaMatchesEntitiesTest {
                         + " (" + tableName + ")");
                 continue;
             }
-            checkAttributes(type, columns, problems);
+            java.util.Set<String> mapped = new java.util.LinkedHashSet<>();
+            mappedColumns.put(tableName, mapped);
+            checkAttributes(type, columns, mapped, problems);
+        }
+
+        // Mỗi ALTER trong migration phải trỏ tới một cột mà entity thực sự map: gõ sai
+        // tên cột thì script chạy nhưng không làm gì, và DB cũ vẫn lệch với entity.
+        for (String target : migrationTargets) {
+            String[] parts = target.split("\\.");
+            String table = parts[0];
+            String column = parts.length > 1 ? parts[1] : "";
+            java.util.Set<String> mapped = mappedColumns.get(table);
+            if (mapped == null || !mapped.contains(column)) {
+                problems.add("the migrations alter " + target
+                        + " which the entities do not map (typo?)");
+            }
         }
 
         assertThat(problems).isEmpty();
     }
 
-    private void checkAttributes(EntityType<?> type, Map<String, String> columns, List<String> problems) {
+    /**
+     * Áp dụng các script trong {@code backend/database/migrations/} lên schema đã đọc từ
+     * core_ccm.sql: đây mới là đường đi thật của prod (dump + migration), và nhiều thay
+     * đổi kiểu/enum chỉ nằm trong migration (ví dụ WITHDRAWAL_REFUND).
+     */
+    private List<String> applyMigrations(Map<String, Map<String, String>> sql) throws Exception {
+        List<String> targets = new ArrayList<>();
+        Path migrations = Path.of("..", "database", "migrations");
+        if (!Files.isDirectory(migrations)) {
+            return targets;
+        }
+        // Câu lệnh ALTER nằm trong string literal; MODIFY có thể cắt qua hai literal
+        // nên phần kiểu có thể rỗng — khi đó giữ kiểu sẵn có trong dump.
+        Pattern alter = Pattern.compile(
+                "'ALTER TABLE `(\\w+)` (ADD|MODIFY) COLUMN `(\\w+)`\\s*([^']*)'");
+        try (java.util.stream.Stream<Path> files = Files.list(migrations)) {
+            for (Path file : files.filter(p -> p.toString().endsWith(".sql")).sorted().toList()) {
+                String content = Files.readString(file, StandardCharsets.UTF_8);
+                Matcher matcher = alter.matcher(content);
+                while (matcher.find()) {
+                    String table = matcher.group(1);
+                    String column = matcher.group(3);
+                    String type = matcher.group(4).trim();
+                    Map<String, String> columns = sql.computeIfAbsent(table, key -> new LinkedHashMap<>());
+                    if (!type.isBlank()) {
+                        columns.put(column, type);
+                    } else if (!columns.containsKey(column)) {
+                        columns.put(column, "");
+                    }
+                    targets.add(table + "." + column);
+                }
+            }
+        }
+        return targets;
+    }
+
+    private void checkAttributes(EntityType<?> type, Map<String, String> columns,
+                                 java.util.Set<String> mapped, List<String> problems) {
         for (Attribute<?, ?> attribute : type.getAttributes()) {
             if (!(attribute instanceof SingularAttribute<?, ?> singular)) {
                 // Collections (OneToMany/ManyToMany) live in a join table, not a column.
@@ -91,6 +145,19 @@ class CoreSchemaMatchesEntitiesTest {
             JoinColumn joinColumn = field.getAnnotation(JoinColumn.class);
             if (joinColumn != null && !joinColumn.name().isEmpty()) {
                 requireColumn(type, columns, joinColumn.name(), problems);
+                mapped.add(joinColumn.name());
+                continue;
+            }
+            jakarta.persistence.OneToOne oneToOne =
+                    field.getAnnotation(jakarta.persistence.OneToOne.class);
+            boolean inverseSide = oneToOne != null && !oneToOne.mappedBy().isEmpty();
+            if (!inverseSide && (field.getAnnotation(jakarta.persistence.ManyToOne.class) != null
+                    || oneToOne != null)) {
+                // Quan hệ sở hữu cột (không khai @JoinColumn): Hibernate đặt tên cột
+                // <property>_id. Quan hệ inverse (mappedBy) không có cột trong bảng này.
+                String defaultColumn = toSnakeCase(field.getName()) + "_id";
+                requireColumn(type, columns, defaultColumn, problems);
+                mapped.add(defaultColumn);
                 continue;
             }
 
@@ -102,6 +169,7 @@ class CoreSchemaMatchesEntitiesTest {
                     ? column.name()
                     : toSnakeCase(singular.getName());
             requireColumn(type, columns, columnName, problems);
+            mapped.add(columnName);
 
             String sqlType = columns.get(columnName);
             if (sqlType == null) {

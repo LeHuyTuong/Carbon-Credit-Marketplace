@@ -60,6 +60,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     public Withdrawal requestWithdrawal(Long amount) {
         User user = currentUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
+        if (wallet == null) {
+            // Người dùng chưa từng mở ví nên chưa có row trong `wallets` (ví được tạo
+            // lazily khi mở trang ví). Báo rõ thay vì dereference null -> 500.
+            throw new AppException(ErrorCode.WALLET_NOT_FOUND);
+        }
         if (amount < 2) {
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
@@ -108,6 +113,10 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         String reason = ""; // reason
         User user = withdrawalRequest.getUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
+        if (wallet == null) {
+            // Không có ví thì không hoàn được tiền: báo rõ thay vì NPE.
+            throw new AppException(ErrorCode.WALLET_NOT_FOUND);
+        }
         BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
 
         if (accept) {

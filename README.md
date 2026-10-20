@@ -327,6 +327,11 @@ they are missing — they are required, not optional:
 
 | Variable | Needed by |
 | --- | --- |
+| `TRADING_FEE` | fee applied when a marketplace order settles |
+| `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL` | where the payment provider returns the browser |
+| `SWAGGER_TITLE`, `SWAGGER_VERSION`, `SWAGGER_DESCRIPTION` | OpenAPI/Swagger metadata |
+| `SERVER_URL`, `SERVER_DESCRIPTION` | OpenAPI server info |
+| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID` / `_SECRET` | Google login (an empty id aborts the boot) |
 | `STRIPE_API_KEY` | `PaymentServiceImpl`, `PaymentVerificationService` (Stripe checkout/verification) |
 | `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_REGION` | `S3Config`, `S3StorageServiceImpl` (S3 upload) |
 | `AWS_S3_PUBLIC_BASE_URL` | public URL prefix for uploaded files |
@@ -334,8 +339,11 @@ they are missing — they are required, not optional:
 | `APP_CORS_ALLOWED_ORIGINS` | comma-separated browser origins; the default list only covers the usual local dev ports |
 | `APP_FRONTEND_BASE_URL` | where the OAuth2 login redirects the browser |
 
-Set them to dummy values locally if the corresponding integration is not used — the application
-starts with them set to a placeholder, it just cannot call the provider.
+Those placeholders have no default in the `prod` profile: the application refuses to start
+instead of silently using a development value. The `dev`/`local` profile ships working defaults,
+and `docker compose up` passes them all. Set them to dummy values locally if the corresponding
+integration is not used — the application starts with them set to a placeholder, it just cannot
+call the provider.
 
 In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
 empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.

@@ -75,6 +75,49 @@ class ProdConfigContractTest {
     }
 
     @Test
+    void everyInjectedPlaceholderIsDefinedInSomeProfile() throws Exception {
+        // A @Value("${key}") whose key is defined in NO properties file aborts the boot:
+        // "Could not resolve placeholder ...". Nothing else in the suite caught that, so
+        // the app could not start with any profile.
+        java.util.Set<String> defined = new java.util.HashSet<>();
+        defined.addAll(activeKeys(readClasspathFile("application.properties")));
+        defined.addAll(activeKeys(readClasspathFile("application-prod.properties")));
+
+        java.util.List<String> missing = new java.util.ArrayList<>();
+        java.nio.file.Path sources = java.nio.file.Path.of("src", "main", "java");
+        try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.walk(sources)) {
+            for (java.nio.file.Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                String content = java.nio.file.Files.readString(file);
+                java.util.regex.Matcher matcher =
+                        java.util.regex.Pattern.compile("\\$\\{([a-zA-Z0-9._-]+)(:[^}]*)?\\}").matcher(content);
+                while (matcher.find()) {
+                    String key = matcher.group(1);
+                    boolean hasDefaultInCode = matcher.group(2) != null;
+                    // A placeholder with a default in the code still resolves; one without
+                    // any default aborts the boot when no properties file defines it.
+                    if (!hasDefaultInCode && key.contains(".") && !defined.contains(key)) {
+                        missing.add(file.getFileName() + " -> " + key);
+                    }
+                }
+            }
+        }
+        assertThat(missing)
+                .as("every @Value placeholder must exist in application.properties or application-prod.properties")
+                .isEmpty();
+    }
+
+    private java.util.Set<String> activeKeys(String props) {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (String line : activeLines(props)) {
+            int separator = line.indexOf('=');
+            if (separator > 0) {
+                keys.add(line.substring(0, separator).trim());
+            }
+        }
+        return keys;
+    }
+
+    @Test
     void lineStartingWith_returnsLastActiveValueBecausePropertiesLoadIsLastWins() {
         String props = String.join("\n",
                 "# paypal.mode=commented-out",

@@ -59,7 +59,7 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
     private final SseService sseService;
     private final FileStorageService fileStorageService;
 
-    @Value("${app.frontendBaseUrl:https://your-frontend.com}")
+    @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
     @Transactional

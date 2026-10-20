@@ -132,6 +132,8 @@ export default function WalletHistory() {
                   "ADD_MONEY",
                   "SELL_CARBON_CREDIT",
                   "ISSUE_CREDIT",
+                  // Hoàn tiền rút: tiền quay lại ví nên phải hiện dấu "+" và màu thu.
+                  "WITHDRAWAL_REFUND",
                 ];
                 const expenseTypes = [
                   "WITHDRAWAL",

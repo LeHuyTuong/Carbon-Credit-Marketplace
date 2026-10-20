@@ -54,15 +54,15 @@ public class WithdrawalController {
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        // 1. Request withdrawal creation (creates the Withdrawal entity)
+        // 1. Bảo đảm ví tồn tại TRƯỚC khi tạo yêu cầu rút: ví được tạo lazily khi
+        // người dùng mở trang ví, nên một tài khoản mới chưa có row `wallets` sẽ không
+        // tìm thấy ví để trừ tiền.
+        WalletResponse userWalletResponse = walletService.getUserWallet();
+        Wallet userWalletEntity = walletService.findWalletEntityById(userWalletResponse.getId());
+
+        // 2. Request withdrawal creation (creates the Withdrawal entity)
         // Assuming 'amount' is the POSITIVE amount the user wants to withdraw
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
-
-        // 2. Get the Wallet *ENTITY* needed for the transaction
-        // First get the WalletResponse to know the ID
-        WalletResponse userWalletResponse = walletService.getUserWallet();
-        // Then fetch the actual Wallet entity using the ID
-        Wallet userWalletEntity = walletService.findWalletEntityById(userWalletResponse.getId());
 
         // 3. Create the withdrawal transaction request DTO using the Wallet entity
         WalletTransactionRequest transactionRequest = WalletTransactionRequest.builder()

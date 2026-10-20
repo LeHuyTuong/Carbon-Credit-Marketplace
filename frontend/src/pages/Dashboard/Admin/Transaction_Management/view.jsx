@@ -15,7 +15,6 @@ import Header from "@/components/Chart/Header.jsx";
 import {
   processWithdrawal,
   getWithdrawalsAdmin,
-  getPaymentDetails,
 } from "@/apiAdmin/transactionAdmin.js";
 import { useSnackbar } from "@/hooks/useSnackbar.jsx";
 
@@ -36,13 +35,10 @@ const ViewTransaction = () => {
         const transaction = list.find((t) => t.id.toString() === id);
 
         if (transaction) {
-          const paymentRes = await getPaymentDetails();
-          // Lọc theo p.user?.id thay vì p.userId
-          const userPayment = paymentRes.find(
-            (p) => p.user?.id === transaction.user?.id
-          );
-
-          transaction.paymentDetails = userPayment || null;
+          // KHÔNG ghi đè paymentDetails của withdrawal bằng ví của admin: endpoint
+          // /paymentDetails chỉ trả về dữ liệu của chính người đang đăng nhập (admin),
+          // và PaymentDetails.user bị ẩn khỏi JSON nên không lọc được theo user — kết quả
+          // là xoá mất tài khoản nhận tiền mà backend đã gắn vào row withdrawal.
           setTrx(transaction);
         } else {
           setTrx(null);
