@@ -16,6 +16,7 @@ public class WalletTransactionRequest {
     private Wallet wallet;
     private Order order;
     private PaymentOrder paymentOrder;
+    private com.carbonx.marketcarbon.model.Withdrawal withdrawal;
     private WalletTransactionType type;
     private String description;
     private BigDecimal amount;

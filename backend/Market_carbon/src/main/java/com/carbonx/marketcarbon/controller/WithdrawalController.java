@@ -1,6 +1,8 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
@@ -67,6 +69,7 @@ public class WithdrawalController {
         // 3. Create the withdrawal transaction request DTO using the Wallet entity
         WalletTransactionRequest transactionRequest = WalletTransactionRequest.builder()
                 .wallet(userWalletEntity) // Use the fetched Wallet entity
+                .withdrawal(withdrawal) // the ledger row must point at this request
                 .type(WalletTransactionType.WITHDRAWAL)
                 .description("Bank account withdrawal request initiated. ID: " + withdrawal.getId())
                 // Pass the POSITIVE amount requested by the user
@@ -74,7 +77,14 @@ public class WithdrawalController {
                 .build();
 
         // 4. Create the transaction (this service call now returns a DTO)
-        WalletTransactionResponse createdTransaction = walletTransactionService.createTransaction(transactionRequest);
+        WalletTransactionResponse createdTransaction;
+        try {
+            createdTransaction = walletTransactionService.createTransaction(transactionRequest);
+        } catch (IllegalStateException e) {
+            // Số dư bị dùng mất giữa lúc kiểm tra và lúc trừ: đây là lỗi nghiệp vụ
+            // (không đủ tiền) chứ không phải lỗi hệ thống.
+            throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+        }
 
         ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

@@ -389,9 +389,11 @@ CREATE TABLE IF NOT EXISTS `wallet_transaction` (
                                                     `payment_order_id` BIGINT,
                                                     `credit_batch_id`  BIGINT,
                                                     `distribution_id`  BIGINT,
+                                                    `withdrawal_id`    BIGINT,
                                                     `created_at`       DATETIME(6),
                                                     PRIMARY KEY (`id`),
-                                                    CONSTRAINT `fk_tx_wallet` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`)
+                                                    CONSTRAINT `fk_tx_wallet` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`),
+                                                    CONSTRAINT `fk_tx_withdrawal` FOREIGN KEY (`withdrawal_id`) REFERENCES `withdrawal` (`id`)
 ) ENGINE=InnoDB;
 
 -- Bảng withdrawal (Yêu cầu rút tiền)

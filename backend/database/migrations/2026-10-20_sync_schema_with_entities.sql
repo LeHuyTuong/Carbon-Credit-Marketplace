@@ -410,3 +410,19 @@ SET @ddl = IF(@has_index = 0 AND @duplicate_credits = 0,
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- wallet_transaction.withdrawal_id: dòng ledger của một đơn rút tiền phải trỏ về
+-- chính đơn đó, nếu không thì không đối soát được "tiền đã trừ" với "đơn rút".
+SET @has_column = (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name
+      AND TABLE_NAME = 'wallet_transaction'
+      AND COLUMN_NAME = 'withdrawal_id'
+);
+SET @ddl = IF(@has_column = 0,
+    'ALTER TABLE `wallet_transaction` ADD COLUMN `withdrawal_id` BIGINT NULL AFTER `distribution_id`',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

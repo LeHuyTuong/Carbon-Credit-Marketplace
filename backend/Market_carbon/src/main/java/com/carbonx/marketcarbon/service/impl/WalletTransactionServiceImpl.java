@@ -130,6 +130,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         transaction.setDescription(request.getDescription());
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setOrder(request.getOrder());
+        // Dòng ledger của một đơn rút tiền phải trỏ về chính đơn đó, nếu không thì
+        // không đối soát được "tiền đã trừ" với "đơn rút".
+        transaction.setWithdrawal(request.getWithdrawal());
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
         // 1. Lấy CarbonCredit từ wallet

@@ -62,4 +62,9 @@ public class WalletTransaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "distribution_id")
     private ProfitDistribution distribution;
+
+    /** Đơn rút tiền mà dòng ledger này thuộc về (đối soát tiền trừ/hoàn). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "withdrawal_id")
+    private Withdrawal withdrawal;
 }

@@ -147,7 +147,11 @@ public class AuthServiceImpl implements AuthService {
         // Chống spam: chỉ chặn khi MÃ HIỆN TẠI vừa được phát (dưới 60 giây). Không
         // dùng hạn hết mã (5 phút) làm ngưỡng: người dùng bấm "Gửi lại" sau 60 giây
         // như UI cho phép sẽ bị từ chối tới 4 phút và không lấy được mã mới.
-        if (otpIssuedLessThanSecondsAgo(user, 60)) {
+        if (user.getOtpPurpose() == OtpPurpose.REGISTER
+                && otpIssuedLessThanSecondsAgo(user, 60)) {
+            // Chỉ chặn khi mã ĐĂNG KÝ hiện tại vừa được phát. Nếu mã hiện tại là của
+            // luồng quên mật khẩu (hạn 30 phút) thì người dùng không có mã đăng ký nào
+            // để dùng, không có lý do gì chặn.
             throw new AppException(ErrorCode.OTP_STILL_VALID);
         }
 

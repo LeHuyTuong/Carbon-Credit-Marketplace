@@ -77,7 +77,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             // chỉ thấy "N/A" và không biết chuyển tiền đi đâu — tiền bị kẹt vô thời hạn.
             PaymentDetails paymentDetails = paymentDetailsRepository
                     .findFirstByUserIdOrderByIdDesc(user.getId())
-                    .orElse(null);
+                    .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
                     .status(Status.PENDING)
@@ -154,6 +154,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             // makes this refund happen exactly once even under concurrent/replayed calls.
             walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                     .wallet(wallet)
+                    .withdrawal(withdrawalRequest)
                     .type(WalletTransactionType.WITHDRAWAL_REFUND)
                     .description("Withdrawal #" + withdrawalRequest.getId()
                             + " rejected — amount returned to wallet")

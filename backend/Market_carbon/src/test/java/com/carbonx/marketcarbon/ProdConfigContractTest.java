@@ -121,15 +121,21 @@ class ProdConfigContractTest {
     void everyRequiredProdEnvVarIsDocumentedInTheReadme() throws Exception {
         // Một biến bắt buộc không có trong README thì không ai set được, và app không
         // boot được (placeholder không resolve).
-        String prod = readClasspathFile("application-prod.properties");
+        // Prod nạp CẢ application-prod.properties LẪN application.properties, nên cả hai
+        // file đều phải được kiểm tra — nếu chỉ quét file prod thì các biến bắt buộc nằm
+        // ở file base (ví dụ AI_GEMINI_*) lọt qua mà app vẫn không boot được.
         java.util.Set<String> documented = readReadme();
         java.util.List<String> missing = new java.util.ArrayList<>();
-        java.util.regex.Matcher matcher =
-                java.util.regex.Pattern.compile("\\$\\{([A-Z][A-Z0-9_]*)(\\}|:)").matcher(prod);
-        while (matcher.find()) {
-            String name = matcher.group(1);
-            if (!documented.contains(name)) {
-                missing.add(name);
+        for (String profile : List.of("application.properties", "application-prod.properties")) {
+            String props = readClasspathFile(profile);
+            // Chỉ biến KHÔNG có giá trị mặc định mới bắt buộc phải được set.
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile("\\$\\{([A-Z][A-Z0-9_]*)\\}").matcher(props);
+            while (matcher.find()) {
+                String name = matcher.group(1);
+                if (!documented.contains(name)) {
+                    missing.add(profile + " -> " + name);
+                }
             }
         }
         assertThat(missing)

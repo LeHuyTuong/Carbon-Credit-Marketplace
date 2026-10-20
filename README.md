@@ -329,7 +329,9 @@ they are missing — they are required, not optional:
 | --- | --- |
 | `TRADING_FEE` | fee applied when a marketplace order settles |
 | `JPA_DDL_AUTO` | overrides the prod schema mode (defaults to `validate`; never set it to `update` in production) |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | overrides the schema mode of the other profiles (development default is `update`) |
 | `SHOW_SQL` | logs the SQL statements (off in production) |
+| `SPRING_JPA_SHOW_SQL` | the same switch for the other profiles |
 | `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL` | where the payment provider returns the browser |
 | `SWAGGER_TITLE`, `SWAGGER_VERSION`, `SWAGGER_DESCRIPTION` | OpenAPI/Swagger metadata |
 | `SERVER_URL`, `SERVER_DESCRIPTION` | OpenAPI server info |

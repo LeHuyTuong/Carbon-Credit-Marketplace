@@ -100,10 +100,11 @@ public class WalletServiceImpl implements WalletService {
 
         BigDecimal amountUsd = BigDecimal.valueOf(money)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal amountToAddVnd = CurrencyConverter.usdToVnd(amountUsd); // Convert USD to VND
 
-        String description = String.format("Add money to wallet (USD %s -> VND %s)",
-                amountUsd.toPlainString(), amountToAddVnd.toPlainString());
+        // Số dư ví tính bằng USD: mô tả phải nói USD, không phải VND (tiền quy đổi
+        // chỉ để hiển thị, dòng ledger ghi đúng số USD đã cộng).
+        String description = String.format("Add money to wallet (USD %s)",
+                amountUsd.toPlainString());
 
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                 .wallet(wallet)
@@ -115,8 +116,8 @@ public class WalletServiceImpl implements WalletService {
         Wallet updatedWallet = walletRepository.findById(wallet.getId())
                 .orElseThrow(() -> new WalletException("Wallet disappeared after transaction"));
 
-        log.info("Balance added to wallet {}. Amount USD: {}, Amount VND: {}. New Balance: {}",
-                wallet.getId(), amountUsd, amountToAddVnd, updatedWallet.getBalance());
+        log.info("Balance added to wallet {}. Amount USD: {}, New Balance: {}",
+                wallet.getId(), amountUsd, updatedWallet.getBalance());
 
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(updatedWallet.getId());
         // Map updated entity to DTO
