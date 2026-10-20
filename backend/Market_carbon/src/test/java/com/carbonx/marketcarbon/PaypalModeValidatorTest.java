@@ -48,7 +48,8 @@ class PaypalModeValidatorTest {
                 .as("startup validation must be a component")
                 .isNotNull();
         assertThat(PaypalModeValidator.class.getAnnotation(Profile.class).value())
-                .as("dev/test profiles must keep booting without PAYPAL_MODE")
+                .as("only the VALIDATOR is prod-only: the paypal.mode property itself has no "
+                        + "fallback in the base profile, so every profile needs PAYPAL_MODE set")
                 .containsExactly("prod");
 
         Method method = PaypalModeValidator.class.getDeclaredMethod("validateMode");
