@@ -47,6 +47,7 @@ public class AppConfig {
 
     private static final String[] PUBLIC_ENDPOINT = {
             "/api/v1/auth/register",
+            "/api/v1/auth/register/resend-otp",
             "/api/v1/auth/verify-otp",
             "/api/v1/auth/login",
             "/api/v1/auth/forgot-password",

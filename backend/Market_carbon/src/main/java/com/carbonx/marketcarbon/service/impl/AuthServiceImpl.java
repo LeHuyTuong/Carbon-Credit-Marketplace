@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.common.OtpPurpose;
 import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
+import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
 import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
@@ -51,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
 
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (!req.getPassword().equals(req.getConfirmPassword())) {
             throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
@@ -77,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         }
         newUser.getRoles().add(role);
         // Sinh OTP
-        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+        String otp = generateRegistrationOtp();
         newUser.setOtpCode(otp);
         newUser.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
         newUser.setOtpPurpose(OtpPurpose.REGISTER);
@@ -85,21 +87,20 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
 
-        String subject = "Account Verification - CarbonX";
-        String content = String.format(
-                "<p>Hello %s,</p>" +
-                        "<p>Thank you for registering. Please use the following OTP code to verify your account:</p>" +
-                        "<h2>%s</h2>" +
-                        "<p>The OTP will expire in 5 minutes.</p>" +
-                        "<p>Best regards,<br/>CarbonX Team</p>",
-                newUser.getEmail(), otp
-        );
-
         try {
             // OTP là email quan trọng: gửi đồng bộ để không bị pool thông báo drop
             // và để API không báo "đã gửi" khi SMTP thực sự thất bại.
-            emailService.sendEmailNow(subject, content, List.of(req.getEmail()));
+            sendRegistrationOtp(newUser.getEmail(), otp);
         } catch (Exception e) {
+            // @Transactional sẽ rollback row PENDING khi rời method bằng exception.
+            // Delete tường minh là lớp bảo vệ thứ hai nếu method bị gọi ngoài proxy
+            // (unit test, self-invocation), để không bao giờ để lại user không có OTP.
+            try {
+                userRepository.delete(newUser);
+            } catch (Exception cleanupError) {
+                log.error("Could not delete pending user [{}] after OTP failure: {}",
+                        newUser.getEmail(), cleanupError.getMessage());
+            }
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }
 
@@ -113,6 +114,66 @@ public class AuthServiceImpl implements AuthService {
         );
 
         return authResponse;
+    }
+
+    /**
+     * Gửi lại OTP đăng ký cho user còn PENDING. Cần thiết cho các row PENDING đã bị
+     * commit bởi phiên bản cũ khi SMTP lỗi (trước khi register có transaction), và cho
+     * trường hợp email bị thất lạc trước khi hết hạn.
+     */
+    @Override
+    @Transactional
+    public AuthResponse resendRegistrationOtp(EmailRequest req) {
+        User user = userRepository.findByEmail(req.getEmail());
+        if (user == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+        if (user.getStatus() != USER_STATUS.PENDING
+                || (user.getOtpPurpose() != null && user.getOtpPurpose() != OtpPurpose.REGISTER)) {
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        }
+
+        // Chống spam: giữ cùng quy tắc với resend OTP quên mật khẩu.
+        if (user.getOtpExpiryDate() != null
+                && user.getOtpExpiryDate().isAfter(LocalDateTime.now().plusSeconds(60))) {
+            throw new AppException(ErrorCode.OTP_STILL_VALID);
+        }
+
+        String otp = generateRegistrationOtp();
+        user.setOtpCode(otp);
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
+        user.setOtpPurpose(OtpPurpose.REGISTER);
+        userRepository.save(user);
+
+        try {
+            sendRegistrationOtp(user.getEmail(), otp);
+        } catch (Exception e) {
+            // @Transactional rollback giữ nguyên OTP cũ; user có thể thử lại.
+            throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
+        }
+
+        AuthResponse response = new AuthResponse();
+        response.setJwt(null);
+        response.setMessage("A new registration OTP has been sent, please verify.");
+        response.setRoles(user.getRoles().stream().map(Role::getName).toList());
+        return response;
+    }
+
+    private String generateRegistrationOtp() {
+        return String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+    }
+
+    private void sendRegistrationOtp(String email, String otp) throws Exception {
+        String subject = "Account Verification - CarbonX";
+        String content = String.format(
+                "<p>Hello %s,</p>" +
+                        "<p>Thank you for registering. Please use the following OTP code to verify your account:</p>" +
+                        "<h2>%s</h2>" +
+                        "<p>The OTP will expire in 5 minutes.</p>" +
+                        "<p>Best regards,<br/>CarbonX Team</p>",
+                email, otp
+        );
+        emailService.sendEmailNow(subject, content, List.of(email));
     }
 
     @Override

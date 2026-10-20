@@ -133,7 +133,7 @@ class ProfitSharingRollbackIsolationTest {
         existing.setDistribution(distribution);
         existing.setEvOwner(owner());
 
-        when(profitDistributionDetailRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(profitDistributionDetailRepository.findByIdForUpdate(55L)).thenReturn(Optional.of(existing));
         when(profitDistributionDetailRepository.save(any(ProfitDistributionDetail.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

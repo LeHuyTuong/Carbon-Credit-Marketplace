@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service chịu trách nhiệm phân chia lợi nhuận (Payout) cho các chủ xe điện (EV Owners).
@@ -154,6 +155,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
 
+        // Lease token của riêng lần chạy này. Mọi heartbeat/hoàn tất phải khớp token,
+        // nên một lần chạy bị reclaim không thể ghi đè trạng thái của claim mới.
+        String claimToken = UUID.randomUUID().toString();
         ProfitDistribution distributionEvent = null;
 
         try {
@@ -189,12 +193,12 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // B3: Tạo bản ghi theo dõi đợt phân phối (Status: PROCESSING).
             // Guard + insert nằm trong CÙNG transaction có khóa row report, nên hai request
             // /share đồng thời không thể cùng thấy "chưa có payout" rồi cùng trả tiền.
-            distributionEvent = createDistributionEvent(request, companyUser, company, report.getId());
+            distributionEvent = createDistributionEvent(request, companyUser, company, report.getId(), claimToken);
 
             // B5: Chuẩn bị Map mapping từ Biển số xe -> Vehicle Entity để tra cứu nhanh
             Map<String, Vehicle> vehicleByPlate = buildCompanyVehicleMap(company.getId());
             if (vehicleByPlate.isEmpty()) {
-                markDistributionCompleted(distributionEvent);
+                completeUnfundedDistribution(distributionEvent, claimToken);
                 return;
             }
 
@@ -226,7 +230,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             if (evOwnerContributions.isEmpty()) {
                 log.warn("No eligible vehicle contributions found for company {}", company.getId());
-                markDistributionCompleted(distributionEvent);
+                completeUnfundedDistribution(distributionEvent, claimToken);
                 return;
             }
 
@@ -269,7 +273,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             if (payoutPlan.isEmpty() || totalRawPayout.compareTo(BigDecimal.ZERO) <= 0) {
                 log.warn("Computed payout amount is zero.");
-                markDistributionCompleted(distributionEvent);
+                completeUnfundedDistribution(distributionEvent, claimToken);
                 return;
             }
 
@@ -292,8 +296,14 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             log.info("Starting sequential payout for {} owners...", payoutPlan.size());
 
             // B10: Thực hiện chuyển tiền tuần tự cho từng Owner
-            // Mỗi owner chạy trong transaction REQUIRES_NEW riêng để lỗi 1 owner không rollback owner khác
+            // Mỗi owner chạy trong transaction REQUIRES_NEW riêng để lỗi 1 owner không rollback owner khác.
+            // Heartbeat trước mỗi owner: một /share dài không bị /retry coi là stale.
             for (int i = 0; i < payoutPlan.size(); i++) {
+                if (!touchDistribution(distributionEvent.getId(), claimToken)) {
+                    log.warn("Distribution #{} is no longer owned by claim {}; stopping /share before owner {}",
+                            distributionEvent.getId(), claimToken, payoutPlan.get(i).getEvOwnerId());
+                    return;
+                }
                 processPayoutForOwner(
                         distributionEvent,
                         payoutPlan.get(i),
@@ -312,17 +322,19 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             if (!allSettled(persistedDetails)) {
                 log.error("Distribution #{} still has unsettled owner payouts; report #{} stays CREDIT_ISSUED for retry",
                         distributionEvent.getId(), report.getId());
-                distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-                profitDistributionRepository.save(distributionEvent);
+                failDistribution(distributionEvent.getId(), claimToken);
                 return;
             }
 
             log.info("All sequential payouts processed.");
 
-            // B10: Cập nhật trạng thái Report -> PAID_OUT (chỉ khi mọi owner đã nhận tiền)
-            updateReportsToPaidOut(reportsToProcess);
+            // B11: Hoàn tất distribution + report trong CÙNG transaction, chỉ khi claim token
+            // còn là của mình. Nếu một worker khác đã claim lại, không được đánh COMPLETED.
+            if (!settleDistribution(distributionEvent, persistedDetails, claimToken)) {
+                return;
+            }
 
-            // B11: Gửi email tổng kết cho Công ty
+            // B12: Gửi email tổng kết cho Công ty (sau khi trạng thái đã commit)
             try {
                 BigDecimal totalCreditsTCO2e = totalCreditsKgForDistribution.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
                 String period = report.getPeriod(); // Safe access vì report đã load EAGER ở trên
@@ -343,14 +355,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 log.warn("Failed to send payout summary email: {}", e.getMessage());
             }
 
-            // Hoàn tất quy trình
-            markDistributionCompleted(distributionEvent);
-
         } catch (Exception e) {
             log.error("System Error: {}", e.getMessage(), e);
             if (distributionEvent != null) {
-                distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-                profitDistributionRepository.save(distributionEvent);
+                failDistribution(distributionEvent.getId(), claimToken);
             }
         }
     }
@@ -377,26 +385,34 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         rejectSupersededDistribution(distribution, companyUserId, distributionId);
 
         ProfitDistributionStatus currentStatus = distribution.getStatus();
-        if (currentStatus == ProfitDistributionStatus.COMPLETED) {
+        // Legacy: base cũ đánh COMPLETED dù còn owner FAILED. Chỉ cho retry khi thực sự
+        // còn detail chưa settled; distribution đã trả đủ vẫn bị từ chối như trước.
+        boolean completedWithUnpaidOwners = currentStatus == ProfitDistributionStatus.COMPLETED
+                && profitDistributionDetailRepository.existsUnsettledByDistributionId(distributionId);
+        if (currentStatus == ProfitDistributionStatus.COMPLETED && !completedWithUnpaidOwners) {
             throw new BadRequestException("Distribution #" + distributionId + " is already completed.");
         }
 
         OffsetDateTime now = OffsetDateTime.now(BUSINESS_ZONE);
         long staleMinutes = Math.max(1, profitSharingProperties.getStaleProcessingMinutes());
         OffsetDateTime staleBefore = now.minusMinutes(staleMinutes);
+        String claimToken = UUID.randomUUID().toString();
 
         // Compare-and-set trong transaction riêng: hai request retry đồng thời chỉ một request thắng.
+        // markRetrying/claimStaleProcessing đều ghi claimToken + updatedAt trong cùng câu UPDATE,
+        // nên request thứ hai đọc lại status PROCESSING sẽ thấy heartbeat mới và bị từ chối.
         Integer claimed = requiresNewTransaction.execute(status -> {
             if (currentStatus == ProfitDistributionStatus.PROCESSING) {
                 // Crash/deploy để lại PROCESSING: chỉ nhận lại khi không có heartbeat
                 // trong staleMinutes, tránh giẫm lên một job đang thực sự chạy.
                 return profitDistributionRepository.claimStaleProcessing(
-                        distributionId, ProfitDistributionStatus.PROCESSING, staleBefore, now);
+                        distributionId, ProfitDistributionStatus.PROCESSING, staleBefore, now, claimToken);
             }
             if (currentStatus == ProfitDistributionStatus.FAILED
-                    || currentStatus == ProfitDistributionStatus.PENDING) {
+                    || currentStatus == ProfitDistributionStatus.PENDING
+                    || (currentStatus == ProfitDistributionStatus.COMPLETED && completedWithUnpaidOwners)) {
                 return profitDistributionRepository.markRetrying(
-                        distributionId, ProfitDistributionStatus.PROCESSING, currentStatus);
+                        distributionId, ProfitDistributionStatus.PROCESSING, currentStatus, claimToken, now);
             }
             return 0;
         });
@@ -412,17 +428,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
 
         try {
-            retryDispatcher.submit(() -> executeRetry(companyUserId, distributionId));
+            retryDispatcher.submit(() -> executeRetry(companyUserId, distributionId, claimToken));
         } catch (RuntimeException e) {
             log.error("Could not enqueue retry for distribution #{}: {}", distributionId, e.getMessage(), e);
             // Trả status về FAILED để không kẹt PROCESSING khi executor từ chối task.
-            try {
-                requiresNewTransaction.executeWithoutResult(status -> profitDistributionRepository.markRetrying(
-                        distributionId, ProfitDistributionStatus.FAILED, ProfitDistributionStatus.PROCESSING));
-            } catch (Exception resetError) {
-                log.error("Could not reset distribution #{} after enqueue failure: {}",
-                        distributionId, resetError.getMessage());
-            }
+            failDistribution(distributionId, claimToken);
             throw new AppException(ErrorCode.TRANSACTION_PROCESSING_ERROR);
         }
     }
@@ -457,8 +467,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     /**
      * Phần chạy nền của retry. Distribution đã được claim sang PROCESSING trước đó.
      */
-    private void executeRetry(Long companyUserId, Long distributionId) {
+    private void executeRetry(Long companyUserId, Long distributionId, String claimToken) {
         try {
+            // Fence đầu tiên: nếu một worker khác đã claim lại (token đổi), dừng ngay
+            // trước khi đọc/trả bất kỳ owner nào.
+            if (!touchDistribution(distributionId, claimToken)) {
+                log.warn("Retry for distribution #{} skipped: claim {} is no longer current",
+                        distributionId, claimToken);
+                return;
+            }
+
             User companyUser = userRepository.findById(companyUserId)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
             Company company = companyRepository.findByUserId(companyUser.getId())
@@ -474,12 +492,16 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                     .toList();
 
             if (unpaidDetails.isEmpty()) {
-                settleDistribution(distribution, details);
+                settleDistribution(distribution, details, claimToken);
                 return;
             }
 
             EmissionReport report = distribution.getEmissionReport();
-            if (report != null && report.getStatus() != EmissionStatus.CREDIT_ISSUED) {
+            // PAID_OUT được chấp nhận cho legacy: base cũ đánh report PAID_OUT dù còn
+            // owner FAILED; retry chỉ trả các detail chưa settled nên không double-pay.
+            if (report != null
+                    && report.getStatus() != EmissionStatus.CREDIT_ISSUED
+                    && report.getStatus() != EmissionStatus.PAID_OUT) {
                 throw new BadRequestException("Emission report " + report.getId()
                         + " is not waiting for payout (status " + report.getStatus() + ").");
             }
@@ -497,6 +519,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
             Long reportId = report == null ? null : report.getId();
             for (ProfitDistributionDetail detail : unpaidDetails) {
+                if (!touchDistribution(distributionId, claimToken)) {
+                    log.warn("Retry for distribution #{} stopped before owner {}: claim {} is no longer current",
+                            distributionId, detail.getEvOwner().getId(), claimToken);
+                    return;
+                }
                 OwnerPayoutData payout = new OwnerPayoutData(
                         detail.getEvOwner().getId(),
                         detail.getCreditAmount(),
@@ -510,62 +537,141 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         policy,
                         company,
                         detail.getId());
-                touchDistribution(distributionId);
             }
 
             List<ProfitDistributionDetail> freshDetails = profitDistributionDetailRepository
                     .findByDistributionIdWithOwner(distributionId);
-            settleDistribution(distribution, freshDetails);
+            settleDistribution(distribution, freshDetails, claimToken);
         } catch (Exception e) {
             log.error("Retry of distribution #{} failed: {}", distributionId, e.getMessage(), e);
-            try {
-                // Chỉ reset nếu vẫn đang PROCESSING; nếu một retry khác đã claim lại thì
-                // không được ghi đè trạng thái của nó.
-                requiresNewTransaction.executeWithoutResult(status -> profitDistributionRepository.markRetrying(
-                        distributionId, ProfitDistributionStatus.FAILED, ProfitDistributionStatus.PROCESSING));
-            } catch (Exception resetError) {
-                log.error("Could not mark distribution #{} FAILED after retry error: {}",
-                        distributionId, resetError.getMessage());
-            }
+            // Chỉ reset khi vẫn giữ claim; nếu worker khác đã claim lại thì không ghi đè.
+            failDistribution(distributionId, claimToken);
         }
     }
 
     /**
      * Hoàn tất distribution khi mọi detail đã SUCCESS/SKIPPED; ngược lại đánh FAILED
-     * để còn đường retry. Không bao giờ đánh PAID_OUT khi còn detail PENDING/FAILED.
+     * để còn đường retry. Việc đổi trạng thái distribution và report nằm trong CÙNG
+     * transaction, và chỉ thành công khi claim token vẫn là của worker gọi.
+     *
+     * @return true khi distribution thực sự được chuyển sang COMPLETED.
      */
-    private void settleDistribution(ProfitDistribution distribution,
-                                    List<ProfitDistributionDetail> details) {
+    private boolean settleDistribution(ProfitDistribution distribution,
+                                       List<ProfitDistributionDetail> details,
+                                       String claimToken) {
         if (!allSettled(details)) {
-            distribution.setStatus(ProfitDistributionStatus.FAILED);
-            profitDistributionRepository.save(distribution);
-            return;
+            failDistribution(distribution.getId(), claimToken);
+            return false;
         }
 
         EmissionReport report = distribution.getEmissionReport();
-        if (report != null) {
-            if (report.getStatus() == EmissionStatus.CREDIT_ISSUED) {
-                updateReportsToPaidOut(List.of(report));
-            } else if (report.getStatus() != EmissionStatus.PAID_OUT) {
-                throw new BadRequestException("Emission report " + report.getId()
-                        + " is not waiting for payout (status " + report.getStatus() + ").");
-            }
-        } else {
+        if (report == null) {
             // Distribution cũ trước migration: vẫn trả được owner còn nợ, nhưng không có
             // căn cứ an toàn để tự đánh dấu report nào là PAID_OUT.
             log.warn("Legacy distribution #{} has no linked emission report; owner payouts are settled "
                     + "but the emission report status cannot be updated automatically.", distribution.getId());
+        } else if (report.getStatus() != EmissionStatus.CREDIT_ISSUED
+                && report.getStatus() != EmissionStatus.PAID_OUT) {
+            throw new BadRequestException("Emission report " + report.getId()
+                    + " is not waiting for payout (status " + report.getStatus() + ").");
         }
-        markDistributionCompleted(distribution);
+
+        Long reportId = report == null ? null : report.getId();
+        Boolean completed = requiresNewTransaction.execute(status -> {
+            int updated = profitDistributionRepository.finishIfClaimed(
+                    distribution.getId(),
+                    ProfitDistributionStatus.COMPLETED,
+                    ProfitDistributionStatus.PROCESSING,
+                    claimToken,
+                    OffsetDateTime.now(BUSINESS_ZONE));
+            if (updated == 0) {
+                log.warn("Distribution #{} is no longer owned by claim {}; not marking COMPLETED",
+                        distribution.getId(), claimToken);
+                return false;
+            }
+
+            if (reportId != null) {
+                EmissionReport freshReport = emissionReportRepository.findById(reportId).orElse(null);
+                if (freshReport == null) {
+                    // Rollback cả việc hoàn tất distribution: không được đánh COMPLETED
+                    // khi report biến mất giữa chừng.
+                    throw new BadRequestException("Emission report not found: " + reportId);
+                }
+                if (freshReport.getStatus() == EmissionStatus.CREDIT_ISSUED) {
+                    freshReport.setStatus(EmissionStatus.PAID_OUT);
+                    emissionReportRepository.save(freshReport);
+                } else if (freshReport.getStatus() != EmissionStatus.PAID_OUT) {
+                    throw new BadRequestException("Emission report " + reportId
+                            + " is not waiting for payout (status " + freshReport.getStatus() + ").");
+                }
+            }
+
+            distribution.setStatus(ProfitDistributionStatus.COMPLETED);
+            return true;
+        });
+
+        return Boolean.TRUE.equals(completed);
     }
 
-    private void touchDistribution(Long distributionId) {
+    /**
+     * Chuyển distribution sang FAILED chỉ khi worker còn giữ claim. Không dùng
+     * {@code save(entity)} vì entity có thể đã cũ và sẽ ghi đè claim mới.
+     */
+    private void failDistribution(Long distributionId, String claimToken) {
+        if (distributionId == null) return;
+        try {
+            requiresNewTransaction.executeWithoutResult(status -> {
+                int updated = profitDistributionRepository.finishIfClaimed(
+                        distributionId,
+                        ProfitDistributionStatus.FAILED,
+                        ProfitDistributionStatus.PROCESSING,
+                        claimToken,
+                        OffsetDateTime.now(BUSINESS_ZONE));
+                if (updated == 0) {
+                    log.warn("Distribution #{} is no longer owned by claim {}; status left unchanged",
+                            distributionId, claimToken);
+                }
+            });
+        } catch (Exception e) {
+            log.error("Could not mark distribution #{} FAILED: {}", distributionId, e.getMessage());
+        }
+    }
+
+    /**
+     * Dùng cho các nhánh không có owner nào để trả (không có xe/contribution/payout):
+     * đánh COMPLETED nhưng không đánh report PAID_OUT vì chưa có ai nhận tiền.
+     */
+    private void completeUnfundedDistribution(ProfitDistribution distribution, String claimToken) {
+        try {
+            Boolean completed = requiresNewTransaction.execute(status ->
+                    profitDistributionRepository.finishIfClaimed(
+                            distribution.getId(),
+                            ProfitDistributionStatus.COMPLETED,
+                            ProfitDistributionStatus.PROCESSING,
+                            claimToken,
+                            OffsetDateTime.now(BUSINESS_ZONE)) > 0);
+            if (Boolean.TRUE.equals(completed)) {
+                distribution.setStatus(ProfitDistributionStatus.COMPLETED);
+            }
+        } catch (Exception e) {
+            log.error("Could not complete distribution #{}: {}", distribution.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Heartbeat + fence: trả false khi distribution không còn PROCESSING hoặc claim
+     * token đã đổi chủ, nghĩa là worker này phải dừng, không được trả thêm owner nào.
+     */
+    private boolean touchDistribution(Long distributionId, String claimToken) {
         try {
             OffsetDateTime now = OffsetDateTime.now(BUSINESS_ZONE);
-            requiresNewTransaction.executeWithoutResult(status -> profitDistributionRepository.touchProcessing(
-                    distributionId, ProfitDistributionStatus.PROCESSING, now));
+            Integer updated = requiresNewTransaction.execute(status ->
+                    profitDistributionRepository.touchProcessing(
+                            distributionId, ProfitDistributionStatus.PROCESSING, now, claimToken));
+            return updated != null && updated > 0;
         } catch (Exception e) {
             log.warn("Could not heartbeat distribution #{}: {}", distributionId, e.getMessage());
+            return false;
         }
     }
 
@@ -645,6 +751,27 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             Company company,
             Long existingDetailId
     ) {
+        // Khóa row detail NGAY ĐẦU transaction. Hai worker cùng xử lý một owner sẽ bị
+        // tuần tự hóa: worker thứ hai chờ commit rồi thấy SUCCESS/SKIPPED và bỏ qua,
+        // nên transferFunds cho cùng owner không thể chạy song song.
+        ProfitDistributionDetail detail = null;
+        if (existingDetailId != null) {
+            detail = profitDistributionDetailRepository.findByIdForUpdate(existingDetailId).orElse(null);
+            if (detail == null) {
+                return "Distribution detail not found: " + existingDetailId;
+            }
+            if (detail.getDistribution() == null
+                    || !Objects.equals(detail.getDistribution().getId(), event.getId())) {
+                return "Distribution detail " + existingDetailId
+                        + " does not belong to distribution #" + event.getId();
+            }
+            // Retry có thể chạy lại sau khi request trước đã trả xong owner này.
+            // Tuyệt đối không chuyển tiền lần hai.
+            if (isSettledDetail(detail)) {
+                return null;
+            }
+        }
+
         // Load lại Report trong session mới để tránh LazyInitializationException
         EmissionReport report = emissionReportRepository.findByIdWithDetails(reportId).orElse(null);
 
@@ -685,23 +812,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
         }
 
-        ProfitDistributionDetail detail;
-        if (existingDetailId != null) {
-            detail = profitDistributionDetailRepository.findById(existingDetailId).orElse(null);
-            if (detail == null) {
-                return "Distribution detail not found: " + existingDetailId;
-            }
-            if (detail.getDistribution() == null
-                    || !Objects.equals(detail.getDistribution().getId(), event.getId())) {
-                return "Distribution detail " + existingDetailId
-                        + " does not belong to distribution #" + event.getId();
-            }
-            // Retry có thể chạy lại sau khi request trước đã trả xong owner này.
-            // Tuyệt đối không chuyển tiền lần hai.
-            if (isSettledDetail(detail)) {
-                return null;
-            }
-        } else {
+        if (detail == null) {
             detail = new ProfitDistributionDetail();
             detail.setDistribution(event);
             detail.setEvOwner(owner);
@@ -784,7 +895,8 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             ProfitSharingRequest request,
             User companyUser,
             Company company,
-            Long reportId
+            Long reportId,
+            String claimToken
     ) {
         return requiresNewTransaction.execute(status -> {
             EmissionReport lockedReport = emissionReportRepository.findByIdForUpdate(reportId)
@@ -814,6 +926,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             event.setTotalMoneyDistributed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
             event.setTotalCreditsDistributed(BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP));
             event.setStatus(ProfitDistributionStatus.PROCESSING);
+            event.setClaimToken(claimToken);
             return profitDistributionRepository.save(event);
         });
     }
@@ -902,13 +1015,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             requiresNewTransaction.executeWithoutResult(status -> {
                 ProfitDistributionDetail detail = null;
                 if (existingDetailId != null) {
-                    detail = profitDistributionDetailRepository.findById(existingDetailId).orElse(null);
+                    // Khóa row trước khi ghi FAILED: nếu worker khác vừa trả xong owner này
+                    // và commit SUCCESS thì phải giữ SUCCESS, không được đè thành FAILED
+                    // (đè FAILED sẽ mở đường cho một lần retry trả tiền lần hai).
+                    detail = profitDistributionDetailRepository.findByIdForUpdate(existingDetailId).orElse(null);
                     if (detail == null
                             || detail.getDistribution() == null
                             || !Objects.equals(detail.getDistribution().getId(), event.getId())) {
                         // Không tạo dòng mới: sẽ làm summary của distribution bị cộng hai lần.
                         log.error("Cannot record failure for owner {}: detail {} is missing or belongs to another distribution",
                                 payout.getEvOwnerId(), existingDetailId);
+                        return;
+                    }
+                    if (isSettledDetail(detail)) {
+                        log.info("Owner {} in distribution #{} is already {}; keeping settled detail",
+                                payout.getEvOwnerId(), event.getId(), detail.getStatus());
                         return;
                     }
                 }
@@ -948,24 +1069,6 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
         }
         return vehicleMap;
-    }
-
-    // Update status report trong transaction riêng
-    private void updateReportsToPaidOut(List<EmissionReport> reports) {
-        if (reports == null || reports.isEmpty()) return;
-        requiresNewTransaction.executeWithoutResult(status -> {
-            List<Long> reportIds = reports.stream().map(EmissionReport::getId).toList();
-            List<EmissionReport> freshReports = emissionReportRepository.findAllById(reportIds);
-            for (EmissionReport report : freshReports) {
-                report.setStatus(EmissionStatus.PAID_OUT);
-            }
-            emissionReportRepository.saveAll(freshReports);
-        });
-    }
-
-    private void markDistributionCompleted(ProfitDistribution event) {
-        event.setStatus(ProfitDistributionStatus.COMPLETED);
-        profitDistributionRepository.save(event);
     }
 
     // Tính toán tiền payout dựa trên Pricing Mode

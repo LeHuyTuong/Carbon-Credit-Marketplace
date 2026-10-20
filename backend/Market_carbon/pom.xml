@@ -190,6 +190,15 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- In-memory JPA slice for query/CAS behaviour (not for InnoDB locking tests;
+		     those stay on Testcontainers MySQL). -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>2.2.224</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>

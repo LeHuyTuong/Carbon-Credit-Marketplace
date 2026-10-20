@@ -266,6 +266,11 @@ JWT access/refresh via `jjwt`, Google OAuth2 login, email OTP verification, role
 (`ADMIN` / `COMPANY` / `EV_OWNER` / `CVA`), and a token-bucket rate limiter
 (`app.rate-limit.capacity=20` per minute).
 
+Registration stores the new account and OTP in one transaction: if the synchronous OTP email
+fails, the pending account is rolled back, so the user can register again instead of being stuck
+behind `EMAIL_EXISTED`. A pending account can also request a fresh registration code with
+`POST /api/v1/auth/register/resend-otp` (same 60-second resend guard as forgot-password).
+
 The filter chain is **deny-by-default**: a route nobody remembered to map requires authentication
 rather than falling through to public. Self-registration can only create `EV_OWNER` or `COMPANY` — a
 client cannot ask for `ADMIN` or `CVA` in the signup payload. The JWT signing secret comes from
@@ -324,18 +329,27 @@ In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the firs
 empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.
 
 - **Fresh database:** run `backend/database/core_ccm.sql` only. It already contains the current
-  schema, including `profit_distribution.emission_report_id`, its FK and index. Do **not** re-run
-  the incremental migrations on top of a fresh schema.
+  schema, including `profit_distribution.emission_report_id`, `profit_distribution.claim_token`,
+  their indexes/FKs. Do **not** re-run the incremental migrations on top of a fresh schema.
 - **Existing database:** apply every script under `backend/database/migrations/` **before**
   starting the production build. The scripts are idempotent; the
   `2026-10-20_add_emission_report_to_profit_distribution.sql` migration adds the payout link only
   if it is missing and backfills it only when there is exactly one unambiguous report candidate.
+  `2026-10-20_add_claim_token_to_profit_distribution.sql` adds the per-run lease token.
 
 Legacy distributions whose `emission_report_id` remains `NULL` can still be retried: their
 `PENDING`/`FAILED` owners are paid, but the emission report status cannot be updated
-automatically. Reconcile/link those rows manually before treating the report as paid out. A
-`PROCESSING` distribution left behind by a crash becomes retryable after
-`profit-sharing.stale-processing-minutes` (default `15`) without a progress heartbeat.
+automatically. Reconcile/link those rows manually before treating the report as paid out.
+Legacy distributions already marked `COMPLETED` while an owner detail is still `PENDING`/`FAILED`
+(the old code completed distributions unconditionally) are retryable too: `/retry` pays only the
+unsettled owners and leaves an already `PAID_OUT` report alone.
+
+A `PROCESSING` distribution left behind by a crash becomes retryable after
+`profit-sharing.stale-processing-minutes` (default `15`) without a progress heartbeat. Every
+claim writes a UUID `claim_token`; `/share` and `/retry` refresh `updated_at` before each owner,
+and status transitions (`COMPLETED`/`FAILED`) only apply while the worker still holds that token.
+An owner row is locked with `PESSIMISTIC_WRITE` for the duration of its payout transaction, so a
+reclaimed worker cannot pay the same owner twice.
 
 `DataInitializer` then seeds the roles and the three demo accounts. Their credentials are
 overridable — `carbonx.seed.admin-email` / `-password`, and the same pair for `company-` and `cva-`.

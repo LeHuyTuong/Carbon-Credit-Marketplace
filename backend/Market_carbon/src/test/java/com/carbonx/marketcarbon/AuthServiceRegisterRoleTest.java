@@ -1,11 +1,15 @@
 package com.carbonx.marketcarbon;
 
+import com.carbonx.marketcarbon.common.OtpPurpose;
 import com.carbonx.marketcarbon.common.PredefinedRole;
+import com.carbonx.marketcarbon.common.USER_STATUS;
+import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
 import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.model.Role;
+import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.repository.RoleRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.service.EmailService;
@@ -20,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +98,85 @@ class AuthServiceRegisterRoleTest {
                 .isInstanceOf(AppException.class)
                 .satisfies(e -> assertThat(((AppException) e).getErrorCode())
                         .isEqualTo(ErrorCode.EMAIL_SEND_FAILED));
+        // The pending row must not survive a failed OTP send; otherwise the user is
+        // stranded behind EMAIL_EXISTED with no registration-OTP resend path.
+        verify(userRepository).delete(any());
+    }
+
+    @Test
+    void resendRegistrationOtp_reissuesForPendingRegisterUser() throws Exception {
+        User user = pendingUser();
+        user.setOtpExpiryDate(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        AuthResponse res = authService.resendRegistrationOtp(req);
+
+        assertThat(res.getMessage()).contains("new registration OTP");
+        assertThat(user.getOtpPurpose()).isEqualTo(OtpPurpose.REGISTER);
+        assertThat(user.getOtpExpiryDate()).isAfter(LocalDateTime.now());
+        verify(emailService).sendEmailNow(anyString(), anyString(), anyList());
+        verify(emailService, never()).sendEmail(anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void resendRegistrationOtp_rejectsActiveUser() throws Exception {
+        User user = pendingUser();
+        user.setStatus(USER_STATUS.ACTIVE);
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.EMAIL_EXISTED));
+        verify(emailService, never()).sendEmailNow(anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void resendRegistrationOtp_rejectsStillValidOtp() {
+        User user = pendingUser();
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.OTP_STILL_VALID));
+    }
+
+    @Test
+    void resendRegistrationOtp_propagatesSmtpFailure() throws Exception {
+        User user = pendingUser();
+        user.setOtpExpiryDate(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        doThrow(new MessagingException("smtp down"))
+                .when(emailService).sendEmailNow(anyString(), anyString(), anyList());
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.EMAIL_SEND_FAILED));
+    }
+
+    private User pendingUser() {
+        User user = new User();
+        user.setEmail("user@example.com");
+        user.setStatus(USER_STATUS.PENDING);
+        user.setOtpPurpose(OtpPurpose.REGISTER);
+        return user;
     }
 
     @Test

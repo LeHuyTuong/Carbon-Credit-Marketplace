@@ -53,6 +53,11 @@ public class ProfitDistribution extends BaseEntity {
     @Column(nullable = false)
     private ProfitDistributionStatus status;
 
+    // Token của worker đang giữ quyền xử lý đợt này. Mọi heartbeat và chuyển trạng thái
+    // phải khớp token; một worker bị reclaim không thể ghi đè claim mới.
+    @Column(name = "claim_token", length = 36)
+    private String claimToken;
+
     // Chi tiết các khoản thanh toán cho từng EV Owner
     @OneToMany(mappedBy = "distribution", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProfitDistributionDetail> details;

@@ -397,6 +397,7 @@ CREATE TABLE IF NOT EXISTS `profit_distribution` (
                                                      `total_credits_distributed` DECIMAL(38, 2) NOT NULL,
                                                      `total_money_distributed`   DECIMAL(38, 2) NOT NULL,
                                                      `status`                    ENUM('COMPLETED','FAILED','PENDING','PROCESSING') NOT NULL,
+                                                     `claim_token`               VARCHAR(36),
                                                      `created_at`                DATETIME(6) NOT NULL,
                                                      `updated_at`                DATETIME(6) NOT NULL,
                                                      PRIMARY KEY (`id`),

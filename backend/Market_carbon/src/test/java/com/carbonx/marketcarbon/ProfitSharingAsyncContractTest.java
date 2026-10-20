@@ -96,7 +96,10 @@ class ProfitSharingAsyncContractTest {
         for (String methodName : List.of(
                 "createDistributionEvent",
                 "saveFailedDetail",
-                "updateReportsToPaidOut")) {
+                "settleDistribution",
+                "failDistribution",
+                "touchDistribution",
+                "completeUnfundedDistribution")) {
 
             List<Method> matches = Arrays.stream(ProfitSharingServiceImpl.class.getDeclaredMethods())
                     .filter(method -> method.getName().equals(methodName))
@@ -140,6 +143,13 @@ class ProfitSharingAsyncContractTest {
         String source = readServiceSource();
         assertThat(source).contains("TransactionTemplate");
         assertThat(source).contains("PROPAGATION_REQUIRES_NEW");
+
+        // Round-2 fencing: status transitions must go through the claim-token CAS,
+        // never through save(entity) which can overwrite a newer worker's claim.
+        assertThat(source).contains("finishIfClaimed");
+        assertThat(source).contains("claimToken");
+        assertThat(source).doesNotContain("markDistributionCompleted");
+        assertThat(source).doesNotContain("updateReportsToPaidOut");
     }
 
     private static String readServiceSource() {

@@ -29,7 +29,6 @@ import com.carbonx.marketcarbon.service.ProfitSharingTaskDispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -45,6 +44,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -152,6 +152,11 @@ class ProfitSharingPartialFailureTest {
                 });
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.FAILED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
 
         // Owner payout fails in the per-owner transaction.
         doReturn(false).when(service).processPayoutForOwner(
@@ -160,12 +165,14 @@ class ProfitSharingPartialFailureTest {
 
         service.shareCompanyProfit(1L, request);
 
-        verify(emissionReportRepository, never()).saveAll(any());
-        ArgumentCaptor<ProfitDistribution> captor = ArgumentCaptor.forClass(ProfitDistribution.class);
-        verify(profitDistributionRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
-        assertThat(captor.getAllValues()).last()
-                .extracting(ProfitDistribution::getStatus)
-                .isEqualTo(ProfitDistributionStatus.FAILED);
+        verify(emissionReportRepository, never()).save(any());
+        // /share must heartbeat during its payout loop, not only the retry path.
+        verify(profitDistributionRepository).touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString());
+        // The distribution is failed through the claim-fenced CAS, not save(entity).
+        verify(profitDistributionRepository).finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.FAILED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any());
         verify(emailService, never()).sendDistributionSummaryToCompany(
                 any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(), any(),
                 org.mockito.ArgumentMatchers.anyBoolean(), any(), any());
@@ -209,15 +216,19 @@ class ProfitSharingPartialFailureTest {
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(distribution));
         when(profitDistributionRepository.markRetrying(
-                7L, ProfitDistributionStatus.PROCESSING, ProfitDistributionStatus.FAILED)).thenReturn(1);
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
+                anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.COMPLETED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(failed, alreadyPaid));
         when(walletService.findWalletByUser(companyUser)).thenReturn(companyWallet);
         when(walletRepository.findById(3L)).thenReturn(Optional.of(companyWallet));
-        when(emissionReportRepository.findAllById(List.of(99L))).thenReturn(List.of(report));
-        when(emissionReportRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(profitDistributionRepository.save(any(ProfitDistribution.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(emissionReportRepository.findById(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         doAnswer(invocation -> {
             failed.setStatus("SUCCESS");
@@ -232,7 +243,7 @@ class ProfitSharingPartialFailureTest {
         verify(service, org.mockito.Mockito.times(1)).processPayoutForOwner(
                 eq(distribution), any(ProfitSharingServiceImpl.OwnerPayoutData.class),
                 eq(companyWallet), eq(99L), any(), eq(company), eq(55L));
-        verify(emissionReportRepository, org.mockito.Mockito.times(1)).saveAll(any());
+        verify(emissionReportRepository, org.mockito.Mockito.times(1)).save(report);
         assertThat(report.getStatus()).isEqualTo(EmissionStatus.PAID_OUT);
         assertThat(distribution.getStatus()).isEqualTo(ProfitDistributionStatus.COMPLETED);
     }

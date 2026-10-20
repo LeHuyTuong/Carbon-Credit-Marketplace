@@ -42,10 +42,12 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -54,13 +56,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * F2/F3/F4/F6/F8 guards for the retry path:
+ * F2/F3/F4/F6/F8 guards for the retry path, plus the round-2 lease guards:
  * <ul>
  *   <li>an old distribution cannot be retried after a newer one exists;</li>
  *   <li>a PROCESSING distribution is only retried after its heartbeat is stale;</li>
+ *   <li>the claim refresh itself makes a second retry see a fresh heartbeat;</li>
  *   <li>PENDING details count as unpaid and empty details never mark the report paid;</li>
  *   <li>ownership is validated on the request thread before work is dispatched;</li>
- *   <li>a legacy distribution without a report link can still pay its owners.</li>
+ *   <li>a legacy distribution without a report link can still pay its owners;</li>
+ *   <li>a legacy COMPLETED distribution with FAILED owners can be retried.</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -121,7 +125,7 @@ class ProfitSharingRetrySafetyTest {
                 .hasMessageContaining("superseded by distribution #8");
 
         assertThat(dispatched).isEmpty();
-        verify(profitDistributionRepository, never()).markRetrying(any(), any(), any());
+        verify(profitDistributionRepository, never()).markRetrying(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -135,7 +139,7 @@ class ProfitSharingRetrySafetyTest {
         when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(processing));
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(processing));
-        when(profitDistributionRepository.claimStaleProcessing(eq(7L), any(), any(), any()))
+        when(profitDistributionRepository.claimStaleProcessing(eq(7L), any(), any(), any(), anyString()))
                 .thenReturn(0);
 
         assertThatThrownBy(() -> service.requestRetry(1L, 7L))
@@ -156,7 +160,7 @@ class ProfitSharingRetrySafetyTest {
         when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(processing));
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(processing));
-        when(profitDistributionRepository.claimStaleProcessing(eq(7L), any(), any(), any()))
+        when(profitDistributionRepository.claimStaleProcessing(eq(7L), any(), any(), any(), anyString()))
                 .thenReturn(1);
 
         service.requestRetry(1L, 7L);
@@ -164,7 +168,61 @@ class ProfitSharingRetrySafetyTest {
         assertThat(dispatched).hasSize(1);
         verify(profitDistributionRepository).claimStaleProcessing(
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING),
-                any(OffsetDateTime.class), any(OffsetDateTime.class));
+                any(OffsetDateTime.class), any(OffsetDateTime.class), anyString());
+    }
+
+    @Test
+    void claimRefreshesHeartbeatSoASecondRetryCannotReclaimTheSameRun() {
+        User companyUser = companyUser(1L);
+        ProfitDistribution distribution = distribution(7L, companyUser, report(99L),
+                ProfitDistributionStatus.FAILED);
+
+        // Fake repository state: FAILED with a 30-minute-old heartbeat.
+        AtomicReference<ProfitDistributionStatus> status =
+                new AtomicReference<>(ProfitDistributionStatus.FAILED);
+        AtomicReference<OffsetDateTime> updatedAt =
+                new AtomicReference<>(OffsetDateTime.now().minusMinutes(30));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company(10L)));
+        when(profitDistributionRepository.findWithReportById(7L)).thenAnswer(inv -> {
+            distribution.setStatus(status.get());
+            distribution.setUpdatedAt(updatedAt.get());
+            return Optional.of(distribution);
+        });
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenAnswer(inv -> Optional.of(distribution));
+        when(profitDistributionRepository.markRetrying(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
+                anyString(), any(OffsetDateTime.class)))
+                .thenAnswer(inv -> {
+                    if (status.get() != ProfitDistributionStatus.FAILED) return 0;
+                    status.set(ProfitDistributionStatus.PROCESSING);
+                    updatedAt.set(inv.getArgument(4));
+                    return 1;
+                });
+        when(profitDistributionRepository.claimStaleProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING),
+                any(OffsetDateTime.class), any(OffsetDateTime.class), anyString()))
+                .thenAnswer(inv -> {
+                    OffsetDateTime staleBefore = inv.getArgument(2);
+                    if (status.get() == ProfitDistributionStatus.PROCESSING
+                            && updatedAt.get().isBefore(staleBefore)) {
+                        updatedAt.set(inv.getArgument(3));
+                        return 1;
+                    }
+                    return 0;
+                });
+
+        service.requestRetry(1L, 7L);
+        assertThat(dispatched).hasSize(1);
+
+        // The claim wrote updatedAt=now. The second request must see PROCESSING with a
+        // fresh heartbeat and be rejected instead of claiming/dispatching a second run.
+        assertThatThrownBy(() -> service.requestRetry(1L, 7L))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("still running");
+        assertThat(dispatched).hasSize(1);
     }
 
     @Test
@@ -183,15 +241,18 @@ class ProfitSharingRetrySafetyTest {
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(distribution));
         when(profitDistributionRepository.markRetrying(
-                7L, ProfitDistributionStatus.PROCESSING, ProfitDistributionStatus.FAILED)).thenReturn(1);
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
+                anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
         when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);
         when(walletRepository.findById(3L)).thenReturn(Optional.of(wallet));
-        when(emissionReportRepository.findAllById(List.of(99L))).thenReturn(List.of(report));
-        when(emissionReportRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(profitDistributionRepository.save(any(ProfitDistribution.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
+        when(emissionReportRepository.findById(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         doAnswer(inv -> {
             pending.setStatus("SUCCESS");
@@ -224,17 +285,22 @@ class ProfitSharingRetrySafetyTest {
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(distribution));
         when(profitDistributionRepository.markRetrying(
-                7L, ProfitDistributionStatus.PROCESSING, ProfitDistributionStatus.FAILED)).thenReturn(1);
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
+                anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.FAILED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L)).thenReturn(List.of());
-        when(profitDistributionRepository.save(any(ProfitDistribution.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
 
         service.requestRetry(1L, 7L);
         dispatched.get(0).run();
 
-        assertThat(distribution.getStatus()).isEqualTo(ProfitDistributionStatus.FAILED);
-        verify(emissionReportRepository, never()).saveAll(any());
-        verify(emissionReportRepository, never()).findAllById(any());
+        verify(emissionReportRepository, never()).save(any());
+        verify(profitDistributionRepository).finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.FAILED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any());
     }
 
     @Test
@@ -272,13 +338,16 @@ class ProfitSharingRetrySafetyTest {
         when(profitDistributionRepository.findFirstByCompanyUserIdAndProjectIdOrderByIdDesc(1L, 20L))
                 .thenReturn(Optional.of(legacy));
         when(profitDistributionRepository.markRetrying(
-                7L, ProfitDistributionStatus.PROCESSING, ProfitDistributionStatus.FAILED)).thenReturn(1);
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
+                anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
         when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);
         when(walletRepository.findById(3L)).thenReturn(Optional.of(wallet));
-        when(profitDistributionRepository.save(any(ProfitDistribution.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
 
         doAnswer(inv -> {
             pending.setStatus("SUCCESS");
@@ -291,7 +360,74 @@ class ProfitSharingRetrySafetyTest {
         dispatched.get(0).run();
 
         assertThat(legacy.getStatus()).isEqualTo(ProfitDistributionStatus.COMPLETED);
-        verify(emissionReportRepository, never()).saveAll(any());
+        verify(emissionReportRepository, never()).save(any());
+    }
+
+    @Test
+    void legacyCompletedDistributionWithFailedOwnerIsRetried() {
+        User companyUser = companyUser(1L);
+        Company company = company(10L);
+        Wallet wallet = wallet();
+        EmissionReport report = report(99L);
+        report.setStatus(EmissionStatus.PAID_OUT);
+        ProfitDistribution completed = distribution(7L, companyUser, report,
+                ProfitDistributionStatus.COMPLETED);
+        ProfitDistributionDetail failed = detail(55L, completed, "FAILED");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company));
+        when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(completed));
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenReturn(Optional.of(completed));
+        when(profitDistributionDetailRepository.existsUnsettledByDistributionId(7L)).thenReturn(true);
+        when(profitDistributionRepository.markRetrying(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.COMPLETED),
+                anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+        when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
+                .thenReturn(List.of(failed));
+        when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);
+        when(walletRepository.findById(3L)).thenReturn(Optional.of(wallet));
+        when(emissionReportRepository.findById(99L)).thenReturn(Optional.of(report));
+
+        doAnswer(inv -> {
+            failed.setStatus("SUCCESS");
+            return true;
+        }).when(service).processPayoutForOwner(
+                eq(completed), any(ProfitSharingServiceImpl.OwnerPayoutData.class),
+                eq(wallet), eq(99L), any(), eq(company), eq(55L));
+
+        service.requestRetry(1L, 7L);
+        dispatched.get(0).run();
+
+        verify(service).processPayoutForOwner(
+                eq(completed), any(ProfitSharingServiceImpl.OwnerPayoutData.class),
+                eq(wallet), eq(99L), any(), eq(company), eq(55L));
+        assertThat(completed.getStatus()).isEqualTo(ProfitDistributionStatus.COMPLETED);
+    }
+
+    @Test
+    void completedDistributionWithoutUnsettledDetailsIsStillRejected() {
+        User companyUser = companyUser(1L);
+        ProfitDistribution completed = distribution(7L, companyUser, report(99L),
+                ProfitDistributionStatus.COMPLETED);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company(10L)));
+        when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(completed));
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenReturn(Optional.of(completed));
+        when(profitDistributionDetailRepository.existsUnsettledByDistributionId(7L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.requestRetry(1L, 7L))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("already completed");
+
+        assertThat(dispatched).isEmpty();
+        verify(profitDistributionRepository, never()).markRetrying(any(), any(), any(), any(), any());
     }
 
     private ProfitSharingProperties properties() {
