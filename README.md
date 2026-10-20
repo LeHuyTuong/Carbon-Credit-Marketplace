@@ -321,10 +321,21 @@ Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `AWS_
 credentials, `AI_VERTEX_*` / `AI_GEMINI_*` for the AI scoring and chatbot.
 
 In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
-empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`: create the
-schema from `backend/database/core_ccm.sql` and apply every script under
-`backend/database/migrations/` **before** starting the production build. For example, the payout
-retry link requires `2026-10-20_add_emission_report_to_profit_distribution.sql`.
+empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.
+
+- **Fresh database:** run `backend/database/core_ccm.sql` only. It already contains the current
+  schema, including `profit_distribution.emission_report_id`, its FK and index. Do **not** re-run
+  the incremental migrations on top of a fresh schema.
+- **Existing database:** apply every script under `backend/database/migrations/` **before**
+  starting the production build. The scripts are idempotent; the
+  `2026-10-20_add_emission_report_to_profit_distribution.sql` migration adds the payout link only
+  if it is missing and backfills it only when there is exactly one unambiguous report candidate.
+
+Legacy distributions whose `emission_report_id` remains `NULL` can still be retried: their
+`PENDING`/`FAILED` owners are paid, but the emission report status cannot be updated
+automatically. Reconcile/link those rows manually before treating the report as paid out. A
+`PROCESSING` distribution left behind by a crash becomes retryable after
+`profit-sharing.stale-processing-minutes` (default `15`) without a progress heartbeat.
 
 `DataInitializer` then seeds the roles and the three demo accounts. Their credentials are
 overridable — `carbonx.seed.admin-email` / `-password`, and the same pair for `company-` and `cva-`.
