@@ -81,7 +81,14 @@ export default function VerifyOtp() {
     if (sec > 0 || loading) return;
     setLoading(true);
     try {
-      await apiFetch("/api/v1/forgot-password/resend-otp", {
+      // Luồng đăng ký phải gửi lại MÃ ĐĂNG KÝ (mục đích REGISTER). Gọi nhầm endpoint
+      // quên mật khẩu sẽ đổi purpose của OTP thành FORGOT_PASSWORD, lúc đó verifyOtp chỉ
+      // trả reset token và KHÔNG kích hoạt tài khoản — người dùng kẹt vĩnh viễn.
+      const endpoint =
+        state?.from === "register"
+          ? "/api/v1/auth/register/resend-otp"
+          : "/api/v1/forgot-password/resend-otp";
+      await apiFetch(endpoint, {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
