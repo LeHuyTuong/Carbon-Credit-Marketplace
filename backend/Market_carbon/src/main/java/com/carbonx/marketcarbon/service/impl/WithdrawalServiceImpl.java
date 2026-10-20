@@ -75,8 +75,10 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         if (wallet.getBalance().compareTo(withdrawalAmount) >= 0) {
             // Lưu khoản người dùng nhận tiền vào chính row withdrawal: nếu không, admin
             // chỉ thấy "N/A" và không biết chuyển tiền đi đâu — tiền bị kẹt vô thời hạn.
+            // Chỉ dùng tài khoản NGƯỜI DÙNG (chưa bị gỡ): tài khoản đã gỡ thì người dùng
+            // cho là đã xoá, không được chuyển tiền vào đó.
             PaymentDetails paymentDetails = paymentDetailsRepository
-                    .findFirstByUserIdOrderByIdDesc(user.getId())
+                    .findFirstByUserIdAndArchivedFalseOrderByIdDesc(user.getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
@@ -159,6 +161,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             // P0-A (N3): refund through the audited transaction path (ledger row + balance
             // update in one mechanism) instead of a bare setBalance. The PENDING guard above
             // makes this refund happen exactly once even under concurrent/replayed calls.
+            // Người dùng phải nhận được thông báo realtime cho CẢ hai kết quả (duyệt và
+            // từ chối) — nhánh duyệt đã bắn SSE, nhánh từ chối thì chưa.
+            sseService.sendNotificationToUser(user.getId(),
+                    "Withdrawal #" + withdrawalRequest.getId() + " was rejected — amount returned to wallet");
+
             walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                     .wallet(wallet)
                     .withdrawal(withdrawalRequest)

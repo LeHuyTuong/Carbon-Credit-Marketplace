@@ -47,25 +47,18 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
 
-        PaymentDetails paymentDetails = PaymentDetails.builder()
-                .user(user)
-                .build();
+        // Cập nhật CHÍNH row đang có: dựng entity không có id rồi save() sẽ INSERT thêm
+        // một row trùng, và lúc đó mọi truy vấn theo accountNumber sẽ khớp 2 dòng.
+        PaymentDetails paymentDetails = paymentDetailsRepository
+                .findFirstByUserIdAndArchivedFalseOrderByIdDesc(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
 
         paymentDetails.setAccountHolderName(request.getAccountHolderName());
         paymentDetails.setCustomerName(request.getCustomerName());
         paymentDetails.setBankCode(request.getBankCode());
         paymentDetails.setAccountNumber(request.getAccountNumber());
 
-        paymentDetailsRepository.save(paymentDetails);
-
-        return  PaymentDetails.builder()
-                .user(user)
-                .accountNumber(request.getAccountNumber())
-                .bankCode(request.getBankCode())
-                .accountHolderName(request.getAccountHolderName())
-                .customerName(request.getCustomerName())
-                .build();
-
+        return paymentDetailsRepository.save(paymentDetails);
     }
 
     @Override

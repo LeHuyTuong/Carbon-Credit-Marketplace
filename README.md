@@ -336,7 +336,7 @@ they are missing — they are required, not optional:
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` | the SMTP server used for OTP and notification mails |
 | `JWT_SECRET` | signing the access tokens (the dev profile has an insecure fallback) |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` | PayPal checkout (`sandbox` or `live`) |
-| `TRADING_FEE` | fee applied when a marketplace order settles |
+| `TRADING_FEE` | the platform fee recorded on a marketplace order — **not** applied by the current settlement (the full price moves between the two parties); wiring the fee into the settlement is a money-model decision, see the report |
 | `JPA_DDL_AUTO` | overrides the prod schema mode (defaults to `validate`; never set it to `update` in production) |
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | overrides the schema mode of the other profiles (development default is `update`) |
 | `SHOW_SQL` | logs the SQL statements (off in production) |

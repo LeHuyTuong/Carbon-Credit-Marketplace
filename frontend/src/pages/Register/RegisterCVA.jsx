@@ -12,7 +12,7 @@ import {
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { apiRegister, verifyOTP } from "@/apiCVA/apiAuthor.js";
+import { verifyOTP } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom"; //  thêm để điều hướng
 
@@ -57,26 +57,13 @@ const CVARegisterWithOTP = () => {
             return setError("Passwords do not match");
         }
 
-        try {
-            setLoading(true);
-            const res = await apiRegister(
-                form.email,
-                form.password,
-                form.rePassword,
-                "CVA"
-            );
-            devLog("Register success:", res);
-            setStep("otp");
-        } catch (err) {
-            devError("Register API Error:", err);
-            setError(
-                err?.responseStatus?.responseMessage ||
-                err.message ||
-                "Register failed"
-            );
-        } finally {
-            setLoading(false);
-        }
+        // Tài khoản CVA (người kiểm định) KHÔNG được tự đăng ký: API cố ý từ chối
+        // roleName=CVA (P0-A/N1) và tài khoản này phải do admin cấp. Gửi form đi chỉ để
+        // nhận về 401 rồi bị bỏ mặc, nên nói thẳng với người dùng.
+        setError(
+            "A CVA (verifier) account is created by an administrator. " +
+            "Please ask the admin to provision your account, then sign in."
+        );
     };
 
     // Xác thực OTP
