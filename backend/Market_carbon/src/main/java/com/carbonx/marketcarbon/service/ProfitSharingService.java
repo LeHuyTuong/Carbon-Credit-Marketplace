@@ -1,6 +1,9 @@
 package com.carbonx.marketcarbon.service;
 
 import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
+import com.carbonx.marketcarbon.dto.response.ProfitDistributionListItem;
+
+import java.util.List;
 
 public interface ProfitSharingService {
 
@@ -26,4 +29,11 @@ public interface ProfitSharingService {
      * @param distributionId ID đợt phân phối cần retry
      */
     void requestRetry(Long companyUserId, Long distributionId);
+
+    /**
+     * Các đợt phân phối của công ty (mới nhất trước) kèm số owner chưa được trả.
+     * Không có API này thì UI không biết đợt nào lỗi để bấm "Gửi lại" — owner chưa
+     * nhận được tiền sẽ không bao giờ được trả.
+     */
+    List<ProfitDistributionListItem> listDistributions(Long companyUserId);
 }

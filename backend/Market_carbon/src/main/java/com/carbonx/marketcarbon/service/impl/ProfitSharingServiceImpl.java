@@ -7,6 +7,7 @@ import com.carbonx.marketcarbon.config.ProfitSharingProperties;
 import com.carbonx.marketcarbon.config.ProfitSharingProperties.PricingMode;
 import com.carbonx.marketcarbon.config.ProfitSharingProperties.ResolvedPolicy;
 import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
+import com.carbonx.marketcarbon.dto.response.ProfitDistributionListItem;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.BadRequestException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -1297,4 +1298,38 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
         return BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP);
     }
+
+    /**
+     * Danh sách đợt phân phối của công ty kèm số owner chưa được trả, để UI retry được.
+     */
+    @Override
+    public List<ProfitDistributionListItem> listDistributions(Long companyUserId) {
+        List<ProfitDistribution> distributions =
+                profitDistributionRepository.findByCompanyUserIdOrderByIdDesc(companyUserId);
+        if (distributions == null || distributions.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = distributions.stream().map(ProfitDistribution::getId).toList();
+        Map<Long, Long> unsettled = new HashMap<>();
+        for (Object[] row : profitDistributionDetailRepository.countUnsettledByDistributionIds(ids)) {
+            unsettled.put((Long) row[0], ((Number) row[1]).longValue());
+        }
+        return distributions.stream()
+                .map(distribution -> {
+                    long pending = unsettled.getOrDefault(distribution.getId(), 0L);
+                    EmissionReport report = distribution.getEmissionReport();
+                    return ProfitDistributionListItem.builder()
+                            .id(distribution.getId())
+                            .status(distribution.getStatus() == null ? null : distribution.getStatus().name())
+                            .emissionReportId(report == null ? null : report.getId())
+                            .reportPeriod(report == null ? null : report.getPeriod())
+                            .totalMoneyDistributed(distribution.getTotalMoneyDistributed())
+                            .unsettledOwners(pending)
+                            .createdAt(distribution.getCreateAt())
+                            .retryable(pending > 0)
+                            .build();
+                })
+                .toList();
+    }
+
 }

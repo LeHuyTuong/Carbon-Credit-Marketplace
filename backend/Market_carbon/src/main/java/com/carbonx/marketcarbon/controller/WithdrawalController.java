@@ -49,7 +49,7 @@ public class WithdrawalController {
     // trừ — tiền được tạo ra từ hư không.
     @Transactional
     public ResponseEntity<ApiResponse<WalletTransactionResponse>> withdrawalRequest(
-            @PathVariable("amount") Long amount,
+            @PathVariable("amount") BigDecimal amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws Exception{

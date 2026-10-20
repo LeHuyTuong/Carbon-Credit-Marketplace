@@ -57,7 +57,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
     @Transactional
     @Override
-    public Withdrawal requestWithdrawal(Long amount) {
+    public Withdrawal requestWithdrawal(BigDecimal amount) {
         User user = currentUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
         if (wallet == null) {
@@ -65,12 +65,12 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             // lazily khi mở trang ví). Báo rõ thay vì dereference null -> 500.
             throw new AppException(ErrorCode.WALLET_NOT_FOUND);
         }
-        if (amount < 2) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
         // B1 tạo request withdrawal
 
-        BigDecimal withdrawalAmount = BigDecimal.valueOf(amount);
+        BigDecimal withdrawalAmount = amount.setScale(2, java.math.RoundingMode.HALF_UP);
 
         if (wallet.getBalance().compareTo(withdrawalAmount) >= 0) {
             // Lưu khoản người dùng nhận tiền vào chính row withdrawal: nếu không, admin

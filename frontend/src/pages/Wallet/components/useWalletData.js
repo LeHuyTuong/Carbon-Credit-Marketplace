@@ -405,6 +405,24 @@ export default function useWalletData() {
   };
 
   // expose các state và function ra ngoài hook
+  // danh sách đợt phân phối của công ty: đợt nào còn owner chưa nhận tiền thì bấm
+  // "Gửi lại" được. Không có API này thì owner lỗi không bao giờ được trả tiền.
+  const fetchPayoutDistributions = async () => {
+    const res = await apiFetch("/api/v1/profit-sharing/distributions", {
+      method: "GET",
+    });
+    return res?.response || [];
+  };
+
+  // gửi lại tiền cho các owner chưa nhận được của một đợt phân phối
+  const retryPayoutDistribution = async (distributionId) => {
+    const res = await apiFetch(
+      `/api/v1/profit-sharing/distributions/${distributionId}/retry`,
+      { method: "POST" }
+    );
+    return res?.response;
+  };
+
   return {
     wallet,
     transactions,
@@ -430,5 +448,7 @@ export default function useWalletData() {
     fetchApprovedProjects,
     fetchApprovedReports,
     shareProfit,
+    fetchPayoutDistributions,
+    retryPayoutDistribution,
   };
 }

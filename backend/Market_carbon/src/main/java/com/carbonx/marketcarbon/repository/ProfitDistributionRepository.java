@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ProfitDistributionRepository extends JpaRepository<ProfitDistribution, Long> {
@@ -30,6 +31,9 @@ public interface ProfitDistributionRepository extends JpaRepository<ProfitDistri
             Long companyUserId, Long projectId);
 
     Optional<ProfitDistribution> findFirstByCompanyUserIdOrderByIdDesc(Long companyUserId);
+
+    /** Các đợt phân phối của công ty (mới nhất trước) — để UI có thể retry đợt lỗi. */
+    List<ProfitDistribution> findByCompanyUserIdOrderByIdDesc(Long companyUserId);
 
     /**
      * Compare-and-set: hai request retry đồng thời chỉ một request thắng.

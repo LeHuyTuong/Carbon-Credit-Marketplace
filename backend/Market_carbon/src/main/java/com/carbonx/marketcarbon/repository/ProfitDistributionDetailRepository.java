@@ -91,6 +91,16 @@ public interface ProfitDistributionDetailRepository extends JpaRepository<Profit
     long countByDistributionId(Long distributionId);
 
     /**
+     * Số owner CHƯA được trả của mỗi distribution (detail PENDING/FAILED) — để UI biết
+     * đợt nào còn owner chưa nhận được tiền.
+     */
+    @Query("SELECT d.distribution.id, COUNT(d) FROM ProfitDistributionDetail d "
+            + "WHERE d.distribution.id IN :distributionIds "
+            + "AND UPPER(d.status) NOT IN ('SUCCESS', 'SKIPPED') "
+            + "GROUP BY d.distribution.id")
+    List<Object[]> countUnsettledByDistributionIds(@Param("distributionIds") List<Long> distributionIds);
+
+    /**
      * Distribution legacy (không có emission_report_id) của cùng company + project được
      * tạo SAU khi report đã tồn tại là ứng viên có thể là payout của report đó.
      *

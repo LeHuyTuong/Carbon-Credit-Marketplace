@@ -186,6 +186,11 @@ the balance — which is why `WalletTransactionServiceImpl.createTransaction` an
 
 Credit movements use the same mechanism against `carbon_credit_balance` (`ISSUE_CREDIT` on issuance,
 `RETIRE_CREDIT` on retirement), so the credit side is auditable the same way the cash side is.
+**Caveat:** a credit row stores the *credit* balance in `balance_before` / `balance_after` and its
+credit count in `amount`, so those two rows are in a different unit than the cash rows. The cash
+chain and `SUM(amount)` therefore only reconcile over the cash transaction types; a wallet that
+holds both cash and credits has to be reconciled per unit. Splitting the credit movements into
+their own columns is a separate migration (it has to rewrite the rows already written).
 
 ---
 

@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
 import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
+import com.carbonx.marketcarbon.dto.response.ProfitDistributionListItem;
 import com.carbonx.marketcarbon.exception.BadRequestException;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.service.ProfitSharingService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -67,6 +69,28 @@ public class ProfitSharingController {
         ApiResponse<Void> response = new ApiResponse<>(trace, now, rs, null);
         return ResponseEntity.ok(response);
 
+    }
+
+
+    @GetMapping("/distributions")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "List the payout distributions of the company",
+            description = "Danh sách các đợt phân phối của công ty kèm số owner chưa được trả, "
+                    + "để công ty có thể bấm 'Gửi lại' cho đợt bị lỗi.")
+    public ResponseEntity<ApiResponse<List<ProfitDistributionListItem>>> listDistributions(
+            Authentication authentication,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+        User companyUser = userService.findUserByEmail(authentication.getName());
+        if (companyUser == null) {
+            throw new BadRequestException("Authenticated user not found");
+        }
+        List<ProfitDistributionListItem> items = profitSharingService.listDistributions(companyUser.getId());
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(), StatusCode.SUCCESS.getMessage());
+        return ResponseEntity.ok(new ApiResponse<>(trace, now, rs, items));
     }
 
     @PostMapping("/distributions/{distributionId}/retry")
