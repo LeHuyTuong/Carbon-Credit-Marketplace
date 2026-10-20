@@ -17,6 +17,7 @@ import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.DynamicPricingService;
 import com.carbonx.marketcarbon.service.EmailService;
+import com.carbonx.marketcarbon.service.ProfitSharingTaskDispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +88,8 @@ class ProfitSharingRollbackIsolationTest {
                 profitSharingProperties,
                 emailService,
                 dynamicPricingService,
-                transactionManager);
+                transactionManager,
+                new ProfitSharingTaskDispatcher(Runnable::run));
     }
 
     @Test

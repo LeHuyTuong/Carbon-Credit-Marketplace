@@ -14,12 +14,16 @@ public interface ProfitSharingService {
     void shareCompanyProfit(Long companyUserId, ProfitSharingRequest request);
 
     /**
-     * Trả lại tiền cho các owner còn FAILED trong một đợt phân phối đã chạy dở.
-     * Chỉ xử lý các detail FAILED của đúng đợt đó, không tính lại toàn bộ report,
-     * nên các owner đã nhận tiền không bị trả hai lần.
+     * Validate + claim quyền retry NGAY trên request thread, sau đó mới chạy payout
+     * bất đồng bộ. Nhờ vậy id không tồn tại, distribution của công ty khác, distribution
+     * đã COMPLETED hay đang chạy đều trả lỗi 400/403/404 cho client thay vì 200 + log.
+     *
+     * <p>Chỉ các detail PENDING/FAILED của đúng đợt được trả lại; owner đã SUCCESS
+     * không bị trả hai lần. Distribution cũ không còn là bản mới nhất của report sẽ
+     * bị từ chối để không trả trùng với đợt mới hơn.</p>
      *
      * @param companyUserId  ID của company user đã được xác thực ở controller
      * @param distributionId ID đợt phân phối cần retry
      */
-    void retryFailedPayouts(Long companyUserId, Long distributionId);
+    void requestRetry(Long companyUserId, Long distributionId);
 }

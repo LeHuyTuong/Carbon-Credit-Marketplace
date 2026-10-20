@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon;
 
 import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
 import com.carbonx.marketcarbon.service.ProfitSharingService;
+import com.carbonx.marketcarbon.service.ProfitSharingTaskDispatcher;
 import com.carbonx.marketcarbon.service.impl.ProfitSharingServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
@@ -56,14 +57,19 @@ class ProfitSharingAsyncContractTest {
     }
 
     @Test
-    void retryFailedPayoutsRunsOnTheSameBoundedExecutor() throws Exception {
+    void requestRetryValidatesSynchronouslyThenDispatchesToProfitPool() throws Exception {
         Method method = ProfitSharingServiceImpl.class.getMethod(
-                "retryFailedPayouts", Long.class, Long.class);
+                "requestRetry", Long.class, Long.class);
 
         assertThat(method.getReturnType()).isEqualTo(void.class);
-        Async async = method.getAnnotation(Async.class);
-        assertThat(async).as("retry must not block the HTTP request thread").isNotNull();
-        assertThat(async.value()).isEqualTo("profitSharingTaskExecutor");
+        assertThat(method.getAnnotation(Async.class))
+                .as("validation errors (400/403/404) must reach the HTTP client, so preflight "
+                        + "cannot run on an async worker")
+                .isNull();
+        assertThat(Arrays.stream(ProfitSharingServiceImpl.class.getDeclaredFields())
+                .map(Field::getType))
+                .as("payout work must still be handed to the bounded profit-sharing pool")
+                .contains(ProfitSharingTaskDispatcher.class);
     }
 
     @Test

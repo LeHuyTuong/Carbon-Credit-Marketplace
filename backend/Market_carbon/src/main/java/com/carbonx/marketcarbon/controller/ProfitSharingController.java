@@ -88,10 +88,11 @@ public class ProfitSharingController {
             throw new BadRequestException("Authenticated user not found");
         }
 
-        profitSharingService.retryFailedPayouts(companyUser.getId(), distributionId);
+        // Validate + claim chạy đồng bộ để lỗi 400/403/404 trả đúng cho client.
+        profitSharingService.requestRetry(companyUser.getId(), distributionId);
 
         ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
-                "Payout retry started successfully. This will run in the background.");
+                "Payout retry accepted. Only owners with PENDING/FAILED details will be paid.");
         ApiResponse<Void> response = new ApiResponse<>(trace, now, rs, null);
         return ResponseEntity.ok(response);
     }

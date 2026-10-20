@@ -25,6 +25,7 @@ import com.carbonx.marketcarbon.repository.VehicleRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.service.DynamicPricingService;
 import com.carbonx.marketcarbon.service.EmailService;
+import com.carbonx.marketcarbon.service.ProfitSharingTaskDispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +46,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -91,7 +93,8 @@ class ProfitSharingPartialFailureTest {
                 properties(),
                 emailService,
                 dynamicPricingService,
-                transactionManager));
+                transactionManager,
+                new ProfitSharingTaskDispatcher(Runnable::run)));
         ReflectionTestUtils.setField(service, "requiresNewTransaction", noOpTemplate());
     }
 
@@ -122,8 +125,33 @@ class ProfitSharingPartialFailureTest {
                 });
         when(walletService.findWalletByUser(companyUser)).thenReturn(companyWallet);
         when(emissionReportRepository.findByIdWithDetails(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(report));
         when(vehicleRepository.findByCompanyId(10L)).thenReturn(List.of(vehicle(company, owner)));
         when(walletRepository.findById(3L)).thenReturn(Optional.of(companyWallet));
+        when(evOwnerRepository.getReferenceById(42L)).thenReturn(owner);
+
+        ProfitDistribution managedDistribution = new ProfitDistribution();
+        managedDistribution.setId(7L);
+        when(profitDistributionRepository.findById(7L)).thenReturn(Optional.of(managedDistribution));
+
+        ProfitDistributionDetail pending = new ProfitDistributionDetail();
+        pending.setId(100L);
+        pending.setDistribution(managedDistribution);
+        pending.setEvOwner(owner);
+        pending.setStatus("PENDING");
+        pending.setMoneyAmount(new BigDecimal("3.00"));
+        pending.setCreditAmount(new BigDecimal("600.000000"));
+        pending.setEnergyAmount(new BigDecimal("1000.000000"));
+        when(profitDistributionDetailRepository.save(any(ProfitDistributionDetail.class)))
+                .thenAnswer(invocation -> {
+                    ProfitDistributionDetail detail = invocation.getArgument(0);
+                    if (detail.getId() == null) {
+                        detail.setId(100L);
+                    }
+                    return detail;
+                });
+        when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
+                .thenReturn(List.of(pending));
 
         // Owner payout fails in the per-owner transaction.
         doReturn(false).when(service).processPayoutForOwner(
@@ -178,6 +206,8 @@ class ProfitSharingPartialFailureTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
         when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company));
         when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(distribution));
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenReturn(Optional.of(distribution));
         when(profitDistributionRepository.markRetrying(
                 7L, ProfitDistributionStatus.PROCESSING, ProfitDistributionStatus.FAILED)).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
@@ -189,11 +219,14 @@ class ProfitSharingPartialFailureTest {
         when(profitDistributionRepository.save(any(ProfitDistribution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        doReturn(true).when(service).processPayoutForOwner(
+        doAnswer(invocation -> {
+            failed.setStatus("SUCCESS");
+            return true;
+        }).when(service).processPayoutForOwner(
                 eq(distribution), any(ProfitSharingServiceImpl.OwnerPayoutData.class),
                 eq(companyWallet), eq(99L), any(), eq(company), eq(55L));
 
-        service.retryFailedPayouts(1L, 7L);
+        service.requestRetry(1L, 7L);
 
         // Only detail #55 (FAILED) is retried; #56 (SUCCESS) is left untouched.
         verify(service, org.mockito.Mockito.times(1)).processPayoutForOwner(
