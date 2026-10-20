@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.Status;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
+import com.carbonx.marketcarbon.config.PaypalMode;
 import com.carbonx.marketcarbon.dto.request.PaymentOrderRequest;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.PaymentOrderResponse;
@@ -275,7 +276,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentOrderResponse createPayPalPaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws PayPalRESTException {
-        APIContext apiContext = new APIContext(paypalClientId, paypalClientSecret, paypalMode);
+        APIContext apiContext = new APIContext(paypalClientId, paypalClientSecret, PaypalMode.normalize(paypalMode));
 
         // Create amount details
         Amount paymentAmount = new Amount();

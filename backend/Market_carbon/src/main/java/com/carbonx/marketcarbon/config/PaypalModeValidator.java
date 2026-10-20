@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -29,7 +28,7 @@ public class PaypalModeValidator {
 
     @PostConstruct
     void validateMode() {
-        String normalized = mode == null ? "" : mode.trim().toLowerCase(Locale.ROOT);
+        String normalized = PaypalMode.normalize(mode);
         if (!ALLOWED_MODES.contains(normalized)) {
             throw new IllegalStateException(String.format(
                     "Invalid paypal.mode='%s'. Set PAYPAL_MODE to 'sandbox' or 'live' in production; "

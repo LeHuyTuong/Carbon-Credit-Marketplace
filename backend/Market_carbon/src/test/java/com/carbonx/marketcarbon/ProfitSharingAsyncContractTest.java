@@ -75,10 +75,9 @@ class ProfitSharingAsyncContractTest {
     }
 
     @Test
-    void payoutHelpersArePrivateAndRunThroughTransactionTemplate() throws Exception {
+    void payoutHelpersStayNonPublicAndRunThroughTransactionTemplate() throws Exception {
         for (String methodName : List.of(
                 "createDistributionEvent",
-                "processPayoutForOwner",
                 "saveFailedDetail",
                 "updateReportsToPaidOut")) {
 
@@ -95,6 +94,26 @@ class ProfitSharingAsyncContractTest {
                     .as("%s must not pretend @Transactional works on a self-invocation", methodName)
                     .isNull();
         }
+
+        // RV-2-01: package-private only so ProfitSharingRollbackIsolationTest can drive the
+        // rollback-only seam; it must stay non-public and keep its explicit transaction.
+        List<Method> payoutMatches = Arrays.stream(ProfitSharingServiceImpl.class.getDeclaredMethods())
+                .filter(method -> method.getName().equals("processPayoutForOwner"))
+                .toList();
+        assertThat(payoutMatches).as("processPayoutForOwner must still exist exactly once").hasSize(1);
+        Method processPayoutForOwner = payoutMatches.get(0);
+        assertThat(Modifier.isPrivate(processPayoutForOwner.getModifiers()))
+                .as("processPayoutForOwner is package-private for the rollback-isolation test")
+                .isFalse();
+        assertThat(Modifier.isPublic(processPayoutForOwner.getModifiers()))
+                .as("the test seam must not become public API")
+                .isFalse();
+        assertThat(Modifier.isProtected(processPayoutForOwner.getModifiers()))
+                .as("the test seam must not become subclass API")
+                .isFalse();
+        assertThat(processPayoutForOwner.getAnnotation(Transactional.class))
+                .as("processPayoutForOwner must keep using the explicit TransactionTemplate")
+                .isNull();
 
         assertThat(Arrays.stream(ProfitSharingServiceImpl.class.getDeclaredFields())
                 .map(Field::getType))

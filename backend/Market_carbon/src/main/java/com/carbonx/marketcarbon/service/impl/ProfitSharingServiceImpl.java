@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -98,10 +99,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         private final BigDecimal rawPayoutAmount;
         private BigDecimal payoutAmount;
 
-        private OwnerPayoutData(Long evOwnerId,
-                                BigDecimal creditContribution,
-                                BigDecimal energyContribution,
-                                BigDecimal rawPayoutAmount) {
+        OwnerPayoutData(Long evOwnerId,
+                        BigDecimal creditContribution,
+                        BigDecimal energyContribution,
+                        BigDecimal rawPayoutAmount) {
             this.evOwnerId = evOwnerId;
             this.creditContribution = creditContribution;
             this.energyContribution = energyContribution;
@@ -327,10 +328,11 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
      * hoàn toàn mới. Nếu transaction này fail (ví dụ lỗi mạng, lỗi ví), nó chỉ rollback cho
      * Owner này, KHÔNG ảnh hưởng đến các Owner khác đã được trả tiền.
      *
-     * <p>Method là private vì được gọi nội bộ qua {@code this}; transaction được mở tường minh
-     * bằng {@link #requiresNewTransaction} thay vì self-proxy.</p>
+     * <p>Method là package-private thay vì private để test hành vi rollback-only gọi trực tiếp;
+     * transaction được mở tường minh bằng {@link #requiresNewTransaction} thay vì self-proxy.
+     * Đây không phải API công khai.</p>
      */
-    private void processPayoutForOwner(
+    void processPayoutForOwner(
             ProfitDistribution event,
             OwnerPayoutData payout,
             Wallet companyWallet,
@@ -338,8 +340,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             ResolvedPolicy policy,
             Company company
     ) {
-        requiresNewTransaction.executeWithoutResult(status ->
-                doProcessPayoutForOwner(event, payout, companyWallet, reportId, policy, company));
+        try {
+            requiresNewTransaction.executeWithoutResult(status ->
+                    doProcessPayoutForOwner(event, payout, companyWallet, reportId, policy, company));
+        } catch (UnexpectedRollbackException e) {
+            // doProcessPayoutForOwner đã catch exception gốc nên transaction REQUIRES_NEW bị đánh dấu
+            // rollback-only; commit sau đó ném UnexpectedRollbackException. Chỉ nuốt lỗi commit này
+            // để vòng lặp đi tiếp owner kế tiếp thay vì đánh FAILED cả distribution.
+            log.error("Payout for owner {} in distribution {} hit a rollback-only transaction: {}",
+                    payout.getEvOwnerId(), event.getId(), e.getMessage(), e);
+            saveFailedDetail(event, payout, String.format(
+                    "Payout rolled back (distribution #%d, owner %d): %s",
+                    event.getId(), payout.getEvOwnerId(), e.getMessage()));
+            // A7: retry/compensation across distributions is NOT provided here; a later
+            // distribution-level retry can still pay this owner again.
+        }
     }
 
     private void doProcessPayoutForOwner(
