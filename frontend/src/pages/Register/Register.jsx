@@ -67,11 +67,14 @@ export default function Register() {
         },
       });
 
-      // Nếu thành công: chuyển sang trang nhập OTP
+      // Nếu thành công: chuyển sang trang nhập OTP.
+      // Luồng/email truyền bằng QUERY STRING: state của router mất khi F5 hoặc khi
+      // người dùng mở lại tab, và màn OTP sẽ đóng lại khiến tài khoản PENDING không
+      // kích hoạt được (đăng ký lại thì EMAIL_EXISTED).
       toast.success("Registration successful! Please verify your email.");
-      nav("/otp", {
+      nav(`/otp?email=${encodeURIComponent(values.email.trim())}&from=register`, {
         replace: true,
-        state: { email: values.email, from: "register" },
+        state: { email: values.email.trim(), from: "register" },
       });
     } catch (err) {
       // bắt lỗi BE

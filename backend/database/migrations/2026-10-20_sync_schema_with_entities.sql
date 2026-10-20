@@ -344,3 +344,58 @@ SET @ddl = IF(@current_type IS NOT NULL AND @current_type NOT LIKE '%WITHDRAWAL_
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- wallets: the one-to-one mapping implies a unique key per owner/company/credit. Without
+-- it, two concurrent wallet creations leave duplicate rows and every later lookup
+-- (findByUserId) throws IncorrectResultSizeDataAccessException for that user forever.
+-- The index is only created when the current data has no duplicates.
+SET @duplicate_wallets = (
+    SELECT COUNT(*) FROM (
+        SELECT `user_id` FROM `wallets` WHERE `user_id` IS NOT NULL
+        GROUP BY `user_id` HAVING COUNT(*) > 1
+    ) AS duplicates
+);
+SET @has_index = (
+    SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'wallets' AND INDEX_NAME = 'uk_wallets_user'
+);
+SET @ddl = IF(@has_index = 0 AND @duplicate_wallets = 0,
+    'CREATE UNIQUE INDEX `uk_wallets_user` ON `wallets` (`user_id`)',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @duplicate_companies = (
+    SELECT COUNT(*) FROM (
+        SELECT `company_id` FROM `wallets` WHERE `company_id` IS NOT NULL
+        GROUP BY `company_id` HAVING COUNT(*) > 1
+    ) AS duplicates
+);
+SET @has_index = (
+    SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'wallets' AND INDEX_NAME = 'uk_wallets_company'
+);
+SET @ddl = IF(@has_index = 0 AND @duplicate_companies = 0,
+    'CREATE UNIQUE INDEX `uk_wallets_company` ON `wallets` (`company_id`)',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @duplicate_credits = (
+    SELECT COUNT(*) FROM (
+        SELECT `carbon_credit_id` FROM `wallets` WHERE `carbon_credit_id` IS NOT NULL
+        GROUP BY `carbon_credit_id` HAVING COUNT(*) > 1
+    ) AS duplicates
+);
+SET @has_index = (
+    SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'wallets' AND INDEX_NAME = 'uk_wallets_carbon_credit'
+);
+SET @ddl = IF(@has_index = 0 AND @duplicate_credits = 0,
+    'CREATE UNIQUE INDEX `uk_wallets_carbon_credit` ON `wallets` (`carbon_credit_id`)',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

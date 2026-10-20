@@ -35,10 +35,14 @@ export default function ForgotPassword() {
       });
 
       toast.success("OTP sent successfully. Please check your email.");
-      nav("/otp", {
-        state: { email: values.email.trim(), from: "forgot" },
-        replace: true,
-      });
+      // Luồng/email truyền bằng query string để F5 không làm mất màn OTP.
+      nav(
+        `/otp?email=${encodeURIComponent(values.email.trim())}&from=forgot`,
+        {
+          state: { email: values.email.trim(), from: "forgot" },
+          replace: true,
+        }
+      );
     } catch (err) {
       console.error("Forgot password error:", err);
       toast.error(err.message || "Failed to send reset OTP");

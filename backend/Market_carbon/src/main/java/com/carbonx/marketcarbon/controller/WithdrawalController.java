@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -40,6 +41,11 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawal money ")
     @PostMapping("/{amount}")
+    // Một lần rút tiền = tạo row PENDING + trừ ví, phải là MỘT transaction. Nếu không,
+    // việc trừ ví có thể thất bại (ví bị rút đi giữa lúc) trong khi row PENDING vẫn
+    // được commit; lúc đó một lần admin từ chối sẽ hoàn tiền một khoản CHƯA TỪNG bị
+    // trừ — tiền được tạo ra từ hư không.
+    @Transactional
     public ResponseEntity<ApiResponse<WalletTransactionResponse>> withdrawalRequest(
             @PathVariable("amount") Long amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

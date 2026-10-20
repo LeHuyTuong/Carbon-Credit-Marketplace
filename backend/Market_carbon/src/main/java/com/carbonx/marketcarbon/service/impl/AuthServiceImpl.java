@@ -131,12 +131,17 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse resendRegistrationOtp(EmailRequest req) {
+        AuthResponse response = new AuthResponse();
+        response.setJwt(null);
+        response.setMessage("A new registration OTP has been sent, please verify.");
+
         User user = userRepository.findByEmail(req.getEmail());
-        // Trả cùng một lỗi cho "email không tồn tại" và "tài khoản không ở trạng thái
-        // PENDING": endpoint này public, phân biệt hai trường hợp sẽ thành công cụ dò
-        // tài khoản.
         if (user == null || user.getStatus() != USER_STATUS.PENDING) {
-            throw new AppException(ErrorCode.EMAIL_EXISTED);
+            // Trả cùng câu trả lời cho mọi email: endpoint này public, phân biệt "email có
+            // tài khoản" và "không có" sẽ biến nó thành công cụ dò tài khoản. Người dùng mà
+            // tài khoản đã bị xoá (OTP hết hạn) sẽ đăng ký lại được.
+            log.info("Registration OTP resend requested for an address without a pending account");
+            return response;
         }
 
         // Chống spam: chỉ chặn khi MÃ HIỆN TẠI vừa được phát (dưới 60 giây). Không
@@ -162,9 +167,6 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }
 
-        AuthResponse response = new AuthResponse();
-        response.setJwt(null);
-        response.setMessage("A new registration OTP has been sent, please verify.");
         response.setRoles(user.getRoles().stream().map(Role::getName).toList());
         return response;
     }

@@ -124,7 +124,7 @@ class AuthServiceRegisterRoleTest {
     }
 
     @Test
-    void resendRegistrationOtp_rejectsActiveUser() throws Exception {
+    void resendRegistrationOtp_answersAnActiveUserTheSameWay() throws Exception {
         User user = pendingUser();
         user.setStatus(USER_STATUS.ACTIVE);
         when(userRepository.findByEmail("user@example.com")).thenReturn(user);
@@ -132,10 +132,9 @@ class AuthServiceRegisterRoleTest {
         EmailRequest req = new EmailRequest();
         req.setEmail("user@example.com");
 
-        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
-                .isInstanceOf(AppException.class)
-                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
-                        .isEqualTo(ErrorCode.EMAIL_EXISTED));
+        AuthResponse res = authService.resendRegistrationOtp(req);
+
+        assertThat(res.getMessage()).isEqualTo("A new registration OTP has been sent, please verify.");
         verify(emailService, never()).sendEmailNow(anyString(), anyString(), anyList());
     }
 
@@ -197,16 +196,18 @@ class AuthServiceRegisterRoleTest {
     }
 
     @Test
-    void resendRegistrationOtp_doesNotRevealWhetherAnEmailExists() {
+    void resendRegistrationOtp_doesNotRevealWhetherAnEmailExists() throws Exception {
         when(userRepository.findByEmail("nobody@example.com")).thenReturn(null);
 
         EmailRequest req = new EmailRequest();
         req.setEmail("nobody@example.com");
 
-        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
-                .isInstanceOf(AppException.class)
-                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
-                        .isEqualTo(ErrorCode.EMAIL_EXISTED));
+        AuthResponse res = authService.resendRegistrationOtp(req);
+
+        // Same answer as for a pending account, and no mail is sent: the endpoint must
+        // not tell an anonymous caller which addresses are registered.
+        assertThat(res.getMessage()).isEqualTo("A new registration OTP has been sent, please verify.");
+        verify(emailService, never()).sendEmailNow(anyString(), anyString(), anyList());
     }
 
     @Test

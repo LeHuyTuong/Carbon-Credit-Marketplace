@@ -339,6 +339,9 @@ CREATE TABLE IF NOT EXISTS `wallets` (
                                          `balance`               DECIMAL(38, 2) DEFAULT 0,
                                          `carbon_credit_balance` DECIMAL(18, 4) DEFAULT 0,
                                          PRIMARY KEY (`id`),
+                                         UNIQUE KEY `uk_wallets_user` (`user_id`),
+                                         UNIQUE KEY `uk_wallets_company` (`company_id`),
+                                         UNIQUE KEY `uk_wallets_carbon_credit` (`carbon_credit_id`),
                                          CONSTRAINT `fk_wallets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
                                          CONSTRAINT `fk_wallets_company` FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
 ) ENGINE=InnoDB;
