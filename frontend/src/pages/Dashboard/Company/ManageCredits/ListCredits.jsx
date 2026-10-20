@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import "../../EVOwner/ManageVehicle/manage.css";
 import {
   Button,
@@ -114,7 +115,7 @@ export default function ListCredits() {
 
       setUserCredits(mapped);
     } catch (err) {
-      console.error("Failed to fetch wallet credits:", err);
+      devError("Failed to fetch wallet credits:", err);
       setUserCredits([]);
     } finally {
       setLoading(false);
@@ -153,7 +154,7 @@ export default function ListCredits() {
       }));
       setCredits(mapped);
     } catch (err) {
-      console.error("Failed to fetch marketplace:", err);
+      devError("Failed to fetch marketplace:", err);
       showToast(err.message || "Unable to load credits.", "danger");
     } finally {
       setLoading(false);
@@ -248,7 +249,7 @@ export default function ListCredits() {
           payload.carbonCreditIds = selectedIds;
         }
       }
-      console.log("selectedCreditObj", selectedCreditObj);
+      devLog("selectedCreditObj", selectedCreditObj);
 
       // --- Gửi lên backend ---
       if (editData) {
@@ -269,7 +270,7 @@ export default function ListCredits() {
       await fetchCredits();
       await fetchUserCredits();
     } catch (error) {
-      console.error("Submit error:", error);
+      devError("Submit error:", error);
       showToast(error.message || "Failed to publish credit.", "danger");
     } finally {
       setLoading(false);

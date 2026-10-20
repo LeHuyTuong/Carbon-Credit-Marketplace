@@ -11,6 +11,14 @@ public interface EmailService {
 
     void sendEmail(String subject, String content, List<String> toList) throws MessagingException,
             UnsupportedEncodingException;
+
+    /**
+     * Gửi email quan trọng (OTP) ngay trên request thread và ném lỗi nếu SMTP thất bại.
+     * Không dùng pool email thông báo: pool đó được phép drop khi đầy, làm OTP biến mất
+     * trong khi API vẫn báo đã gửi.
+     */
+    void sendEmailNow(String subject, String content, List<String> toList) throws MessagingException,
+            UnsupportedEncodingException;
     String renderCvaDecisionEmail(Map<String, Object> variables);
     String renderAdminDecisionEmail(Map<String, Object> variables);
 

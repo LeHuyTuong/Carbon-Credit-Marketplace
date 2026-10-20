@@ -1,10 +1,14 @@
 import { toast } from "react-toastify";
+import { devError } from "@/utils/devLog";
 
 //đưa biến ra ngoài, để nó không reset mỗi lần gọi apiFetch
 let is429ToastShown = false;
 
 export async function apiFetch(path, options = {}) {
-  const API = import.meta.env.VITE_API_BASE;
+  // Mặc định gọi API qua cùng origin ("/api"): dev thì Vite proxy, Docker thì nginx
+  // proxy. Nếu thiếu biến VITE_API_BASE (build không truyền env) thì `API.endsWith`
+  // sẽ ném TypeError và mọi request chết ngay.
+  const API = import.meta.env.VITE_API_BASE || "/api";
 
   // lấy token từ session hoặc localStorage
   let token;
@@ -101,7 +105,9 @@ export async function apiFetch(path, options = {}) {
   }
   const url = `${API}${cleanPath}`;
 
-  console.log("Fetching:", url, config);
+  if (import.meta.env.DEV) {
+    console.debug("Fetching:", url, config);
+  }
 
   //gọi api
   const res = await fetch(url, config);
@@ -117,7 +123,7 @@ export async function apiFetch(path, options = {}) {
 
   // HTTP-level error
   if (!res.ok) {
-    console.error("API Error:", { path, status: res.status, data });
+    devError("API Error:", { path, status: res.status, data });
 
     //bắt lỗi spam request
     if (res.status === 429) {
@@ -173,7 +179,9 @@ export async function apiFetch(path, options = {}) {
       successValues.some((val) => code.includes(val) || message.includes(val));
   }
 
-  console.log("[apiFetch] Parsed status:", { code, message, isSuccess });
+  if (import.meta.env.DEV) {
+    console.debug("[apiFetch] Parsed status:", { code, message, isSuccess });
+  }
 
   //nếu be trả lỗi logic
   if (!isSuccess) {

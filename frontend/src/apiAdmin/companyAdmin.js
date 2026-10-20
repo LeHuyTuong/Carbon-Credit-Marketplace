@@ -1,9 +1,10 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devError, devLog } from "@/utils/devLog";
 
 export const getProjectApplications = async () => {
   try {
     const res = await apiFetch("/api/v1/project-applications");
-    console.log("Raw API response:", res);
+    devLog("Raw API response:", res);
 
     const code = res?.responseStatus?.responseCode;
 
@@ -11,11 +12,11 @@ export const getProjectApplications = async () => {
     if (code === "200" || code === "00000000") {
       return res.response || [];
     } else {
-      console.error("API returned an error:", res.responseStatus);
+      devError("API returned an error:", res.responseStatus);
       return [];
     }
   } catch (error) {
-    console.error("Network or parsing error:", error);
+    devError("Network or parsing error:", error);
     return [];
   }
 };
@@ -23,17 +24,17 @@ export const getProjectApplications = async () => {
 export const getProjectApplicationById = async (id) => {
   try {
     const res = await apiFetch(`/api/v1/project-applications/${id}`);
-    console.log("Raw API response (detail):", res);
+    devLog("Raw API response (detail):", res);
 
     const code = res?.responseStatus?.responseCode;
     if (code === "200" || code === "00000000") {
       return res; //  trả về nguyên response object
     } else {
-      console.error("API returned an error:", res.responseStatus);
+      devError("API returned an error:", res.responseStatus);
       return null;
     }
   } catch (error) {
-    console.error("Network or parsing error:", error);
+    devError("Network or parsing error:", error);
     return null;
   }
 };

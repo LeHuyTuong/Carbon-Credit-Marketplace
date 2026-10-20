@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import {
     Box,
     Button,
@@ -11,7 +12,7 @@ import {
 import { tokens } from "@/theme";
 import SupervisorAccount from "@mui/icons-material/SupervisorAccount";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { apiRegister, verifyOTP } from "@/apiCVA/apiAuthor.js";
+import { verifyOTP } from "@/apiCVA/apiAuthor.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom"; //  thêm để điều hướng
 
@@ -56,26 +57,13 @@ const CVARegisterWithOTP = () => {
             return setError("Passwords do not match");
         }
 
-        try {
-            setLoading(true);
-            const res = await apiRegister(
-                form.email,
-                form.password,
-                form.rePassword,
-                "CVA"
-            );
-            console.log("Register success:", res);
-            setStep("otp");
-        } catch (err) {
-            console.error("Register API Error:", err);
-            setError(
-                err?.responseStatus?.responseMessage ||
-                err.message ||
-                "Register failed"
-            );
-        } finally {
-            setLoading(false);
-        }
+        // Tài khoản CVA (người kiểm định) KHÔNG được tự đăng ký: API cố ý từ chối
+        // roleName=CVA (P0-A/N1) và tài khoản này phải do admin cấp. Gửi form đi chỉ để
+        // nhận về 401 rồi bị bỏ mặc, nên nói thẳng với người dùng.
+        setError(
+            "A CVA (verifier) account is created by an administrator. " +
+            "Please ask the admin to provision your account, then sign in."
+        );
     };
 
     // Xác thực OTP
@@ -88,7 +76,7 @@ const CVARegisterWithOTP = () => {
 
         try {
             setLoading(true);
-            console.log("Sending OTP verify request:", {
+            devLog("Sending OTP verify request:", {
                 email: form.email,
                 otpCode: otpStr,
             });
@@ -107,7 +95,7 @@ const CVARegisterWithOTP = () => {
             // Nếu muốn reload trang cứng, dùng dòng này thay vì navigate():
             // window.location.href = "/cva/carbonX/mkp/login";
         } catch (err) {
-            console.error("Verify OTP API Error:", err);
+            devError("Verify OTP API Error:", err);
             const apiMessage =
                 err?.responseStatus?.responseMessage ||
                 err?.message ||

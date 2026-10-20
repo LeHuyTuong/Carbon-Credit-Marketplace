@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -35,7 +36,7 @@ export default function ReportDetail() {
         // backend trả về chi tiết report trong "response"
         setReport(res?.responseData || null);
       } catch (err) {
-        console.error("Failed to load report detail:", err);
+        devError("Failed to load report detail:", err);
         setReport(null);
       } finally {
         setLoading(false);

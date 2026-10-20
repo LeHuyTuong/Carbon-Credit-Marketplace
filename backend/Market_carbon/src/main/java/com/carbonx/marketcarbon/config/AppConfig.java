@@ -2,8 +2,10 @@ package com.carbonx.marketcarbon.config;
 
 import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.USER_ROLE;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -32,8 +35,19 @@ public class AppConfig {
     private final JwtTokenValidator jwtTokenValidator;
     private final JwtProvider jwtProvider;
 
+    // H3: externalized frontend redirect target and CORS origin list.
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @Value("${app.cors.allowed-origins}")
+    private String corsAllowedOrigins;
+
+    /** Parsed once at startup; a bare wildcard is rejected before the app accepts requests. */
+    private List<String> corsOrigins = List.of();
+
     private static final String[] PUBLIC_ENDPOINT = {
             "/api/v1/auth/register",
+            "/api/v1/auth/register/resend-otp",
             "/api/v1/auth/verify-otp",
             "/api/v1/auth/login",
             "/api/v1/auth/forgot-password",
@@ -115,12 +129,8 @@ public class AppConfig {
 
                             String token = jwtProvider.generateToken(email, USER_ROLE.EV_OWNER);
 
-                            String frontendUrl = req.getServerName().contains("localhost")
-                                    ? "http://localhost:5173"
-                                    : "https://carbonx.io.vn";
-
-                            log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendUrl);
-                            res.sendRedirect(frontendUrl + "/oauth-success?token=" + token);
+                            log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendBaseUrl);
+                            res.sendRedirect(frontendBaseUrl + "/oauth-success?token=" + token);
                         })
                         .failureHandler((req, res, ex) -> {
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -132,17 +142,37 @@ public class AppConfig {
         return http.build();
     }
 
+    /**
+     * Parses {@code app.cors.allowed-origins} once and fails fast on values that cannot
+     * work with {@code allowCredentials=true}: an empty list or the bare wildcard.
+     * Hitting those only at request time would surface as a 500 without CORS headers.
+     */
+    @PostConstruct
+    void initCorsOrigins() {
+        List<String> parsed = Arrays.stream(corsAllowedOrigins == null ? new String[0] : corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+
+        if (parsed.isEmpty()) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins is empty. Set APP_CORS_ALLOWED_ORIGINS to a comma-separated "
+                            + "list of explicit origins (for example https://app.example.com).");
+        }
+        if (parsed.contains("*")) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins must list explicit origins: '*' is unsafe with "
+                            + "allowCredentials=true. Set APP_CORS_ALLOWED_ORIGINS to your frontend origins "
+                            + "(host patterns such as https://*.example.com are supported).");
+        }
+        this.corsOrigins = List.copyOf(parsed);
+        log.info("CORS allowed origin patterns: {}", corsOrigins);
+    }
+
     private CorsConfigurationSource corsConfigurationSource() {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
-            cfg.setAllowedOrigins(Arrays.asList(
-                    "http://localhost:3000",
-                    "http://localhost:4200",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:*",
-                    "http://192.168.*.*:*",
-                    "https://carbonx.io.vn"
-            ));
+            cfg.setAllowedOriginPatterns(corsOrigins);
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
             cfg.setAllowedHeaders(Collections.singletonList("*"));

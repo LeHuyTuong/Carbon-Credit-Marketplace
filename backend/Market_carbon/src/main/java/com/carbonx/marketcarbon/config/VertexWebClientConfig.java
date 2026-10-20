@@ -25,8 +25,15 @@ public class VertexWebClientConfig {
     private final AiVertexConfig cfg;
 
     private GoogleCredentials credentials() throws Exception {
-        // Yêu cầu biến môi trường: GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
-        java.io.File keyFile = new java.io.File("carbonx-ai-6060f3108572.json");
+        // Đường dẫn file khoá từ cấu hình (GOOGLE_APPLICATION_CREDENTIALS). Trước đây nó bị
+        // hardcode thành "carbonx-ai-6060f3108572.json" — file không có trong repo nên prod
+        // không boot được (FileNotFoundException).
+        String path = cfg.getCredentialsFile();
+        if (path == null || path.isBlank()) {
+            throw new IllegalStateException(
+                    "ai.vertex.credentials-file is not configured (set GOOGLE_APPLICATION_CREDENTIALS)");
+        }
+        java.io.File keyFile = new java.io.File(path);
         try (java.io.FileInputStream serviceAccountStream = new java.io.FileInputStream(keyFile)) {
             GoogleCredentials creds = GoogleCredentials.fromStream(serviceAccountStream)
                     .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
@@ -55,7 +62,20 @@ public class VertexWebClientConfig {
                     .build();
         }
 
-        GoogleCredentials creds = credentials();
+        GoogleCredentials creds;
+        try {
+            creds = credentials();
+        } catch (Exception e) {
+            // Không có khoá Vertex thì vẫn phải boot được: các tính năng AI sẽ tự báo
+            // "disabled" ở tầng service.
+            log.error("Vertex AI credentials unavailable ({}); AI features will report disabled", e.getMessage());
+            return WebClient.builder()
+                    .baseUrl(baseUrl)
+                    .clientConnector(new ReactorClientHttpConnector(http))
+                    .defaultHeader("Content-Type", "application/json")
+                    .defaultHeader("Accept", "application/json")
+                    .build();
+        }
 
         //  Filter tự động chèn Bearer Token IAM vào mỗi request
         ExchangeFilterFunction oauth = (request, next) -> {

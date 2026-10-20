@@ -10,6 +10,7 @@ import {
   useTheme,
   CircularProgress,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect } from "react";
@@ -42,7 +43,7 @@ const ViewCompanyKYC = () => {
           setProfile(data);
         }
       } catch (error) {
-        console.error(" Error fetching company KYC profile:", error);
+        devError(" Error fetching company KYC profile:", error);
       } finally {
         setLoading(false);
       }
@@ -68,7 +69,7 @@ const ViewCompanyKYC = () => {
       setOpenSnackbar(true);
       setEditMode(false);
     } catch (err) {
-      console.error(" Error updating KYC:", err);
+      devError(" Error updating KYC:", err);
       alert("Update failed. Please try again.");
     } finally {
       setSaving(false);

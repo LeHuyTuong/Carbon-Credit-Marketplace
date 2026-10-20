@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -76,7 +77,7 @@ const ApplicationView = () => {
         }
       } catch (error) {
         // Lỗi tổng quát
-        console.error("Error fetching details:", error);
+        devError("Error fetching details:", error);
         setSnackbar({
           open: true,
           message: "Không thể tải dữ liệu chi tiết hoặc KYC.",

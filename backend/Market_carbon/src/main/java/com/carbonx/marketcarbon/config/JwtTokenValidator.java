@@ -35,6 +35,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/register",
+            "/api/v1/auth/register/resend-otp",
             "/api/v1/auth/verify-otp",
             "/api/v1/send-otp-forgot",
             "/api/v1/auth/send-otp-register",

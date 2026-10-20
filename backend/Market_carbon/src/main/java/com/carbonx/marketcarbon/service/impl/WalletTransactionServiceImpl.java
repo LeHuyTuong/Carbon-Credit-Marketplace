@@ -54,9 +54,19 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             // balance mutations (deposits, withdrawals, buy/sell settlement), so locking here
             // closes the lost-update window for every caller at once. Re-acquiring a lock the
             // current transaction already holds (settlement pre-locks wallets first) is a no-op.
+            //
+            // entityManager.find(..., PESSIMISTIC_WRITE) KHÔNG nạp lại entity đã được quản
+            // lý: nó trả về bản ghi cũ đã load trước đó, nên số dư dùng để cộng/trừ có thể
+            // cũ (lost update). Số dư đã commit được đọc lại bằng một câu SELECT ... FOR
+            // UPDATE riêng, chỉ đọc cột balance nên KHÔNG xoá các thay đổi đang chờ của
+            // entity (ví dụ carbonCreditBalance mà luồng order vừa set trước khi gọi hàm này).
             Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId(), LockModeType.PESSIMISTIC_WRITE);
             if (locked == null) {
                 throw new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId());
+            }
+            BigDecimal committedBalance = walletRepository.findBalanceByIdForUpdate(request.getWallet().getId());
+            if (committedBalance != null) {
+                locked.setBalance(committedBalance);
             }
             wallet = locked;
         } else {
@@ -68,6 +78,8 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
 
         BigDecimal amount = request.getAmount();
+        boolean isDebit = request.getType() == WalletTransactionType.WITHDRAWAL
+                || request.getType() == WalletTransactionType.BUY_CARBON_CREDIT;
         if (amount == null) {
             throw new IllegalArgumentException("Amount cannot be null in WalletTransactionRequest");
         }
@@ -115,11 +127,16 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         // tạo and lưu the transaction entity
         WalletTransaction transaction = new WalletTransaction();
         transaction.setWallet(wallet);
-        transaction.setAmount(request.getAmount());
+        // `amount` là DELTA (âm khi trừ ví) — như transferFunds, để SUM(amount) của các
+        // dòng tiền khớp với số dư ví.
+        transaction.setAmount(isDebit ? request.getAmount().negate() : request.getAmount());
         transaction.setTransactionType(request.getType());
         transaction.setDescription(request.getDescription());
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setOrder(request.getOrder());
+        // Dòng ledger của một đơn rút tiền phải trỏ về chính đơn đó, nếu không thì
+        // không đối soát được "tiền đã trừ" với "đơn rút".
+        transaction.setWithdrawal(request.getWithdrawal());
         transaction.setBalanceBefore(balanceBefore);
         transaction.setBalanceAfter(balanceAfter);
         // 1. Lấy CarbonCredit từ wallet

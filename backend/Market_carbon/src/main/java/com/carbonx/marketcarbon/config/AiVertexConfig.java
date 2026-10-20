@@ -22,4 +22,11 @@ public class AiVertexConfig {
 
 
     private int timeoutMs = 60000;
+
+    /**
+     * Đường dẫn file khoá dịch vụ Google (JSON). Rỗng = không dùng Vertex.
+     * Trước đây đường dẫn này bị hardcode trong code, nên prod không có file đó là
+     * không boot được.
+     */
+    private String credentialsFile = "";
 }

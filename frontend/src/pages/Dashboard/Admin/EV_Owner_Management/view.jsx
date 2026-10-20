@@ -11,6 +11,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useParams, useNavigate } from "react-router-dom";
@@ -64,7 +65,7 @@ const ViewEvOwner = () => {
         setUser(uiUser);
         setEditedUser(uiUser);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        devError("Error fetching user:", error);
       } finally {
         setLoading(false);
       }
@@ -112,7 +113,7 @@ const ViewEvOwner = () => {
       setEditMode(false);
       setOpenSnackbar(true);
     } catch (error) {
-      console.error("Error updating user:", error);
+      devError("Error updating user:", error);
       alert("Update failed! Please try again.");
     }
   };

@@ -7,9 +7,11 @@ import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.helper.notification.ApplicationNotificationService;
+import com.carbonx.marketcarbon.model.PaymentDetails;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.Withdrawal;
+import com.carbonx.marketcarbon.repository.PaymentDetailsRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
@@ -36,6 +38,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final UserRepository userRepository;
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
+    private final PaymentDetailsRepository paymentDetailsRepository;
     private final ApplicationNotificationService applicationNotificationService;
     private final SseService sseService;
     private final WalletTransactionService walletTransactionService;
@@ -54,22 +57,35 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
     @Transactional
     @Override
-    public Withdrawal requestWithdrawal(Long amount) {
+    public Withdrawal requestWithdrawal(BigDecimal amount) {
         User user = currentUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
-        if (amount < 2) {
+        if (wallet == null) {
+            // Người dùng chưa từng mở ví nên chưa có row trong `wallets` (ví được tạo
+            // lazily khi mở trang ví). Báo rõ thay vì dereference null -> 500.
+            throw new AppException(ErrorCode.WALLET_NOT_FOUND);
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new AppException(ErrorCode.WITHDRAWAL_MONEY_INVALID_AMOUNT);
         }
         // B1 tạo request withdrawal
 
-        BigDecimal withdrawalAmount = BigDecimal.valueOf(amount);
+        BigDecimal withdrawalAmount = amount.setScale(2, java.math.RoundingMode.HALF_UP);
 
         if (wallet.getBalance().compareTo(withdrawalAmount) >= 0) {
+            // Lưu khoản người dùng nhận tiền vào chính row withdrawal: nếu không, admin
+            // chỉ thấy "N/A" và không biết chuyển tiền đi đâu — tiền bị kẹt vô thời hạn.
+            // Chỉ dùng tài khoản NGƯỜI DÙNG (chưa bị gỡ): tài khoản đã gỡ thì người dùng
+            // cho là đã xoá, không được chuyển tiền vào đó.
+            PaymentDetails paymentDetails = paymentDetailsRepository
+                    .findFirstByUserIdAndArchivedFalseOrderByIdDesc(user.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
                     .status(Status.PENDING)
                     .requestedAt(LocalDateTime.now(VIETNAM_ZONE))
                     .user(user)
+                    .paymentDetails(paymentDetails)
                     .build();
 
             log.info("Withdrawal with id {} has been sent with money ", withdrawal.getId());
@@ -95,10 +111,21 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        // Nạp proxy PaymentDetails TRONG transaction: nếu không, entity trả ra ngoài
+        // transaction sẽ mang proxy của Hibernate và Jackson không serialize được ->
+        // endpoint trả 500 SAU khi tiền đã được chuyển/hoàn.
+        if (withdrawalRequest.getPaymentDetails() != null) {
+            withdrawalRequest.getPaymentDetails().getAccountHolderName();
+        }
+
         withdrawalRequest.setProcessedAt(LocalDateTime.now(VIETNAM_ZONE));
         String reason = ""; // reason
         User user = withdrawalRequest.getUser();
         Wallet wallet = walletRepository.findByUserId(user.getId());
+        if (wallet == null) {
+            // Không có ví thì không hoàn được tiền: báo rõ thay vì NPE.
+            throw new AppException(ErrorCode.WALLET_NOT_FOUND);
+        }
         BigDecimal amountToWithdraw = withdrawalRequest.getAmount();
 
         if (accept) {
@@ -134,8 +161,14 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             // P0-A (N3): refund through the audited transaction path (ledger row + balance
             // update in one mechanism) instead of a bare setBalance. The PENDING guard above
             // makes this refund happen exactly once even under concurrent/replayed calls.
+            // Người dùng phải nhận được thông báo realtime cho CẢ hai kết quả (duyệt và
+            // từ chối) — nhánh duyệt đã bắn SSE, nhánh từ chối thì chưa.
+            sseService.sendNotificationToUser(user.getId(),
+                    "Withdrawal #" + withdrawalRequest.getId() + " was rejected — amount returned to wallet");
+
             walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                     .wallet(wallet)
+                    .withdrawal(withdrawalRequest)
                     .type(WalletTransactionType.WITHDRAWAL_REFUND)
                     .description("Withdrawal #" + withdrawalRequest.getId()
                             + " rejected — amount returned to wallet")
@@ -172,11 +205,11 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Override
     public List<Withdrawal> getUsersWithdrawalHistory() {
         User user = currentUser();
-        return withdrawalRepository.findByUserId(user.getId());
+        return withdrawalRepository.findByUserIdWithPaymentDetails(user.getId());
     }
 
     @Override
     public List<Withdrawal> getAllWithdrawalRequest() {
-        return withdrawalRepository.findAll();
+        return withdrawalRepository.findAllWithPaymentDetails();
     }
 }

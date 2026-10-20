@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Modal, Button, Spinner, Form, Collapse } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -20,6 +21,8 @@ export default function ShareProfit({ show, onHide, initialData }) {
     fetchApprovedReports,
     shareProfit,
     fetchWallet,
+    fetchPayoutDistributions,
+    retryPayoutDistribution,
   } = useWalletData();
 
   // State lưu dự án, báo cáo, tổng hợp payout, công thức tính
@@ -29,6 +32,8 @@ export default function ShareProfit({ show, onHide, initialData }) {
   const [formula, setFormula] = useState(null);
 
   // State cho UI
+  const [distributions, setDistributions] = useState([]);
+  const [retryingId, setRetryingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [showFormulaImg, setShowFormulaImg] = useState(false);
@@ -48,8 +53,10 @@ export default function ShareProfit({ show, onHide, initialData }) {
           method: "GET",
         });
         setFormula(f.response);
+        // Các đợt phân phối đã có: đợt lỗi thì bấm "Gửi lại" được
+        setDistributions(await fetchPayoutDistributions());
       } catch (err) {
-        console.error(err);
+        devError(err);
         toast.error("Failed to load initial data.");
       } finally {
         setLoading(false);
@@ -82,10 +89,24 @@ export default function ShareProfit({ show, onHide, initialData }) {
       const data = res?.response?.summary;
       setSummary(data || null);
     } catch (err) {
-      console.error(err);
+      devError(err);
       toast.error("Failed to load payout summary.");
     } finally {
       setPreviewing(false);
+    }
+  };
+
+  // gửi lại tiền cho các owner chưa nhận được của một đợt phân phối
+  const retryDistribution = async (distributionId) => {
+    try {
+      setRetryingId(distributionId);
+      await retryPayoutDistribution(distributionId);
+      toast.success("Payout retry started.");
+      setDistributions(await fetchPayoutDistributions());
+    } catch (err) {
+      toast.error(err.message || "Failed to retry the payout.");
+    } finally {
+      setRetryingId(null);
     }
   };
 
@@ -96,6 +117,39 @@ export default function ShareProfit({ show, onHide, initialData }) {
       </Modal.Header>
 
       <Modal.Body>
+        {/* Các đợt phân phối đã có: đợt còn owner chưa nhận tiền thì bấm "Gửi lại" —
+            không có phần này thì owner lỗi không bao giờ được trả tiền. */}
+        {distributions.length > 0 && (
+          <div className="mb-3">
+            <h6 className="mb-2">Payout history</h6>
+            <ul className="list-unstyled mb-0" style={{ maxHeight: 180, overflowY: "auto" }}>
+              {distributions.map((item) => (
+                <li
+                  key={item.id}
+                  className="d-flex justify-content-between align-items-center border-bottom py-1"
+                >
+                  <span className="small">
+                    #{item.id} · {item.status}
+                    {item.reportPeriod ? ` · ${item.reportPeriod}` : ""}
+                    {item.unsettledOwners > 0
+                      ? ` · ${item.unsettledOwners} owner chưa nhận được tiền`
+                      : ""}
+                  </span>
+                  {item.retryable && (
+                    <Button
+                      size="sm"
+                      variant="outline-primary"
+                      disabled={retryingId === item.id}
+                      onClick={() => retryDistribution(item.id)}
+                    >
+                      {retryingId === item.id ? "Đang gửi lại..." : "Gửi lại"}
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {loading ? (
           // Hiển thị spinner trong khi tải dữ liệu ban đầu
           <div className="text-center py-5">
@@ -166,7 +220,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
                       );
                       setReports(list);
                     } catch (err) {
-                      console.error("Failed to load reports for project:", err);
+                      devError("Failed to load reports for project:", err);
                     }
                   })();
                 }

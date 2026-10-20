@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   TextField,
@@ -37,7 +38,7 @@ const EditProfileCVA = () => {
           localStorage.setItem("cvaData", JSON.stringify(res));
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        devError("Error fetching data:", err);
       }
     };
     fetchData();
@@ -71,7 +72,7 @@ const EditProfileCVA = () => {
     if (cva.avatar instanceof File) formData.append("avatar", cva.avatar);
     // Call API to update
     const updated = await updateKYCCVA(formData);
-    console.log("Updated CVA:", updated);
+    devLog("Updated CVA:", updated);
     setSnackbar({ open: true, message: "Profile updated!", severity: "success" });
     setTimeout(() => navigate("/cva/view_profile_cva"), 1000);
   } catch (err) {

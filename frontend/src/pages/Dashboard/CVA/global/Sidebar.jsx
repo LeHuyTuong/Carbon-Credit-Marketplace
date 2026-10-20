@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
@@ -46,7 +47,7 @@ const Sidebar = () => {
         const data = await checkKYCCVA();
         if (data) setKycInfo(data);
       } catch (err) {
-        console.error("Failed to fetch KYC:", err);
+        devError("Failed to fetch KYC:", err);
       } finally {
         setLoading(false);
       }

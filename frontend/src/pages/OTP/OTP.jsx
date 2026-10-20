@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { devError } from "@/utils/devLog";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import OTPInputs from "../../components/OTPInput/OTPInput";
 import "./otp.css";
 import { apiFetch } from "../../utils/apiFetch";
@@ -8,18 +9,23 @@ import { toast } from "react-toastify";
 export default function VerifyOtp() {
   const nav = useNavigate();
   const { state } = useLocation();
-  const email = state?.email || "user@example.com";
+  // State của router mất khi người dùng F5 hoặc mở lại tab, nên luồng và email cũng
+  // được truyền bằng query string: nếu không, màn này không mở được và tài khoản
+  // PENDING không còn cách lấy mã OTP mới.
+  const [searchParams] = useSearchParams();
+  const flow = state?.from || searchParams.get("from") || "";
+  const email = state?.email || searchParams.get("email") || "";
   const [otp, setOtp] = useState("");
   const [sec, setSec] = useState(60);
   const [loading, setLoading] = useState(false);
 
   //nếu truy cập thẳng, điều hướng về login
   useEffect(() => {
-    if (!state?.from) {
+    if (!flow) {
       toast.error("Invalid access");
       nav("/login", { replace: true });
     }
-  }, [state, nav]);
+  }, [flow, nav]);
 
   //đếm ngược thời gian
   useEffect(() => {
@@ -52,10 +58,10 @@ export default function VerifyOtp() {
       }
 
       //điều hướng dựa trên luồng
-      if (state?.from === "register") {
+      if (flow === "register") {
         toast.success("Account verified successfully!");
         nav("/login", { replace: true });
-      } else if (state?.from === "forgot") {
+      } else if (flow === "forgot") {
         if (!jwt) {
           toast.error("Missing reset jwt from server");
           return;
@@ -67,7 +73,7 @@ export default function VerifyOtp() {
         nav("/home", { replace: true });
       }
     } catch (err) {
-      console.error("Verify OTP error:", err);
+      devError("Verify OTP error:", err);
       toast.error(err.message || "Failed to verify OTP");
     } finally {
       setLoading(false);
@@ -81,7 +87,14 @@ export default function VerifyOtp() {
     if (sec > 0 || loading) return;
     setLoading(true);
     try {
-      await apiFetch("/api/v1/forgot-password/resend-otp", {
+      // Luồng đăng ký phải gửi lại MÃ ĐĂNG KÝ (mục đích REGISTER). Gọi nhầm endpoint
+      // quên mật khẩu sẽ đổi purpose của OTP thành FORGOT_PASSWORD, lúc đó verifyOtp chỉ
+      // trả reset token và KHÔNG kích hoạt tài khoản — người dùng kẹt vĩnh viễn.
+      const endpoint =
+        flow === "register"
+          ? "/api/v1/auth/register/resend-otp"
+          : "/api/v1/forgot-password/resend-otp";
+      await apiFetch(endpoint, {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });

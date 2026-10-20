@@ -1,11 +1,12 @@
 import { Snackbar, Alert, CircularProgress, useTheme } from "@mui/material";
+import { devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 
 const CustomSnackbar = ({ open, type = "info", text = "", onClose, duration }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  console.log("Snackbar props:", { open, type, text, duration });
+  devLog("Snackbar props:", { open, type, text, duration });
 
   // const getBgColor = () => {
   //   switch (type) {

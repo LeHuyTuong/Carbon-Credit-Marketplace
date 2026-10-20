@@ -67,11 +67,14 @@ export default function Register() {
         },
       });
 
-      // Nếu thành công: chuyển sang trang nhập OTP
+      // Nếu thành công: chuyển sang trang nhập OTP.
+      // Luồng/email truyền bằng QUERY STRING: state của router mất khi F5 hoặc khi
+      // người dùng mở lại tab, và màn OTP sẽ đóng lại khiến tài khoản PENDING không
+      // kích hoạt được (đăng ký lại thì EMAIL_EXISTED).
       toast.success("Registration successful! Please verify your email.");
-      nav("/otp", {
+      nav(`/otp?email=${encodeURIComponent(values.email.trim())}&from=register`, {
         replace: true,
-        state: { email: values.email, from: "register" },
+        state: { email: values.email.trim(), from: "register" },
       });
     } catch (err) {
       // bắt lỗi BE
@@ -81,7 +84,14 @@ export default function Register() {
 
       // Email đã tồn tại
       if (code === "409" || message?.includes("Email already exists")) {
-        toast.warn("Email already registered");
+        toast.warn("Email already registered. If you did not get the code, request a new one.");
+        // Đưa sang màn OTP để lấy mã mới: tài khoản đang PENDING chỉ kích hoạt được
+        // bằng mã đăng ký, và mã cũ có thể đã hết hạn (hoặc email không tới).
+        // Luồng/email truyền bằng query string để F5 không làm mất ngữ cảnh.
+        nav(
+          `/otp?email=${encodeURIComponent(values.email.trim())}&from=register`,
+          { replace: true }
+        );
         return;
       }
 

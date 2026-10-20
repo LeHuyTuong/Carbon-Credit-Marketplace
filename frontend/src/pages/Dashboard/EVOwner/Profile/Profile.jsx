@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { Modal, Button, Form, Card } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -48,7 +49,7 @@ export default function Profile() {
         };
         setKycData(mapped);
       } catch (err) {
-        console.error("Error fetching KYC:", err);
+        devError("Error fetching KYC:", err);
         // nếu BE trả 404 hoặc không có dữ liệu thì xem như user chưa KYC
         if (
           err.status === 404 ||
@@ -180,7 +181,7 @@ function UpdateEvModal({ show, onHide, data, onSuccess }) {
       });
       onSuccess(values); // callback sang parent khi update thành công
     } catch (err) {
-      console.error("Error updating KYC:", err);
+      devError("Error updating KYC:", err);
       toast.error(err.message || "Failed to update profile");
     }
   };

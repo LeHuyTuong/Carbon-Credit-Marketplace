@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devError, devLog } from "@/utils/devLog";
 
 /**  Admin Login API */
 export const apiLogin = async (email, password) => {
@@ -41,7 +42,7 @@ export const apiLogin = async (email, password) => {
     }
     return resData;
   } catch (error) {
-    console.error(" Login API Error:", error.message);
+    devError(" Login API Error:", error.message);
     throw error;
   }
 };
@@ -67,7 +68,7 @@ export const apiKYCAdmin = async (formData) => {
 
     return data;
   } catch (error) {
-    console.error(" KYC API Error:", error.message);
+    devError(" KYC API Error:", error.message);
     throw error;
   }
 };
@@ -84,7 +85,7 @@ export const checkKYCAdmin = async () => {
       },
     });
 
-    console.log(" Full KYC check response:", data);
+    devLog(" Full KYC check response:", data);
     
 
     if (
@@ -97,7 +98,7 @@ export const checkKYCAdmin = async () => {
 
     return null;
   } catch (error) {
-    console.error("Check KYC API Error:", error.message);
+    devError("Check KYC API Error:", error.message);
     return null;
   }
 };
@@ -127,10 +128,10 @@ export const updateKYCAdmin = async (formData) => {
       throw new Error(message);
     }
 
-    console.log("KYC updated successfully:", data.response);
+    devLog("KYC updated successfully:", data.response);
     return data.response;
   } catch (error) {
-    console.error("Update KYC API Error:", error.message);
+    devError("Update KYC API Error:", error.message);
     throw error;
   }
 };
@@ -161,7 +162,7 @@ export const apiLogout = async () => {
       throw new Error(message);
     }
 
-    console.log(" Admin logout successful:", data.responseData);
+    devLog(" Admin logout successful:", data.responseData);
 
     //  Dọn token & thông tin admin sau khi logout
     localStorage.removeItem("admin_token");
@@ -170,7 +171,7 @@ export const apiLogout = async () => {
 
     return data.responseData.message || "Logout successful";
   } catch (error) {
-    console.error(" Admin logout API Error:", error.message);
+    devError(" Admin logout API Error:", error.message);
     throw error;
   }
 };
@@ -193,7 +194,7 @@ export const registerUser = async (data) => {
 
     return response;
   } catch (error) {
-    console.error("Register user failed:", error);
+    devError("Register user failed:", error);
     throw error;
   }
 };
@@ -216,7 +217,7 @@ export const verifyOtp = async (data) => {
 
     return response;
   } catch (error) {
-    console.error("Verify OTP failed:", error);
+    devError("Verify OTP failed:", error);
     throw error;
   }
 };

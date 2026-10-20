@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Spinner, Alert, Button, Badge } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
@@ -40,7 +41,7 @@ export default function ViewRegisteredProject() {
         // lưu thời gian request để dùng fallback
         setRequestDateTime(res?.requestDateTime || new Date().toISOString()); //lưu thời điểm request
       } catch (err) {
-        console.error("Error fetching application:", err);
+        devError("Error fetching application:", err);
         setError(err.message || "Failed to fetch detail");
       } finally {
         setLoading(false);

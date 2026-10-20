@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError, devLog, devWarn } from "@/utils/devLog";
 import {
     Box,
     Typography,
@@ -34,15 +35,15 @@ const ReportView = () => {
     useEffect(() => {
         const fetchDetail = async () => {
             try {
-                console.log("Fetching report ID:", id);
+                devLog("Fetching report ID:", id);
                 const res = await getReportByIdAdmin(id);
                 const data = res?.responseData || res;
-                console.log("Raw report API response:", data);
+                devLog("Raw report API response:", data);
 
                 if (data && data.id) setReport(data);
                 else throw new Error("No valid data received");
             } catch (error) {
-                console.error("Error fetching report detail:", error);
+                devError("Error fetching report detail:", error);
                 setSnackbar({
                     open: true,
                     message: "Failed to fetch report.",
@@ -61,20 +62,20 @@ const ReportView = () => {
             (async () => {
                 try {
                     const res = await getCompanyKYCProfile(report.sellerId);
-                    console.log("Raw KYC API response:", res);
+                    devLog("Raw KYC API response:", res);
 
                     // thử lấy đúng field (responseData hoặc response)
                     const data =
                         res?.responseData || res?.response || res?.data || res;
 
-                    console.log("Parsed KYC data:", data);
+                    devLog("Parsed KYC data:", data);
                     if (data && Object.keys(data).length > 0) {
                         setKyc(data);
                     } else {
-                        console.warn("Empty KYC data received");
+                        devWarn("Empty KYC data received");
                     }
                 } catch (error) {
-                    console.error("Failed to fetch KYC info:", error);
+                    devError("Failed to fetch KYC info:", error);
                     setSnackbar({
                         open: true,
                         message: "Failed to fetch company KYC profile.",

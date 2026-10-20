@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -66,7 +67,7 @@ const ViewProject = () => {
           });
         }
       } catch (err) {
-        console.error("Error fetching project:", err);
+        devError("Error fetching project:", err);
 
         const message =
           err?.response?.data?.responseStatus?.responseDesc ||

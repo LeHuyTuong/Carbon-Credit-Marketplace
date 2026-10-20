@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { apiFetch } from "../../../utils/apiFetch";
 
 export default function useWalletData() {
@@ -21,7 +22,7 @@ export default function useWalletData() {
     setWallet(data);
     return data; 
   } catch (err) {
-    console.error("Failed to fetch wallet:", err);
+    devError("Failed to fetch wallet:", err);
     return { balance: 0 }; // fallback an toàn
   }
 };
@@ -38,7 +39,7 @@ export default function useWalletData() {
       );
       setTransactions(sorted);
     } catch (err) {
-      console.error("Failed to fetch transactions:", err);
+      devError("Failed to fetch transactions:", err);
     }
   };
 
@@ -84,7 +85,7 @@ export default function useWalletData() {
 
       setIssuedCredits(sorted);
     } catch (err) {
-      console.error("Failed to fetch issued credits:", err);
+      devError("Failed to fetch issued credits:", err);
     } finally {
       setLoading(false);
     }
@@ -130,7 +131,7 @@ export default function useWalletData() {
 
       setPurchasedCredits(mapped);
     } catch (err) {
-      console.error("Failed to fetch purchased credits:", err);
+      devError("Failed to fetch purchased credits:", err);
       setPurchasedCredits([]);
     } finally {
       setLoading(false);
@@ -149,7 +150,7 @@ export default function useWalletData() {
       const data = res?.response;
       setCreditDetails(data);
     } catch (err) {
-      console.error("Failed to fetch credit details:", err);
+      devError("Failed to fetch credit details:", err);
       setCreditDetails([]);
       setError(err.message || "Unable to load credit details.");
     } finally {
@@ -165,7 +166,7 @@ export default function useWalletData() {
       });
       setSummary(res?.response || {});
     } catch (err) {
-      console.error("Failed to fetch summary:", err);
+      devError("Failed to fetch summary:", err);
     }
   };
 
@@ -175,7 +176,7 @@ export default function useWalletData() {
       const res = await apiFetch("/api/v1/my/credits/balance", { method: "GET" });
       return res?.response || 0; // có thể set vào state nếu muốn
     } catch (err) {
-      console.error("Failed to fetch credit balance:", err);
+      devError("Failed to fetch credit balance:", err);
       return 0;
     }
   };
@@ -186,7 +187,7 @@ export default function useWalletData() {
       const res = await apiFetch(`/api/v1/my/credits/${id}`, { method: "GET" });
       return res?.response || {};
     } catch (err) {
-      console.error(`Failed to fetch credit #${id}:`, err);
+      devError(`Failed to fetch credit #${id}:`, err);
       return null;
     }
   };
@@ -234,7 +235,7 @@ export default function useWalletData() {
 
       return mapped;
     } catch (err) {
-      console.error("Failed to fetch credits:", err);
+      devError("Failed to fetch credits:", err);
       return [];
     } finally {
       setLoading(false);
@@ -248,7 +249,7 @@ export default function useWalletData() {
       const res = await apiFetch("/api/v1/my/credits/retirable-batches", { method: "GET" });
       return res?.response || [];
     } catch (err) {
-      console.error("Failed to fetch retirable credits:", err);
+      devError("Failed to fetch retirable credits:", err);
       return [];
     } finally {
       setLoading(false);
@@ -280,7 +281,7 @@ export default function useWalletData() {
 
       return results;
     } catch (err) {
-      console.error("Failed to retire credits:", err);
+      devError("Failed to retire credits:", err);
       throw new Error(err.message || "Retire credits failed.");
     } finally {
       setLoading(false);
@@ -308,7 +309,7 @@ export default function useWalletData() {
             : "-",
         }));
     } catch (err) {
-      console.error("Failed to fetch retired credits:", err);
+      devError("Failed to fetch retired credits:", err);
       return [];
     } finally {
       setLoading(false);
@@ -334,7 +335,7 @@ export default function useWalletData() {
         submittedAt: p.submittedAt,
       }));
     } catch (err) {
-      console.error("Failed to fetch approved projects:", err);
+      devError("Failed to fetch approved projects:", err);
       return [];
     } finally {
       setLoading(false);
@@ -363,7 +364,7 @@ export default function useWalletData() {
         submittedAt: r.submittedAt,
       }));
     } catch (err) {
-      console.error("Failed to fetch approved reports:", err);
+      devError("Failed to fetch approved reports:", err);
       return [];
     } finally {
       setLoading(false);
@@ -396,7 +397,7 @@ export default function useWalletData() {
         responseMessage: "Payout created successfully",
       };
     } catch (err) {
-      console.error("Failed to create payout:", err);
+      devError("Failed to create payout:", err);
       throw new Error(err.message || "Payout creation failed.");
     } finally {
       setLoading(false);
@@ -404,6 +405,24 @@ export default function useWalletData() {
   };
 
   // expose các state và function ra ngoài hook
+  // danh sách đợt phân phối của công ty: đợt nào còn owner chưa nhận tiền thì bấm
+  // "Gửi lại" được. Không có API này thì owner lỗi không bao giờ được trả tiền.
+  const fetchPayoutDistributions = async () => {
+    const res = await apiFetch("/api/v1/profit-sharing/distributions", {
+      method: "GET",
+    });
+    return res?.response || [];
+  };
+
+  // gửi lại tiền cho các owner chưa nhận được của một đợt phân phối
+  const retryPayoutDistribution = async (distributionId) => {
+    const res = await apiFetch(
+      `/api/v1/profit-sharing/distributions/${distributionId}/retry`,
+      { method: "POST" }
+    );
+    return res?.response;
+  };
+
   return {
     wallet,
     transactions,
@@ -429,5 +448,7 @@ export default function useWalletData() {
     fetchApprovedProjects,
     fetchApprovedReports,
     shareProfit,
+    fetchPayoutDistributions,
+    retryPayoutDistribution,
   };
 }

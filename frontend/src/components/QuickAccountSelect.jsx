@@ -1,31 +1,21 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function QuickAccountSelect() {
   const nav = useNavigate();
+  const [presetAccounts, setPresetAccounts] = useState(null);
 
-  //map roles với url khác
-  const presetAccounts = {
-    ev: {
-      email: "hihi@gmail.com",
-      password: "Linh123!",
-      route: "/login",
-    },
-    company: {
-      email: "lehuytuong2005@gmail.com",
-      password: "Tuong2005@",
-      route: "/login",
-    },
-    cva: {
-      email: "tinbaoblizard567@gmail.com",
-      password: "Nguanhoc123456@",
-      route: "/cva/carbonX/mkp/login",
-    },
-    admin: {
-      email: "admin1@gmail.com",
-      password: "Tuong2005@",
-      route: "/admin/carbonX/mkp/login",
-    },
-  };
+  useEffect(() => {
+    // Danh sách tài khoản demo chỉ được nạp ở môi trường dev. Nhánh này bị Vite thay
+    // bằng false khi build production, nên dynamic import (và file quickAccounts.js) bị
+    // loại khỏi bundle: mật khẩu demo — kể cả tài khoản admin — không được gửi cho
+    // người dùng thật.
+    if (import.meta.env.DEV) {
+      import("./quickAccounts").then((module) => setPresetAccounts(module.default));
+    }
+  }, []);
+
+  if (!presetAccounts) return null;
 
   const handleSelect = (key) => {
     const acc = presetAccounts[key];

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, Typography, useTheme } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
@@ -56,7 +57,7 @@ const Sidebar = () => {
 
         setAdminInfo({ name, role });
       } catch (err) {
-        console.error("Failed to fetch admin data:", err.message);
+        devError("Failed to fetch admin data:", err.message);
         setAdminInfo({ name: "Unknown", role: "Admin" });
       }
     };

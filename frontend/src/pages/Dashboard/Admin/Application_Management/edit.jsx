@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -56,7 +57,7 @@ const ApplicationEdit = () => {
           applicationDocsUrl: appData.applicationDocsUrl || "",
         });
       } catch (error) {
-        console.error(error);
+        devError(error);
         showSnackbar(
           "error",
           error?.message || "Failed to fetch application."
@@ -99,7 +100,7 @@ const ApplicationEdit = () => {
         throw new Error(result?.responseStatus?.responseMessage);
       }
     } catch (err) {
-      console.error(err);
+      devError(err);
       showSnackbar("error", "Update failed. Please try again.");
     }
   };

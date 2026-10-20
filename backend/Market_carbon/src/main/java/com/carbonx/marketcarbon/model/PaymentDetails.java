@@ -38,4 +38,11 @@ public class PaymentDetails {
     @OneToOne
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)// WRITE_ONLY = chỉ nhận từ client, không trả về cho client.
     private User user;
+
+    /**
+     * Tài khoản đã bị người dùng gỡ nhưng vẫn giữ row: các đơn rút tiền đã xử lý trỏ
+     * tới tài khoản này, xoá hẳn row sẽ mất thông tin nơi nhận tiền và bị FK chặn.
+     */
+    @Column(name = "archived", nullable = false)
+    private boolean archived = false;
 }

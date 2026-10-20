@@ -32,16 +32,40 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
 
       SERVER_PORT: 8082
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:?set SPRING_MAIL_USERNAME in .env}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:?set SPRING_MAIL_PASSWORD in .env}
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       # P0-B/B1: PaymentVerificationService (@Value) — server-side trust boundary
       STRIPE_API_KEY: ${STRIPE_API_KEY:?set STRIPE_API_KEY in .env}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:?set PAYPAL_CLIENT_ID in .env}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:?set PAYPAL_CLIENT_SECRET in .env}
       PAYPAL_MODE: ${PAYPAL_MODE:sandbox}
+      # Placeholder còn lại: không có biến nào trong .env thì backend không boot được
+      # ("Could not resolve placeholder ...").
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-carbonx-local}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-local-access-key}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-local-secret-key}
+      AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-http://localhost:8082/files}
+      AI_GEMINI_API_KEY: ${AI_GEMINI_API_KEY:-local-dummy-key}
+      AI_GEMINI_MODEL: ${AI_GEMINI_MODEL:-gemini-2.5-pro}
+      AI_GEMINI_ENABLED: ${AI_GEMINI_ENABLED:-false}
+      AI_GEMINI_TIMEOUT_MS: ${AI_GEMINI_TIMEOUT_MS:-30000}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID:-dev-google-client-id}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET:-dev-google-client-secret}
+      TRADING_FEE: ${TRADING_FEE:-0.05}
+      PAYMENT_SUCCESS_URL: ${PAYMENT_SUCCESS_URL:-http://localhost:8082/api/v1/payment/success}
+      PAYMENT_CANCEL_URL: ${PAYMENT_CANCEL_URL:-http://localhost:8082/api/v1/payment/cancel}
+      SWAGGER_TITLE: ${SWAGGER_TITLE:-CarbonX API}
+      SWAGGER_VERSION: ${SWAGGER_VERSION:-1.0.0}
+      SWAGGER_DESCRIPTION: ${SWAGGER_DESCRIPTION:-CarbonX carbon credit marketplace API}
+      SERVER_URL: ${SERVER_URL:-http://localhost:8082}
+      SERVER_DESCRIPTION: ${SERVER_DESCRIPTION:-CarbonX API}
       
     ports:
       - "8082:8082"  
@@ -56,8 +80,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # cấu hình biến môi trường khi build để React gọi đúng API
-        REACT_APP_API_BASE_URL: http://be:8082/api 
+        # Vite chỉ đọc biến VITE_* lúc build; apiFetch dùng đường dẫn tương đối
+        # "/api" để nginx proxy tới backend (network "backend", service "be").
+        VITE_API_BASE: /api
     image: carbonx-fe:latest
     networks:
       - backend

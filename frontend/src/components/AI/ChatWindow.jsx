@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import ChatInput from "./ChatInput";
 import { apiFetch } from "../../utils/apiFetch";
 import "./aichat.css";
@@ -47,7 +48,7 @@ export default function ChatWindow() {
 
       setMessages((prev) => [...prev, { sender: "ai", text: aiText }]);
     } catch (err) {
-      console.error("AI chat error:", err);
+      devError("AI chat error:", err);
       setMessages((prev) => [
         ...prev,
         { sender: "ai", text: "Error: Unable to reach AI service." },

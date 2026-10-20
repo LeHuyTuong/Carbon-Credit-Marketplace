@@ -9,4 +9,7 @@ public interface PaymentDetailsRepository extends JpaRepository<PaymentDetails, 
     Optional<PaymentDetails> findByUserIdAndAccountNumber(Long userId, String accountNumber);
 
     Optional<PaymentDetails> findFirstByUserIdOrderByIdDesc(Long userId);
+
+    /** Tài khoản đang dùng (chưa bị gỡ). */
+    Optional<PaymentDetails> findFirstByUserIdAndArchivedFalseOrderByIdDesc(Long userId);
 }

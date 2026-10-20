@@ -134,6 +134,10 @@ factor 0.6) → cash payout, then pays each owner in **its own `REQUIRES_NEW` tr
 - One owner's failure (missing wallet, insufficient company balance) is recorded as a
   `ProfitDistributionDetail(FAILED)` with the error message and does **not** roll back the owners
   already paid.
+- If at least one owner failed, the distribution is marked `FAILED` and the emission report stays
+  `CREDIT_ISSUED`. It is **not** marked `PAID_OUT`: doing so would claim everyone was paid and remove
+  the retry path. Call `POST /api/v1/profit-sharing/distributions/{id}/retry` to pay only the
+  remaining `FAILED` details; owners already `SUCCESS` are never paid twice.
 - The transfer itself goes through `WalletService.transferFunds`, which locks *both* wallets with
   `PESSIMISTIC_WRITE` before reading either balance — the classic two-account transfer, with the
   debit and the credit written as two linked `WalletTransaction` rows (negative and positive amount)
@@ -182,6 +186,11 @@ the balance — which is why `WalletTransactionServiceImpl.createTransaction` an
 
 Credit movements use the same mechanism against `carbon_credit_balance` (`ISSUE_CREDIT` on issuance,
 `RETIRE_CREDIT` on retirement), so the credit side is auditable the same way the cash side is.
+**Caveat:** a credit row stores the *credit* balance in `balance_before` / `balance_after` and its
+credit count in `amount`, so those two rows are in a different unit than the cash rows. The cash
+chain and `SUM(amount)` therefore only reconcile over the cash transaction types; a wallet that
+holds both cash and credits has to be reconciled per unit. Splitting the credit movements into
+their own columns is a separate migration (it has to rewrite the rows already written).
 
 ---
 
@@ -262,6 +271,11 @@ JWT access/refresh via `jjwt`, Google OAuth2 login, email OTP verification, role
 (`ADMIN` / `COMPANY` / `EV_OWNER` / `CVA`), and a token-bucket rate limiter
 (`app.rate-limit.capacity=20` per minute).
 
+Registration stores the new account and OTP in one transaction: if the synchronous OTP email
+fails, the pending account is rolled back, so the user can register again instead of being stuck
+behind `EMAIL_EXISTED`. A pending account can also request a fresh registration code with
+`POST /api/v1/auth/register/resend-otp` (same 60-second resend guard as forgot-password).
+
 The filter chain is **deny-by-default**: a route nobody remembered to map requires authentication
 rather than falling through to public. Self-registration can only create `EV_OWNER` or `COMPANY` — a
 client cannot ask for `ADMIN` or `CVA` in the signup payload. The JWT signing secret comes from
@@ -309,12 +323,88 @@ SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
 SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
 ```
 
-Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `PAYPAL_CLIENT_ID` /
-`PAYPAL_CLIENT_SECRET` / `PAYPAL_MODE`, `AWS_S3_BUCKET` + credentials, `AI_VERTEX_*` /
-`AI_GEMINI_*` for the AI scoring and chatbot.
+Production additionally requires `PAYPAL_MODE` (no fallback in the base profile — set it to
+`sandbox` or `live`) together with `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`. The application
+refuses to start if the mode is missing or invalid instead of silently using sandbox.
 
-Schema is managed by `spring.jpa.hibernate.ddl-auto=update`, so the first boot against an empty
-`core_ccm` database creates the tables.
+Those placeholders have **no default**, so the bean that injects them fails the startup when
+they are missing — they are required, not optional:
+
+| Variable | Needed by |
+| --- | --- |
+| `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | the database connection |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` | the SMTP server used for OTP and notification mails |
+| `JWT_SECRET` | signing the access tokens (the dev profile has an insecure fallback) |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` | PayPal checkout (`sandbox` or `live`) |
+| `TRADING_FEE` | the platform fee recorded on a marketplace order — **not** applied by the current settlement (the full price moves between the two parties); wiring the fee into the settlement is a money-model decision, see the report |
+| `JPA_DDL_AUTO` | overrides the prod schema mode (defaults to `validate`; never set it to `update` in production) |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | overrides the schema mode of the other profiles (development default is `update`) |
+| `SHOW_SQL` | logs the SQL statements (off in production) |
+| `SPRING_JPA_SHOW_SQL` | the same switch for the other profiles |
+| `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL` | where the payment provider returns the browser |
+| `SWAGGER_TITLE`, `SWAGGER_VERSION`, `SWAGGER_DESCRIPTION` | OpenAPI/Swagger metadata |
+| `SERVER_URL`, `SERVER_DESCRIPTION` | OpenAPI server info |
+| `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID`, `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET` | Google login (an empty id aborts the boot) |
+| `VNPAY_TMNCODE`, `VNPAY_HASH_SECRET` | VNPay checkout |
+| `CARBONX_SEED_ADMIN_EMAIL`, `CARBONX_SEED_ADMIN_PASSWORD`, `CARBONX_SEED_COMPANY_EMAIL`, `CARBONX_SEED_COMPANY_PASSWORD`, `CARBONX_SEED_CVA_EMAIL`, `CARBONX_SEED_CVA_PASSWORD`, `CARBONX_SEED_WALLET_BALANCE` | the accounts created on an empty database — **no default password in production**, so an empty database cannot be seeded with a well-known password |
+| `STRIPE_API_KEY` | `PaymentServiceImpl`, `PaymentVerificationService` (Stripe checkout/verification) |
+| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_REGION`, `AWS_REGION`, `AWS_PUBLIC_URL` | `S3Config`, `S3StorageServiceImpl` (S3 upload) |
+| `AWS_S3_PUBLIC_BASE_URL` | public URL prefix for uploaded files |
+| `AI_GEMINI_API_KEY`, `AI_GEMINI_MODEL` | Gemini AI scoring/chat (only when the AI feature is enabled) |
+| `AI_VERTEX_ENABLED`, `GOOGLE_APPLICATION_CREDENTIALS` | Vertex AI (disabled by default; the credentials file is read from the env, never hardcoded) |
+| `PROFIT_SHARING_DEFAULT_PRICING_MODE`, `PROFIT_SHARING_DEFAULT_OWNER_SHARE_PCT`, `PROFIT_SHARING_DEFAULT_MIN_PAYOUT`, `PROFIT_SHARING_DEFAULT_CURRENCY`, `PROFIT_SHARING_STALE_PROCESSING_MINUTES` | the default profit-sharing policy — without it `/share` pays nobody while still answering 200 |
+| `APP_CORS_ALLOWED_ORIGINS` | comma-separated browser origins; the default list only covers the usual local dev ports |
+| `APP_FRONTEND_BASE_URL` | where the OAuth2 login redirects the browser |
+
+Those placeholders have no default in the `prod` profile: the application refuses to start
+instead of silently using a development value. The `dev`/`local` profile ships working defaults,
+and `docker compose up` passes them all. Set them to dummy values locally if the corresponding
+integration is not used — the application starts with them set to a placeholder, it just cannot
+call the provider.
+
+In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
+empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.
+
+- **Fresh database:** create the schema the app connects to (the name comes from
+  `SPRING_DATASOURCE_URL`, e.g. `core_ccm`) and run the dump **inside it**:
+  `mysql core_ccm < backend/database/core_ccm.sql`. The dump creates the schema the JPA
+  entities map, including `profit_distribution.emission_report_id`,
+  `profit_distribution.claim_token`, the `credit_serial_counters` table, the upload/AI columns
+  of `emission_reports` and the unique keys on `wallets` — plus their indexes/FKs. Do **not**
+  re-run the incremental migrations on top of a fresh schema.
+- **Existing database:** apply every script under `backend/database/migrations/` **before**
+  starting the production build, again inside the target schema
+  (`mysql core_ccm < backend/database/migrations/<file>.sql`; the scripts refuse to run
+  without a schema selected). The scripts are idempotent; the
+  `2026-10-20_add_emission_report_to_profit_distribution.sql` migration adds the payout link only
+  if it is missing and backfills it only when there is exactly one unambiguous report candidate.
+  `2026-10-20_add_claim_token_to_profit_distribution.sql` adds the per-run lease token and
+  `2026-10-20_sync_schema_with_entities.sql` adds every column/table the entities map but the
+  live schema was missing (`prod` runs `ddl-auto=validate` and refuses to start otherwise).
+
+Legacy distributions whose `emission_report_id` remains `NULL` can still be retried: their
+`PENDING`/`FAILED` owners are paid, but the emission report status cannot be updated
+automatically. Reconcile/link those rows manually before treating the report as paid out. Such a
+distribution is only considered superseded by another **legacy** distribution of the same
+company + project; a payout for a different report no longer blocks it forever. Because a legacy
+row does not say which report it paid, owners already paid by another distribution of the same
+company + project are marked `SKIPPED` instead of being paid twice.
+
+A legacy row can only be the payout of a report that already existed when the row was created
+(the same rule the migration backfill uses). A report created *after* a legacy payout is
+therefore payable, while a report that predates it is blocked until the legacy row is
+reconciled — otherwise the same report could be paid twice.
+Legacy distributions already marked `COMPLETED` while an owner detail is still `PENDING`/`FAILED`
+(the old code completed distributions unconditionally) are retryable too: `/retry` pays only the
+unsettled owners and leaves an already `PAID_OUT` report alone. A distribution without any owner
+detail is rejected with a clear error — there is nothing to retry.
+
+A `PROCESSING` distribution left behind by a crash becomes retryable after
+`profit-sharing.stale-processing-minutes` (default `15`) without a progress heartbeat. Every
+claim writes a UUID `claim_token`; `/share` and `/retry` refresh `updated_at` before each owner,
+and status transitions (`COMPLETED`/`FAILED`) only apply while the worker still holds that token.
+An owner row is locked with `PESSIMISTIC_WRITE` for the duration of its payout transaction, so a
+reclaimed worker cannot pay the same owner twice.
 
 `DataInitializer` then seeds the roles and the three demo accounts. Their credentials are
 overridable — `carbonx.seed.admin-email` / `-password`, and the same pair for `company-` and `cva-`.
@@ -327,15 +417,27 @@ account still using one.
 cd frontend && npm install && npm run dev
 ```
 
+`apiFetch` calls `/api` on the same origin by default: Vite proxies it to the backend in dev
+(`frontend/vite.config.js`), nginx proxies it in the Docker image (`frontend/nginx.conf` →
+`http://be:8082/api/`). Set `VITE_API_BASE` at build time to point somewhere else — it is the
+only variable the bundle reads, and the Docker build passes `VITE_API_BASE=/api`.
+
+The "Quick Login" panel with the demo accounts (including the admin account) is compiled only in
+development: its credentials live in `frontend/src/components/quickAccounts.js`, which is loaded
+through a dynamic import inside an `import.meta.env.DEV` branch and is therefore dropped from the
+production bundle.
+
 **Tests:**
 
 ```bash
-cd backend/Market_carbon && ./mvnw test    # 93 unit tests, no infrastructure needed
+cd backend/Market_carbon && ./mvnw test    # unit tests, no infrastructure needed
 
-# the concurrency ITs spin up a real MySQL, so they need Docker and are not part
-# of `mvnw test` (surefire only picks up *Test); run one explicitly:
-cd backend/Market_carbon && ./mvnw test -Dtest=OrderSettlementConcurrencyIT
+# the concurrency ITs spin up a real MySQL, so they need Docker:
+cd backend/Market_carbon && ./mvnw verify   # runs *Test plus the *IT classes
 ```
+
+`mvn test` only runs the `*Test` classes; the `*IT` classes (real InnoDB row locks) run on
+`mvn verify` through the failsafe plugin and need a running Docker daemon.
 
 ---
 

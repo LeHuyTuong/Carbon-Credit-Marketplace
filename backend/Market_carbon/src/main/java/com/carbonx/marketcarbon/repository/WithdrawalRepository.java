@@ -13,6 +13,19 @@ import java.util.Optional;
 public interface WithdrawalRepository extends JpaRepository<Withdrawal,Long> {
     List<Withdrawal> findByUserId(Long id);
 
+    /**
+     * Danh sách đơn rút tiền KÈM tài khoản ngân hàng của người rút: admin phải thấy được
+     * nơi nhận tiền, nếu không thì tiền đã bị trừ ví mà không ai chuyển được.
+     */
+    @Query("SELECT w FROM Withdrawal w LEFT JOIN FETCH w.paymentDetails WHERE w.user.id = :userId")
+    List<Withdrawal> findByUserIdWithPaymentDetails(@Param("userId") Long userId);
+
+    @Query("SELECT w FROM Withdrawal w LEFT JOIN FETCH w.paymentDetails")
+    List<Withdrawal> findAllWithPaymentDetails();
+
+    /** Các đơn rút tiền đang trỏ tới một tài khoản ngân hàng cụ thể. */
+    List<Withdrawal> findByPaymentDetailsId(Long paymentDetailsId);
+
     // P0-A (N3): lock the withdrawal row so concurrent process/reject attempts serialize
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM Withdrawal w WHERE w.id = :id")

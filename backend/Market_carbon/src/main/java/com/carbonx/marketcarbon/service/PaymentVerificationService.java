@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service;
 
+import com.carbonx.marketcarbon.config.PaypalMode;
 import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.APIContext;
 import com.stripe.Stripe;
@@ -72,7 +73,7 @@ public class PaymentVerificationService {
      */
     public boolean verifyPaypalApproved(String paypalPaymentId, Long expectedUsd) {
         try {
-            APIContext apiContext = new APIContext(paypalClientId, paypalClientSecret, paypalMode);
+            APIContext apiContext = new APIContext(paypalClientId, paypalClientSecret, PaypalMode.normalize(paypalMode));
             Payment payment = Payment.get(apiContext, paypalPaymentId);
             boolean approved = "approved".equals(payment.getState());
             boolean amountMatches = false;

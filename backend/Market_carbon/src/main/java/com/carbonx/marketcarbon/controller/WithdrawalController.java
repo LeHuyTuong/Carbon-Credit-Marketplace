@@ -1,6 +1,8 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.common.StatusCode;
+import com.carbonx.marketcarbon.exception.AppException;
+import com.carbonx.marketcarbon.exception.ErrorCode;
 
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
@@ -19,6 +21,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -40,27 +43,33 @@ public class WithdrawalController {
 
     @Operation(summary = "Request withdrawal money ", description = "Api user request withdrawal money ")
     @PostMapping("/{amount}")
+    // Một lần rút tiền = tạo row PENDING + trừ ví, phải là MỘT transaction. Nếu không,
+    // việc trừ ví có thể thất bại (ví bị rút đi giữa lúc) trong khi row PENDING vẫn
+    // được commit; lúc đó một lần admin từ chối sẽ hoàn tiền một khoản CHƯA TỪNG bị
+    // trừ — tiền được tạo ra từ hư không.
+    @Transactional
     public ResponseEntity<ApiResponse<WalletTransactionResponse>> withdrawalRequest(
-            @PathVariable("amount") Long amount,
+            @PathVariable("amount") BigDecimal amount,
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
             @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime)
             throws Exception{
         String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
         String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
 
-        // 1. Request withdrawal creation (creates the Withdrawal entity)
+        // 1. Bảo đảm ví tồn tại TRƯỚC khi tạo yêu cầu rút: ví được tạo lazily khi
+        // người dùng mở trang ví, nên một tài khoản mới chưa có row `wallets` sẽ không
+        // tìm thấy ví để trừ tiền.
+        WalletResponse userWalletResponse = walletService.getUserWallet();
+        Wallet userWalletEntity = walletService.findWalletEntityById(userWalletResponse.getId());
+
+        // 2. Request withdrawal creation (creates the Withdrawal entity)
         // Assuming 'amount' is the POSITIVE amount the user wants to withdraw
         Withdrawal withdrawal = withdrawalService.requestWithdrawal(amount);
-
-        // 2. Get the Wallet *ENTITY* needed for the transaction
-        // First get the WalletResponse to know the ID
-        WalletResponse userWalletResponse = walletService.getUserWallet();
-        // Then fetch the actual Wallet entity using the ID
-        Wallet userWalletEntity = walletService.findWalletEntityById(userWalletResponse.getId());
 
         // 3. Create the withdrawal transaction request DTO using the Wallet entity
         WalletTransactionRequest transactionRequest = WalletTransactionRequest.builder()
                 .wallet(userWalletEntity) // Use the fetched Wallet entity
+                .withdrawal(withdrawal) // the ledger row must point at this request
                 .type(WalletTransactionType.WITHDRAWAL)
                 .description("Bank account withdrawal request initiated. ID: " + withdrawal.getId())
                 // Pass the POSITIVE amount requested by the user
@@ -68,7 +77,14 @@ public class WithdrawalController {
                 .build();
 
         // 4. Create the transaction (this service call now returns a DTO)
-        WalletTransactionResponse createdTransaction = walletTransactionService.createTransaction(transactionRequest);
+        WalletTransactionResponse createdTransaction;
+        try {
+            createdTransaction = walletTransactionService.createTransaction(transactionRequest);
+        } catch (IllegalStateException e) {
+            // Số dư bị dùng mất giữa lúc kiểm tra và lúc trừ: đây là lỗi nghiệp vụ
+            // (không đủ tiền) chứ không phải lỗi hệ thống.
+            throw new AppException(ErrorCode.WALLET_NOT_ENOUGH_MONEY);
+        }
 
         ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
                 StatusCode.SUCCESS.getMessage());

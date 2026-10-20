@@ -44,6 +44,7 @@ public enum ErrorCode {
     TITTLE_DUPLICATED(409, "Title duplicated.", HttpStatus.CONFLICT),
     APPLICATION_EXISTED(409, "Application already exists.", HttpStatus.CONFLICT),
     PAYMENT_DETAILS_NOT_FOUND(404, "Payment details not found.", HttpStatus.NOT_FOUND),
+    PAYMENT_DETAILS_IN_USE(409, "This bank account is used by a pending withdrawal.", HttpStatus.CONFLICT),
     APPLICATION_NOT_FOUND(404, "Application not found.", HttpStatus.NOT_FOUND),
     APPLICATION_ALREADY_EXISTS(
             409,
@@ -131,6 +132,7 @@ public enum ErrorCode {
     WALLET_INSUFFICIENT_FUNDS(400, "Not enough moeny to share profit",  HttpStatus.BAD_REQUEST),
     EMISSION_REPORT_NOT_APPROVED(400, "Emission Report not approved", HttpStatus.BAD_REQUEST),
     MONEY_MUST_POSITIVE(400, "Money must be positive", HttpStatus.BAD_REQUEST),
+    SELF_TRANSFER_NOT_ALLOWED(400, "Cannot transfer money to the same wallet.", HttpStatus.BAD_REQUEST),
     WALLET_NOT_FOUND(400, "Wallet not found.", HttpStatus.NOT_FOUND),
     QUANTITY_MUST_BE_WHOLE(400, "Credit quantity must be a whole number (each credit is one discrete unit).", HttpStatus.BAD_REQUEST),
     ;

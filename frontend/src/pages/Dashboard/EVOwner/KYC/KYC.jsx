@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -83,7 +84,7 @@ export default function KYC() {
           toast.info("No KYC record found. Please create one.");
         }
       } catch (err) {
-        console.error("Error fetching KYC:", err);
+        devError("Error fetching KYC:", err);
         //không báo lỗi nếu KYC chưa có hoặc backend không tìm thấy bản ghi
         const msg =
           err?.response?.responseStatus?.responseMessage?.toLowerCase() || "";
@@ -142,7 +143,7 @@ export default function KYC() {
       //quay về profile
       nav("/profile", { replace: true });
     } catch (err) {
-      console.error("Error submitting KYC:", err);
+      devError("Error submitting KYC:", err);
       toast.error(err.message || "Failed to save KYC");
     } finally {
       setLoading(false);

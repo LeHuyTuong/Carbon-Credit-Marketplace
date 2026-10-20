@@ -1,5 +1,7 @@
-CREATE DATABASE IF NOT EXISTS core_ccm3 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE core_ccm3;
+-- Chạy script này TRONG schema đích của ứng dụng, tên schema lấy từ
+-- SPRING_DATASOURCE_URL (ví dụ: mysql core_ccm < backend/database/core_ccm.sql).
+-- Script không tự CREATE DATABASE/USE: hardcode tên sẽ tạo bảng vào một schema khác
+-- với cái mà app kết nối, và prod (ddl-auto=validate) sẽ không boot được.
 
 -- Tắt kiểm tra khóa ngoại để tránh lỗi khi tạo lại bảng
 SET FOREIGN_KEY_CHECKS = 0;
@@ -17,16 +19,18 @@ CREATE TABLE IF NOT EXISTS `users` (
                                        `otp_code`      VARCHAR(255) DEFAULT NULL,
                                        `otp_expiry_at` DATETIME(6) DEFAULT NULL,
                                        `otp_purpose`   ENUM('FORGOT_PASSWORD','REGISTER') DEFAULT NULL,
+                                       `wallet_id`     BIGINT,
                                        `created_at`    DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
                                        `updated_at`    DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                                        PRIMARY KEY (`id`),
-                                       UNIQUE KEY `uk_users_email` (`email`)
+                                       UNIQUE KEY `uk_users_email` (`email`),
+                                       UNIQUE KEY `uk_users_wallet` (`wallet_id`)
 ) ENGINE=InnoDB;
 
 -- Bảng roles
 CREATE TABLE IF NOT EXISTS `roles` (
                                        `role_id`     BIGINT NOT NULL AUTO_INCREMENT,
-                                       `name`        VARCHAR(50) NOT NULL UNIQUE, -- VD: ROLE_USER, ROLE_ADMIN
+                                       `name`        VARCHAR(255) NOT NULL UNIQUE, -- VD: ROLE_USER, ROLE_ADMIN
                                        `description` VARCHAR(255) DEFAULT NULL,
                                        PRIMARY KEY (`role_id`)
 ) ENGINE=InnoDB;
@@ -192,6 +196,17 @@ CREATE TABLE IF NOT EXISTS `emission_reports` (
                                                   `upload_original_filename` VARCHAR(255),
                                                   `upload_storage_url`       VARCHAR(1024),
                                                   `upload_sha256`            VARCHAR(128),
+                                                  `upload_mime_type`         VARCHAR(255),
+                                                  `upload_size_bytes`        BIGINT,
+                                                  `upload_storage_key`       VARCHAR(255),
+                                                  `upload_rows`              INT,
+                                                  `parse_error`              TEXT,
+                                                  `ai_pre_score`             DECIMAL(4, 2),
+                                                  `ai_version`               VARCHAR(16),
+                                                  `ai_pre_notes`             TEXT,
+                                                  `verification_comment`     TEXT,
+                                                  `admin_approved_by_name`   VARCHAR(128),
+                                                  `comment`                  TEXT,
                                                   `verified_by_cva_id`       BIGINT,
                                                   `verified_by_cva_name`     VARCHAR(128),
                                                   `verification_score`       DECIMAL(4, 2),
@@ -251,10 +266,10 @@ CREATE TABLE IF NOT EXISTS `carbon_credits` (
                                                 `status`           ENUM('AVAILABLE','EXPIRED','ISSUE','ISSUED','LISTED','PENDING','RETIRED','SOLD','TRADED') NOT NULL,
                                                 `vintage_year`     INT NOT NULL,
                                                 `t_co2e`           DECIMAL(18, 3) NOT NULL,
-                                                `amount`           DECIMAL(18, 2), -- Số lượng tiền (nếu cần) hoặc giá trị
+                                                `amount`           DECIMAL(38, 2), -- Số lượng tiền (nếu cần) hoặc giá trị
                                                 `carbon_credit`    DECIMAL(18, 3) NOT NULL, -- Số lượng credit
-                                                `listed_amount`    DECIMAL(18, 2),
-                                                `current_price`    DOUBLE NOT NULL,
+                                                `listed_amount`    DECIMAL(38, 2),
+                                                `current_price`    DECIMAL(18, 2) NOT NULL,
                                                 `project_id`       BIGINT,
                                                 `company_id`       BIGINT,
                                                 `batch_id`         BIGINT,
@@ -326,6 +341,9 @@ CREATE TABLE IF NOT EXISTS `wallets` (
                                          `balance`               DECIMAL(38, 2) DEFAULT 0,
                                          `carbon_credit_balance` DECIMAL(18, 4) DEFAULT 0,
                                          PRIMARY KEY (`id`),
+                                         UNIQUE KEY `uk_wallets_user` (`user_id`),
+                                         UNIQUE KEY `uk_wallets_company` (`company_id`),
+                                         UNIQUE KEY `uk_wallets_carbon_credit` (`carbon_credit_id`),
                                          CONSTRAINT `fk_wallets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
                                          CONSTRAINT `fk_wallets_company` FOREIGN KEY (`company_id`) REFERENCES `company` (`id`)
 ) ENGINE=InnoDB;
@@ -338,6 +356,7 @@ CREATE TABLE IF NOT EXISTS `payment_details` (
                                                  `account_number`      VARCHAR(255) NOT NULL,
                                                  `account_holder_name` VARCHAR(100) NOT NULL,
                                                  `customer_name`       VARCHAR(255) NOT NULL,
+                                                 `archived`            TINYINT(1) NOT NULL DEFAULT 0,
                                                  PRIMARY KEY (`id`),
                                                  CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB;
@@ -350,6 +369,8 @@ CREATE TABLE IF NOT EXISTS `payment_order` (
                                                `payment_method`   ENUM('PAYPAL','STRIPE','VNPAY'),
                                                `status`           TINYINT,
                                                `vnp_txn_ref`      VARCHAR(255),
+                                               `payment_order_id` BIGINT,
+                                               `provider_ref`     VARCHAR(255),
                                                `created_at`       DATETIME(6) NOT NULL,
                                                `updated_at`       DATETIME(6) NOT NULL,
                                                PRIMARY KEY (`id`),
@@ -360,7 +381,7 @@ CREATE TABLE IF NOT EXISTS `payment_order` (
 CREATE TABLE IF NOT EXISTS `wallet_transaction` (
                                                     `id`               BIGINT NOT NULL AUTO_INCREMENT,
                                                     `wallet_id`        BIGINT NOT NULL,
-                                                    `transaction_type` ENUM('ADD_MONEY','BUY_CARBON_CREDIT','EV_OWNER_PAYOUT','EV_OWNER_PAYOUT_RECEIVE','ISSUE_CREDIT','PROFIT_SHARING','RETIRE_CREDIT','SELL_CARBON_CREDIT','SELL_CARBON_CREDIT_SHARE','WITHDRAWAL') NOT NULL,
+                                                    `transaction_type` ENUM('ADD_MONEY','BUY_CARBON_CREDIT','EV_OWNER_PAYOUT','EV_OWNER_PAYOUT_RECEIVE','ISSUE_CREDIT','PROFIT_SHARING','RETIRE_CREDIT','SELL_CARBON_CREDIT','SELL_CARBON_CREDIT_SHARE','WITHDRAWAL','WITHDRAWAL_REFUND') NOT NULL,
                                                     `amount`           DECIMAL(18, 2) NOT NULL,
                                                     `balance_before`   DECIMAL(18, 2),
                                                     `balance_after`    DECIMAL(18, 2),
@@ -369,9 +390,11 @@ CREATE TABLE IF NOT EXISTS `wallet_transaction` (
                                                     `payment_order_id` BIGINT,
                                                     `credit_batch_id`  BIGINT,
                                                     `distribution_id`  BIGINT,
+                                                    `withdrawal_id`    BIGINT,
                                                     `created_at`       DATETIME(6),
                                                     PRIMARY KEY (`id`),
-                                                    CONSTRAINT `fk_tx_wallet` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`)
+                                                    CONSTRAINT `fk_tx_wallet` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`),
+                                                    CONSTRAINT `fk_tx_withdrawal` FOREIGN KEY (`withdrawal_id`) REFERENCES `withdrawal` (`id`)
 ) ENGINE=InnoDB;
 
 -- Bảng withdrawal (Yêu cầu rút tiền)
@@ -392,13 +415,17 @@ CREATE TABLE IF NOT EXISTS `withdrawal` (
 CREATE TABLE IF NOT EXISTS `profit_distribution` (
                                                      `id`                        BIGINT NOT NULL AUTO_INCREMENT,
                                                      `project_id`                BIGINT,
+                                                     `emission_report_id`        BIGINT,
                                                      `company_user_id`           BIGINT NOT NULL,
                                                      `total_credits_distributed` DECIMAL(38, 2) NOT NULL,
                                                      `total_money_distributed`   DECIMAL(38, 2) NOT NULL,
                                                      `status`                    ENUM('COMPLETED','FAILED','PENDING','PROCESSING') NOT NULL,
+                                                     `claim_token`               VARCHAR(36),
                                                      `created_at`                DATETIME(6) NOT NULL,
                                                      `updated_at`                DATETIME(6) NOT NULL,
-                                                     PRIMARY KEY (`id`)
+                                                     PRIMARY KEY (`id`),
+                                                     KEY `idx_profit_distribution_report` (`emission_report_id`),
+                                                     CONSTRAINT `fk_profit_distribution_report` FOREIGN KEY (`emission_report_id`) REFERENCES `emission_reports` (`id`)
 ) ENGINE=InnoDB;
 
 -- Bảng profit_distribution_detail
@@ -417,6 +444,17 @@ CREATE TABLE IF NOT EXISTS `profit_distribution_detail` (
                                                             CONSTRAINT `fk_dist_detail_main` FOREIGN KEY (`distribution_id`) REFERENCES `profit_distribution` (`id`)
 ) ENGINE=InnoDB;
 
+-- Bảng credit_serial_counters (bộ đếm serial tự tăng theo vintage + project + company)
+CREATE TABLE IF NOT EXISTS `credit_serial_counters` (
+                                                      `id`           BIGINT NOT NULL AUTO_INCREMENT,
+                                                      `vintage_year` INT NOT NULL,
+                                                      `project_id`   BIGINT NOT NULL,
+                                                      `company_id`   BIGINT NOT NULL,
+                                                      `next_serial`  BIGINT NOT NULL,
+                                                      PRIMARY KEY (`id`),
+                                                      UNIQUE KEY `uk_serial_counter` (`vintage_year`, `project_id`, `company_id`)
+) ENGINE=InnoDB;
+
 -- Bảng credit_certificates (Chứng chỉ)
 CREATE TABLE IF NOT EXISTS `credit_certificates` (
                                                      `id`               BIGINT NOT NULL AUTO_INCREMENT,
@@ -430,6 +468,8 @@ CREATE TABLE IF NOT EXISTS `credit_certificates` (
                                                      `certificate_url`  VARCHAR(1024),
                                                      `pdf_url`          VARCHAR(2048),
                                                      `qr_code_url`      VARCHAR(1024),
+                                                     `verify_url`       VARCHAR(1024),
+                                                     `storage_key`      VARCHAR(512),
                                                      `issued_at`        DATETIME(6),
                                                      PRIMARY KEY (`id`),
                                                      CONSTRAINT `fk_cert_batch` FOREIGN KEY (`batch_id`) REFERENCES `credit_batches` (`id`)
