@@ -56,14 +56,18 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             // current transaction already holds (settlement pre-locks wallets first) is a no-op.
             //
             // entityManager.find(..., PESSIMISTIC_WRITE) KHÔNG nạp lại entity đã được quản
-            // lý: nó trả về bản ghi cũ đã load trước đó. Số dư dùng để cộng/trừ vì thế có
-            // thể cũ (lost update) dù row đã khoá. refresh(..., PESSIMISTIC_WRITE) đọc lại
-            // đúng giá trị đã commit dưới khoá.
+            // lý: nó trả về bản ghi cũ đã load trước đó, nên số dư dùng để cộng/trừ có thể
+            // cũ (lost update). Số dư đã commit được đọc lại bằng một câu SELECT ... FOR
+            // UPDATE riêng, chỉ đọc cột balance nên KHÔNG xoá các thay đổi đang chờ của
+            // entity (ví dụ carbonCreditBalance mà luồng order vừa set trước khi gọi hàm này).
             Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId(), LockModeType.PESSIMISTIC_WRITE);
             if (locked == null) {
                 throw new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId());
             }
-            entityManager.refresh(locked, LockModeType.PESSIMISTIC_WRITE);
+            BigDecimal committedBalance = walletRepository.findBalanceByIdForUpdate(request.getWallet().getId());
+            if (committedBalance != null) {
+                locked.setBalance(committedBalance);
+            }
             wallet = locked;
         } else {
             throw new IllegalArgumentException("Wallet ID must be provided in WalletTransactionRequest");

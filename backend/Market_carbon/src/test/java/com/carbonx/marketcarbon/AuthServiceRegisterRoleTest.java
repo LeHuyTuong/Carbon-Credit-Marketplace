@@ -179,7 +179,9 @@ class AuthServiceRegisterRoleTest {
         // account can never be activated (verifyOtp with FORGOT_PASSWORD only returns
         // a reset token).
         user.setOtpPurpose(OtpPurpose.FORGOT_PASSWORD);
-        user.setOtpExpiryDate(LocalDateTime.now().minusMinutes(1));
+        // The forgot-password flow leaves a 30-minute OTP behind; the resend must not be
+        // blocked by that expiry, otherwise the account stays locked out for 30 minutes.
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(30));
         when(userRepository.findByEmail("user@example.com")).thenReturn(user);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

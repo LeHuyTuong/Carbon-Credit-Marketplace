@@ -134,9 +134,13 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
-        // Chống spam: giữ cùng quy tắc với resend OTP quên mật khẩu.
-        if (user.getOtpExpiryDate() != null
-                && user.getOtpExpiryDate().isAfter(LocalDateTime.now().plusSeconds(60))) {
+        // Chống spam: chỉ chặn khi chính mã OTP ĐĂNG KÝ còn hiệu lực. Nếu luồng quên
+        // mật khẩu đã ghi đè OTP (purpose FORGOT_PASSWORD, hạn 30 phút) thì chặn theo hạn
+        // đó sẽ khoá người dùng khỏi đăng ký tới 30 phút dù họ chưa từng nhận được mã.
+        boolean registrationOtpStillValid = user.getOtpPurpose() == OtpPurpose.REGISTER
+                && user.getOtpExpiryDate() != null
+                && user.getOtpExpiryDate().isAfter(LocalDateTime.now().plusSeconds(60));
+        if (registrationOtpStillValid) {
             throw new AppException(ErrorCode.OTP_STILL_VALID);
         }
 

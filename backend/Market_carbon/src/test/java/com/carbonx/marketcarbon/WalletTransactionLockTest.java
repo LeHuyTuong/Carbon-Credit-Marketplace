@@ -59,14 +59,16 @@ class WalletTransactionLockTest {
     @Test
     void createTransaction_locksWalletRowBeforeMutatingBalance() {
         when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
+        when(walletRepository.findBalanceByIdForUpdate(5L)).thenReturn(new BigDecimal("100.00"));
         when(walletTransactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.createTransaction(request(WalletTransactionType.BUY_CARBON_CREDIT, new BigDecimal("40.00")));
 
         verify(entityManager).find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE);
-        // The row is locked AND re-read under the lock: find(..., PESSIMISTIC_WRITE) alone
-        // would keep the stale in-memory balance of an already managed entity.
-        verify(entityManager).refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
+        // The row is locked AND the committed balance is re-read under that lock:
+        // find(..., PESSIMISTIC_WRITE) alone would keep the stale in-memory balance of an
+        // already managed entity (lost update).
+        verify(walletRepository).findBalanceByIdForUpdate(5L);
         // balance mutated on the LOCKED instance
         assertThat(wallet.getBalance()).isEqualByComparingTo(new BigDecimal("60.00"));
     }
@@ -74,6 +76,7 @@ class WalletTransactionLockTest {
     @Test
     void createTransaction_debitBeyondBalance_throwsBeforeAnySave() {
         when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
+        when(walletRepository.findBalanceByIdForUpdate(5L)).thenReturn(new BigDecimal("100.00"));
 
         assertThatThrownBy(() -> service.createTransaction(
                 request(WalletTransactionType.BUY_CARBON_CREDIT, new BigDecimal("150.00"))))
@@ -86,6 +89,7 @@ class WalletTransactionLockTest {
     @Test
     void createTransaction_creditRecordsBeforeAndAfterOnLockedWallet() {
         when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
+        when(walletRepository.findBalanceByIdForUpdate(5L)).thenReturn(new BigDecimal("100.00"));
         when(walletTransactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.createTransaction(request(WalletTransactionType.ADD_MONEY, new BigDecimal("30.00")));
@@ -96,5 +100,23 @@ class WalletTransactionLockTest {
         assertThat(row.getValue().getBalanceBefore()).isEqualByComparingTo("100.00");
         assertThat(row.getValue().getBalanceAfter()).isEqualByComparingTo("130.00");
         assertThat(wallet.getBalance()).isEqualByComparingTo("130.00");
+    }
+
+    @Test
+    void createTransaction_usesTheBalanceReReadUnderTheLock() {
+        // The in-memory wallet still shows 100.00 (loaded before another transaction
+        // committed 70.00). The transaction must debit the committed value, otherwise the
+        // write resurrects the 30.00 another transaction already took.
+        when(entityManager.find(Wallet.class, 5L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(wallet);
+        when(walletRepository.findBalanceByIdForUpdate(5L)).thenReturn(new BigDecimal("70.00"));
+        when(walletTransactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.createTransaction(request(WalletTransactionType.BUY_CARBON_CREDIT, new BigDecimal("40.00")));
+
+        ArgumentCaptor<com.carbonx.marketcarbon.model.WalletTransaction> row =
+                ArgumentCaptor.forClass(com.carbonx.marketcarbon.model.WalletTransaction.class);
+        verify(walletTransactionRepository).save(row.capture());
+        assertThat(row.getValue().getBalanceBefore()).isEqualByComparingTo("70.00");
+        assertThat(row.getValue().getBalanceAfter()).isEqualByComparingTo("30.00");
     }
 }

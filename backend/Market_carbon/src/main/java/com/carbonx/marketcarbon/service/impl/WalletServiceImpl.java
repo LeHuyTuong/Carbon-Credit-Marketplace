@@ -409,19 +409,24 @@ public class WalletServiceImpl implements WalletService {
     }
 
     /**
-     * Khoá row ví và đọc lại số dư đã commit.
+     * Khoá row ví và đọc lại số dư tiền đã commit.
      *
      * <p>{@code entityManager.find(..., PESSIMISTIC_WRITE)} KHÔNG khoá lại row nếu entity
      * đã nằm trong persistence context: nó trả về bản ghi cũ đã load trước đó, nên số dư
-     * có thể cũ (lost update) dù có "khoá". {@code refresh(..., PESSIMISTIC_WRITE)} đọc
-     * lại đúng giá trị đã commit dưới khoá, nên phải trả tiền trên số dư thật.</p>
+     * có thể cũ (lost update) dù có "khoá". Số dư đã commit được đọc lại bằng một câu
+     * {@code SELECT ... FOR UPDATE} chỉ đọc cột balance — không dùng
+     * {@code refresh}, vì refresh nạp lại toàn bộ state và sẽ xoá các thay đổi đang chờ
+     * của entity (ví dụ carbonCreditBalance do luồng order set trước đó).</p>
      */
     private Wallet lockAndReload(Long id) {
         Wallet wallet = entityManager.find(Wallet.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (wallet == null) {
             return null;
         }
-        entityManager.refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
+        BigDecimal committedBalance = walletRepository.findBalanceByIdForUpdate(id);
+        if (committedBalance != null) {
+            wallet.setBalance(committedBalance);
+        }
         return wallet;
     }
 }

@@ -716,6 +716,17 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         if (distributionId == null) return;
         try {
             requiresNewTransaction.executeWithoutResult(status -> {
+                // Tổng ghi ra phải là số ĐÃ TRẢ THẬT, không phải số kế hoạch: một
+                // distribution FAILED vẫn có thể đã trả được một phần.
+                List<ProfitDistributionDetail> details =
+                        profitDistributionDetailRepository.findByDistributionIdWithOwner(distributionId);
+                profitDistributionRepository.updateTotalsIfClaimed(
+                        distributionId,
+                        distributedMoney(details),
+                        distributedCredits(details),
+                        claimToken,
+                        OffsetDateTime.now(BUSINESS_ZONE));
+
                 int updated = profitDistributionRepository.finishIfClaimed(
                         distributionId,
                         ProfitDistributionStatus.FAILED,
