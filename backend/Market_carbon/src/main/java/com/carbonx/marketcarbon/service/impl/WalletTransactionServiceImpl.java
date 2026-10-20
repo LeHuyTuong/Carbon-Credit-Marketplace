@@ -78,6 +78,8 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         }
 
         BigDecimal amount = request.getAmount();
+        boolean isDebit = request.getType() == WalletTransactionType.WITHDRAWAL
+                || request.getType() == WalletTransactionType.BUY_CARBON_CREDIT;
         if (amount == null) {
             throw new IllegalArgumentException("Amount cannot be null in WalletTransactionRequest");
         }
@@ -125,7 +127,9 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         // tạo and lưu the transaction entity
         WalletTransaction transaction = new WalletTransaction();
         transaction.setWallet(wallet);
-        transaction.setAmount(request.getAmount());
+        // `amount` là DELTA (âm khi trừ ví) — như transferFunds, để SUM(amount) của các
+        // dòng tiền khớp với số dư ví.
+        transaction.setAmount(isDebit ? request.getAmount().negate() : request.getAmount());
         transaction.setTransactionType(request.getType());
         transaction.setDescription(request.getDescription());
         transaction.setCreatedAt(LocalDateTime.now());

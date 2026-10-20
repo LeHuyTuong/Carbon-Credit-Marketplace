@@ -227,7 +227,7 @@ export default function WalletHistory() {
                     </div>
                     <div className="text-end">
                       <div className={`fw-bold ${amountClass}`}>
-                        {`${prefix}${tx.amount} ${unit}`}
+                        {`${prefix}${Math.abs(tx.amount)} ${unit}`}
                       </div>
 
                       <div className="small text-light">

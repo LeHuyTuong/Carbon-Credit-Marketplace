@@ -109,6 +109,13 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        // Nạp proxy PaymentDetails TRONG transaction: nếu không, entity trả ra ngoài
+        // transaction sẽ mang proxy của Hibernate và Jackson không serialize được ->
+        // endpoint trả 500 SAU khi tiền đã được chuyển/hoàn.
+        if (withdrawalRequest.getPaymentDetails() != null) {
+            withdrawalRequest.getPaymentDetails().getAccountHolderName();
+        }
+
         withdrawalRequest.setProcessedAt(LocalDateTime.now(VIETNAM_ZONE));
         String reason = ""; // reason
         User user = withdrawalRequest.getUser();

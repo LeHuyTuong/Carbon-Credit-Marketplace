@@ -332,6 +332,10 @@ they are missing — they are required, not optional:
 
 | Variable | Needed by |
 | --- | --- |
+| `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | the database connection |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` | the SMTP server used for OTP and notification mails |
+| `JWT_SECRET` | signing the access tokens (the dev profile has an insecure fallback) |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` | PayPal checkout (`sandbox` or `live`) |
 | `TRADING_FEE` | fee applied when a marketplace order settles |
 | `JPA_DDL_AUTO` | overrides the prod schema mode (defaults to `validate`; never set it to `update` in production) |
 | `SPRING_JPA_HIBERNATE_DDL_AUTO` | overrides the schema mode of the other profiles (development default is `update`) |

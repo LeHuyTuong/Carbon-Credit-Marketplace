@@ -356,6 +356,7 @@ CREATE TABLE IF NOT EXISTS `payment_details` (
                                                  `account_number`      VARCHAR(255) NOT NULL,
                                                  `account_holder_name` VARCHAR(100) NOT NULL,
                                                  `customer_name`       VARCHAR(255) NOT NULL,
+                                                 `archived`            TINYINT(1) NOT NULL DEFAULT 0,
                                                  PRIMARY KEY (`id`),
                                                  CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB;

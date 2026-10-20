@@ -124,7 +124,7 @@ class ProdConfigContractTest {
         // Prod nạp CẢ application-prod.properties LẪN application.properties, nên cả hai
         // file đều phải được kiểm tra — nếu chỉ quét file prod thì các biến bắt buộc nằm
         // ở file base (ví dụ AI_GEMINI_*) lọt qua mà app vẫn không boot được.
-        java.util.Set<String> documented = readReadme();
+        java.util.Set<String> documented = readReadmeVariableTable();
         java.util.List<String> missing = new java.util.ArrayList<>();
         for (String profile : List.of("application.properties", "application-prod.properties")) {
             String props = readClasspathFile(profile);
@@ -156,6 +156,27 @@ class ProdConfigContractTest {
                     .as("%s must define the default owner share", profile)
                     .isNotEmpty();
         }
+    }
+
+    /** The rows of the README table that lists the required environment variables. */
+    private java.util.Set<String> readReadmeVariableTable() throws Exception {
+        java.nio.file.Path readme = java.nio.file.Path.of("..", "..", "README.md");
+        if (!java.nio.file.Files.exists(readme)) {
+            readme = java.nio.file.Path.of("README.md");
+        }
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (String line : java.nio.file.Files.readAllLines(readme)) {
+            String trimmed = line.trim();
+            if (!trimmed.startsWith("|")) {
+                continue;
+            }
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile("`([A-Z][A-Z0-9_]+)`").matcher(trimmed);
+            while (matcher.find()) {
+                names.add(matcher.group(1));
+            }
+        }
+        return names;
     }
 
     private java.util.Set<String> readReadme() throws Exception {

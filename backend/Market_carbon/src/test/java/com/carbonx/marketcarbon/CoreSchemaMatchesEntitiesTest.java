@@ -7,7 +7,6 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.SingularAttribute;
-import org.hibernate.type.BasicType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -150,20 +149,25 @@ class CoreSchemaMatchesEntitiesTest {
             }
             jakarta.persistence.OneToOne oneToOne =
                     field.getAnnotation(jakarta.persistence.OneToOne.class);
+            boolean manyToOne = field.getAnnotation(jakarta.persistence.ManyToOne.class) != null;
             boolean inverseSide = oneToOne != null && !oneToOne.mappedBy().isEmpty();
-            if (!inverseSide && (field.getAnnotation(jakarta.persistence.ManyToOne.class) != null
-                    || oneToOne != null)) {
+            if (manyToOne || oneToOne != null) {
+                if (inverseSide) {
+                    // Quan hệ inverse (mappedBy): cột nằm ở bảng bên kia.
+                    continue;
+                }
                 // Quan hệ sở hữu cột (không khai @JoinColumn): Hibernate đặt tên cột
-                // <property>_id. Quan hệ inverse (mappedBy) không có cột trong bảng này.
+                // <property>_id.
                 String defaultColumn = toSnakeCase(field.getName()) + "_id";
                 requireColumn(type, columns, defaultColumn, problems);
                 mapped.add(defaultColumn);
                 continue;
             }
 
-            if (!(singular.getType() instanceof BasicType<?> basic)) {
+            if (singular.getJavaType() == null) {
                 continue;
             }
+            Class<?> javaType = singular.getJavaType();
             Column column = field.getAnnotation(Column.class);
             String columnName = column != null && !column.name().isEmpty()
                     ? column.name()
@@ -178,15 +182,15 @@ class CoreSchemaMatchesEntitiesTest {
             String sqlFamily = family(sqlType);
             jakarta.persistence.Enumerated enumerated =
                     field.getAnnotation(jakarta.persistence.Enumerated.class);
-            List<String> expectedFamilies = expectedFamilies(basic, column, enumerated);
+            List<String> expectedFamilies = expectedFamilies(javaType, column, enumerated);
             if (expectedFamilies != null && !expectedFamilies.contains(sqlFamily)) {
                 problems.add(type.getJavaType().getSimpleName() + "." + columnName
                         + " maps " + expectedFamilies + " but core_ccm.sql declares " + sqlFamily
                         + " (" + normalize(sqlType) + ")");
             }
-            if (enumerated != null && basic.getJavaType().isEnum()) {
+            if (enumerated != null && javaType.isEnum()) {
                 List<String> expectedValues = new ArrayList<>();
-                for (Object constant : basic.getJavaType().getEnumConstants()) {
+                for (Object constant : javaType.getEnumConstants()) {
                     expectedValues.add(((Enum<?>) constant).name().toUpperCase(Locale.ROOT));
                 }
                 List<String> sqlValues = enumValues(sqlType);
@@ -204,9 +208,8 @@ class CoreSchemaMatchesEntitiesTest {
      * KIỂU (type code), không so sánh độ dài hay độ chính xác — nên một cột VARCHAR(20)
      * vẫn hợp lệ với mapping String(255), còn DOUBLE thay cho DECIMAL thì không.
      */
-    private List<String> expectedFamilies(BasicType<?> basic, Column column,
+    private List<String> expectedFamilies(Class<?> javaType, Column column,
                                          jakarta.persistence.Enumerated enumerated) {
-        Class<?> javaType = basic.getJavaType();
         if (javaType == BigDecimal.class) {
             return List.of("decimal");
         }

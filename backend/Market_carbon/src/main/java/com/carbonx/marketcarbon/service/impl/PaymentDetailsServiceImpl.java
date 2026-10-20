@@ -78,23 +78,18 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
                 .findByUserIdAndAccountNumber(user.getId(), request.getAccountNumber())
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_DETAILS_NOT_FOUND));
 
-        // Đơn rút tiền đã xử lý thì không còn cần tài khoản này nữa: bỏ liên kết để
-        // xoá được (nếu giữ liên kết thì xoá sẽ luôn bị FK chặn và người dùng không
-        // bao giờ xoá được tài khoản của mình). Đơn còn PENDING thì phải giữ tài khoản
-        // để admin còn biết chuyển tiền đi đâu.
+        // KHÔNG xoá hẳn row: các đơn rút tiền đã xử lý trỏ tới tài khoản này, xoá đi
+        // là mất thông tin nơi nhận tiền (và FK cũng chặn xoá). Gỡ = đánh dấu archived;
+        // đơn còn PENDING thì phải giữ tài khoản để admin còn biết chuyển tiền đi đâu.
         List<Withdrawal> withdrawals = withdrawalRepository.findByPaymentDetailsId(paymentDetails.getId());
-        List<Withdrawal> pending = withdrawals.stream()
-                .filter(w -> w.getStatus() == com.carbonx.marketcarbon.common.Status.PENDING)
-                .toList();
-        if (!pending.isEmpty()) {
+        boolean hasPending = withdrawals.stream()
+                .anyMatch(w -> w.getStatus() == com.carbonx.marketcarbon.common.Status.PENDING);
+        if (hasPending) {
             throw new AppException(ErrorCode.PAYMENT_DETAILS_IN_USE);
         }
-        for (Withdrawal withdrawal : withdrawals) {
-            withdrawal.setPaymentDetails(null);
-            withdrawalRepository.save(withdrawal);
-        }
 
-        paymentDetailsRepository.delete(paymentDetails);
+        paymentDetails.setArchived(true);
+        paymentDetailsRepository.save(paymentDetails);
     }
 
     @Override
@@ -102,6 +97,7 @@ public class PaymentDetailsServiceImpl implements PaymentDetailsService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
-        return paymentDetailsRepository.findFirstByUserIdOrderByIdDesc(user.getId()).orElse(null);
+        return paymentDetailsRepository.findFirstByUserIdAndArchivedFalseOrderByIdDesc(user.getId())
+                .orElse(null);
     }
 }

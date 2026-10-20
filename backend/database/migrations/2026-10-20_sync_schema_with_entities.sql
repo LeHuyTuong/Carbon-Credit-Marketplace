@@ -426,3 +426,20 @@ SET @ddl = IF(@has_column = 0,
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- payment_details.archived: gỡ tài khoản ngân hàng = đánh dấu archived, KHÔNG xoá row,
+-- vì các đơn rút tiền đã xử lý trỏ tới tài khoản đó (xoá hẳn là mất nơi nhận tiền và
+-- bị FK chặn).
+SET @has_column = (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name
+      AND TABLE_NAME = 'payment_details'
+      AND COLUMN_NAME = 'archived'
+);
+SET @ddl = IF(@has_column = 0,
+    'ALTER TABLE `payment_details` ADD COLUMN `archived` TINYINT(1) NOT NULL DEFAULT 0 AFTER `customer_name`',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
