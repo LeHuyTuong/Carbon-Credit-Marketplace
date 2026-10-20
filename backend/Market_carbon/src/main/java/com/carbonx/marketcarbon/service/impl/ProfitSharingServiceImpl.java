@@ -28,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -350,10 +351,13 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 return;
             }
 
-            // B12: Gửi email tổng kết cho Công ty (sau khi trạng thái đã commit)
+            // B12: Gửi email tổng kết cho Công ty (sau khi trạng thái đã commit).
+            // Số tiền gửi kèm là số tiền THỰC SỰ đã trả (detail SUCCESS), không phải
+            // tổng kế hoạch: owner bị FAILED/SKIPPED thì tiền không rời ví công ty.
             try {
                 BigDecimal totalCreditsTCO2e = totalCreditsKgForDistribution.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
                 String period = report.getPeriod(); // Safe access vì report đã load EAGER ở trên
+                BigDecimal actuallyDistributed = distributedMoney(persistedDetails);
 
                 emailService.sendDistributionSummaryToCompany(
                         companyUser.getEmail(),
@@ -362,7 +366,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                         payoutPlan.size(),
                         totalEnergyForDistribution,
                         totalCreditsTCO2e,
-                        finalTotal,
+                        actuallyDistributed,
                         false,
                         company.getId(),
                         String.valueOf(distributionEvent.getId())
@@ -459,6 +463,30 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             failDistribution(distributionId, claimToken);
             throw new AppException(ErrorCode.TRANSACTION_PROCESSING_ERROR);
         }
+    }
+
+    /**
+     * Owner đã được trả cho report này ở distribution khác chưa?
+     *
+     * <p>Ngoài các distribution có link report (đối chiếu chính xác theo report), còn
+     * phải tính tới distribution legacy ứng viên: một distribution không có link report
+     * nhưng được tạo sau khi report tồn tại có thể là payout của report đó. Không tính
+     * tới nó thì owner có thể bị trả tiền hai lần cho cùng một report.</p>
+     */
+    private boolean alreadyPaidForReport(ProfitDistribution event, EmissionReport report, Long ownerId) {
+        if (profitDistributionDetailRepository.existsPaidInAnotherDistribution(
+                report.getId(), ownerId, event.getId())) {
+            return true;
+        }
+        if (event.getProject() == null || event.getCompanyUser() == null) {
+            return false;
+        }
+        return profitDistributionDetailRepository.existsPaidInLegacyCandidate(
+                ownerId,
+                event.getCompanyUser().getId(),
+                event.getProject().getId(),
+                event.getId(),
+                reportCreatedAt(report));
     }
 
     /**
@@ -627,7 +655,24 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
 
         Long reportId = report == null ? null : report.getId();
+        BigDecimal distributedMoney = distributedMoney(details);
+        BigDecimal distributedCredits = distributedCredits(details);
         Boolean completed = requiresNewTransaction.execute(status -> {
+            // Tổng tiền/tín chỉ phải là số ĐÃ TRẢ THẬT (detail SUCCESS). Ghi tổng kế
+            // hoạch vào cột "distributed" sẽ khiến báo cáo nói công ty đã trả tiền cho
+            // cả những owner thực tế chưa nhận được.
+            int totalsUpdated = profitDistributionRepository.updateTotalsIfClaimed(
+                    distribution.getId(),
+                    distributedMoney,
+                    distributedCredits,
+                    claimToken,
+                    OffsetDateTime.now(BUSINESS_ZONE));
+            if (totalsUpdated == 0) {
+                log.warn("Distribution #{} is no longer owned by claim {}; not writing totals",
+                        distribution.getId(), claimToken);
+                return false;
+            }
+
             int updated = profitDistributionRepository.finishIfClaimed(
                     distribution.getId(),
                     ProfitDistributionStatus.COMPLETED,
@@ -725,8 +770,25 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         }
     }
 
-    private boolean isUnpaidDetail(ProfitDistributionDetail detail) {
-        return DETAIL_FAILED.equalsIgnoreCase(detail.getStatus())
+    /** Tổng tiền THỰC SỰ đã trả (chỉ tính detail SUCCESS). */
+    private BigDecimal distributedMoney(List<ProfitDistributionDetail> details) {
+        return details.stream()
+                .filter(detail -> DETAIL_SUCCESS.equalsIgnoreCase(detail.getStatus()))
+                .map(detail -> Objects.requireNonNullElse(detail.getMoneyAmount(), BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Tổng tín chỉ THỰC SỰ đã phân phối (chỉ tính detail SUCCESS). */
+    private BigDecimal distributedCredits(List<ProfitDistributionDetail> details) {
+        return details.stream()
+                .filter(detail -> DETAIL_SUCCESS.equalsIgnoreCase(detail.getStatus()))
+                .map(detail -> Objects.requireNonNullElse(detail.getCreditAmount(), BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(6, RoundingMode.HALF_UP);
+    }
+
+    private boolean isUnpaidDetail(ProfitDistributionDetail detail) {        return DETAIL_FAILED.equalsIgnoreCase(detail.getStatus())
                 || DETAIL_PENDING.equalsIgnoreCase(detail.getStatus());
     }
 
@@ -892,8 +954,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // Distribution legacy (không có emission_report_id) đối chiếu theo company +
             // project vì không biết report nào nó phục vụ.
             boolean alreadyPaid = reportId != null
-                    ? profitDistributionDetailRepository.existsPaidInAnotherDistribution(
-                    reportId, payout.getEvOwnerId(), event.getId())
+                    ? alreadyPaidForReport(event, report, payout.getEvOwnerId())
                     : alreadyPaidInLegacyScope(event, payout.getEvOwnerId());
             if (alreadyPaid) {
                 detail.setStatus(DETAIL_SKIPPED);
@@ -1042,12 +1103,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     private void rejectIfPayoutAlreadyStarted(EmissionReport report, Long companyUserId) {
         Optional<ProfitDistribution> previous =
                 profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(report.getId());
-        boolean legacy = false;
         if (previous.isEmpty() && report.getProject() != null) {
-            previous = profitDistributionRepository
-                    .findFirstByCompanyUserIdAndProjectIdAndEmissionReportIsNullOrderByIdDesc(
-                            companyUserId, report.getProject().getId());
-            legacy = previous.isPresent();
+            // Distribution legacy (không có link report): chỉ những distribution được tạo
+            // SAU khi report này đã tồn tại mới có thể là payout của report này (cùng quy
+            // tắc với migration backfill). Một report tạo sau đợt legacy không bị chặn,
+            // nếu không công ty sẽ không bao giờ payout được report mới của dự án đó.
+            boolean paidByLegacy = profitDistributionDetailRepository.existsPaidLegacyCandidate(
+                    companyUserId,
+                    report.getProject().getId(),
+                    reportCreatedAt(report));
+            if (paidByLegacy) {
+                throw new BadRequestException("Report " + report.getId()
+                        + " was already paid by a legacy distribution that has no report link; "
+                        + "reconcile that distribution before paying this report again.");
+            }
+            return;
         }
         if (previous.isEmpty()) {
             return;
@@ -1064,12 +1134,23 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         // không có detail (không có contribution/payout) không được khoá report mãi mãi.
         if (profitDistributionDetailRepository.existsByDistributionIdAndStatusIgnoreCase(
                 distribution.getId(), DETAIL_SUCCESS)) {
-            String hint = legacy
-                    ? " This is a legacy distribution without an emission-report link; retry it directly."
-                    : "";
             throw new BadRequestException("Report " + report.getId() + " already has paid owners; retry distribution #"
-                    + distribution.getId() + " instead of starting a new payout." + hint);
+                    + distribution.getId() + " instead of starting a new payout.");
         }
+    }
+
+    /**
+     * Mốc thời gian report được tạo, dùng làm ngưỡng "ứng viên legacy": một distribution
+     * không có link report chỉ có thể là payout của report đó nếu nó được tạo SAU mốc này.
+     * Report lưu {@code created_at} dạng LocalDateTime, distribution lưu OffsetDateTime —
+     * quy đổi cùng múi giờ với hệ thống để so sánh đúng trên DB.
+     */
+    private OffsetDateTime reportCreatedAt(EmissionReport report) {
+        LocalDateTime createdAt = report.getCreatedAt();
+        if (createdAt == null) {
+            return OffsetDateTime.now(BUSINESS_ZONE).minusYears(10);
+        }
+        return createdAt.atZone(ZoneId.systemDefault()).toOffsetDateTime();
     }
 
     // Lưu log lỗi khi không thể bắt đầu process payout (vd: ko tìm thấy user).

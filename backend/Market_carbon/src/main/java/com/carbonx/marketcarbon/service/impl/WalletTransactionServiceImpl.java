@@ -54,10 +54,16 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
             // balance mutations (deposits, withdrawals, buy/sell settlement), so locking here
             // closes the lost-update window for every caller at once. Re-acquiring a lock the
             // current transaction already holds (settlement pre-locks wallets first) is a no-op.
-            Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId(), LockModeType.PESSIMISTIC_WRITE);
+            //
+            // entityManager.find(..., PESSIMISTIC_WRITE) KHÔNG nạp lại entity đã được quản
+            // lý: nó trả về bản ghi cũ đã load trước đó. Số dư dùng để cộng/trừ vì thế có
+            // thể cũ (lost update) dù row đã khoá. refresh(..., PESSIMISTIC_WRITE) đọc lại
+            // đúng giá trị đã commit dưới khoá.
+            Wallet locked = entityManager.find(Wallet.class, request.getWallet().getId());
             if (locked == null) {
                 throw new IllegalArgumentException("Wallet not found for transaction with ID: " + request.getWallet().getId());
             }
+            entityManager.refresh(locked, LockModeType.PESSIMISTIC_WRITE);
             wallet = locked;
         } else {
             throw new IllegalArgumentException("Wallet ID must be provided in WalletTransactionRequest");

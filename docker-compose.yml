@@ -56,8 +56,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # cấu hình biến môi trường khi build để React gọi đúng API
-        REACT_APP_API_BASE_URL: http://be:8082/api 
+        # Vite chỉ đọc biến VITE_* lúc build; apiFetch dùng đường dẫn tương đối
+        # "/api" để nginx proxy tới backend (network "backend", service "be").
+        VITE_API_BASE: /api
     image: carbonx-fe:latest
     networks:
       - backend

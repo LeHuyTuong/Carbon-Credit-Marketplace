@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Bảng roles
 CREATE TABLE IF NOT EXISTS `roles` (
                                        `role_id`     BIGINT NOT NULL AUTO_INCREMENT,
-                                       `name`        VARCHAR(50) NOT NULL UNIQUE, -- VD: ROLE_USER, ROLE_ADMIN
+                                       `name`        VARCHAR(255) NOT NULL UNIQUE, -- VD: ROLE_USER, ROLE_ADMIN
                                        `description` VARCHAR(255) DEFAULT NULL,
                                        PRIMARY KEY (`role_id`)
 ) ENGINE=InnoDB;
@@ -264,10 +264,10 @@ CREATE TABLE IF NOT EXISTS `carbon_credits` (
                                                 `status`           ENUM('AVAILABLE','EXPIRED','ISSUE','ISSUED','LISTED','PENDING','RETIRED','SOLD','TRADED') NOT NULL,
                                                 `vintage_year`     INT NOT NULL,
                                                 `t_co2e`           DECIMAL(18, 3) NOT NULL,
-                                                `amount`           DECIMAL(18, 2), -- Số lượng tiền (nếu cần) hoặc giá trị
+                                                `amount`           DECIMAL(38, 2), -- Số lượng tiền (nếu cần) hoặc giá trị
                                                 `carbon_credit`    DECIMAL(18, 3) NOT NULL, -- Số lượng credit
-                                                `listed_amount`    DECIMAL(18, 2),
-                                                `current_price`    DOUBLE NOT NULL,
+                                                `listed_amount`    DECIMAL(38, 2),
+                                                `current_price`    DECIMAL(18, 2) NOT NULL,
                                                 `project_id`       BIGINT,
                                                 `company_id`       BIGINT,
                                                 `batch_id`         BIGINT,
@@ -347,9 +347,9 @@ CREATE TABLE IF NOT EXISTS `wallets` (
 CREATE TABLE IF NOT EXISTS `payment_details` (
                                                  `id`                  BIGINT NOT NULL AUTO_INCREMENT,
                                                  `user_id`             BIGINT,
-                                                 `bank_code`           VARCHAR(20) NOT NULL,
+                                                 `bank_code`           VARCHAR(5) NOT NULL,
                                                  `account_number`      VARCHAR(255) NOT NULL,
-                                                 `account_holder_name` VARCHAR(100) NOT NULL,
+                                                 `account_holder_name` VARCHAR(25) NOT NULL,
                                                  `customer_name`       VARCHAR(255) NOT NULL,
                                                  PRIMARY KEY (`id`),
                                                  CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
@@ -375,7 +375,7 @@ CREATE TABLE IF NOT EXISTS `payment_order` (
 CREATE TABLE IF NOT EXISTS `wallet_transaction` (
                                                     `id`               BIGINT NOT NULL AUTO_INCREMENT,
                                                     `wallet_id`        BIGINT NOT NULL,
-                                                    `transaction_type` ENUM('ADD_MONEY','BUY_CARBON_CREDIT','EV_OWNER_PAYOUT','EV_OWNER_PAYOUT_RECEIVE','ISSUE_CREDIT','PROFIT_SHARING','RETIRE_CREDIT','SELL_CARBON_CREDIT','SELL_CARBON_CREDIT_SHARE','WITHDRAWAL') NOT NULL,
+                                                    `transaction_type` ENUM('ADD_MONEY','BUY_CARBON_CREDIT','EV_OWNER_PAYOUT','EV_OWNER_PAYOUT_RECEIVE','ISSUE_CREDIT','PROFIT_SHARING','RETIRE_CREDIT','SELL_CARBON_CREDIT','SELL_CARBON_CREDIT_SHARE','WITHDRAWAL','WITHDRAWAL_REFUND') NOT NULL,
                                                     `amount`           DECIMAL(18, 2) NOT NULL,
                                                     `balance_before`   DECIMAL(18, 2),
                                                     `balance_after`    DECIMAL(18, 2),

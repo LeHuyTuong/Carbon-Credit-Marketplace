@@ -360,6 +360,11 @@ distribution is only considered superseded by another **legacy** distribution of
 company + project; a payout for a different report no longer blocks it forever. Because a legacy
 row does not say which report it paid, owners already paid by another distribution of the same
 company + project are marked `SKIPPED` instead of being paid twice.
+
+A legacy row can only be the payout of a report that already existed when the row was created
+(the same rule the migration backfill uses). A report created *after* a legacy payout is
+therefore payable, while a report that predates it is blocked until the legacy row is
+reconciled — otherwise the same report could be paid twice.
 Legacy distributions already marked `COMPLETED` while an owner detail is still `PENDING`/`FAILED`
 (the old code completed distributions unconditionally) are retryable too: `/retry` pays only the
 unsettled owners and leaves an already `PAID_OUT` report alone. A distribution without any owner
@@ -383,10 +388,20 @@ account still using one.
 cd frontend && npm install && npm run dev
 ```
 
+`apiFetch` calls `/api` on the same origin by default: Vite proxies it to the backend in dev
+(`frontend/vite.config.js`), nginx proxies it in the Docker image (`frontend/nginx.conf` →
+`http://be:8082/api/`). Set `VITE_API_BASE` at build time to point somewhere else — it is the
+only variable the bundle reads, and the Docker build passes `VITE_API_BASE=/api`.
+
+The "Quick Login" panel with the demo accounts (including the admin account) is compiled only in
+development: its credentials live in `frontend/src/components/quickAccounts.js`, which is loaded
+through a dynamic import inside an `import.meta.env.DEV` branch and is therefore dropped from the
+production bundle.
+
 **Tests:**
 
 ```bash
-cd backend/Market_carbon && ./mvnw test    # 93 unit tests, no infrastructure needed
+cd backend/Market_carbon && ./mvnw test    # unit tests, no infrastructure needed
 
 # the concurrency ITs spin up a real MySQL, so they need Docker and are not part
 # of `mvnw test` (surefire only picks up *Test); run one explicitly:

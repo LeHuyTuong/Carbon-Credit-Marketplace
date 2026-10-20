@@ -252,6 +252,8 @@ class ProfitSharingRetrySafetyTest {
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
         when(profitDistributionRepository.finishIfClaimed(
                 eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
         when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);
@@ -352,6 +354,8 @@ class ProfitSharingRetrySafetyTest {
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
         when(profitDistributionRepository.finishIfClaimed(
                 eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
         when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);
@@ -396,6 +400,8 @@ class ProfitSharingRetrySafetyTest {
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
         when(profitDistributionRepository.finishIfClaimed(
                 eq(7L), any(), eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(failed));
         when(walletService.findWalletByUser(companyUser)).thenReturn(wallet);

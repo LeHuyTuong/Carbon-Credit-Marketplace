@@ -25,6 +25,7 @@ import com.carbonx.marketcarbon.service.ProfitSharingTaskDispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,6 +75,7 @@ class ProfitSharingPayoutTransferTest {
     @Mock private DynamicPricingService dynamicPricingService;
 
     private ProfitSharingServiceImpl service;
+    private Integer payoutIsolationLevel;
 
     @BeforeEach
     void setUp() {
@@ -92,7 +95,19 @@ class ProfitSharingPayoutTransferTest {
                 dynamicPricingService,
                 transactionManager,
                 new ProfitSharingTaskDispatcher(Runnable::run));
+        // Template thật của production: giữ lại isolation level để kiểm tra.
+        service.initTransactionTemplate();
+        TransactionTemplate productionTemplate = (TransactionTemplate) ReflectionTestUtils.getField(
+                service, "requiresNewTransaction");
+        payoutIsolationLevel = productionTemplate.getIsolationLevel();
         ReflectionTestUtils.setField(service, "requiresNewTransaction", noOpTemplate());
+    }
+
+    @Test
+    void payoutTransactionRunsReadCommittedSoTheAlreadyPaidCheckSeesFreshCommits() {
+        assertThat(payoutIsolationLevel)
+                .as("the payout transaction must see a SUCCESS committed by another distribution")
+                .isEqualTo(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     @Test
@@ -128,6 +143,15 @@ class ProfitSharingPayoutTransferTest {
                 eq(distribution));
         verify(walletService, never()).generateWallet(any());
         assertThat(detail.getStatus()).isEqualTo("SUCCESS");
+
+        // Both wallets are locked in ascending id order BEFORE the "already paid?" check:
+        // that order is what serialises two distributions paying the same owner, and the
+        // check must run after the lock so it sees the other run's committed SUCCESS.
+        InOrder lockOrder = inOrder(walletRepository, profitDistributionDetailRepository);
+        lockOrder.verify(walletRepository).findByIdForUpdate(3L);
+        lockOrder.verify(walletRepository).findByIdForUpdate(42L);
+        lockOrder.verify(profitDistributionDetailRepository)
+                .existsPaidInAnotherDistribution(99L, 42L, 7L);
     }
 
     @Test

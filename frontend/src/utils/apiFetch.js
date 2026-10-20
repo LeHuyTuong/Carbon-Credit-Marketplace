@@ -4,7 +4,10 @@ import { toast } from "react-toastify";
 let is429ToastShown = false;
 
 export async function apiFetch(path, options = {}) {
-  const API = import.meta.env.VITE_API_BASE;
+  // Mặc định gọi API qua cùng origin ("/api"): dev thì Vite proxy, Docker thì nginx
+  // proxy. Nếu thiếu biến VITE_API_BASE (build không truyền env) thì `API.endsWith`
+  // sẽ ném TypeError và mọi request chết ngay.
+  const API = import.meta.env.VITE_API_BASE || "/api";
 
   // lấy token từ session hoặc localStorage
   let token;

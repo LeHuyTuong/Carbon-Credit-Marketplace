@@ -181,6 +181,108 @@ class ProfitSharingPartialFailureTest {
     }
 
     @Test
+    void shareForANewReportIsNotBlockedByAnOlderLegacyPayout() {
+        User companyUser = companyUser();
+        Company company = company();
+        EVOwner owner = owner();
+        Wallet companyWallet = wallet();
+        EmissionReport report = report(company, owner);
+        ProfitSharingRequest request = new ProfitSharingRequest();
+        request.setEmissionReportId(99L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company));
+        when(dynamicPricingService.getMarketPricePerCredit()).thenReturn(new BigDecimal("10.00"));
+        when(dynamicPricingService.getKwhPerCreditFactor()).thenReturn(new BigDecimal("1000"));
+        // No distribution linked to this report, and the legacy payout of the project was
+        // created BEFORE this report existed, so it cannot be this report's payout.
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenReturn(Optional.empty());
+        when(profitDistributionDetailRepository.existsPaidLegacyCandidate(
+                eq(1L), eq(20L), any())).thenReturn(false);
+        when(profitDistributionRepository.save(any(ProfitDistribution.class)))
+                .thenAnswer(invocation -> {
+                    ProfitDistribution distribution = invocation.getArgument(0);
+                    if (distribution.getId() == null) {
+                        distribution.setId(7L);
+                    }
+                    return distribution;
+                });
+        when(walletService.findWalletByUser(companyUser)).thenReturn(companyWallet);
+        when(emissionReportRepository.findByIdWithDetails(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.findById(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(vehicleRepository.findByCompanyId(10L)).thenReturn(List.of(vehicle(company, owner)));
+        when(walletRepository.findById(3L)).thenReturn(Optional.of(companyWallet));
+        when(evOwnerRepository.getReferenceById(42L)).thenReturn(owner);
+
+        ProfitDistribution managedDistribution = new ProfitDistribution();
+        managedDistribution.setId(7L);
+        when(profitDistributionRepository.findById(7L)).thenReturn(Optional.of(managedDistribution));
+
+        ProfitDistributionDetail success = new ProfitDistributionDetail();
+        success.setId(100L);
+        success.setDistribution(managedDistribution);
+        success.setEvOwner(owner);
+        success.setStatus("SUCCESS");
+        success.setMoneyAmount(new BigDecimal("3.00"));
+        success.setCreditAmount(new BigDecimal("600.000000"));
+        success.setEnergyAmount(new BigDecimal("1000.000000"));
+        when(profitDistributionDetailRepository.save(any(ProfitDistributionDetail.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
+                .thenReturn(List.of(success));
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.touchProcessing(
+                eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
+        when(profitDistributionRepository.finishIfClaimed(
+                eq(7L), eq(ProfitDistributionStatus.COMPLETED),
+                eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+
+        doReturn(true).when(service).processPayoutForOwner(
+                any(ProfitDistribution.class), any(ProfitSharingServiceImpl.OwnerPayoutData.class),
+                any(Wallet.class), any(), any(), any(), any());
+
+        service.shareCompanyProfit(1L, request);
+
+        assertThat(report.getStatus())
+                .as("a report newer than the legacy payout must be payable")
+                .isEqualTo(EmissionStatus.PAID_OUT);
+    }
+
+    @Test
+    void shareForAReportPaidByALegacyDistributionIsBlocked() {
+        User companyUser = companyUser();
+        Company company = company();
+        EVOwner owner = owner();
+        EmissionReport report = report(company, owner);
+        ProfitSharingRequest request = new ProfitSharingRequest();
+        request.setEmissionReportId(99L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(companyUser));
+        when(companyRepository.findByUserId(1L)).thenReturn(Optional.of(company));
+        when(dynamicPricingService.getMarketPricePerCredit()).thenReturn(new BigDecimal("10.00"));
+        when(dynamicPricingService.getKwhPerCreditFactor()).thenReturn(new BigDecimal("1000"));
+        when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
+                .thenReturn(Optional.empty());
+        // A legacy distribution of the project was created AFTER this report existed and
+        // already paid its owners: it may be this report's payout, so it must not be paid twice.
+        when(profitDistributionDetailRepository.existsPaidLegacyCandidate(
+                eq(1L), eq(20L), any())).thenReturn(true);
+        when(emissionReportRepository.findByIdWithDetails(99L)).thenReturn(Optional.of(report));
+        when(emissionReportRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(report));
+
+        service.shareCompanyProfit(1L, request);
+
+        verify(profitDistributionRepository, never()).save(any());
+        assertThat(report.getStatus())
+                .as("the report must stay unpaid until the legacy row is reconciled")
+                .isEqualTo(EmissionStatus.CREDIT_ISSUED);
+    }
+
+    @Test
     void retryPaysOnlyFailedDetailsAndCompletesReportWhenAllSucceed() {
         User companyUser = companyUser();
         Company company = company();
@@ -226,6 +328,8 @@ class ProfitSharingPartialFailureTest {
         when(profitDistributionRepository.finishIfClaimed(
                 eq(7L), eq(ProfitDistributionStatus.COMPLETED),
                 eq(ProfitDistributionStatus.PROCESSING), anyString(), any())).thenReturn(1);
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(failed, alreadyPaid));
         when(walletService.findWalletByUser(companyUser)).thenReturn(companyWallet);

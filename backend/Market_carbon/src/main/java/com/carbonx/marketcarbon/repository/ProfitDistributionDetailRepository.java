@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -88,4 +89,42 @@ public interface ProfitDistributionDetailRepository extends JpaRepository<Profit
                                                        @Param("distributionId") Long distributionId);
 
     long countByDistributionId(Long distributionId);
+
+    /**
+     * Distribution legacy (không có emission_report_id) của cùng company + project được
+     * tạo SAU khi report đã tồn tại là ứng viên có thể là payout của report đó.
+     *
+     * <p>Đây là cùng quy tắc mà migration backfill dùng: một distribution tạo sau report
+     * thì có thể trả cho report đó, một distribution tạo trước report thì không thể (report
+     * chưa tồn tại). Quy tắc này giữ /share cho các report MỚI mà vẫn chặn trả hai lần
+     * cho report cũ.</p>
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END "
+            + "FROM ProfitDistributionDetail d "
+            + "WHERE d.status = 'SUCCESS' "
+            + "AND d.distribution.emissionReport IS NULL "
+            + "AND d.distribution.companyUser.id = :companyUserId "
+            + "AND d.distribution.project.id = :projectId "
+            + "AND d.distribution.createAt >= :reportCreatedAt")
+    boolean existsPaidLegacyCandidate(@Param("companyUserId") Long companyUserId,
+                                       @Param("projectId") Long projectId,
+                                       @Param("reportCreatedAt") OffsetDateTime reportCreatedAt);
+
+    /**
+     * Owner đã được trả bởi một distribution legacy ứng viên của report này.
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END "
+            + "FROM ProfitDistributionDetail d "
+            + "WHERE d.evOwner.id = :ownerId "
+            + "AND d.status = 'SUCCESS' "
+            + "AND d.distribution.id <> :distributionId "
+            + "AND d.distribution.emissionReport IS NULL "
+            + "AND d.distribution.companyUser.id = :companyUserId "
+            + "AND d.distribution.project.id = :projectId "
+            + "AND d.distribution.createAt >= :reportCreatedAt")
+    boolean existsPaidInLegacyCandidate(@Param("ownerId") Long ownerId,
+                                         @Param("companyUserId") Long companyUserId,
+                                         @Param("projectId") Long projectId,
+                                         @Param("distributionId") Long distributionId,
+                                         @Param("reportCreatedAt") OffsetDateTime reportCreatedAt);
 }

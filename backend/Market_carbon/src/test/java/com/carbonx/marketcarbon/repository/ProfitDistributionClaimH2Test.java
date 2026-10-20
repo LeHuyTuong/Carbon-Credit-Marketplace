@@ -243,6 +243,51 @@ class ProfitDistributionClaimH2Test {
                 .isFalse();
     }
 
+    @Test
+    void legacyCandidateIsOnlyTheRowCreatedAfterTheReportExisted() {
+        ProfitDistribution legacy = persistFailedDistribution();
+        Long projectId = legacy.getProject().getId();
+        Long companyUserId = legacy.getCompanyUser().getId();
+
+        User ownerUser = new User();
+        ownerUser.setEmail("owner-" + System.nanoTime() + "@example.com");
+        ownerUser.setPasswordHash("hash");
+        ownerUser.setStatus(USER_STATUS.ACTIVE);
+        entityManager.persist(ownerUser);
+
+        EVOwner owner = new EVOwner();
+        owner.setName("Owner");
+        owner.setUser(ownerUser);
+        owner.setPhone("0900000000");
+        owner.setCountry("VN");
+        owner.setAddress("Test address");
+        owner.setBirthDate(LocalDate.of(1990, 1, 1));
+        owner.setEmail(ownerUser.getEmail());
+        owner.setDocumentType(IDType.CCCD);
+        owner.setDocumentNumber("012345678901");
+        owner.setGender(Gender.MALE);
+        entityManager.persist(owner);
+
+        entityManager.persist(detail(legacy, owner, "SUCCESS"));
+        entityManager.flush();
+        entityManager.clear();
+
+        OffsetDateTime beforeLegacy = OffsetDateTime.now().minusDays(1);
+        assertThat(detailRepository.existsPaidLegacyCandidate(companyUserId, projectId, beforeLegacy))
+                .as("a legacy payout created after the report existed is a candidate")
+                .isTrue();
+
+        OffsetDateTime afterLegacy = OffsetDateTime.now().plusDays(1);
+        assertThat(detailRepository.existsPaidLegacyCandidate(companyUserId, projectId, afterLegacy))
+                .as("a legacy payout created before the report existed cannot be its payout")
+                .isFalse();
+
+        assertThat(detailRepository.existsPaidInLegacyCandidate(
+                owner.getId(), companyUserId, projectId, 999L, beforeLegacy))
+                .as("the owner was paid by a legacy candidate of that report")
+                .isTrue();
+    }
+
     private ProfitDistributionDetail detail(ProfitDistribution distribution, EVOwner owner, String status) {
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(distribution);

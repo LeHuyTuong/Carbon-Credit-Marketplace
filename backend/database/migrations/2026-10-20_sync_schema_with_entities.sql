@@ -285,3 +285,90 @@ SET @ddl = IF(@has_index = 0 AND @duplicate_wallets = 0,
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Column types -----------------------------------------------------------------
+-- Hibernate's schema validation compares the COLUMN TYPE, not only its name, so a
+-- DOUBLE where the entity maps BigDecimal(18,2) (or a shorter VARCHAR) stops the
+-- prod profile from booting. Each ALTER only runs when the live type differs.
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'carbon_credits' AND COLUMN_NAME = 'current_price'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'decimal(18,2)',
+    'ALTER TABLE `carbon_credits` MODIFY COLUMN `current_price` DECIMAL(18, 2) NOT NULL',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'carbon_credits' AND COLUMN_NAME = 'amount'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'decimal(38,2)',
+    'ALTER TABLE `carbon_credits` MODIFY COLUMN `amount` DECIMAL(38, 2)',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'carbon_credits' AND COLUMN_NAME = 'listed_amount'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'decimal(38,2)',
+    'ALTER TABLE `carbon_credits` MODIFY COLUMN `listed_amount` DECIMAL(38, 2)',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'payment_details' AND COLUMN_NAME = 'bank_code'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(5)',
+    'ALTER TABLE `payment_details` MODIFY COLUMN `bank_code` VARCHAR(5) NOT NULL',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'payment_details' AND COLUMN_NAME = 'account_holder_name'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(25)',
+    'ALTER TABLE `payment_details` MODIFY COLUMN `account_holder_name` VARCHAR(25) NOT NULL',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'roles' AND COLUMN_NAME = 'name'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type <> 'varchar(255)',
+    'ALTER TABLE `roles` MODIFY COLUMN `name` VARCHAR(255) NOT NULL',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- wallet_transaction.transaction_type: the enum must contain every value the
+-- WalletTransactionType enum can write, otherwise the withdrawal-refund insert is
+-- truncated and the rejected withdrawal is never refunded.
+SET @current_type = (
+    SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'wallet_transaction' AND COLUMN_NAME = 'transaction_type'
+);
+SET @ddl = IF(@current_type IS NOT NULL AND @current_type NOT LIKE '%WITHDRAWAL_REFUND%',
+    'ALTER TABLE `wallet_transaction` MODIFY COLUMN `transaction_type` '
+        'ENUM(''ADD_MONEY'',''BUY_CARBON_CREDIT'',''EV_OWNER_PAYOUT'',''EV_OWNER_PAYOUT_RECEIVE'','
+        '''ISSUE_CREDIT'',''PROFIT_SHARING'',''RETIRE_CREDIT'',''SELL_CARBON_CREDIT'','
+        '''SELL_CARBON_CREDIT_SHARE'',''WITHDRAWAL'',''WITHDRAWAL_REFUND'') NOT NULL',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
