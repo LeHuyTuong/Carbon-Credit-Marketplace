@@ -54,4 +54,38 @@ public interface ProfitDistributionDetailRepository extends JpaRepository<Profit
     boolean existsPaidInAnotherDistribution(@Param("reportId") Long reportId,
                                             @Param("ownerId") Long ownerId,
                                             @Param("distributionId") Long distributionId);
+
+    /**
+     * Cùng ý với {@link #existsPaidInAnotherDistribution} nhưng cho distribution legacy
+     * (không có emission_report_id): đối chiếu theo company + project thay vì theo report.
+     * Dùng để owner đã được trả ở một distribution khác của cùng dự án không bị trả
+     * lần hai khi retry distribution legacy.
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END "
+            + "FROM ProfitDistributionDetail d "
+            + "WHERE d.evOwner.id = :ownerId "
+            + "AND d.status = 'SUCCESS' "
+            + "AND d.distribution.id <> :distributionId "
+            + "AND d.distribution.companyUser.id = :companyUserId "
+            + "AND d.distribution.project.id = :projectId")
+    boolean existsPaidInAnotherDistributionOfProject(@Param("ownerId") Long ownerId,
+                                                      @Param("companyUserId") Long companyUserId,
+                                                      @Param("projectId") Long projectId,
+                                                      @Param("distributionId") Long distributionId);
+
+    /**
+     * Bản fallback khi distribution legacy không còn thông tin project: đối chiếu theo
+     * company để chặn trả tiền hai lần cho cùng một owner.
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END "
+            + "FROM ProfitDistributionDetail d "
+            + "WHERE d.evOwner.id = :ownerId "
+            + "AND d.status = 'SUCCESS' "
+            + "AND d.distribution.id <> :distributionId "
+            + "AND d.distribution.companyUser.id = :companyUserId")
+    boolean existsPaidInAnotherDistributionOfCompany(@Param("ownerId") Long ownerId,
+                                                       @Param("companyUserId") Long companyUserId,
+                                                       @Param("distributionId") Long distributionId);
+
+    long countByDistributionId(Long distributionId);
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -87,4 +88,21 @@ public interface ProfitDistributionRepository extends JpaRepository<ProfitDistri
                         @Param("processing") ProfitDistributionStatus processing,
                         @Param("claimToken") String claimToken,
                         @Param("now") OffsetDateTime now);
+
+    /**
+     * Ghi tổng tiền / tín chỉ của đợt phân phối, chỉ khi worker còn giữ claim.
+     *
+     * <p>Không dùng {@code save(entity)} cho việc này: entity đã detached sẽ được merge
+     * và ghi đè MỌI cột (kể cả status và claim_token) của claim mới, phá vỡ hàng rào
+     * fencing của cả thiết kế.</p>
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ProfitDistribution d SET d.totalMoneyDistributed = :money, "
+            + "d.totalCreditsDistributed = :credits, d.updatedAt = :now "
+            + "WHERE d.id = :id AND d.claimToken = :claimToken")
+    int updateTotalsIfClaimed(@Param("id") Long id,
+                              @Param("money") BigDecimal money,
+                              @Param("credits") BigDecimal credits,
+                              @Param("claimToken") String claimToken,
+                              @Param("now") OffsetDateTime now);
 }

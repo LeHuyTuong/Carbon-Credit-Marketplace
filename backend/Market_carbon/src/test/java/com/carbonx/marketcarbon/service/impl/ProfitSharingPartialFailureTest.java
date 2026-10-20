@@ -152,6 +152,8 @@ class ProfitSharingPartialFailureTest {
                 });
         when(profitDistributionDetailRepository.findByDistributionIdWithOwner(7L))
                 .thenReturn(List.of(pending));
+        when(profitDistributionRepository.updateTotalsIfClaimed(
+                eq(7L), any(), any(), anyString(), any())).thenReturn(1);
         when(profitDistributionRepository.touchProcessing(
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING), any(), anyString())).thenReturn(1);
         when(profitDistributionRepository.finishIfClaimed(
@@ -215,6 +217,7 @@ class ProfitSharingPartialFailureTest {
         when(profitDistributionRepository.findWithReportById(7L)).thenReturn(Optional.of(distribution));
         when(profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(99L))
                 .thenReturn(Optional.of(distribution));
+        when(profitDistributionDetailRepository.countByDistributionId(7L)).thenReturn(1L);
         when(profitDistributionRepository.markRetrying(
                 eq(7L), eq(ProfitDistributionStatus.PROCESSING), eq(ProfitDistributionStatus.FAILED),
                 anyString(), any())).thenReturn(1);

@@ -17,10 +17,12 @@ CREATE TABLE IF NOT EXISTS `users` (
                                        `otp_code`      VARCHAR(255) DEFAULT NULL,
                                        `otp_expiry_at` DATETIME(6) DEFAULT NULL,
                                        `otp_purpose`   ENUM('FORGOT_PASSWORD','REGISTER') DEFAULT NULL,
+                                       `wallet_id`     BIGINT,
                                        `created_at`    DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
                                        `updated_at`    DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                                        PRIMARY KEY (`id`),
-                                       UNIQUE KEY `uk_users_email` (`email`)
+                                       UNIQUE KEY `uk_users_email` (`email`),
+                                       UNIQUE KEY `uk_users_wallet` (`wallet_id`)
 ) ENGINE=InnoDB;
 
 -- Bảng roles
@@ -192,6 +194,17 @@ CREATE TABLE IF NOT EXISTS `emission_reports` (
                                                   `upload_original_filename` VARCHAR(255),
                                                   `upload_storage_url`       VARCHAR(1024),
                                                   `upload_sha256`            VARCHAR(128),
+                                                  `upload_mime_type`         VARCHAR(255),
+                                                  `upload_size_bytes`        BIGINT,
+                                                  `upload_storage_key`       VARCHAR(255),
+                                                  `upload_rows`              INT,
+                                                  `parse_error`              TEXT,
+                                                  `ai_pre_score`             DECIMAL(4, 2),
+                                                  `ai_version`               VARCHAR(16),
+                                                  `ai_pre_notes`             TEXT,
+                                                  `verification_comment`     TEXT,
+                                                  `admin_approved_by_name`   VARCHAR(128),
+                                                  `comment`                  TEXT,
                                                   `verified_by_cva_id`       BIGINT,
                                                   `verified_by_cva_name`     VARCHAR(128),
                                                   `verification_score`       DECIMAL(4, 2),
@@ -350,6 +363,8 @@ CREATE TABLE IF NOT EXISTS `payment_order` (
                                                `payment_method`   ENUM('PAYPAL','STRIPE','VNPAY'),
                                                `status`           TINYINT,
                                                `vnp_txn_ref`      VARCHAR(255),
+                                               `payment_order_id` BIGINT,
+                                               `provider_ref`     VARCHAR(255),
                                                `created_at`       DATETIME(6) NOT NULL,
                                                `updated_at`       DATETIME(6) NOT NULL,
                                                PRIMARY KEY (`id`),
@@ -421,6 +436,17 @@ CREATE TABLE IF NOT EXISTS `profit_distribution_detail` (
                                                             CONSTRAINT `fk_dist_detail_main` FOREIGN KEY (`distribution_id`) REFERENCES `profit_distribution` (`id`)
 ) ENGINE=InnoDB;
 
+-- Bảng credit_serial_counters (bộ đếm serial tự tăng theo vintage + project + company)
+CREATE TABLE IF NOT EXISTS `credit_serial_counters` (
+                                                      `id`           BIGINT NOT NULL AUTO_INCREMENT,
+                                                      `vintage_year` INT NOT NULL,
+                                                      `project_id`   BIGINT NOT NULL,
+                                                      `company_id`   BIGINT NOT NULL,
+                                                      `next_serial`  BIGINT NOT NULL,
+                                                      PRIMARY KEY (`id`),
+                                                      UNIQUE KEY `uk_serial_counter` (`vintage_year`, `project_id`, `company_id`)
+) ENGINE=InnoDB;
+
 -- Bảng credit_certificates (Chứng chỉ)
 CREATE TABLE IF NOT EXISTS `credit_certificates` (
                                                      `id`               BIGINT NOT NULL AUTO_INCREMENT,
@@ -434,6 +460,8 @@ CREATE TABLE IF NOT EXISTS `credit_certificates` (
                                                      `certificate_url`  VARCHAR(1024),
                                                      `pdf_url`          VARCHAR(2048),
                                                      `qr_code_url`      VARCHAR(1024),
+                                                     `verify_url`       VARCHAR(1024),
+                                                     `storage_key`      VARCHAR(512),
                                                      `issued_at`        DATETIME(6),
                                                      PRIMARY KEY (`id`),
                                                      CONSTRAINT `fk_cert_batch` FOREIGN KEY (`batch_id`) REFERENCES `credit_batches` (`id`)

@@ -175,6 +175,74 @@ class ProfitDistributionClaimH2Test {
                 .isFalse();
     }
 
+    @Test
+    void totalsAreOnlyWrittenWhileTheClaimIsHeld() {
+        ProfitDistribution distribution = persistFailedDistribution();
+        OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MICROS);
+
+        assertThat(repository.markRetrying(
+                distribution.getId(),
+                ProfitDistributionStatus.PROCESSING,
+                ProfitDistributionStatus.FAILED,
+                "claim-1",
+                now)).isEqualTo(1);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(repository.updateTotalsIfClaimed(
+                distribution.getId(), BigDecimal.TEN, BigDecimal.ONE, "other-claim", now))
+                .as("a worker without the claim must not write the totals")
+                .isZero();
+
+        assertThat(repository.updateTotalsIfClaimed(
+                distribution.getId(), BigDecimal.TEN, BigDecimal.ONE, "claim-1", now))
+                .isEqualTo(1);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        ProfitDistribution fresh = repository.findById(distribution.getId()).orElseThrow();
+        assertThat(fresh.getTotalMoneyDistributed()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void legacyScopeFindsAnOwnerPaidByAnotherDistributionOfTheSameProject() {
+        ProfitDistribution paid = persistFailedDistribution();
+        ProfitDistribution other = persistFailedDistribution();
+        Long projectId = paid.getProject().getId();
+        User ownerUser = new User();
+        ownerUser.setEmail("owner-" + System.nanoTime() + "@example.com");
+        ownerUser.setPasswordHash("hash");
+        ownerUser.setStatus(USER_STATUS.ACTIVE);
+        entityManager.persist(ownerUser);
+
+        EVOwner owner = new EVOwner();
+        owner.setName("Owner");
+        owner.setUser(ownerUser);
+        owner.setPhone("0900000000");
+        owner.setCountry("VN");
+        owner.setAddress("Test address");
+        owner.setBirthDate(LocalDate.of(1990, 1, 1));
+        owner.setEmail(ownerUser.getEmail());
+        owner.setDocumentType(IDType.CCCD);
+        owner.setDocumentNumber("012345678901");
+        owner.setGender(Gender.MALE);
+        entityManager.persist(owner);
+
+        ProfitDistributionDetail success = detail(paid, owner, "SUCCESS");
+        entityManager.persist(success);
+        entityManager.flush();
+
+        assertThat(detailRepository.existsPaidInAnotherDistributionOfProject(
+                owner.getId(), paid.getCompanyUser().getId(), projectId, other.getId()))
+                .as("the owner was paid by another distribution of the same project")
+                .isTrue();
+        assertThat(detailRepository.existsPaidInAnotherDistributionOfProject(
+                owner.getId(), paid.getCompanyUser().getId(), projectId, paid.getId()))
+                .as("a distribution never counts itself")
+                .isFalse();
+    }
+
     private ProfitDistributionDetail detail(ProfitDistribution distribution, EVOwner owner, String status) {
         ProfitDistributionDetail detail = new ProfitDistributionDetail();
         detail.setDistribution(distribution);
@@ -193,8 +261,16 @@ class ProfitDistributionClaimH2Test {
         companyUser.setStatus(USER_STATUS.ACTIVE);
         entityManager.persist(companyUser);
 
+        com.carbonx.marketcarbon.model.Project project =
+                new com.carbonx.marketcarbon.model.Project();
+        project.setTitle("Project " + System.nanoTime());
+        project.setDescription("Test project");
+        project.setStatus(com.carbonx.marketcarbon.common.ProjectStatus.OPEN);
+        entityManager.persist(project);
+
         ProfitDistribution distribution = new ProfitDistribution();
         distribution.setCompanyUser(companyUser);
+        distribution.setProject(project);
         distribution.setTotalMoneyDistributed(BigDecimal.ZERO);
         distribution.setTotalCreditsDistributed(BigDecimal.ZERO);
         distribution.setStatus(ProfitDistributionStatus.FAILED);

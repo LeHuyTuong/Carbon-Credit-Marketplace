@@ -78,6 +78,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     void initTransactionTemplate() {
         this.requiresNewTransaction = new TransactionTemplate(transactionManager);
         this.requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        // READ_COMMITTED: mỗi câu đọc thấy dữ liệu vừa commit. Cần cho bước "owner này đã
+        // được trả cho report này chưa": sau khi chờ khoá ví, phải thấy được SUCCESS mà
+        // một transaction khác vừa commit, nếu không sẽ trả tiền hai lần cho cùng owner.
+        this.requiresNewTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     // DTO nội bộ dùng để cộng dồn năng lượng và tín chỉ cho từng Owner
@@ -282,10 +286,22 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // B8: Kiểm tra số dư ví công ty trước khi thực hiện
             validateCompanyBalance(companyWallet, finalTotal);
 
-            // Update thông tin tổng vào sự kiện phân phối
+            // Update thông tin tổng vào sự kiện phân phối (CAS theo claim token: không
+            // dùng save(entity) vì merge sẽ ghi đè cả status/claim_token của claim mới).
+            BigDecimal totalCreditsForDistribution = totalCreditsKgForDistribution.setScale(6, RoundingMode.HALF_UP);
+            int totalsUpdated = profitDistributionRepository.updateTotalsIfClaimed(
+                    distributionEvent.getId(),
+                    finalTotal,
+                    totalCreditsForDistribution,
+                    claimToken,
+                    OffsetDateTime.now(BUSINESS_ZONE));
+            if (totalsUpdated == 0) {
+                log.warn("Distribution #{} is no longer owned by claim {}; aborting payout",
+                        distributionEvent.getId(), claimToken);
+                return;
+            }
             distributionEvent.setTotalMoneyDistributed(finalTotal);
-            distributionEvent.setTotalCreditsDistributed(totalCreditsKgForDistribution.setScale(6, RoundingMode.HALF_UP));
-            profitDistributionRepository.save(distributionEvent);
+            distributionEvent.setTotalCreditsDistributed(totalCreditsForDistribution);
 
             // B9: Ghi TRƯỚC toàn bộ kế hoạch chi trả thành detail PENDING.
             // Nếu tiến trình chết giữa chừng, các owner chưa trả vẫn còn một row PENDING
@@ -382,6 +398,14 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
+        // Distribution không có detail nào thì không có owner nào để trả: retry sẽ chỉ
+        // đưa nó về FAILED một lần nữa mà không làm được gì. Nói rõ cho client biết
+        // phải chạy payout mới.
+        if (profitDistributionDetailRepository.countByDistributionId(distributionId) == 0L) {
+            throw new BadRequestException("Distribution #" + distributionId
+                    + " has no owner payouts recorded; start a new payout instead of retrying.");
+        }
+
         rejectSupersededDistribution(distribution, companyUserId, distributionId);
 
         ProfitDistributionStatus currentStatus = distribution.getStatus();
@@ -438,9 +462,34 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     }
 
     /**
+     * Distribution legacy không có emission_report_id nên không biết report nào nó phục vụ.
+     * Đối chiếu theo company + project để không trả hai lần cho cùng một owner; nếu row
+     * không còn project thì đối chiếu theo company.
+     */
+    private boolean alreadyPaidInLegacyScope(ProfitDistribution event, Long ownerId) {
+        if (event.getCompanyUser() == null) {
+            return false;
+        }
+        Long companyUserId = event.getCompanyUser().getId();
+        Long projectId = event.getProject() == null ? null : event.getProject().getId();
+        if (projectId != null) {
+            return profitDistributionDetailRepository.existsPaidInAnotherDistributionOfProject(
+                    ownerId, companyUserId, projectId, event.getId());
+        }
+        return profitDistributionDetailRepository.existsPaidInAnotherDistributionOfCompany(
+                ownerId, companyUserId, event.getId());
+    }
+
+    /**
      * Chặn retry một distribution đã bị đợt mới hơn thay thế. Đây là hàng rào chính
      * cho F2: D1 có thể vẫn FAILED, nhưng nếu D2 mới hơn đã trả một owner thì retry D1
      * sẽ trả lại owner đó lần nữa.
+     *
+     * <p>Distribution legacy (không có link report) chỉ bị coi là bị thay thế bởi một
+     * distribution legacy mới hơn của cùng company + project. Nếu so với cả distribution
+     * có link report, một lần payout cho report KHÁC sẽ chặn vĩnh viễn việc trả nốt
+     * owner của report cũ — owner đó không bao giờ nhận được tiền. Với distribution
+     * legacy, hàng rào chống trả hai lần là check SKIPPED theo company + project.</p>
      */
     private void rejectSupersededDistribution(ProfitDistribution distribution,
                                               Long companyUserId,
@@ -450,8 +499,9 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         if (report != null) {
             latest = profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(report.getId());
         } else if (distribution.getProject() != null) {
-            latest = profitDistributionRepository.findFirstByCompanyUserIdAndProjectIdOrderByIdDesc(
-                    companyUserId, distribution.getProject().getId());
+            latest = profitDistributionRepository
+                    .findFirstByCompanyUserIdAndProjectIdAndEmissionReportIsNullOrderByIdDesc(
+                            companyUserId, distribution.getProject().getId());
         } else {
             // Distribution quá cũ, không có cả report lẫn project: chỉ dám so theo công ty.
             latest = profitDistributionRepository.findFirstByCompanyUserIdOrderByIdDesc(companyUserId);
@@ -812,6 +862,15 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
         }
 
+        // Khoá cả hai ví theo thứ tự ID tăng dần (đúng thứ tự khóa toàn cục mà
+        // transferFunds dùng) TRƯỚC bước kiểm tra "owner đã được trả chưa".
+        // Hai distribution khác nhau cùng trả một owner sẽ phải xếp hàng ở đây, và
+        // transaction sau sẽ thấy SUCCESS đã commit nên đánh SKIPPED thay vì trả lần hai.
+        Long firstWalletId = Math.min(threadSafeCompanyWallet.getId(), ownerWallet.getId());
+        Long secondWalletId = Math.max(threadSafeCompanyWallet.getId(), ownerWallet.getId());
+        walletRepository.findByIdForUpdate(firstWalletId);
+        walletRepository.findByIdForUpdate(secondWalletId);
+
         if (detail == null) {
             detail = new ProfitDistributionDetail();
             detail.setDistribution(event);
@@ -827,14 +886,21 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             // 0. Defense-in-depth: dữ liệu cũ có thể có hai distribution cho cùng report.
             // Nếu owner đã SUCCESS ở distribution khác thì đánh SKIPPED (đã trả ở nơi khác),
             // không chuyển tiền lần nữa và không chặn việc hoàn tất distribution này.
-            if (reportId != null
-                    && profitDistributionDetailRepository.existsPaidInAnotherDistribution(
-                    reportId, payout.getEvOwnerId(), event.getId())) {
+            // Distribution legacy (không có emission_report_id) đối chiếu theo company +
+            // project vì không biết report nào nó phục vụ.
+            boolean alreadyPaid = reportId != null
+                    ? profitDistributionDetailRepository.existsPaidInAnotherDistribution(
+                    reportId, payout.getEvOwnerId(), event.getId())
+                    : alreadyPaidInLegacyScope(event, payout.getEvOwnerId());
+            if (alreadyPaid) {
                 detail.setStatus(DETAIL_SKIPPED);
-                detail.setErrorMessage("Already paid in another distribution for report #" + reportId);
+                detail.setErrorMessage(reportId != null
+                        ? "Already paid in another distribution for report #" + reportId
+                        : "Already paid in another distribution of this project");
                 profitDistributionDetailRepository.save(detail);
-                log.warn("Skipping owner {} in distribution #{}: already paid by another distribution for report #{}",
-                        payout.getEvOwnerId(), event.getId(), reportId);
+                log.warn("Skipping owner {} in distribution #{}: already paid by another distribution{}",
+                        payout.getEvOwnerId(), event.getId(),
+                        reportId != null ? " for report #" + reportId : " of this project");
                 return null;
             }
 

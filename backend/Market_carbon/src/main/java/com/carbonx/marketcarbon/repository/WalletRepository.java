@@ -42,6 +42,18 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     @Query("SELECT w FROM Wallet w WHERE w.user.id = :userId")
     Wallet findByUserIdWithPessimisticLock(@Param("userId") Long userId);
 
+    /**
+     * Khoá row ví bằng SELECT ... FOR UPDATE (query, không phải entityManager.find).
+     *
+     * <p>Payout cần khoá ví của owner TRƯỚC khi kiểm tra "owner này đã được trả cho
+     * report này chưa", để hai distribution khác nhau không trả tiền cho cùng một owner
+     * song song. Query có @Lock luôn phát lệnh FOR UPDATE, kể cả khi entity đã được
+     * load trước đó trong cùng persistence context.</p>
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT w FROM Wallet w WHERE w.id = :id")
+    Optional<Wallet> findByIdForUpdate(@Param("id") Long id);
+
     Optional<Wallet> findByUser(User user);
 
 }

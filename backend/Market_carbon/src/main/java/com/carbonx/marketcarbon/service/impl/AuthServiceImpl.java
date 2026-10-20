@@ -85,7 +85,9 @@ public class AuthServiceImpl implements AuthService {
         newUser.setOtpPurpose(OtpPurpose.REGISTER);
         userRepository.save(newUser);
 
-        log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
+        // KHÔNG ghi OTP vào log: ai đọc được log (hay log collector) thì lấy được mã 6 số
+        // và tự kích hoạt tài khoản trong 5 phút.
+        log.info("Generated a registration OTP for user [{}] at {}", newUser.getEmail(), LocalDateTime.now());
 
         try {
             // OTP là email quan trọng: gửi đồng bộ để không bị pool thông báo drop
@@ -125,11 +127,10 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse resendRegistrationOtp(EmailRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
-        if (user == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
-        }
-        if (user.getStatus() != USER_STATUS.PENDING
-                || (user.getOtpPurpose() != null && user.getOtpPurpose() != OtpPurpose.REGISTER)) {
+        // Trả cùng một lỗi cho "email không tồn tại" và "tài khoản không ở trạng thái
+        // PENDING": endpoint này public, phân biệt hai trường hợp sẽ thành công cụ dò
+        // tài khoản.
+        if (user == null || user.getStatus() != USER_STATUS.PENDING) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
@@ -142,6 +143,9 @@ public class AuthServiceImpl implements AuthService {
         String otp = generateRegistrationOtp();
         user.setOtpCode(otp);
         user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
+        // Luôn đặt lại purpose REGISTER: tài khoản PENDING có thể đã bị luồng quên mật
+        // khẩu ghi đè purpose thành FORGOT_PASSWORD, và verifyOtp với purpose đó chỉ
+        // trả reset token chứ không kích hoạt tài khoản.
         user.setOtpPurpose(OtpPurpose.REGISTER);
         userRepository.save(user);
 

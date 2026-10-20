@@ -327,8 +327,11 @@ public class WalletServiceImpl implements WalletService {
             // vòng A→B đấu với B→A).
             Wallet firstById = fromWallet.getId() <= toWallet.getId() ? fromWallet : toWallet;
             Wallet secondById = firstById == fromWallet ? toWallet : fromWallet;
-            Wallet lockedFirst = entityManager.find(Wallet.class, firstById.getId(), LockModeType.PESSIMISTIC_WRITE);
-            Wallet lockedSecond = entityManager.find(Wallet.class, secondById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            // Đẩy các insert chờ xuống DB trước: ví vừa tạo trong transaction này phải
+            // tồn tại thật thì mới khoá/đọc lại được.
+            entityManager.flush();
+            Wallet lockedFirst = lockAndReload(firstById.getId());
+            Wallet lockedSecond = lockAndReload(secondById.getId());
             if (lockedFirst == null || lockedSecond == null) {
                 throw new AppException(ErrorCode.WALLET_NOT_FOUND);
             }
@@ -403,5 +406,22 @@ public class WalletServiceImpl implements WalletService {
             log.error("Unexpected error during transfer: {}", e.getMessage(), e);
             throw new WalletException("Unexpected error during transfer: " + e.getMessage());
         }
+    }
+
+    /**
+     * Khoá row ví và đọc lại số dư đã commit.
+     *
+     * <p>{@code entityManager.find(..., PESSIMISTIC_WRITE)} KHÔNG khoá lại row nếu entity
+     * đã nằm trong persistence context: nó trả về bản ghi cũ đã load trước đó, nên số dư
+     * có thể cũ (lost update) dù có "khoá". {@code refresh(..., PESSIMISTIC_WRITE)} đọc
+     * lại đúng giá trị đã commit dưới khoá, nên phải trả tiền trên số dư thật.</p>
+     */
+    private Wallet lockAndReload(Long id) {
+        Wallet wallet = entityManager.find(Wallet.class, id);
+        if (wallet == null) {
+            return null;
+        }
+        entityManager.refresh(wallet, LockModeType.PESSIMISTIC_WRITE);
+        return wallet;
     }
 }

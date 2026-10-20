@@ -171,6 +171,40 @@ class AuthServiceRegisterRoleTest {
                         .isEqualTo(ErrorCode.EMAIL_SEND_FAILED));
     }
 
+    @Test
+    void resendRegistrationOtp_worksWhenForgotPasswordOverwroteThePurpose() throws Exception {
+        User user = pendingUser();
+        // The public forgot-password flow overwrites otpPurpose on a PENDING account.
+        // The rescue endpoint must still reissue a REGISTRATION code, otherwise the
+        // account can never be activated (verifyOtp with FORGOT_PASSWORD only returns
+        // a reset token).
+        user.setOtpPurpose(OtpPurpose.FORGOT_PASSWORD);
+        user.setOtpExpiryDate(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("user@example.com");
+
+        authService.resendRegistrationOtp(req);
+
+        assertThat(user.getOtpPurpose()).isEqualTo(OtpPurpose.REGISTER);
+        verify(emailService).sendEmailNow(anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void resendRegistrationOtp_doesNotRevealWhetherAnEmailExists() {
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(null);
+
+        EmailRequest req = new EmailRequest();
+        req.setEmail("nobody@example.com");
+
+        assertThatThrownBy(() -> authService.resendRegistrationOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.EMAIL_EXISTED));
+    }
+
     private User pendingUser() {
         User user = new User();
         user.setEmail("user@example.com");

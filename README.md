@@ -322,27 +322,48 @@ Production additionally requires `PAYPAL_MODE` (no fallback in the base profile 
 `sandbox` or `live`) together with `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`. The application
 refuses to start if the mode is missing or invalid instead of silently using sandbox.
 
-Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `AWS_S3_BUCKET` +
-credentials, `AI_VERTEX_*` / `AI_GEMINI_*` for the AI scoring and chatbot.
+Those placeholders have **no default**, so the bean that injects them fails the startup when
+they are missing — they are required, not optional:
+
+| Variable | Needed by |
+| --- | --- |
+| `STRIPE_API_KEY` | `PaymentServiceImpl`, `PaymentVerificationService` (Stripe checkout/verification) |
+| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_REGION` | `S3Config`, `S3StorageServiceImpl` (S3 upload) |
+| `AWS_S3_PUBLIC_BASE_URL` | public URL prefix for uploaded files |
+| `AI_GEMINI_API_KEY`, `AI_GEMINI_MODEL` | Gemini AI scoring/chat (only when the AI feature is enabled) |
+| `APP_CORS_ALLOWED_ORIGINS` | comma-separated browser origins; the default list only covers the usual local dev ports |
+| `APP_FRONTEND_BASE_URL` | where the OAuth2 login redirects the browser |
+
+Set them to dummy values locally if the corresponding integration is not used — the application
+starts with them set to a placeholder, it just cannot call the provider.
 
 In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
 empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.
 
-- **Fresh database:** run `backend/database/core_ccm.sql` only. It already contains the current
-  schema, including `profit_distribution.emission_report_id`, `profit_distribution.claim_token`,
-  their indexes/FKs. Do **not** re-run the incremental migrations on top of a fresh schema.
+- **Fresh database:** run `backend/database/core_ccm.sql` only. It contains the schema the JPA
+  entities map, including `profit_distribution.emission_report_id`,
+  `profit_distribution.claim_token`, the `credit_serial_counters` table and the upload/AI
+  columns of `emission_reports`, plus their indexes/FKs. Do **not** re-run the incremental
+  migrations on top of a fresh schema.
 - **Existing database:** apply every script under `backend/database/migrations/` **before**
   starting the production build. The scripts are idempotent; the
   `2026-10-20_add_emission_report_to_profit_distribution.sql` migration adds the payout link only
   if it is missing and backfills it only when there is exactly one unambiguous report candidate.
-  `2026-10-20_add_claim_token_to_profit_distribution.sql` adds the per-run lease token.
+  `2026-10-20_add_claim_token_to_profit_distribution.sql` adds the per-run lease token and
+  `2026-10-20_sync_schema_with_entities.sql` adds every column/table the entities map but the
+  live schema was missing (`prod` runs `ddl-auto=validate` and refuses to start otherwise).
 
 Legacy distributions whose `emission_report_id` remains `NULL` can still be retried: their
 `PENDING`/`FAILED` owners are paid, but the emission report status cannot be updated
-automatically. Reconcile/link those rows manually before treating the report as paid out.
+automatically. Reconcile/link those rows manually before treating the report as paid out. Such a
+distribution is only considered superseded by another **legacy** distribution of the same
+company + project; a payout for a different report no longer blocks it forever. Because a legacy
+row does not say which report it paid, owners already paid by another distribution of the same
+company + project are marked `SKIPPED` instead of being paid twice.
 Legacy distributions already marked `COMPLETED` while an owner detail is still `PENDING`/`FAILED`
 (the old code completed distributions unconditionally) are retryable too: `/retry` pays only the
-unsettled owners and leaves an already `PAID_OUT` report alone.
+unsettled owners and leaves an already `PAID_OUT` report alone. A distribution without any owner
+detail is rejected with a clear error — there is nothing to retry.
 
 A `PROCESSING` distribution left behind by a crash becomes retryable after
 `profit-sharing.stale-processing-minutes` (default `15`) without a progress heartbeat. Every
