@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog, devWarn } from "@/utils/devLog";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 import useWalletData from "./components/useWalletData";
@@ -83,7 +83,7 @@ export default function Wallet() {
     const token = authData?.token;
 
     if (!token) {
-      console.warn("Token is not ready, delay confirm...");
+      devWarn("Token is not ready, delay confirm...");
       const timer = setTimeout(() => {
         if (orderId) confirmDeposit(orderId, paymentId || "");
         else fetchAll();
@@ -145,7 +145,7 @@ export default function Wallet() {
         });
       }
     } catch (err) {
-      console.error("Deposit error:", err);
+      devError("Deposit error:", err);
       setToast({
         show: true,
         msg: err.message || "Failed to initiate deposit.",
@@ -181,7 +181,7 @@ export default function Wallet() {
 
       nav("/wallet", { replace: true });
     } catch (err) {
-      console.error("Deposit confirmation failed:", err);
+      devError("Deposit confirmation failed:", err);
       setToast({
         show: true,
         msg: err.message || "Failed to confirm deposit.",
@@ -213,7 +213,7 @@ export default function Wallet() {
         );
       }
     } catch (err) {
-      console.error("Withdraw error:", err);
+      devError("Withdraw error:", err);
       setToast({
         show: true,
         msg: err.message || "Unable to process withdrawal request.",

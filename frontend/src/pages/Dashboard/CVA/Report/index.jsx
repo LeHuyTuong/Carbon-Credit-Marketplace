@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { Box, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
@@ -35,7 +35,7 @@ const ReportListCVA = () => {
           if (res.totalElements !== undefined) setRowCount(res.totalElements);
         }
       } catch (err) {
-        console.error("Error when getting CVA report list:", err);
+        devError("Error when getting CVA report list:", err);
       } finally {
         setLoading(false);
       }

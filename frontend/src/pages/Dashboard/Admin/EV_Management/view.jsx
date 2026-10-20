@@ -10,6 +10,7 @@ import {
   Alert,
   useTheme,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -38,7 +39,7 @@ const ViewEV = () => {
           setErrorSnackbar("Vehicle not found");
         }
       } catch (err) {
-        console.error("Failed to fetch vehicle:", err);
+        devError("Failed to fetch vehicle:", err);
         setErrorSnackbar("Failed to load vehicle data");
       }
     };

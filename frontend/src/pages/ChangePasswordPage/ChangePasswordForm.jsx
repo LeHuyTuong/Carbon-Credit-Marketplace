@@ -1,4 +1,5 @@
 import React from "react";
+import { devError } from "@/utils/devLog";
 import { Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -42,7 +43,7 @@ export default function ChangePasswordForm({ token }) {
       toast.success(message);
       resetForm(); //clear form sau khi đổi thành công
     } catch (err) {
-      console.error("Error changing password:", err);
+      devError("Error changing password:", err);
 
       //xử lý lỗi backend trả về nếu có thông điệp cụ thể
       const backendMsg =

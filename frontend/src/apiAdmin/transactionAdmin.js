@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devError } from "@/utils/devLog";
 
 /**
  *  Lấy danh sách yêu cầu rút tiền (cho admin)
@@ -8,7 +9,7 @@ export const getWithdrawalsAdmin = async () => {
     const res = await apiFetch("/api/v1/withdrawal/admin", { method: "GET" });
     return res?.response || [];
   } catch (error) {
-    console.error("Error fetching withdrawal admin list:", error);
+    devError("Error fetching withdrawal admin list:", error);
     throw error;
   }
 };
@@ -29,7 +30,7 @@ export const processWithdrawal = async (id, accept) => {
     );
     return res?.response || null;
   } catch (error) {
-    console.error("Error processing withdrawal:", error);
+    devError("Error processing withdrawal:", error);
     throw error;
   }
 };

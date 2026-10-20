@@ -1,5 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog, devWarn } from "@/utils/devLog";
 
 // Lấy danh sách project applications
 export const getProjectApplications = async () => {
@@ -14,11 +14,11 @@ export const getProjectApplications = async () => {
       devLog(" Project Applications API:", data);
       return data;
     } else {
-      console.warn(" API returned non-success code:", code);
+      devWarn(" API returned non-success code:", code);
       return [];
     }
   } catch (error) {
-    console.error(" Error fetching project applications:", error);
+    devError(" Error fetching project applications:", error);
     return [];
   }
 };

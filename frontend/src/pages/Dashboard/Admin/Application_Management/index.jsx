@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { Box,Typography } from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -20,7 +21,7 @@ const ApplicationList = () => {
         const applications = await getProjectApplications();
         setData(applications || []);
       } catch (error) {
-        console.error("Error fetching applications:", error);
+        devError("Error fetching applications:", error);
       } finally {
         setLoading(false); // đảm bảo loading dừng kể cả khi lỗi
       }

@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { devError } from "@/utils/devLog";
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -47,7 +48,7 @@ const ViewTransaction = () => {
           setTrx(null);
         }
       } catch (error) {
-        console.error("Fetch transaction error:", error);
+        devError("Fetch transaction error:", error);
 
         const message =
           error?.response?.data?.responseStatus?.responseDesc ||
@@ -77,7 +78,7 @@ const ViewTransaction = () => {
           : "Withdrawal rejected successfully!"
       );
     } catch (error) {
-      console.error("Process transaction error:", error);
+      devError("Process transaction error:", error);
 
       const message =
         error?.response?.data?.responseStatus?.responseDesc ||

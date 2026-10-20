@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import "./manage.css";
 import {
   Button,
@@ -97,7 +98,7 @@ export default function Manage() {
 
       setVehicles(mappedVehicles);
     } catch (err) {
-      console.error("Error loading list vehicles:", err.message);
+      devError("Error loading list vehicles:", err.message);
       setVehicles([]);
     } finally {
       setLoading(false);
@@ -202,7 +203,7 @@ export default function Manage() {
       } else {
         showToast("Failed to save vehicle: " + err.message, "danger");
       }
-      console.error("Vehicle save error:", err);
+      devError("Vehicle save error:", err);
     }
   };
 
@@ -370,7 +371,7 @@ function VehicleModal({
         const list = await getApprovedCompanies();
         setCompanies(list);
       } catch (err) {
-        console.error("Error when loading list company:", err.message);
+        devError("Error when loading list company:", err.message);
       }
     };
     fetchCompanies();

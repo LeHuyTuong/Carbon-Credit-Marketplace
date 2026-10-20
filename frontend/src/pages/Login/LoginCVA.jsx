@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -114,7 +114,7 @@ const CVALogin = () => {
         setTimeout(() => navigate("/cva/kyc", { replace: true }), 3000);
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      devError("Login Error:", err);
       const apiMsg =
         err?.responseStatus?.responseMessage ||
         err?.message ||

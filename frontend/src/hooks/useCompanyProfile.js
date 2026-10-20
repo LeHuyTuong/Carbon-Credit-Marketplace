@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { apiFetch } from "../utils/apiFetch";
 
 export function useCompanyProfile() {
@@ -25,7 +26,7 @@ export function useCompanyProfile() {
           address: info.address || "",
         });
       } catch (err) {
-        console.error("Error fetching company:", err);
+        devError("Error fetching company:", err);
         if (err.status === 404 || err.status === 400) {
           setCompany(null);
         } else {

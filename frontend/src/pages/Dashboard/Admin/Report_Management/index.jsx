@@ -1,5 +1,5 @@
 import { Box, Typography, useTheme, CircularProgress } from "@mui/material";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
@@ -38,7 +38,7 @@ const ReportsList = () => {
           devLog("IDs:", formatted.map(d => d.id));
         }
       } catch (error) {
-        console.error("Failed to fetch reports:", error);
+        devError("Failed to fetch reports:", error);
       } finally {
         setLoading(false);
       }

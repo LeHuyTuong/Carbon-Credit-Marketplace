@@ -1,5 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 
 /**
  * Đếm số lượng phương tiện (vehicle) của user hoặc company
@@ -61,7 +61,7 @@ export const countWalletTransactions = async (params = {}) => {
 
     return count;
   } catch (error) {
-    console.error("Error counting wallet transactions:", error);
+    devError("Error counting wallet transactions:", error);
     throw error;
   }
 };
@@ -85,7 +85,7 @@ export const countUsers = async (params = {}) => {
     devLog("countUsers() normalized count:", count);
     return count;
   } catch (error) {
-    console.error("Error in countUsers():", error);
+    devError("Error in countUsers():", error);
     return 0;
   }
 };

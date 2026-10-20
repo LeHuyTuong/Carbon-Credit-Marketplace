@@ -1,4 +1,5 @@
 import { toast } from "react-toastify";
+import { devError } from "@/utils/devLog";
 
 //đưa biến ra ngoài, để nó không reset mỗi lần gọi apiFetch
 let is429ToastShown = false;
@@ -122,7 +123,7 @@ export async function apiFetch(path, options = {}) {
 
   // HTTP-level error
   if (!res.ok) {
-    console.error("API Error:", { path, status: res.status, data });
+    devError("API Error:", { path, status: res.status, data });
 
     //bắt lỗi spam request
     if (res.status === 429) {

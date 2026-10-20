@@ -1,5 +1,5 @@
 import { Box, Typography, useTheme } from "@mui/material";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link } from "react-router-dom";
@@ -47,7 +47,7 @@ const CompanyTeam = () => {
 
         setData(mapped);
       } catch (err) {
-        console.error("Error fetching company KYC profiles:", err);
+        devError("Error fetching company KYC profiles:", err);
       }
     }
 

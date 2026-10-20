@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Form,
@@ -53,7 +54,7 @@ export default function Order() {
         const balance = res?.response?.balance || 0;
         setWalletBalance(balance);
       } catch (err) {
-        console.error("Failed to load wallet:", err);
+        devError("Failed to load wallet:", err);
         setWalletBalance(0); // nếu lỗi → gán mặc định 0
       } finally {
         setLoadingBalance(false);
@@ -132,7 +133,7 @@ export default function Order() {
         });
       }, 1500);
     } catch (err) {
-      console.error("Order create error:", err);
+      devError("Order create error:", err);
       toast.error(err.message || "Unable to create order.");
     }
   };

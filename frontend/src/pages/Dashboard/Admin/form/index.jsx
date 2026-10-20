@@ -10,7 +10,7 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -74,7 +74,7 @@ const RegisterForm = () => {
       resetForm();
       showSnackbar("info", "Registration successful! Please verify OTP.");
     } catch (error) {
-      console.error(" Register failed:", error);
+      devError(" Register failed:", error);
       const message =
         error?.response?.data?.responseStatus?.responseDesc ||
         error?.response?.data?.message ||
@@ -106,7 +106,7 @@ const RegisterForm = () => {
         showSnackbar("error", "Invalid OTP or verification failed!");
       }
     } catch (error) {
-      console.error("OTP verify failed:", error);
+      devError("OTP verify failed:", error);
 
       const message =
         error?.response?.data?.responseStatus?.responseDesc ||

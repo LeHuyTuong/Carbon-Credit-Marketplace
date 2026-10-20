@@ -1,4 +1,5 @@
 import { Box, Typography } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -45,7 +46,7 @@ const CreditsList = () => {
         }));
         setData(mapped);
       } catch (err) {
-        console.error("Failed to fetch credits:", err);
+        devError("Failed to fetch credits:", err);
       }
     };
     fetchData();

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { Button, Table, Spinner, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -34,7 +35,7 @@ export default function ChooseProjectToUpload() {
       const approved = data.filter((p) => p.status === "ADMIN_APPROVED");
       setApprovedProjects(approved);
     } catch (err) {
-      console.error(err);
+      devError(err);
       toast.error("Failed to load approved projects");
     } finally {
       setLoading(false);

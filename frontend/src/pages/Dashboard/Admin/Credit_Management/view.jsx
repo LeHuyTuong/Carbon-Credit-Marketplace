@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -36,7 +37,7 @@ const ViewCredit = () => {
         setCreditData(data);
         setStatus(data?.status || "");
       } catch (err) {
-        console.error("Error fetching issued credit:", err);
+        devError("Error fetching issued credit:", err);
 
         const message =
           err?.response?.data?.responseStatus?.responseDesc ||

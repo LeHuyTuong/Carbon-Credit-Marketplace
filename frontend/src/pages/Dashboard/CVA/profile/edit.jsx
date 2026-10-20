@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   TextField,
@@ -38,7 +38,7 @@ const EditProfileCVA = () => {
           localStorage.setItem("cvaData", JSON.stringify(res));
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        devError("Error fetching data:", err);
       }
     };
     fetchData();

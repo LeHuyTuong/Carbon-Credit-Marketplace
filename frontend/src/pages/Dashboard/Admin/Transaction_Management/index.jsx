@@ -1,5 +1,6 @@
 // src/pages/admin/TransactionAdmin.js
 import { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
@@ -30,7 +31,7 @@ const TransactionAdmin = () => {
         }));
         setData(mapped);
       } catch (error) {
-        console.error("Error loading withdrawal data:", error);
+        devError("Error loading withdrawal data:", error);
       }
     };
 

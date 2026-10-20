@@ -1,5 +1,5 @@
 import { Box, Typography, Avatar, useMediaQuery, Paper, Divider, useTheme } from "@mui/material";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { EditOutlined } from "@mui/icons-material";
 import Header from "@/components/Chart/Header.jsx";
 import { tokens } from "@/theme";
@@ -48,7 +48,7 @@ const AdminProfile = ({ onClose }) => {
           avatarUrl: data.avatarUrl || null,
         });
       } catch (error) {
-        console.error("Failed to fetch KYC admin data:", error.message);
+        devError("Failed to fetch KYC admin data:", error.message);
       }
     };
 

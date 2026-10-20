@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Container, Table, Accordion, Spinner, Button } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
 import { FaArrowLeft } from "react-icons/fa";
@@ -24,7 +25,7 @@ export default function EVOwnerList() {
       //gán dữ liệu vào state "owners"
       setOwners(data);
     } catch (err) {
-      console.error("Error fetching company summary:", err);
+      devError("Error fetching company summary:", err);
       setError(err.message || "Failed to fetch vehicle summary.");
     } finally {
       //tắt trạng thái loading

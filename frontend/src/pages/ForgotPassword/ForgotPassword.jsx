@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Link, useNavigate } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -44,7 +45,7 @@ export default function ForgotPassword() {
         }
       );
     } catch (err) {
-      console.error("Forgot password error:", err);
+      devError("Forgot password error:", err);
       toast.error(err.message || "Failed to send reset OTP");
     } finally {
       setLoading(false);

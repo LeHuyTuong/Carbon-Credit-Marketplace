@@ -6,7 +6,9 @@ WORKDIR /app
 ARG VITE_API_BASE=/api
 ENV VITE_API_BASE=$VITE_API_BASE
 COPY . .
-RUN npm install && npm run build
+# Source maps chỉ dùng khi debug cục bộ: nếu bật, file .map của toàn bộ mã nguồn
+# được nginx phục vụ công khai trong image production.
+RUN npm install && npm run build -- --sourcemap false
 
 # Stage runtime nginx
 FROM nginx:1.25

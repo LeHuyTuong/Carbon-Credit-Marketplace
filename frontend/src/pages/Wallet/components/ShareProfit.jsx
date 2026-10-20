@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Modal, Button, Spinner, Form, Collapse } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -49,7 +50,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
         });
         setFormula(f.response);
       } catch (err) {
-        console.error(err);
+        devError(err);
         toast.error("Failed to load initial data.");
       } finally {
         setLoading(false);
@@ -82,7 +83,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
       const data = res?.response?.summary;
       setSummary(data || null);
     } catch (err) {
-      console.error(err);
+      devError(err);
       toast.error("Failed to load payout summary.");
     } finally {
       setPreviewing(false);
@@ -166,7 +167,7 @@ export default function ShareProfit({ show, onHide, initialData }) {
                       );
                       setReports(list);
                     } catch (err) {
-                      console.error("Failed to load reports for project:", err);
+                      devError("Failed to load reports for project:", err);
                     }
                   })();
                 }

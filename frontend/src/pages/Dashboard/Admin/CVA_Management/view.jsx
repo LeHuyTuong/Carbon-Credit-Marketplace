@@ -11,6 +11,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useNavigate } from "react-router-dom";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -67,7 +68,7 @@ const ViewUserCVA = () => {
         setUser(uiUser);
         setEditedUser(uiUser);
       } catch (error) {
-        console.error("Error fetching KYC profile:", error);
+        devError("Error fetching KYC profile:", error);
       } finally {
         setLoading(false);
       }
@@ -97,7 +98,7 @@ const ViewUserCVA = () => {
       setEditMode(false);
       setOpenSnackbar(true);
     } catch (error) {
-      console.error("Error updating CVA KYC profile:", error);
+      devError("Error updating CVA KYC profile:", error);
       alert("Update failed! Please try again.");
     }
   };

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import {
     Box,
     Button,
@@ -68,7 +68,7 @@ const CVARegisterWithOTP = () => {
             devLog("Register success:", res);
             setStep("otp");
         } catch (err) {
-            console.error("Register API Error:", err);
+            devError("Register API Error:", err);
             setError(
                 err?.responseStatus?.responseMessage ||
                 err.message ||
@@ -108,7 +108,7 @@ const CVARegisterWithOTP = () => {
             // Nếu muốn reload trang cứng, dùng dòng này thay vì navigate():
             // window.location.href = "/cva/carbonX/mkp/login";
         } catch (err) {
-            console.error("Verify OTP API Error:", err);
+            devError("Verify OTP API Error:", err);
             const apiMessage =
                 err?.responseStatus?.responseMessage ||
                 err?.message ||

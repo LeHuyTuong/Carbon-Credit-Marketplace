@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -45,7 +45,7 @@ const ApplicationView = () => {
         if (data && data.id) setApplication(data);
         else throw new Error("No valid data received");
       } catch (error) {
-        console.error(" Error fetching detail:", error);
+        devError(" Error fetching detail:", error);
         setSnackbar({
           open: true,
           message: "Failed to fetch application.",
@@ -67,7 +67,7 @@ const ApplicationView = () => {
           const data = res?.response || res;
           setKyc(data);
         } catch (error) {
-          console.error(" Failed to fetch KYC info:", error);
+          devError(" Failed to fetch KYC info:", error);
           setSnackbar({
             open: true,
             message: "Failed to fetch company KYC profile.",

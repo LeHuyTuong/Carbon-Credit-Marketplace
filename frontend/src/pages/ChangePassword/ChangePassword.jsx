@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -55,7 +56,7 @@ export default function ChangePassword() {
       toast.success("Password has been reset. Please log in.");
       nav("/login", { replace: true, state: { email } });
     } catch (err) {
-      console.error("Reset error:", err);
+      devError("Reset error:", err);
       toast.error(err.message || "Reset password failed");
     } finally {
       setLoading(false);

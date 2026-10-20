@@ -1,5 +1,5 @@
 import { Box, Typography, useTheme, Button, Tooltip } from "@mui/material";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { Link, useNavigate } from "react-router-dom";
@@ -35,7 +35,7 @@ const ListProjects = () => {
 
         setData(projects);
       } catch (error) {
-        console.error("Failed to fetch projects:", error);
+        devError("Failed to fetch projects:", error);
       }
     };
 

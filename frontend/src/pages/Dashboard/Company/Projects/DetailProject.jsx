@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Container,
@@ -48,7 +49,7 @@ export default function ProjectDetailsPage() {
 
         setProject(res?.response || {}); // cập nhật dữ liệu
       } catch (err) {
-        console.error("Error fetching project:", err);
+        devError("Error fetching project:", err);
         setError(err.message || "Failed to load project");
       } finally {
         setLoading(false);

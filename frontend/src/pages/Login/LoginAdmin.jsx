@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -110,7 +110,7 @@ const AdminLogin = () => {
         );
       }
     } catch (err) {
-      console.error(" Login error:", err);
+      devError(" Login error:", err);
       showSnackbar("error", err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);

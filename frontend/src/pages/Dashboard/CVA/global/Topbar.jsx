@@ -1,4 +1,5 @@
 import { Box, IconButton, useTheme, InputBase, Paper, Badge, Popper, ClickAwayListener, Tabs, Tab, Typography, Stack, Grid, List, ListItem, ListItemText, ListItemAvatar } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useContext, useRef, useState, useEffect } from "react";
 import { ColorModeContext, tokens } from "@/themeCVA";
 import SearchIcon from "@mui/icons-material/Search";
@@ -66,7 +67,7 @@ const Topbar = () => {
           });
         }
       } catch (error) {
-        console.error("Error fetching CVA info:", error);
+        devError("Error fetching CVA info:", error);
       }
     };
 

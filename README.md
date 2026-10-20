@@ -340,13 +340,17 @@ starts with them set to a placeholder, it just cannot call the provider.
 In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
 empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`.
 
-- **Fresh database:** run `backend/database/core_ccm.sql` only. It contains the schema the JPA
+- **Fresh database:** create the schema the app connects to (the name comes from
+  `SPRING_DATASOURCE_URL`, e.g. `core_ccm`) and run the dump **inside it**:
+  `mysql core_ccm < backend/database/core_ccm.sql`. The dump creates the schema the JPA
   entities map, including `profit_distribution.emission_report_id`,
-  `profit_distribution.claim_token`, the `credit_serial_counters` table and the upload/AI
-  columns of `emission_reports`, plus their indexes/FKs. Do **not** re-run the incremental
-  migrations on top of a fresh schema.
+  `profit_distribution.claim_token`, the `credit_serial_counters` table, the upload/AI columns
+  of `emission_reports` and the unique keys on `wallets` — plus their indexes/FKs. Do **not**
+  re-run the incremental migrations on top of a fresh schema.
 - **Existing database:** apply every script under `backend/database/migrations/` **before**
-  starting the production build. The scripts are idempotent; the
+  starting the production build, again inside the target schema
+  (`mysql core_ccm < backend/database/migrations/<file>.sql`; the scripts refuse to run
+  without a schema selected). The scripts are idempotent; the
   `2026-10-20_add_emission_report_to_profit_distribution.sql` migration adds the payout link only
   if it is missing and backfills it only when there is exactly one unambiguous report candidate.
   `2026-10-20_add_claim_token_to_profit_distribution.sql` adds the per-run lease token and
@@ -403,10 +407,12 @@ production bundle.
 ```bash
 cd backend/Market_carbon && ./mvnw test    # unit tests, no infrastructure needed
 
-# the concurrency ITs spin up a real MySQL, so they need Docker and are not part
-# of `mvnw test` (surefire only picks up *Test); run one explicitly:
-cd backend/Market_carbon && ./mvnw test -Dtest=OrderSettlementConcurrencyIT
+# the concurrency ITs spin up a real MySQL, so they need Docker:
+cd backend/Market_carbon && ./mvnw verify   # runs *Test plus the *IT classes
 ```
+
+`mvn test` only runs the `*Test` classes; the `*IT` classes (real InnoDB row locks) run on
+`mvn verify` through the failsafe plugin and need a running Docker daemon.
 
 ---
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog, devWarn } from "@/utils/devLog";
 import {
     Box,
     Typography,
@@ -43,7 +43,7 @@ const ReportView = () => {
                 if (data && data.id) setReport(data);
                 else throw new Error("No valid data received");
             } catch (error) {
-                console.error("Error fetching report detail:", error);
+                devError("Error fetching report detail:", error);
                 setSnackbar({
                     open: true,
                     message: "Failed to fetch report.",
@@ -72,10 +72,10 @@ const ReportView = () => {
                     if (data && Object.keys(data).length > 0) {
                         setKyc(data);
                     } else {
-                        console.warn("Empty KYC data received");
+                        devWarn("Empty KYC data received");
                     }
                 } catch (error) {
-                    console.error("Failed to fetch KYC info:", error);
+                    devError("Failed to fetch KYC info:", error);
                     setSnackbar({
                         open: true,
                         message: "Failed to fetch company KYC profile.",

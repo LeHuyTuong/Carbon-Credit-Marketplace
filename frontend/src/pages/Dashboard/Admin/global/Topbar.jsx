@@ -12,6 +12,7 @@ import {
   Avatar,
   Box as MuiBox
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useContext, useEffect, useState, useRef } from "react";
 import { ColorModeContext, tokens } from "@/theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
@@ -54,7 +55,7 @@ const Topbar = () => {
 
         setAdmin({ firstName, lastName, role, avatarUrl });
       } catch (err) {
-        console.error("Failed to fetch KYC Admin:", err.message);
+        devError("Failed to fetch KYC Admin:", err.message);
       }
     };
     fetchAdminData();

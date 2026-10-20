@@ -321,6 +321,14 @@ public class WalletServiceImpl implements WalletService {
             throw new AppException(ErrorCode.MONEY_MUST_POSITIVE);
         }
 
+        if (fromWallet.getId().equals(toWallet.getId())) {
+            // Chuyển tiền cho chính mình: debit rồi credit CÙNG một entity nên số dư cuối
+            // tăng thêm amount — tiền được tạo ra từ hư không. Chặn lại ở đây (chokepoint
+            // của mọi luồng chuyển tiền).
+            log.error("Refusing a self-transfer on wallet {}", fromWallet.getId());
+            throw new AppException(ErrorCode.SELF_TRANSFER_NOT_ALLOWED);
+        }
+
         try {
             // 1+2. Khóa và Tải cả hai ví theo thứ tự ID tăng dần (P0-B/B3: lock ordering —
             // mọi luồng khóa ví theo cùng một thứ tự toàn cục thì không thể xảy ra deadlock

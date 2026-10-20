@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import { Box, Typography } from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -52,7 +52,7 @@ const ApplicationList = () => {
         setData(applications || []);
         setRowCount(applications?.length || 0);
       } catch (error) {
-        console.error(" Error fetching applications:", error);
+        devError(" Error fetching applications:", error);
         setData([]);
         setRowCount(0);
       } finally {

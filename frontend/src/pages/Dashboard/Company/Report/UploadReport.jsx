@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 import "../../EVOwner/ManageVehicle/manage.css";
 import { Button, Modal, Toast, ToastContainer, Form } from "react-bootstrap";
 import { apiFetch } from "../../../../utils/apiFetch";
@@ -69,7 +69,7 @@ export default function UploadReport() {
         sessionStorage.setItem("refreshCredits", "true");
       }
     } catch (err) {
-      console.error("Failed to load reports:", err);
+      devError("Failed to load reports:", err);
       showToast("Failed to fetch your reports.", "danger");
     } finally {
       setUploading(false);
@@ -112,7 +112,7 @@ export default function UploadReport() {
       fetchReports();
       setShow(false);
     } catch (err) {
-      console.error("Upload failed:", err);
+      devError("Upload failed:", err);
 
       // Lấy code từ error trả về
       const backendCode =

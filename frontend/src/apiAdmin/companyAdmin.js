@@ -1,5 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
-import { devLog } from "@/utils/devLog";
+import { devError, devLog } from "@/utils/devLog";
 
 export const getProjectApplications = async () => {
   try {
@@ -12,11 +12,11 @@ export const getProjectApplications = async () => {
     if (code === "200" || code === "00000000") {
       return res.response || [];
     } else {
-      console.error("API returned an error:", res.responseStatus);
+      devError("API returned an error:", res.responseStatus);
       return [];
     }
   } catch (error) {
-    console.error("Network or parsing error:", error);
+    devError("Network or parsing error:", error);
     return [];
   }
 };
@@ -30,11 +30,11 @@ export const getProjectApplicationById = async (id) => {
     if (code === "200" || code === "00000000") {
       return res; //  trả về nguyên response object
     } else {
-      console.error("API returned an error:", res.responseStatus);
+      devError("API returned an error:", res.responseStatus);
       return null;
     }
   } catch (error) {
-    console.error("Network or parsing error:", error);
+    devError("Network or parsing error:", error);
     return null;
   }
 };

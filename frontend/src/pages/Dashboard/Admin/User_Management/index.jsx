@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
@@ -55,10 +56,10 @@ const User = () => {
           setData(users);
           localStorage.setItem("userData", JSON.stringify(users));
         } else {
-          console.error("No user data found:", response);
+          devError("No user data found:", response);
         }
       } catch (err) {
-        console.error("Error fetching users:", err);
+        devError("Error fetching users:", err);
       }
     }
 

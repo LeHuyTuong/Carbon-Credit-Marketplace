@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devWarn } from "@/utils/devLog";
 
 /**
  *  Lấy danh sách báo cáo CVA (list-cva-check)
@@ -40,7 +41,7 @@ export const getReportById = async (reportId) => {
   if (res?.responseData) return res.responseData;
   if (res?.data?.responseData) return res.data.responseData;
 
-  console.warn(" Unexpected response structure:", res);
+  devWarn(" Unexpected response structure:", res);
   return null;
 };
 
@@ -119,7 +120,7 @@ export const getReportDetails = async (
   }
 
   // Không đoán được schema
-  console.warn("Unexpected details response structure:", res);
+  devWarn("Unexpected details response structure:", res);
   return {
     content: [],
     totalElements: 0,
@@ -157,6 +158,6 @@ export const getReportRules = async ({ traceId, traceDateTime } = {}) => {
   if (res?.responseData) return res.responseData;
   if (res?.data?.responseData) return res.data.responseData;
 
-  console.warn("Unexpected response structure:", res);
+  devWarn("Unexpected response structure:", res);
   return [];
 };

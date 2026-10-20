@@ -7,9 +7,11 @@ import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
 import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.helper.notification.ApplicationNotificationService;
+import com.carbonx.marketcarbon.model.PaymentDetails;
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.Withdrawal;
+import com.carbonx.marketcarbon.repository.PaymentDetailsRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
@@ -36,6 +38,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final UserRepository userRepository;
     private final WithdrawalRepository withdrawalRepository;
     private final WalletRepository walletRepository;
+    private final PaymentDetailsRepository paymentDetailsRepository;
     private final ApplicationNotificationService applicationNotificationService;
     private final SseService sseService;
     private final WalletTransactionService walletTransactionService;
@@ -65,11 +68,17 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         BigDecimal withdrawalAmount = BigDecimal.valueOf(amount);
 
         if (wallet.getBalance().compareTo(withdrawalAmount) >= 0) {
+            // Lưu khoản người dùng nhận tiền vào chính row withdrawal: nếu không, admin
+            // chỉ thấy "N/A" và không biết chuyển tiền đi đâu — tiền bị kẹt vô thời hạn.
+            PaymentDetails paymentDetails = paymentDetailsRepository
+                    .findFirstByUserIdOrderByIdDesc(user.getId())
+                    .orElse(null);
             Withdrawal withdrawal = Withdrawal.builder()
                     .amount(withdrawalAmount)
                     .status(Status.PENDING)
                     .requestedAt(LocalDateTime.now(VIETNAM_ZONE))
                     .user(user)
+                    .paymentDetails(paymentDetails)
                     .build();
 
             log.info("Withdrawal with id {} has been sent with money ", withdrawal.getId());

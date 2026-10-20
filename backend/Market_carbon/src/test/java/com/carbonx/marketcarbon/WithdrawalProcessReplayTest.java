@@ -9,6 +9,7 @@ import com.carbonx.marketcarbon.helper.notification.ApplicationNotificationServi
 import com.carbonx.marketcarbon.model.User;
 import com.carbonx.marketcarbon.model.Wallet;
 import com.carbonx.marketcarbon.model.Withdrawal;
+import com.carbonx.marketcarbon.repository.PaymentDetailsRepository;
 import com.carbonx.marketcarbon.repository.UserRepository;
 import com.carbonx.marketcarbon.repository.WalletRepository;
 import com.carbonx.marketcarbon.repository.WithdrawalRepository;
@@ -43,6 +44,7 @@ class WithdrawalProcessReplayTest {
     @Mock private UserRepository userRepository;
     @Mock private WithdrawalRepository withdrawalRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private PaymentDetailsRepository paymentDetailsRepository;
     @Mock private ApplicationNotificationService applicationNotificationService;
     @Mock private SseService sseService;
     @Mock private WalletTransactionService walletTransactionService;
@@ -55,7 +57,8 @@ class WithdrawalProcessReplayTest {
     @BeforeEach
     void setUp() {
         service = new WithdrawalServiceImpl(userRepository, withdrawalRepository, walletRepository,
-                applicationNotificationService, sseService, walletTransactionService);
+                paymentDetailsRepository, applicationNotificationService, sseService,
+                walletTransactionService);
         wallet = new Wallet();
         wallet.setId(9L);
         wallet.setBalance(new BigDecimal("100.00"));

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import useRipple from "../../hooks/useRipple";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -81,7 +82,7 @@ export default function Login() {
         return;
       }
 
-      console.error("Login error:", msg);
+      devError("Login error:", msg);
       toast.error(msg);
     } finally {
       setLoading(false);

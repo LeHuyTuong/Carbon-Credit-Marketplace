@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { Button, Nav } from "react-bootstrap";
 import { FaArrowLeft } from "react-icons/fa";
 import { apiFetch } from "../../../utils/apiFetch";
@@ -36,7 +37,7 @@ export default function WalletHistory() {
       );
       setTransactions(sorted);
     } catch (err) {
-      console.error("Failed to fetch transactions:", err);
+      devError("Failed to fetch transactions:", err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ export default function WalletHistory() {
       );
       setWithdrawals(sorted);
     } catch (err) {
-      console.error("Failed to fetch withdrawals:", err);
+      devError("Failed to fetch withdrawals:", err);
     } finally {
       setLoading(false);
     }

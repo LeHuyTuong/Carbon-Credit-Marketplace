@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -52,7 +53,7 @@ const OTPCVA = () => {
       login({ ...res.user, role: "CVA" }, res.jwt, true);
       navigate("/cva/carbonX/mkp/login", { replace: true });
     } catch (err) {
-      console.error("Verify OTP Error:", err);
+      devError("Verify OTP Error:", err);
       setError(err.message || "OTP verification failed");
     } finally {
       setLoading(false);

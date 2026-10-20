@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devError } from "@/utils/devLog";
 
 // GET ALL COMPANY KYC PROFILES
 export const getAllCompanyKYCProfiles = async () => {
@@ -12,7 +13,7 @@ export const getAllCompanyKYCProfiles = async () => {
     });
     return res;
   } catch (error) {
-    console.error("Error fetching company KYC profiles:", error);
+    devError("Error fetching company KYC profiles:", error);
     throw error;
   }
 };

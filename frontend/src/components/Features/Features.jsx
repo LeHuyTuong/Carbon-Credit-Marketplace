@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { devError } from "@/utils/devLog";
 import "./features.css";
 import { useAuth } from "../../context/AuthContext.jsx";
 import useRipple from "../../hooks/useRipple";
@@ -45,7 +46,7 @@ export default function Features() {
         const projects = res?.response || [];
         setAdminProjects(projects);
       } catch (err) {
-        console.error("[Features] Failed to load projects:", err);
+        devError("[Features] Failed to load projects:", err);
       }
     };
     fetchProjects();

@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { devError } from "@/utils/devLog";
 import { Link, useNavigate } from 'react-router-dom';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -32,7 +33,7 @@ export default function ProfileTab({ role, onClose }) {
     // Snackbar vẫn show bình thường
     setSnackbar({ open: true, message: 'Logout successfully!', severity: 'success' });
   } catch (error) {
-    console.error('Logout error:', error);
+    devError('Logout error:', error);
     setSnackbar({ open: true, message: 'Logout failed!', severity: 'error' });
   }
 };

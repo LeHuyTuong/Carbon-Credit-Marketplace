@@ -1,5 +1,7 @@
-CREATE DATABASE IF NOT EXISTS core_ccm3 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE core_ccm3;
+-- Chạy script này TRONG schema đích của ứng dụng, tên schema lấy từ
+-- SPRING_DATASOURCE_URL (ví dụ: mysql core_ccm < backend/database/core_ccm.sql).
+-- Script không tự CREATE DATABASE/USE: hardcode tên sẽ tạo bảng vào một schema khác
+-- với cái mà app kết nối, và prod (ddl-auto=validate) sẽ không boot được.
 
 -- Tắt kiểm tra khóa ngoại để tránh lỗi khi tạo lại bảng
 SET FOREIGN_KEY_CHECKS = 0;

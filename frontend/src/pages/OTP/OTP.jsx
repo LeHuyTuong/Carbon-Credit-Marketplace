@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import OTPInputs from "../../components/OTPInput/OTPInput";
 import "./otp.css";
@@ -72,7 +73,7 @@ export default function VerifyOtp() {
         nav("/home", { replace: true });
       }
     } catch (err) {
-      console.error("Verify OTP error:", err);
+      devError("Verify OTP error:", err);
       toast.error(err.message || "Failed to verify OTP");
     } finally {
       setLoading(false);

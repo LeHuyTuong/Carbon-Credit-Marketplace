@@ -11,6 +11,17 @@
 
 SET @schema_name = DATABASE();
 
+-- Fail fast when the script runs without a schema selected (mysql < script.sql).
+-- The schema name comes from SPRING_DATASOURCE_URL, e.g.
+--   mysql core_ccm < backend/database/migrations/<file>.sql
+SET @ddl = IF(DATABASE() IS NULL,
+    'SELECT * FROM __no_schema_selected__',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
 SET @has_column = (
     SELECT COUNT(*)
     FROM information_schema.COLUMNS
