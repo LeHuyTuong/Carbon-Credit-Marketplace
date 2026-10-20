@@ -185,7 +185,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(dontRollbackOn = AppException.class)
     public AuthResponse verifyOtp(VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
         if (user == null) {
@@ -194,7 +194,9 @@ public class AuthServiceImpl implements AuthService {
 
         // Nếu OTP hết hạn
         if (user.getOtpExpiryDate() != null && user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
-            // Nếu user chưa xác thực thì xóa luôn
+            // Nếu user chưa xác thực thì xóa luôn. dontRollbackOn = AppException.class
+            // để lần xóa này được commit: nếu rollback theo exception thì row PENDING vẫn
+            // còn và chặn người dùng đăng ký lại với EMAIL_EXISTED.
             if (user.getStatus() == USER_STATUS.PENDING) {
                 userRepository.delete(user);
                 log.warn(" OTP expired -> Deleted pending user [{}]", req.getEmail());

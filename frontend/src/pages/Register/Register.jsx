@@ -81,7 +81,14 @@ export default function Register() {
 
       // Email đã tồn tại
       if (code === "409" || message?.includes("Email already exists")) {
-        toast.warn("Email already registered");
+        toast.warn("Email already registered. If you did not get the code, request a new one.");
+        // Đưa sang màn OTP để lấy mã mới: tài khoản đang PENDING chỉ kích hoạt được
+        // bằng mã đăng ký, và mã cũ có thể đã hết hạn (hoặc email không tới).
+        // Luồng/email truyền bằng query string để F5 không làm mất ngữ cảnh.
+        nav(
+          `/otp?email=${encodeURIComponent(values.email.trim())}&from=register`,
+          { replace: true }
+        );
         return;
       }
 

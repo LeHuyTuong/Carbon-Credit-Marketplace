@@ -5,6 +5,7 @@ import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
+import com.carbonx.marketcarbon.dto.request.VerifyOtpRequest;
 import com.carbonx.marketcarbon.dto.response.AuthResponse;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
@@ -205,6 +206,36 @@ class AuthServiceRegisterRoleTest {
                 .isInstanceOf(AppException.class)
                 .satisfies(e -> assertThat(((AppException) e).getErrorCode())
                         .isEqualTo(ErrorCode.EMAIL_EXISTED));
+    }
+
+    @Test
+    void verifyOtp_expiredCodeRemovesThePendingAccountAndTheDeleteSurvives() throws Exception {
+        User user = pendingUser();
+        user.setOtpCode("123456");
+        user.setOtpExpiryDate(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(user);
+
+        VerifyOtpRequest req = new VerifyOtpRequest();
+        req.setEmail("user@example.com");
+        req.setOtpCode("123456");
+
+        assertThatThrownBy(() -> authService.verifyOtp(req))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.OTP_EXPIRED));
+
+        verify(userRepository).delete(user);
+
+        // The delete must NOT be rolled back by the exception, otherwise the stale PENDING
+        // row survives and blocks the user from registering again.
+        java.lang.reflect.Method method =
+                AuthServiceImpl.class.getMethod("verifyOtp", VerifyOtpRequest.class);
+        jakarta.transaction.Transactional transactional =
+                method.getAnnotation(jakarta.transaction.Transactional.class);
+        assertThat(transactional)
+                .as("verifyOtp must not roll back the pending-user cleanup")
+                .isNotNull();
+        assertThat(transactional.dontRollbackOn()).contains(AppException.class);
     }
 
     private User pendingUser() {
