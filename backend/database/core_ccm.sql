@@ -392,13 +392,16 @@ CREATE TABLE IF NOT EXISTS `withdrawal` (
 CREATE TABLE IF NOT EXISTS `profit_distribution` (
                                                      `id`                        BIGINT NOT NULL AUTO_INCREMENT,
                                                      `project_id`                BIGINT,
+                                                     `emission_report_id`        BIGINT,
                                                      `company_user_id`           BIGINT NOT NULL,
                                                      `total_credits_distributed` DECIMAL(38, 2) NOT NULL,
                                                      `total_money_distributed`   DECIMAL(38, 2) NOT NULL,
                                                      `status`                    ENUM('COMPLETED','FAILED','PENDING','PROCESSING') NOT NULL,
                                                      `created_at`                DATETIME(6) NOT NULL,
                                                      `updated_at`                DATETIME(6) NOT NULL,
-                                                     PRIMARY KEY (`id`)
+                                                     PRIMARY KEY (`id`),
+                                                     KEY `idx_profit_distribution_report` (`emission_report_id`),
+                                                     CONSTRAINT `fk_profit_distribution_report` FOREIGN KEY (`emission_report_id`) REFERENCES `emission_reports` (`id`)
 ) ENGINE=InnoDB;
 
 -- Bảng profit_distribution_detail

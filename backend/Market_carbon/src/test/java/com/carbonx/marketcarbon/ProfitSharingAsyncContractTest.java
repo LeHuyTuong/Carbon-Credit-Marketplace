@@ -56,6 +56,17 @@ class ProfitSharingAsyncContractTest {
     }
 
     @Test
+    void retryFailedPayoutsRunsOnTheSameBoundedExecutor() throws Exception {
+        Method method = ProfitSharingServiceImpl.class.getMethod(
+                "retryFailedPayouts", Long.class, Long.class);
+
+        assertThat(method.getReturnType()).isEqualTo(void.class);
+        Async async = method.getAnnotation(Async.class);
+        assertThat(async).as("retry must not block the HTTP request thread").isNotNull();
+        assertThat(async.value()).isEqualTo("profitSharingTaskExecutor");
+    }
+
+    @Test
     void serviceHasNoApplicationContextSelfProxy() {
         assertThat(Arrays.stream(ProfitSharingServiceImpl.class.getDeclaredFields())
                 .map(Field::getType))

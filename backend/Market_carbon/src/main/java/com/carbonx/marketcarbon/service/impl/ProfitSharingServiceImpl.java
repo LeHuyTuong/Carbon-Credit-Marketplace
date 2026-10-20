@@ -10,6 +10,7 @@ import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
 import com.carbonx.marketcarbon.exception.AppException;
 import com.carbonx.marketcarbon.exception.BadRequestException;
 import com.carbonx.marketcarbon.exception.ErrorCode;
+import com.carbonx.marketcarbon.exception.ResourceNotFoundException;
 import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Service chịu trách nhiệm phân chia lợi nhuận (Payout) cho các chủ xe điện (EV Owners).
@@ -144,17 +146,15 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
         log.info("Processing to share profit by company : {}", companyUser.getEmail());
 
-        // B3: Tạo bản ghi theo dõi đợt phân phối (Status: PROCESSING)
-        ProfitDistribution distributionEvent = createDistributionEvent(request, companyUser);
+        ProfitDistribution distributionEvent = null;
 
         try {
             Wallet companyWallet = walletService.findWalletByUser(companyUser);
             List<EmissionReport> reportsToProcess = new ArrayList<>();
 
-            // Biến report dùng chung cho xử lý và email
+            // B4: Validate và Load Emission Report
             EmissionReport report;
 
-            // B4: Validate và Load Emission Report
             if (request.getEmissionReportId() != null) {
                 // Dùng findByIdWithDetails để fetch EAGER các data cần thiết
                 report = emissionReportRepository.findByIdWithDetails(request.getEmissionReportId())
@@ -167,17 +167,22 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 if (!Objects.equals(report.getSeller().getId(), company.getId())) {
                     throw new AppException(ErrorCode.ACCESS_DENIED);
                 }
+
+                // Không cho chạy lại toàn bộ report khi đã có owner được trả tiền:
+                // lần chạy đó phải được retry theo distribution để tránh trả hai lần.
+                rejectIfPayoutAlreadyStarted(report);
                 reportsToProcess.add(report);
             } else {
                 log.warn("No emissionReportId provided.");
-                markDistributionCompleted(distributionEvent);
                 return;
             }
 
             if (reportsToProcess.isEmpty()) {
-                markDistributionCompleted(distributionEvent);
                 return;
             }
+
+            // B3: Tạo bản ghi theo dõi đợt phân phối (Status: PROCESSING)
+            distributionEvent = createDistributionEvent(request, companyUser, report);
 
             // B5: Chuẩn bị Map mapping từ Biển số xe -> Vehicle Entity để tra cứu nhanh
             Map<String, Vehicle> vehicleByPlate = buildCompanyVehicleMap(company.getId());
@@ -275,20 +280,33 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
             // B9: Thực hiện chuyển tiền tuần tự cho từng Owner
             // Mỗi owner chạy trong transaction REQUIRES_NEW riêng để lỗi 1 owner không rollback owner khác
+            boolean allOwnersSucceeded = true;
             for (OwnerPayoutData payout : payoutPlan) {
-                processPayoutForOwner(
+                if (!processPayoutForOwner(
                         distributionEvent,
                         payout,
                         companyWallet,
                         report.getId(), // Chỉ truyền ID để load lại trong transaction con
                         policy,
-                        company
-                );
+                        company,
+                        null)) {
+                    allOwnersSucceeded = false;
+                }
+            }
+
+            if (!allOwnersSucceeded) {
+                // Không được đánh dấu report PAID_OUT / distribution COMPLETED khi còn owner FAILED:
+                // làm vậy sẽ xoá đường retry và báo sai là đã trả đủ.
+                log.error("Distribution #{} has failed owner payouts; report #{} stays CREDIT_ISSUED for retry",
+                        distributionEvent.getId(), report.getId());
+                distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
+                profitDistributionRepository.save(distributionEvent);
+                return;
             }
 
             log.info("All sequential payouts processed.");
 
-            // B10: Cập nhật trạng thái Report -> PAID_OUT
+            // B10: Cập nhật trạng thái Report -> PAID_OUT (chỉ khi mọi owner đã nhận tiền)
             updateReportsToPaidOut(reportsToProcess);
 
             // B11: Gửi email tổng kết cho Công ty
@@ -317,8 +335,123 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
 
         } catch (Exception e) {
             log.error("System Error: {}", e.getMessage(), e);
-            distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
-            profitDistributionRepository.save(distributionEvent);
+            if (distributionEvent != null) {
+                distributionEvent.setStatus(ProfitDistributionStatus.FAILED);
+                profitDistributionRepository.save(distributionEvent);
+            }
+        }
+    }
+
+    /**
+     * Retry chỉ các owner còn FAILED trong một distribution đã chạy dở.
+     *
+     * <p>Không chạy lại toàn bộ report: owner đã SUCCESS giữ nguyên, chỉ các detail FAILED
+     * được xử lý lại. Nếu tất cả detail thành SUCCESS, report mới được chuyển PAID_OUT và
+     * distribution mới COMPLETED.</p>
+     */
+    @Async("profitSharingTaskExecutor")
+    @Override
+    public void retryFailedPayouts(Long companyUserId, Long distributionId) {
+        User companyUser = userRepository.findById(companyUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Company company = companyRepository.findByUserId(companyUser.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
+
+        ProfitDistribution distribution = profitDistributionRepository.findWithReportById(distributionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profit distribution not found: " + distributionId));
+
+        if (!Objects.equals(distribution.getCompanyUser().getId(), companyUser.getId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        if (distribution.getStatus() == ProfitDistributionStatus.COMPLETED) {
+            throw new BadRequestException("Distribution #" + distributionId + " is already completed.");
+        }
+
+        // Compare-and-set trong transaction riêng: hai request retry đồng thời chỉ một request thắng.
+        Integer claimed = requiresNewTransaction.execute(status ->
+                profitDistributionRepository.markRetrying(
+                        distributionId,
+                        ProfitDistributionStatus.PROCESSING,
+                        ProfitDistributionStatus.FAILED));
+        if (claimed == null || claimed == 0) {
+            throw new BadRequestException("Distribution #" + distributionId
+                    + " is not retryable (status must be FAILED and another retry must not be running).");
+        }
+
+        try {
+            EmissionReport report = distribution.getEmissionReport();
+            if (report == null) {
+                throw new BadRequestException("Distribution #" + distributionId
+                        + " has no linked emission report; automatic retry is unavailable.");
+            }
+            if (report.getStatus() != EmissionStatus.CREDIT_ISSUED) {
+                throw new BadRequestException("Emission report " + report.getId()
+                        + " is not waiting for payout (status " + report.getStatus() + ").");
+            }
+
+            List<ProfitDistributionDetail> details = profitDistributionDetailRepository
+                    .findByDistributionIdWithOwner(distributionId);
+            List<ProfitDistributionDetail> failedDetails = details.stream()
+                    .filter(detail -> "FAILED".equalsIgnoreCase(detail.getStatus()))
+                    .toList();
+
+            if (failedDetails.isEmpty()) {
+                boolean allPaid = !details.isEmpty() && details.stream()
+                        .allMatch(detail -> "SUCCESS".equalsIgnoreCase(detail.getStatus()));
+                if (allPaid) {
+                    // Crash sau khi trả tiền nhưng trước khi cập nhật trạng thái: hoàn tất báo cáo.
+                    updateReportsToPaidOut(List.of(report));
+                    markDistributionCompleted(distribution);
+                } else {
+                    distribution.setStatus(ProfitDistributionStatus.FAILED);
+                    profitDistributionRepository.save(distribution);
+                }
+                return;
+            }
+
+            Wallet companyWallet = walletService.findWalletByUser(companyUser);
+            if (companyWallet == null) {
+                throw new BadRequestException("Company wallet not found.");
+            }
+
+            BigDecimal requiredAmount = failedDetails.stream()
+                    .map(detail -> Objects.requireNonNullElse(detail.getMoneyAmount(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            validateCompanyBalance(companyWallet, requiredAmount);
+
+            ResolvedPolicy policy = profitSharingProperties.resolveForCompany(company.getId());
+            boolean allSucceeded = true;
+            for (ProfitDistributionDetail detail : failedDetails) {
+                OwnerPayoutData payout = new OwnerPayoutData(
+                        detail.getEvOwner().getId(),
+                        detail.getCreditAmount(),
+                        detail.getEnergyAmount(),
+                        detail.getMoneyAmount());
+                if (!processPayoutForOwner(
+                        distribution,
+                        payout,
+                        companyWallet,
+                        report.getId(),
+                        policy,
+                        company,
+                        detail.getId())) {
+                    allSucceeded = false;
+                }
+            }
+
+            if (allSucceeded) {
+                updateReportsToPaidOut(List.of(report));
+                markDistributionCompleted(distribution);
+            } else {
+                distribution.setStatus(ProfitDistributionStatus.FAILED);
+                profitDistributionRepository.save(distribution);
+            }
+        } catch (Exception e) {
+            log.error("Retry of distribution #{} failed: {}", distributionId, e.getMessage(), e);
+            distribution.setStatus(ProfitDistributionStatus.FAILED);
+            profitDistributionRepository.save(distribution);
         }
     }
 
@@ -332,45 +465,64 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
      * transaction được mở tường minh bằng {@link #requiresNewTransaction} thay vì self-proxy.
      * Đây không phải API công khai.</p>
      */
-    void processPayoutForOwner(
+    boolean processPayoutForOwner(
             ProfitDistribution event,
             OwnerPayoutData payout,
             Wallet companyWallet,
             Long reportId,
             ResolvedPolicy policy,
-            Company company
+            Company company,
+            Long existingDetailId
     ) {
         try {
-            requiresNewTransaction.executeWithoutResult(status ->
-                    doProcessPayoutForOwner(event, payout, companyWallet, reportId, policy, company));
+            String failure = requiresNewTransaction.execute(status ->
+                    doProcessPayoutForOwner(event, payout, companyWallet, reportId, policy, company, existingDetailId));
+
+            if (failure != null) {
+                saveFailedDetail(event, payout, failure, existingDetailId);
+                return false;
+            }
+            return true;
         } catch (UnexpectedRollbackException e) {
             // doProcessPayoutForOwner đã catch exception gốc nên transaction REQUIRES_NEW bị đánh dấu
             // rollback-only; commit sau đó ném UnexpectedRollbackException. Chỉ nuốt lỗi commit này
             // để vòng lặp đi tiếp owner kế tiếp thay vì đánh FAILED cả distribution.
             log.error("Payout for owner {} in distribution {} hit a rollback-only transaction: {}",
                     payout.getEvOwnerId(), event.getId(), e.getMessage(), e);
+            // Ghi đúng MỘT detail FAILED: nếu đây là retry thì cập nhật detail cũ,
+            // không tạo thêm dòng thứ hai cho cùng owner.
             saveFailedDetail(event, payout, String.format(
                     "Payout rolled back (distribution #%d, owner %d): %s",
-                    event.getId(), payout.getEvOwnerId(), e.getMessage()));
-            // A7: retry/compensation across distributions is NOT provided here; a later
-            // distribution-level retry can still pay this owner again.
+                    event.getId(), payout.getEvOwnerId(), e.getMessage()), existingDetailId);
+            return false;
+        } catch (Exception e) {
+            // Lỗi hạ tầng của riêng owner này (DB, kết nối...) không được làm dừng các owner khác.
+            log.error("Payout for owner {} in distribution {} failed: {}",
+                    payout.getEvOwnerId(), event.getId(), e.getMessage(), e);
+            saveFailedDetail(event, payout, "Payout failed: " + errorMessage(e), existingDetailId);
+            return false;
         }
     }
 
-    private void doProcessPayoutForOwner(
+    /**
+     * @return {@code null} khi owner đã được trả tiền và detail SUCCESS đã commit;
+     *         ngược lại trả về lý do thất bại để tầng ngoài ghi một detail FAILED duy nhất.
+     */
+    private String doProcessPayoutForOwner(
             ProfitDistribution event,
             OwnerPayoutData payout,
             Wallet companyWallet,
             Long reportId,
             ResolvedPolicy policy,
-            Company company
+            Company company,
+            Long existingDetailId
     ) {
         // Load lại Report trong session mới để tránh LazyInitializationException
         EmissionReport report = emissionReportRepository.findByIdWithDetails(reportId).orElse(null);
 
         String projectName = "N/A";
         String reportPeriod = "N/A";
-        String reportIdStr = String.valueOf(reportId);
+        String reportIdStr = reportId == null ? "N/A" : String.valueOf(reportId);
 
         if (report != null) {
             try {
@@ -384,14 +536,12 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         // Load lại ví Company để đảm bảo thread-safe và số dư mới nhất
         Wallet threadSafeCompanyWallet = walletRepository.findById(companyWallet.getId()).orElse(null);
         if (threadSafeCompanyWallet == null) {
-            saveFailedDetail(event, payout, "Company wallet not found");
-            return;
+            return "Company wallet not found";
         }
 
         EVOwner owner = evOwnerRepository.findById(payout.getEvOwnerId()).orElse(null);
         if (owner == null || owner.getUser() == null) {
-            saveFailedDetail(event, payout, "EVOwner not found");
-            return;
+            return "EVOwner not found";
         }
 
         // Tìm hoặc Tự động tạo ví cho Owner nếu chưa có
@@ -401,17 +551,33 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
                 ownerWallet = ((WalletServiceImpl) walletService).generateWallet(owner.getUser());
                 log.info("Generated new wallet for EVOwner ID {}", payout.getEvOwnerId());
             } catch (Exception e) {
-                saveFailedDetail(event, payout, "Failed to create wallet: " + e.getMessage());
-                return;
+                // Không save detail ở đây: transaction hiện tại đã rollback-only.
+                // Tầng ngoài sẽ ghi đúng một detail FAILED sau khi commit thất bại.
+                return "Failed to create wallet: " + errorMessage(e);
             }
         }
 
-        ProfitDistributionDetail detail = new ProfitDistributionDetail();
-        detail.setDistribution(event);
-        detail.setEvOwner(owner);
+        ProfitDistributionDetail detail;
+        if (existingDetailId != null) {
+            detail = profitDistributionDetailRepository.findById(existingDetailId).orElse(null);
+            if (detail == null) {
+                return "Distribution detail not found: " + existingDetailId;
+            }
+            if (detail.getDistribution() == null
+                    || !Objects.equals(detail.getDistribution().getId(), event.getId())) {
+                return "Distribution detail " + existingDetailId
+                        + " does not belong to distribution #" + event.getId();
+            }
+        } else {
+            detail = new ProfitDistributionDetail();
+            detail.setDistribution(event);
+            detail.setEvOwner(owner);
+        }
+
         detail.setMoneyAmount(payout.getPayoutAmount());
         detail.setCreditAmount(payout.getCreditContribution());
         detail.setEnergyAmount(payout.getEnergyContribution());
+        detail.setErrorMessage(null);
 
         try {
             // 1. Thực hiện chuyển tiền (Core Logic)
@@ -452,25 +618,31 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
             }
 
             detail.setStatus("SUCCESS");
+            profitDistributionDetailRepository.save(detail);
+            return null;
 
         } catch (Exception e) {
-            // Nếu chuyển tiền lỗi -> Save trạng thái FAILED
+            // Không save FAILED ở đây: nếu transferFunds đã đánh dấu rollback-only,
+            // việc save trong cùng transaction sẽ bị rollback và tầng ngoài sẽ ghi lại.
             log.error("Exception during payout for EVOwner ID {}: {}", payout.getEvOwnerId(), e.getMessage());
-            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
-            detail.setStatus("FAILED");
-            detail.setErrorMessage(errorMessage.substring(0, Math.min(errorMessage.length(), 250)));
-        } finally {
-            // Luôn lưu log chi tiết giao dịch
-            profitDistributionDetailRepository.save(detail);
+            return errorMessage(e);
         }
     }
 
     // Tạo bản ghi sự kiện phân phối trong transaction riêng
-    private ProfitDistribution createDistributionEvent(ProfitSharingRequest request, User companyUser) {
+    private ProfitDistribution createDistributionEvent(
+            ProfitSharingRequest request,
+            User companyUser,
+            EmissionReport report
+    ) {
         return requiresNewTransaction.execute(status -> {
             ProfitDistribution event = new ProfitDistribution();
             event.setCompanyUser(companyUser);
-            if (request.getProjectId() != null) {
+            event.setEmissionReport(report);
+            event.setProject(report.getProject());
+            if (request.getProjectId() != null
+                    && (report.getProject() == null
+                    || !Objects.equals(request.getProjectId(), report.getProject().getId()))) {
                 Project project = projectRepository.findById(request.getProjectId())
                         .orElseThrow(() -> new BadRequestException("Project ID not found: " + request.getProjectId()));
                 event.setProject(project);
@@ -482,15 +654,63 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         });
     }
 
+    /**
+     * Chặn chạy lại toàn bộ report khi đã có owner được trả tiền ở distribution trước.
+     * Trường hợp đó phải retry đúng distribution để không trả hai lần cho owner đã SUCCESS.
+     */
+    private void rejectIfPayoutAlreadyStarted(EmissionReport report) {
+        Optional<ProfitDistribution> previous =
+                profitDistributionRepository.findFirstByEmissionReportIdOrderByIdDesc(report.getId());
+        if (previous.isEmpty()) {
+            return;
+        }
+
+        ProfitDistribution distribution = previous.get();
+        if (distribution.getStatus() == ProfitDistributionStatus.PROCESSING
+                || distribution.getStatus() == ProfitDistributionStatus.PENDING) {
+            throw new BadRequestException("A payout for this report is already in progress (distribution #"
+                    + distribution.getId() + ").");
+        }
+
+        // Chỉ chặn khi thực sự đã có owner nhận tiền. Một distribution COMPLETED
+        // không có detail (không có contribution/payout) không được khoá report mãi mãi.
+        if (profitDistributionDetailRepository.existsByDistributionIdAndStatusIgnoreCase(
+                distribution.getId(), "SUCCESS")) {
+            throw new BadRequestException("Report " + report.getId() + " already has paid owners; retry distribution #"
+                    + distribution.getId() + " instead of starting a new payout.");
+        }
+    }
+
     // Lưu log lỗi khi không thể bắt đầu process payout (vd: ko tìm thấy user).
     // REQUIRES_NEW: phải commit được kể cả khi transaction payout bên ngoài rollback.
-    private void saveFailedDetail(ProfitDistribution event, OwnerPayoutData payout, String errorMessage) {
+    private void saveFailedDetail(
+            ProfitDistribution event,
+            OwnerPayoutData payout,
+            String errorMessage,
+            Long existingDetailId
+    ) {
         try {
             requiresNewTransaction.executeWithoutResult(status -> {
-                EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
-                ProfitDistributionDetail detail = new ProfitDistributionDetail();
-                detail.setDistribution(event);
-                detail.setEvOwner(ownerRef);
+                ProfitDistributionDetail detail = null;
+                if (existingDetailId != null) {
+                    detail = profitDistributionDetailRepository.findById(existingDetailId).orElse(null);
+                    if (detail == null
+                            || detail.getDistribution() == null
+                            || !Objects.equals(detail.getDistribution().getId(), event.getId())) {
+                        // Không tạo dòng mới: sẽ làm summary của distribution bị cộng hai lần.
+                        log.error("Cannot record failure for owner {}: detail {} is missing or belongs to another distribution",
+                                payout.getEvOwnerId(), existingDetailId);
+                        return;
+                    }
+                }
+
+                if (detail == null) {
+                    EVOwner ownerRef = evOwnerRepository.getReferenceById(payout.getEvOwnerId());
+                    detail = new ProfitDistributionDetail();
+                    detail.setDistribution(event);
+                    detail.setEvOwner(ownerRef);
+                }
+
                 detail.setMoneyAmount(payout.getPayoutAmount());
                 detail.setCreditAmount(payout.getCreditContribution());
                 detail.setEnergyAmount(payout.getEnergyContribution());
@@ -501,6 +721,10 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         } catch (Exception e) {
             log.error("CRITICAL: Failed to save failure detail for owner {}: {}", payout.getEvOwnerId(), e.getMessage());
         }
+    }
+
+    private String errorMessage(Exception e) {
+        return e.getMessage() != null ? e.getMessage() : "Unknown error";
     }
 
     // Helper map biển số xe

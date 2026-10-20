@@ -33,6 +33,13 @@ public class ProfitDistribution extends BaseEntity {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    // Báo cáo phát thải mà đợt chia sẻ này chi trả.
+    // Liên kết này là bắt buộc để retry chỉ trả lại các owner còn FAILED
+    // thay vì chạy lại toàn bộ report và trả tiền hai lần.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "emission_report_id")
+    private EmissionReport emissionReport;
+
     // Tổng số tiền được chia sẻ trong đợt này
     @Column(nullable = false)
     private BigDecimal totalMoneyDistributed;

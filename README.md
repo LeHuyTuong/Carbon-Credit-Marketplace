@@ -134,6 +134,10 @@ factor 0.6) → cash payout, then pays each owner in **its own `REQUIRES_NEW` tr
 - One owner's failure (missing wallet, insufficient company balance) is recorded as a
   `ProfitDistributionDetail(FAILED)` with the error message and does **not** roll back the owners
   already paid.
+- If at least one owner failed, the distribution is marked `FAILED` and the emission report stays
+  `CREDIT_ISSUED`. It is **not** marked `PAID_OUT`: doing so would claim everyone was paid and remove
+  the retry path. Call `POST /api/v1/profit-sharing/distributions/{id}/retry` to pay only the
+  remaining `FAILED` details; owners already `SUCCESS` are never paid twice.
 - The transfer itself goes through `WalletService.transferFunds`, which locks *both* wallets with
   `PESSIMISTIC_WRITE` before reading either balance — the classic two-account transfer, with the
   debit and the credit written as two linked `WalletTransaction` rows (negative and positive amount)
@@ -309,12 +313,18 @@ SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
 SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
 ```
 
-Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `PAYPAL_CLIENT_ID` /
-`PAYPAL_CLIENT_SECRET` / `PAYPAL_MODE`, `AWS_S3_BUCKET` + credentials, `AI_VERTEX_*` /
-`AI_GEMINI_*` for the AI scoring and chatbot.
+Production additionally requires `PAYPAL_MODE` (no fallback in the base profile — set it to
+`sandbox` or `live`) together with `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`. The application
+refuses to start if the mode is missing or invalid instead of silently using sandbox.
 
-Schema is managed by `spring.jpa.hibernate.ddl-auto=update`, so the first boot against an empty
-`core_ccm` database creates the tables.
+Optional integrations degrade rather than fail to start: `STRIPE_API_KEY`, `AWS_S3_BUCKET` +
+credentials, `AI_VERTEX_*` / `AI_GEMINI_*` for the AI scoring and chatbot.
+
+In development `spring.jpa.hibernate.ddl-auto` defaults to `update`, so the first boot against an
+empty `core_ccm` database creates the tables. The `prod` profile defaults to `validate`: create the
+schema from `backend/database/core_ccm.sql` and apply every script under
+`backend/database/migrations/` **before** starting the production build. For example, the payout
+retry link requires `2026-10-20_add_emission_report_to_profit_distribution.sql`.
 
 `DataInitializer` then seeds the roles and the three demo accounts. Their credentials are
 overridable — `carbonx.seed.admin-email` / `-password`, and the same pair for `company-` and `cva-`.

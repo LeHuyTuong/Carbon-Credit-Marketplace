@@ -354,11 +354,12 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
             BigDecimal creditsTCO2e = creditsKg.divide(KG_PER_CREDIT, 6, RoundingMode.HALF_UP);
             BigDecimal amount = optional(detail.getMoneyAmount(), 2);
 
-            totalEnergy = totalEnergy.add(energy);
-            totalCredits = totalCredits.add(creditsTCO2e);
-            totalPayout = totalPayout.add(amount);
-
+            // Chỉ cộng các khoản đã trả thật. Detail FAILED vẫn hiện trong danh sách
+            // nhưng không được làm phồng tổng payout/năng lượng/tín chỉ.
             if ("SUCCESS".equalsIgnoreCase(detail.getStatus())) {
+                totalEnergy = totalEnergy.add(energy);
+                totalCredits = totalCredits.add(creditsTCO2e);
+                totalPayout = totalPayout.add(amount);
                 ownersPaid++;
             }
 

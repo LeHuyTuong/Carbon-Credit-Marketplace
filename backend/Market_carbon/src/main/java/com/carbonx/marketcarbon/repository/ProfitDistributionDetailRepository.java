@@ -15,4 +15,6 @@ public interface ProfitDistributionDetailRepository extends JpaRepository<Profit
     @EntityGraph(attributePaths = {"evOwner", "evOwner.user"})
     @Query("SELECT d FROM ProfitDistributionDetail d WHERE d.distribution.id = :distributionId")
     List<ProfitDistributionDetail> findByDistributionIdWithOwner(Long distributionId);
+
+    boolean existsByDistributionIdAndStatusIgnoreCase(Long distributionId, String status);
 }

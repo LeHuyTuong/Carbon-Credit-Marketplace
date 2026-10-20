@@ -68,4 +68,31 @@ public class ProfitSharingController {
         return ResponseEntity.ok(response);
 
     }
+
+    @PostMapping("/distributions/{distributionId}/retry")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "Retry failed owner payouts of one distribution",
+            description = "Trả lại tiền cho các EV owner còn FAILED trong đúng đợt phân phối này. "
+                    + "Các owner đã SUCCESS không bị trả lại lần hai.")
+    public ResponseEntity<ApiResponse<Void>> retryFailedPayouts(
+            @PathVariable Long distributionId,
+            Authentication authentication,
+            @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
+            @RequestHeader(value = "X-Request-DateTime", required = false) String requestDateTime
+    ) {
+        String trace = requestTrace != null ? requestTrace : UUID.randomUUID().toString();
+        String now = requestDateTime != null ? requestDateTime : OffsetDateTime.now(ZoneOffset.UTC).toString();
+
+        User companyUser = userService.findUserByEmail(authentication.getName());
+        if (companyUser == null) {
+            throw new BadRequestException("Authenticated user not found");
+        }
+
+        profitSharingService.retryFailedPayouts(companyUser.getId(), distributionId);
+
+        ResponseStatus rs = new ResponseStatus(StatusCode.SUCCESS.getCode(),
+                "Payout retry started successfully. This will run in the background.");
+        ApiResponse<Void> response = new ApiResponse<>(trace, now, rs, null);
+        return ResponseEntity.ok(response);
+    }
 }
