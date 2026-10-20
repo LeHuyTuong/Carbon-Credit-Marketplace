@@ -96,7 +96,9 @@ public class AuthServiceImpl implements AuthService {
         );
 
         try {
-            emailService.sendEmail(subject, content, List.of(req.getEmail()));
+            // OTP là email quan trọng: gửi đồng bộ để không bị pool thông báo drop
+            // và để API không báo "đã gửi" khi SMTP thực sự thất bại.
+            emailService.sendEmailNow(subject, content, List.of(req.getEmail()));
         } catch (Exception e) {
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }

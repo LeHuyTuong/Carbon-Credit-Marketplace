@@ -12,6 +12,7 @@ import com.carbonx.marketcarbon.service.EmailService;
 import com.carbonx.marketcarbon.service.UserService;
 import com.carbonx.marketcarbon.service.impl.AuthServiceImpl;
 import com.carbonx.marketcarbon.config.JwtProvider;
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,12 +71,28 @@ class AuthServiceRegisterRoleTest {
     }
 
     @Test
-    void register_evOwner_succeeds() {
+    void register_evOwner_succeeds() throws Exception {
         happyPathStubs(PredefinedRole.USER_ROLE);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         AuthResponse res = authService.register(request(PredefinedRole.USER_ROLE));
         assertThat(res.getRoles()).containsExactly(PredefinedRole.USER_ROLE);
         verify(userRepository).save(any());
+        // OTP is critical: it must bypass the droppable notification pool.
+        verify(emailService).sendEmailNow(anyString(), anyString(), anyList());
+        verify(emailService, never()).sendEmail(anyString(), anyString(), anyList());
+    }
+
+    @Test
+    void register_otpSmtpFailureIsReportedInsteadOfSilentlySwallowed() throws Exception {
+        happyPathStubs(PredefinedRole.USER_ROLE);
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        doThrow(new MessagingException("smtp down"))
+                .when(emailService).sendEmailNow(anyString(), anyString(), anyList());
+
+        assertThatThrownBy(() -> authService.register(request(PredefinedRole.USER_ROLE)))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> assertThat(((AppException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.EMAIL_SEND_FAILED));
     }
 
     @Test
@@ -93,6 +111,7 @@ class AuthServiceRegisterRoleTest {
                 .satisfies(e -> assertThat(((AppException) e).getErrorCode().getStatusCode().value()).isEqualTo(403));
         verify(userRepository, never()).save(any());
         verify(emailService, never()).sendEmail(anyString(), anyString(), anyList());
+        verify(emailService, never()).sendEmailNow(anyString(), anyString(), anyList());
     }
 
     @Test

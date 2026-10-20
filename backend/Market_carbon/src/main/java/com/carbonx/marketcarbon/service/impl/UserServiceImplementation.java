@@ -104,7 +104,8 @@
                     otp
             );
 
-            emailService.sendEmail(subject, content, List.of(user.getEmail()));
+            // OTP phải gửi đồng bộ để lỗi SMTP không bị nuốt và email không bị drop.
+            emailService.sendEmailNow(subject, content, List.of(user.getEmail()));
         }
 
         @Transactional
@@ -241,7 +242,7 @@
 
             String subject = "Your new OTP code";
             String content = "<p>New OTP: <b>%s</b></p>".formatted(otp);
-            emailService.sendEmail(subject, content, List.of(user.getEmail()));
+            emailService.sendEmailNow(subject, content, List.of(user.getEmail()));
         }
 
         @Override

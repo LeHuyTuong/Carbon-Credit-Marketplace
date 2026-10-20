@@ -49,27 +49,40 @@ public class EmailServiceImpl implements EmailService {
 
     @Async("emailTaskExecutor")
     public void sendEmail(String subject, String content, List<String> toList) {
-        MimeMessage mimeMessage = mailSender.createMimeMessage();
-        MimeMessageHelper helper;
         try {
-            helper = new MimeMessageHelper(mimeMessage, "UTF-8");
-            try {
-                helper.setFrom(emailFrom, displayName);
-            } catch (UnsupportedEncodingException e) {
-                log.warn("Unsupported sender display name encoding. Fallback to bare address.");
-                helper.setFrom(emailFrom);
-            }
-            helper.setTo(toList.toArray(new String[0]));
-            helper.setSubject(subject);
-            helper.setText(content, true); // HTML
-
-            mailSender.send(mimeMessage);
-            log.info("Email sent to {}", toList);
+            doSendEmail(subject, content, toList);
         } catch (MessagingException ex) {
             log.error("Failed to build or send email to {}: {}", toList, ex.getMessage(), ex);
         } catch (Exception ex) {
             log.error("Unexpected error while sending email to {}: {}", toList, ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * OTP phải biết gửi thành công hay thất bại ngay, nên chạy đồng bộ và không nuốt lỗi.
+     */
+    @Override
+    public void sendEmailNow(String subject, String content, List<String> toList)
+            throws MessagingException, UnsupportedEncodingException {
+        doSendEmail(subject, content, toList);
+    }
+
+    private void doSendEmail(String subject, String content, List<String> toList)
+            throws MessagingException, UnsupportedEncodingException {
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
+        try {
+            helper.setFrom(emailFrom, displayName);
+        } catch (UnsupportedEncodingException e) {
+            log.warn("Unsupported sender display name encoding. Fallback to bare address.");
+            helper.setFrom(emailFrom);
+        }
+        helper.setTo(toList.toArray(new String[0]));
+        helper.setSubject(subject);
+        helper.setText(content, true); // HTML
+
+        mailSender.send(mimeMessage);
+        log.info("Email sent to {}", toList);
     }
 
     @Override
