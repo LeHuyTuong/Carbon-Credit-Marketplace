@@ -174,7 +174,10 @@ const ViewTransaction = () => {
             </Typography>
           )}
 
-          {/* <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
+          {/* Nơi nhận tiền: backend gắn PaymentDetails của người rút vào chính row
+              withdrawal. Không hiện thì admin không biết chuyển tiền đi đâu, còn tiền
+              đã bị trừ ví của người dùng. */}
+          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
 
           <Typography variant="subtitle1" color={colors.blueAccent[300]}>
             Payment Details
@@ -189,7 +192,7 @@ const ViewTransaction = () => {
             <b>Bank Code:</b> {paymentInfo.bankCode || "N/A"}
           </Typography>
 
-          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} /> */}
+          <Divider sx={{ my: 2, borderColor: colors.grey[700] }} />
 
           <Typography variant="subtitle1" color={colors.blueAccent[300]}>
             User Info
