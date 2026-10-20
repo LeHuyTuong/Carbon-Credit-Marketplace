@@ -10,6 +10,7 @@ import {
   MenuItem,
   useTheme,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useParams, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { tokens } from "@/theme";
@@ -86,7 +87,7 @@ const ViewUser = () => {
         setUser(uiUser);
         setNewStatus(uiUser.status);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        devError("Error fetching user:", error);
         showSnackbar("Failed to load user data", "error");
       } finally {
         setLoading(false);
@@ -138,7 +139,7 @@ const ViewUser = () => {
         error?.message ||
         "Failed to update status.";
       showSnackbar(msg, "error");
-      console.error(error);
+      devError(error);
     }
   };
 

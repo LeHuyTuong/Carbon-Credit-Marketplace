@@ -72,3 +72,6 @@ scratchpad-audit/
 # Personal engineering notes (kept on disk, not shared with collaborators)
 CV_METRICS.md
 OPTIMIZATION_LOG.md
+
+### Reviewer scratch (local MariaDB datadir, logs, vendored sources) ###
+.review-tmp/

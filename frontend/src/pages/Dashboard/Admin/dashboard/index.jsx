@@ -1,4 +1,5 @@
 import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import ElectricCarIcon from "@mui/icons-material/ElectricCar";
@@ -38,7 +39,7 @@ const Dashboard = () => {
         const total = await fetchDashboardReport(token);
         setReportCount(total ?? 0);
       } catch (error) {
-        console.error("Error fetching reports:", error);
+        devError("Error fetching reports:", error);
         setReportCount(0);
       }
     };
@@ -51,7 +52,7 @@ const Dashboard = () => {
         });
         setElectricVehicleCount(res.response ?? 0);
       } catch (error) {
-        console.error("Error fetching electric vehicle count:", error);
+        devError("Error fetching electric vehicle count:", error);
       }
     };
 
@@ -64,7 +65,7 @@ const Dashboard = () => {
         });
         setWalletTransactionCount(Number(count) || 0);
       } catch (error) {
-        console.error("Error fetching wallet transaction count:", error);
+        devError("Error fetching wallet transaction count:", error);
       }
     };
 
@@ -75,7 +76,7 @@ const Dashboard = () => {
         const data = await fetchMonthlyCreditStatus(token);
         setMonthlyCreditStatus(data);
       } catch (error) {
-        console.error("Error fetching monthly credit status:", error);
+        devError("Error fetching monthly credit status:", error);
       }
     };
 
@@ -96,7 +97,7 @@ const Dashboard = () => {
           )
         );
       } catch (error) {
-        console.error("Error fetching withdraw history:", error);
+        devError("Error fetching withdraw history:", error);
       }
     };
 
@@ -109,7 +110,7 @@ const Dashboard = () => {
         });
         setUserCount(res);
       } catch (error) {
-        console.error("Error fetching user count:", error);
+        devError("Error fetching user count:", error);
       }
     }
 

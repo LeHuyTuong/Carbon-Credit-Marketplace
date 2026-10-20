@@ -4,6 +4,7 @@ import com.carbonx.marketcarbon.common.OtpPurpose;
 import com.carbonx.marketcarbon.common.PredefinedRole;
 import com.carbonx.marketcarbon.common.USER_STATUS;
 import com.carbonx.marketcarbon.config.JwtProvider;
+import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
 import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
@@ -43,6 +44,11 @@ public class AuthServiceImpl implements AuthService {
             PredefinedRole.COMPANY_ROLE
     );
 
+    // Hạn OTP theo luồng: đăng ký 5 phút, quên mật khẩu 30 phút (khớp với
+    // UserServiceImplementation). Dùng để suy ra thời điểm phát OTP.
+    private static final int REGISTRATION_OTP_MINUTES = 5;
+    private static final int FORGOT_PASSWORD_OTP_MINUTES = 30;
+
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -51,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
 
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (!req.getPassword().equals(req.getConfirmPassword())) {
             throw new AppException(ErrorCode.CONFIRM_PASSWORD_INVALID);
@@ -77,27 +84,30 @@ public class AuthServiceImpl implements AuthService {
         }
         newUser.getRoles().add(role);
         // Sinh OTP
-        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+        String otp = generateRegistrationOtp();
         newUser.setOtpCode(otp);
         newUser.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
         newUser.setOtpPurpose(OtpPurpose.REGISTER);
         userRepository.save(newUser);
 
-        log.info("Generated OTP [{}] for user [{}] at {}", otp, newUser.getEmail(), LocalDateTime.now());
-
-        String subject = "Account Verification - CarbonX";
-        String content = String.format(
-                "<p>Hello %s,</p>" +
-                        "<p>Thank you for registering. Please use the following OTP code to verify your account:</p>" +
-                        "<h2>%s</h2>" +
-                        "<p>The OTP will expire in 5 minutes.</p>" +
-                        "<p>Best regards,<br/>CarbonX Team</p>",
-                newUser.getEmail(), otp
-        );
+        // KHÔNG ghi OTP vào log: ai đọc được log (hay log collector) thì lấy được mã 6 số
+        // và tự kích hoạt tài khoản trong 5 phút.
+        log.info("Generated a registration OTP for user [{}] at {}", newUser.getEmail(), LocalDateTime.now());
 
         try {
-            emailService.sendEmail(subject, content, List.of(req.getEmail()));
+            // OTP là email quan trọng: gửi đồng bộ để không bị pool thông báo drop
+            // và để API không báo "đã gửi" khi SMTP thực sự thất bại.
+            sendRegistrationOtp(newUser.getEmail(), otp);
         } catch (Exception e) {
+            // @Transactional sẽ rollback row PENDING khi rời method bằng exception.
+            // Delete tường minh là lớp bảo vệ thứ hai nếu method bị gọi ngoài proxy
+            // (unit test, self-invocation), để không bao giờ để lại user không có OTP.
+            try {
+                userRepository.delete(newUser);
+            } catch (Exception cleanupError) {
+                log.error("Could not delete pending user [{}] after OTP failure: {}",
+                        newUser.getEmail(), cleanupError.getMessage());
+            }
             throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
         }
 
@@ -113,8 +123,95 @@ public class AuthServiceImpl implements AuthService {
         return authResponse;
     }
 
+    /**
+     * Gửi lại OTP đăng ký cho user còn PENDING. Cần thiết cho các row PENDING đã bị
+     * commit bởi phiên bản cũ khi SMTP lỗi (trước khi register có transaction), và cho
+     * trường hợp email bị thất lạc trước khi hết hạn.
+     */
     @Override
     @Transactional
+    public AuthResponse resendRegistrationOtp(EmailRequest req) {
+        AuthResponse response = new AuthResponse();
+        response.setJwt(null);
+        response.setMessage("A new registration OTP has been sent, please verify.");
+
+        User user = userRepository.findByEmail(req.getEmail());
+        if (user == null || user.getStatus() != USER_STATUS.PENDING) {
+            // Trả cùng câu trả lời cho mọi email: endpoint này public, phân biệt "email có
+            // tài khoản" và "không có" sẽ biến nó thành công cụ dò tài khoản. Người dùng mà
+            // tài khoản đã bị xoá (OTP hết hạn) sẽ đăng ký lại được.
+            log.info("Registration OTP resend requested for an address without a pending account");
+            return response;
+        }
+
+        // Chống spam: chỉ chặn khi MÃ HIỆN TẠI vừa được phát (dưới 60 giây). Không
+        // dùng hạn hết mã (5 phút) làm ngưỡng: người dùng bấm "Gửi lại" sau 60 giây
+        // như UI cho phép sẽ bị từ chối tới 4 phút và không lấy được mã mới.
+        if (user.getOtpPurpose() == OtpPurpose.REGISTER
+                && otpIssuedLessThanSecondsAgo(user, 60)) {
+            // Chỉ chặn khi mã ĐĂNG KÝ hiện tại vừa được phát. Nếu mã hiện tại là của
+            // luồng quên mật khẩu (hạn 30 phút) thì người dùng không có mã đăng ký nào
+            // để dùng, không có lý do gì chặn.
+            throw new AppException(ErrorCode.OTP_STILL_VALID);
+        }
+
+        String otp = generateRegistrationOtp();
+        user.setOtpCode(otp);
+        user.setOtpExpiryDate(LocalDateTime.now().plusMinutes(5));
+        // Luôn đặt lại purpose REGISTER: tài khoản PENDING có thể đã bị luồng quên mật
+        // khẩu ghi đè purpose thành FORGOT_PASSWORD, và verifyOtp với purpose đó chỉ
+        // trả reset token chứ không kích hoạt tài khoản.
+        user.setOtpPurpose(OtpPurpose.REGISTER);
+        userRepository.save(user);
+
+        try {
+            sendRegistrationOtp(user.getEmail(), otp);
+        } catch (Exception e) {
+            // @Transactional rollback giữ nguyên OTP cũ; user có thể thử lại.
+            throw new AppException(ErrorCode.EMAIL_SEND_FAILED);
+        }
+
+        response.setRoles(user.getRoles().stream().map(Role::getName).toList());
+        return response;
+    }
+
+    private String generateRegistrationOtp() {
+        return String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+    }
+
+    /**
+     * Mã OTP hiện tại có vừa được phát trong {@code seconds} giây gần đây không?
+     *
+     * <p>User không lưu thời điểm phát OTP, nhưng hạn mã là hằng số theo từng luồng
+     * (đăng ký 5 phút, quên mật khẩu 30 phút) nên thời điểm phát được suy ra từ
+     * {@code otpExpiryDate}.</p>
+     */
+    private boolean otpIssuedLessThanSecondsAgo(User user, int seconds) {
+        if (user.getOtpExpiryDate() == null) {
+            return false;
+        }
+        int lifetimeMinutes = user.getOtpPurpose() == OtpPurpose.FORGOT_PASSWORD
+                ? FORGOT_PASSWORD_OTP_MINUTES
+                : REGISTRATION_OTP_MINUTES;
+        LocalDateTime issuedAt = user.getOtpExpiryDate().minusMinutes(lifetimeMinutes);
+        return issuedAt.isAfter(LocalDateTime.now().minusSeconds(seconds));
+    }
+
+    private void sendRegistrationOtp(String email, String otp) throws Exception {
+        String subject = "Account Verification - CarbonX";
+        String content = String.format(
+                "<p>Hello %s,</p>" +
+                        "<p>Thank you for registering. Please use the following OTP code to verify your account:</p>" +
+                        "<h2>%s</h2>" +
+                        "<p>The OTP will expire in 5 minutes.</p>" +
+                        "<p>Best regards,<br/>CarbonX Team</p>",
+                email, otp
+        );
+        emailService.sendEmailNow(subject, content, List.of(email));
+    }
+
+    @Override
+    @Transactional(dontRollbackOn = AppException.class)
     public AuthResponse verifyOtp(VerifyOtpRequest req) {
         User user = userRepository.findByEmail(req.getEmail());
         if (user == null) {
@@ -123,7 +220,9 @@ public class AuthServiceImpl implements AuthService {
 
         // Nếu OTP hết hạn
         if (user.getOtpExpiryDate() != null && user.getOtpExpiryDate().isBefore(LocalDateTime.now())) {
-            // Nếu user chưa xác thực thì xóa luôn
+            // Nếu user chưa xác thực thì xóa luôn. dontRollbackOn = AppException.class
+            // để lần xóa này được commit: nếu rollback theo exception thì row PENDING vẫn
+            // còn và chặn người dùng đăng ký lại với EMAIL_EXISTED.
             if (user.getStatus() == USER_STATUS.PENDING) {
                 userRepository.delete(user);
                 log.warn(" OTP expired -> Deleted pending user [{}]", req.getEmail());

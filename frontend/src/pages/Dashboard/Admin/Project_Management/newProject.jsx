@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Typography,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { Formik } from "formik";
 import * as yup from "yup";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -74,7 +75,7 @@ const NewProjectForm = () => {
         );
       }
     } catch (error) {
-      console.error("Error creating project:", error);
+      devError("Error creating project:", error);
       // Lấy thông điệp lỗi từ phản hồi
       const message =
         error?.response?.data?.responseStatus?.responseDesc ||

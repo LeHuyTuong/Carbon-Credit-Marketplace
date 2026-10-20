@@ -117,7 +117,9 @@
 
 N1 RESOLVED · N2 RESOLVED · N3 RESOLVED · N4 RESOLVED (rotation pending external action) · N5 RESOLVED-as-scope (compose+JWT cleaned; **rotation pending external action**; prod-profile claim corrected) · N8 RESOLVED · N9 RESOLVED · N10 RESOLVED · SC3 RESOLVED · SC5 RESOLVED.
 
-**P0-B untouched: YES** — deposit verification, settlement races, wallet locking, ERROR-status, transferFunds ledger fix all deferred per phase rules.
+**P0-B untouched: YES (at P0-A time, 2026-08-16)** — deposit verification, settlement races, wallet locking, ERROR-status, transferFunds ledger fix all deferred per phase rules.
+
+> **Post-P0-A (2026-09-18):** P0-B code has since been committed and reviewed — N7 order ownership fixed (`OrderController`/`OrderServiceImpl`), P2 exception leaks fixed, payment env gap closed. Full test suite: 95 tests, 0 failures, BUILD SUCCESS. See `docs/review/source-review-2026-09-18.md`.
 
 ## Diff Classification (scope-creep check)
 
@@ -143,6 +145,8 @@ Re-verified every blocker directly in the committed tree (`git grep`/`git ls-tre
 | SC3 | `AppConfig:85` `.anyRequest().authenticated()`; `FileUploadTestController` absent from HEAD tree | RESOLVED |
 | SC5 | `GlobalExceptionHandler` — 500 returns generic message | RESOLVED |
 
-**Final suite state**: 13 test classes, 63 tests — all 26 P0-A regression tests green; the 6 failures are the pre-existing baseline set (verified identical at clean HEAD `cee196b` before P0-A).
+**Final suite state (2026-08-16)**: 13 test classes, 63 tests — all 26 P0-A regression tests green; the 6 failures are the pre-existing baseline set (verified identical at clean HEAD `cee196b` before P0-A).
+
+**Suite state (2026-09-18, post-P0-A fixes)**: **95 tests, 0 failures, BUILD SUCCESS** (`mvnw clean test`, JDK 17) — includes `OrderSettlementConcurrencyTest` (P0-B/B3 concurrency) and `OrderQuantityWholeNumberTest` (P0-B/B5).
 
 **Authorization matrix (doc 19) re-verified**: rows previously marked FIX for N1/N2/N8/N9/SC3/SC5/N10 are now enforced in source; remaining FIX rows (deposit ownership/verification, order complete/read ownership, `/users/by-email` scope, `countAllTransactions` role) are explicitly P0-B/P1 scope and unchanged by this phase.

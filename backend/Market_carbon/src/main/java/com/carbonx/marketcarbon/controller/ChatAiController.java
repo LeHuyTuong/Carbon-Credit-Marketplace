@@ -26,7 +26,7 @@ public class ChatAiController {
             String answer = aiService.answer(question);
             return ResponseEntity.ok(answer);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Lỗi: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("An unexpected error occurred. Please try again later.");
         }
     }
 }

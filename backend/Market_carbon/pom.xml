@@ -190,6 +190,15 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- In-memory JPA slice for query/CAS behaviour (not for InnoDB locking tests;
+		     those stay on Testcontainers MySQL). -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>2.2.224</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>
@@ -332,6 +341,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
 				<executions>
 					<execution>
 						<goals>
@@ -340,7 +350,30 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- P1.2: the *IT tests need a real MySQL (Testcontainers) and therefore a
+			     running Docker daemon. Surefire does not pick them up, so failsafe runs
+			     them on `mvn verify`; `mvn test` stays infrastructure-free. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<includes>
+						<include>**/*IT.java</include>
+					</includes>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+
 	</build>
 
 </project>

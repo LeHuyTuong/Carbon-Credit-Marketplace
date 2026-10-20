@@ -1,10 +1,11 @@
 import { Navigate } from "react-router-dom";
+import { devLog } from "@/utils/devLog";
 import { useAuth } from "../context/AuthContext.jsx";
 
 //chặn trang theo role
 export default function RoleRoute({ children, allowedRoles }) {
   const { role, isAuthenticated } = useAuth();
-  console.log("Current role:", role);
+  devLog("Current role:", role);
 
    // role có thể là string hoặc array
   const roles = Array.isArray(role) ? role : [role];

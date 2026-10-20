@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import { Box, Typography, useTheme } from "@mui/material";
 import { tokens } from "@/themeCVA";
 import Header from "@/components/Chart/Header.jsx";
@@ -24,7 +25,7 @@ const ReportListCVA = () => {
       try {
         setLoading(true);
         const res = await getReportCVAList({ page, size: pageSize });
-        console.log("API CVA list:", res);
+        devLog("API CVA list:", res);
 
         if (res?.response) {
           const list = Array.isArray(res.response)
@@ -34,7 +35,7 @@ const ReportListCVA = () => {
           if (res.totalElements !== undefined) setRowCount(res.totalElements);
         }
       } catch (err) {
-        console.error("Error when getting CVA report list:", err);
+        devError("Error when getting CVA report list:", err);
       } finally {
         setLoading(false);
       }

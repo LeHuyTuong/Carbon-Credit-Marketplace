@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import { Box, Typography } from "@mui/material";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -26,10 +27,10 @@ const ApplicationList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("Fetching pending CVA applications...");
+        devLog("Fetching pending CVA applications...");
         const response = await getProjectApplications();
 
-        console.log(" Raw API response:", response);
+        devLog(" Raw API response:", response);
 
         let applications = [];
 
@@ -46,12 +47,12 @@ const ApplicationList = () => {
           applications = response;
         }
 
-        console.log(" Parsed applications:", applications);
+        devLog(" Parsed applications:", applications);
 
         setData(applications || []);
         setRowCount(applications?.length || 0);
       } catch (error) {
-        console.error(" Error fetching applications:", error);
+        devError(" Error fetching applications:", error);
         setData([]);
         setRowCount(0);
       } finally {

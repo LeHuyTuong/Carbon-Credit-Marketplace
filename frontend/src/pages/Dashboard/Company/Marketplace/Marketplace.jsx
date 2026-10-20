@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { devError } from "@/utils/devLog";
 import "./marketplace.css";
 import project1 from "../../../../assets/project1.jpg";
 import project2 from "../../../../assets/project2.jpg";
@@ -44,7 +45,7 @@ export default function Marketplace() {
 
         setCredits(formatted);
       } catch (err) {
-        console.error("Failed to fetch marketplace:", err);
+        devError("Failed to fetch marketplace:", err);
         setError(err.message || "Failed to load marketplace data.");
       } finally {
         setLoading(false);

@@ -18,6 +18,7 @@ import {
   TablePagination,
   Divider
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { tokens } from "@/themeCVA";
@@ -95,11 +96,11 @@ const ViewReport = ({ report: initialReport }) => {
               setActionTaken(true);
             }
           } else {
-            console.error("Unexpected getReportById response:", data);
+            devError("Unexpected getReportById response:", data);
             showSnackbar("error", "Failed to load report data!");
           }
         } catch (err) {
-          console.error("Failed to fetch report:", err);
+          devError("Failed to fetch report:", err);
           showSnackbar("error", err.message || "Failed to load report data!");
         } finally {
           setLoading(false);
@@ -120,7 +121,7 @@ const ViewReport = ({ report: initialReport }) => {
           const data = await getCompanyKYCProfile(report.sellerId);
           setCompanyProfile(data);
         } catch (err) {
-          console.error("Failed to fetch company KYC profile:", err);
+          devError("Failed to fetch company KYC profile:", err);
           showSnackbar("error", "Failed to load company profile!");
         }
       })();
@@ -137,7 +138,7 @@ const ViewReport = ({ report: initialReport }) => {
       setReport((prev) => ({ ...prev, status: approved ? "CVA_APPROVED" : "REJECTED" }));
       showSnackbar("success", "Status updated successfully!");
     } catch (err) {
-      console.error("Update failed:", err);
+      devError("Update failed:", err);
       showSnackbar("error", err.message || "Failed to update status!");
     } finally {
       setLoading(false);
@@ -169,7 +170,7 @@ const ViewReport = ({ report: initialReport }) => {
         setDetailsPage(pageObj.number ?? page);
         setDetailsSize(pageObj.size ?? size);
       } catch (e) {
-        console.error("Load details failed:", e);
+        devError("Load details failed:", e);
         setDetails([]);
         setDetailsTotal(0);
         showSnackbar("error", e.message || "Failed to load details!");
@@ -208,7 +209,7 @@ const ViewReport = ({ report: initialReport }) => {
       setOpenAIDialog(true);
       showSnackbar("success", "AI analysis completed!");
     } catch (err) {
-      console.error("AI analysis failed:", err);
+      devError("AI analysis failed:", err);
       showSnackbar("error", err.message || "AI analysis failed!");
     } finally {
       setAiLoading(false);
@@ -227,7 +228,7 @@ const ViewReport = ({ report: initialReport }) => {
       setOpenDataDialog(true);
       showSnackbar("success", "Data analysis completed!");
     } catch (err) {
-      console.error("Data analysis failed:", err);
+      devError("Data analysis failed:", err);
       showSnackbar("error", err.message || "Data analysis failed!");
     } finally {
       setDataLoading(false);
@@ -242,7 +243,7 @@ const ViewReport = ({ report: initialReport }) => {
       const data = await getReportRules();
       setRulesData(data || []);
     } catch (err) {
-      console.error("Failed to load rules:", err);
+      devError("Failed to load rules:", err);
       showSnackbar("error", err.message || "Failed to load rules!");
     } finally {
       setRulesLoading(false);

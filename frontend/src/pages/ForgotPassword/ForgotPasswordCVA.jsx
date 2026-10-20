@@ -28,15 +28,13 @@ const CVAForgotPassword = () => {
       return;
     }
 
-    // Giả lập gửi yêu cầu reset (sau này bạn thay bằng API thật)
-    if (email === "tinbaoblizard567@gmail.com") {
-      setMessage("A reset link has been sent to your email.");
-      setError("");
-      setTimeout(() => navigate("/cva/change-password"), 3000); // quay lại sau 3s
-    } else {
-      setError("Email not found in cva records!");
-      setMessage("");
-    }
+    // Trả cùng một thông báo cho mọi email, không phân biệt có tồn tại hay không:
+    // phản hồi khác nhau sẽ biến trang này thành công cụ dò xem địa chỉ nào có tài
+    // khoản. Bản trước so sánh cứng với một địa chỉ Gmail thật, nên địa chỉ đó nằm
+    // luôn trong bundle production.
+    setMessage("If that email is in our records, a reset link has been sent.");
+    setError("");
+    setTimeout(() => navigate("/cva/change-password"), 3000); // quay lại sau 3s
   };
 
   return (

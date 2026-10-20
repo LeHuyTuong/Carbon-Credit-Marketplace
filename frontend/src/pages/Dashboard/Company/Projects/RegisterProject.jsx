@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate, useParams } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -70,7 +71,7 @@ export default function RegisterProject() {
       toast.success("Application submitted successfully!");
       nav("/list-projects", { replace: true }); // điều hướng về list
     } catch (err) {
-      console.error("Error submitting project application:", err);
+      devError("Error submitting project application:", err);
 
       // 404 – chưa KYC
       if (err.status === 404) {

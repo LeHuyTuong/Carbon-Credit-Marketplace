@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { Modal, Button, Form, Card } from "react-bootstrap";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -117,7 +118,7 @@ function UpdateCompanyModal({ show, onHide, data, onSuccess }) {
 
       onSuccess(values);
     } catch (err) {
-      console.error("Error updating company:", err);
+      devError("Error updating company:", err);
       toast.error(err.message || "Failed to update company info");
     }
   };

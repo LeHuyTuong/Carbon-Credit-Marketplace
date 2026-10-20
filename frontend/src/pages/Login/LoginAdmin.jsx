@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -86,7 +87,7 @@ const AdminLogin = () => {
 
         //  Kiểm tra KYC
         const kycRes = await checkKYCAdmin();
-        console.log(" Full KYC check:", kycRes);
+        devLog(" Full KYC check:", kycRes);
 
         //  Điều hướng dựa theo KYC có hay chưa
         if (kycRes && kycRes.id) {
@@ -109,7 +110,7 @@ const AdminLogin = () => {
         );
       }
     } catch (err) {
-      console.error(" Login error:", err);
+      devError(" Login error:", err);
       showSnackbar("error", err.message || "An unexpected error occurred!");
     } finally {
       setLoading(false);

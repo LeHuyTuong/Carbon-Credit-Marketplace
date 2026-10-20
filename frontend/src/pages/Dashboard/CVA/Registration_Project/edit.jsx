@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Typography,
@@ -38,7 +39,7 @@ const ApplicationEdit = () => {
           throw new Error("Application not found");
         }
       } catch (error) {
-        console.error(" Error fetching application:", error);
+        devError(" Error fetching application:", error);
         showSnackbar("error", "Failed to fetch application.");
       } finally {
         setLoading(false);
@@ -56,7 +57,7 @@ const ApplicationEdit = () => {
         note: finalReviewNote || (approved ? "Approved by CVA" : "Rejected by CVA"),
       };
 
-      console.log(" Sending decision payload:", payload);
+      devLog(" Sending decision payload:", payload);
       const result = await updateApplicationDecision(id, payload);
 
       const code = result?.responseStatus?.responseCode;
@@ -73,7 +74,7 @@ const ApplicationEdit = () => {
         throw new Error(msg);
       }
     } catch (error) {
-      console.error(" Decision failed:", error);
+      devError(" Decision failed:", error);
       showSnackbar("error", error.message || "Decision failed!");
     }
   };

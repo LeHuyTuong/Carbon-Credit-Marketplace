@@ -6,6 +6,7 @@ import {
   Alert,
   Chip,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
 import { useState, useEffect } from "react";
@@ -63,7 +64,7 @@ const EvOwnerTeam = () => {
 
         setRows(normalized);
       } catch (e) {
-        console.error("Error fetching EV Owner list:", e);
+        devError("Error fetching EV Owner list:", e);
         setErr(e?.message || "Failed to load EV owners");
         setRows([]);
       } finally {

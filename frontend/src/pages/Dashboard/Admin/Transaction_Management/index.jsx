@@ -1,5 +1,6 @@
 // src/pages/admin/TransactionAdmin.js
 import { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
@@ -22,6 +23,7 @@ const TransactionAdmin = () => {
           id: item.id,
           transactionId: item.id,
           trader: item.paymentDetails?.accountHolderName || "N/A",
+          accountNumber: item.paymentDetails?.accountNumber || "",
           email: item.user?.email || item.paymentDetails?.user?.email || "N/A",
           transactionType: "withdraw",
           date: new Date(item.requestedAt).toLocaleString(),
@@ -30,7 +32,7 @@ const TransactionAdmin = () => {
         }));
         setData(mapped);
       } catch (error) {
-        console.error("Error loading withdrawal data:", error);
+        devError("Error loading withdrawal data:", error);
       }
     };
 
@@ -41,6 +43,19 @@ const TransactionAdmin = () => {
   const columns = [
     { field: "transactionId", headerName: "Transaction ID", flex: 0.8 },
     { field: "email", headerName: "Email", flex: 1 },
+    {
+      // Nơi nhận tiền: admin phải thấy được tài khoản của người rút, nếu không thì
+      // tiền đã bị trừ ví mà không ai chuyển được.
+      field: "trader",
+      headerName: "Bank account",
+      flex: 1,
+      renderCell: ({ row }) => (
+        <Typography color={colors.blueAccent[500]} fontWeight="600">
+          {row.trader}
+          {row.accountNumber ? ` · ${row.accountNumber}` : ""}
+        </Typography>
+      ),
+    },
     {
       field: "transactionType",
       headerName: "Transaction Type",

@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.controller;
 
 import com.carbonx.marketcarbon.config.OAuth2UserWithToken;
+import com.carbonx.marketcarbon.dto.request.EmailRequest;
 import com.carbonx.marketcarbon.dto.request.LoginRequest;
 import com.carbonx.marketcarbon.dto.request.RegisterRequest;
 import com.carbonx.marketcarbon.dto.request.ResetPasswordRequest;
@@ -32,6 +33,14 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<CommonResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) {
         return ResponseEntity.ok(ResponseUtil.success("trace-register", authService.register(req)));
+    }
+
+    @Operation(summary = "Resend the registration OTP for a pending account")
+    @PostMapping("/register/resend-otp")
+    public ResponseEntity<CommonResponse<AuthResponse>> resendRegistrationOtp(
+            @Valid @RequestBody EmailRequest req) {
+        return ResponseEntity.ok(ResponseUtil.success(
+                "trace-register-resend-otp", authService.resendRegistrationOtp(req)));
     }
 
     @Operation(summary = "Verify OTP to activate account")

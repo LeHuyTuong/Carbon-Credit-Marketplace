@@ -100,10 +100,11 @@ public class WalletServiceImpl implements WalletService {
 
         BigDecimal amountUsd = BigDecimal.valueOf(money)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal amountToAddVnd = CurrencyConverter.usdToVnd(amountUsd); // Convert USD to VND
 
-        String description = String.format("Add money to wallet (USD %s -> VND %s)",
-                amountUsd.toPlainString(), amountToAddVnd.toPlainString());
+        // Số dư ví tính bằng USD: mô tả phải nói USD, không phải VND (tiền quy đổi
+        // chỉ để hiển thị, dòng ledger ghi đúng số USD đã cộng).
+        String description = String.format("Add money to wallet (USD %s)",
+                amountUsd.toPlainString());
 
         walletTransactionService.createTransaction(WalletTransactionRequest.builder()
                 .wallet(wallet)
@@ -115,8 +116,8 @@ public class WalletServiceImpl implements WalletService {
         Wallet updatedWallet = walletRepository.findById(wallet.getId())
                 .orElseThrow(() -> new WalletException("Wallet disappeared after transaction"));
 
-        log.info("Balance added to wallet {}. Amount USD: {}, Amount VND: {}. New Balance: {}",
-                wallet.getId(), amountUsd, amountToAddVnd, updatedWallet.getBalance());
+        log.info("Balance added to wallet {}. Amount USD: {}, New Balance: {}",
+                wallet.getId(), amountUsd, updatedWallet.getBalance());
 
         List<WalletTransactionResponse> transactionDtos = walletTransactionService.getTransactionDtosForWallet(updatedWallet.getId());
         // Map updated entity to DTO
@@ -321,14 +322,25 @@ public class WalletServiceImpl implements WalletService {
             throw new AppException(ErrorCode.MONEY_MUST_POSITIVE);
         }
 
+        if (fromWallet.getId().equals(toWallet.getId())) {
+            // Chuyển tiền cho chính mình: debit rồi credit CÙNG một entity nên số dư cuối
+            // tăng thêm amount — tiền được tạo ra từ hư không. Chặn lại ở đây (chokepoint
+            // của mọi luồng chuyển tiền).
+            log.error("Refusing a self-transfer on wallet {}", fromWallet.getId());
+            throw new AppException(ErrorCode.SELF_TRANSFER_NOT_ALLOWED);
+        }
+
         try {
             // 1+2. Khóa và Tải cả hai ví theo thứ tự ID tăng dần (P0-B/B3: lock ordering —
             // mọi luồng khóa ví theo cùng một thứ tự toàn cục thì không thể xảy ra deadlock
             // vòng A→B đấu với B→A).
             Wallet firstById = fromWallet.getId() <= toWallet.getId() ? fromWallet : toWallet;
             Wallet secondById = firstById == fromWallet ? toWallet : fromWallet;
-            Wallet lockedFirst = entityManager.find(Wallet.class, firstById.getId(), LockModeType.PESSIMISTIC_WRITE);
-            Wallet lockedSecond = entityManager.find(Wallet.class, secondById.getId(), LockModeType.PESSIMISTIC_WRITE);
+            // Đẩy các insert chờ xuống DB trước: ví vừa tạo trong transaction này phải
+            // tồn tại thật thì mới khoá/đọc lại được.
+            entityManager.flush();
+            Wallet lockedFirst = lockAndReload(firstById.getId());
+            Wallet lockedSecond = lockAndReload(secondById.getId());
             if (lockedFirst == null || lockedSecond == null) {
                 throw new AppException(ErrorCode.WALLET_NOT_FOUND);
             }
@@ -403,5 +415,27 @@ public class WalletServiceImpl implements WalletService {
             log.error("Unexpected error during transfer: {}", e.getMessage(), e);
             throw new WalletException("Unexpected error during transfer: " + e.getMessage());
         }
+    }
+
+    /**
+     * Khoá row ví và đọc lại số dư tiền đã commit.
+     *
+     * <p>{@code entityManager.find(..., PESSIMISTIC_WRITE)} KHÔNG khoá lại row nếu entity
+     * đã nằm trong persistence context: nó trả về bản ghi cũ đã load trước đó, nên số dư
+     * có thể cũ (lost update) dù có "khoá". Số dư đã commit được đọc lại bằng một câu
+     * {@code SELECT ... FOR UPDATE} chỉ đọc cột balance — không dùng
+     * {@code refresh}, vì refresh nạp lại toàn bộ state và sẽ xoá các thay đổi đang chờ
+     * của entity (ví dụ carbonCreditBalance do luồng order set trước đó).</p>
+     */
+    private Wallet lockAndReload(Long id) {
+        Wallet wallet = entityManager.find(Wallet.class, id, LockModeType.PESSIMISTIC_WRITE);
+        if (wallet == null) {
+            return null;
+        }
+        BigDecimal committedBalance = walletRepository.findBalanceByIdForUpdate(id);
+        if (committedBalance != null) {
+            wallet.setBalance(committedBalance);
+        }
+        return wallet;
     }
 }

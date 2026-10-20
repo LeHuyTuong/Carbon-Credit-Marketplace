@@ -1,5 +1,6 @@
 // src/scenes/admin/EVList.jsx
 import { Box, Typography, useTheme, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "@/theme";
 import Header from "@/components/Chart/Header.jsx";
@@ -45,7 +46,7 @@ const EVList = () => {
         setTotalCount(totalRows);
 
       } catch (err) {
-        console.error(" Failed to fetch vehicles:", err);
+        devError(" Failed to fetch vehicles:", err);
         setError("Failed to load vehicles");
         setData([]);
         setTotalCount(0);

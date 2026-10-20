@@ -22,6 +22,7 @@ import com.carbonx.marketcarbon.service.WalletTransactionService;
 import com.carbonx.marketcarbon.service.impl.OrderServiceImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,9 +42,12 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * P0-B/B3: settlement concurrency guards.
@@ -113,6 +117,15 @@ class OrderSettlementConcurrencyTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        // P0-B/N7: service-layer ownership check requires a SecurityContext
+        SecurityContextHolder.clearContext();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(buyerUser.getEmail(), null,
+                        java.util.List.of(new SimpleGrantedAuthority("ROLE_COMPANY"))));
+        // caller must resolve to a User (ownership check)
+        lenient().when(userRepository.findByEmail(buyerUser.getEmail())).thenReturn(buyerUser);
+        lenient().when(companyRepository.findByUserId(buyerUser.getId())).thenReturn(Optional.of(buyerCompany));
+
         // NOTE: buyer wallet id > seller wallet id — forces the ascending-order lock path
         buyerWallet = new Wallet();
         buyerWallet.setId(909L);
@@ -125,6 +138,11 @@ class OrderSettlementConcurrencyTest {
         sellerWallet.setUser(sellerUser);
         sellerWallet.setBalance(new BigDecimal("50.00"));
         sellerWallet.setCarbonCreditBalance(new BigDecimal("10"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     private void stubHappyPath(Order orderState) {

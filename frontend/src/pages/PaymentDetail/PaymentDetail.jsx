@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { useAuth } from "../../context/AuthContext";
 import { Modal, Button, Form } from "react-bootstrap";
 import { Formik } from "formik";
@@ -48,7 +49,7 @@ export default function PaymentDetail() {
 
         setPaymentData(res.response);
       } catch (err) {
-        console.error("Error fetching payment detail:", err);
+        devError("Error fetching payment detail:", err);
         setError("Failed to fetch payment detail");
       } finally {
         setLoading(false);
@@ -216,7 +217,7 @@ function UpdateModal({ show, onHide, data, isCreating, onSuccess }) {
       const result = res.response || res.createdData || res.updatedData;
       if (result) onSuccess(result);
     } catch (err) {
-      console.error("Error submitting form:", err);
+      devError("Error submitting form:", err);
       alert(err.message || "Failed to save details");
     }
   };

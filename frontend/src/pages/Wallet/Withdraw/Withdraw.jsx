@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Formik } from "formik";
 import { Modal, Button, Form, Card, Spinner } from "react-bootstrap";
 import * as Yup from "yup";
@@ -31,7 +32,7 @@ export default function Withdraw({ show, onHide, onSubmit, wallet }) {
       const res = await apiFetch("/api/v1/paymentDetails", { method: "GET" });
       setPaymentDetail(res.response || null);
     } catch (err) {
-      console.error("Error fetching payment detail:", err);
+      devError("Error fetching payment detail:", err);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { devError, devLog } from "@/utils/devLog";
 import {
   Box,
   Button,
@@ -83,7 +84,7 @@ const AdminKYC = () => {
       });
 
       const res = await apiKYCAdmin(formData);
-      console.log(" Full KYC response:", res);
+      devLog(" Full KYC response:", res);
 
       //  Kiểm tra mã phản hồi thành công từ backend
       if (
@@ -93,11 +94,11 @@ const AdminKYC = () => {
         showSnackbar("success", "KYC submitted successfully!", 5000);
         setTimeout(() => navigate("/admin/dashboard"), 1500); // delay để snackbar hiển thị
       } else {
-        console.error(" KYC failed:", res?.responseStatus?.responseMessage);
+        devError(" KYC failed:", res?.responseStatus?.responseMessage);
         showSnackbar("error", `KYC failed: ${res?.responseStatus?.responseMessage}`, 5000);
       }
     } catch (err) {
-      console.error(" KYC Error:", err.message);
+      devError(" KYC Error:", err.message);
       showSnackbar("error", `KYC submission failed: ${err.message}`, 5000);
     } finally {
       setLoading(false);

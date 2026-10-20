@@ -33,6 +33,13 @@ public class ProfitDistribution extends BaseEntity {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    // Báo cáo phát thải mà đợt chia sẻ này chi trả.
+    // Liên kết này là bắt buộc để retry chỉ trả lại các owner còn FAILED
+    // thay vì chạy lại toàn bộ report và trả tiền hai lần.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "emission_report_id")
+    private EmissionReport emissionReport;
+
     // Tổng số tiền được chia sẻ trong đợt này
     @Column(nullable = false)
     private BigDecimal totalMoneyDistributed;
@@ -45,6 +52,11 @@ public class ProfitDistribution extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProfitDistributionStatus status;
+
+    // Token của worker đang giữ quyền xử lý đợt này. Mọi heartbeat và chuyển trạng thái
+    // phải khớp token; một worker bị reclaim không thể ghi đè claim mới.
+    @Column(name = "claim_token", length = 36)
+    private String claimToken;
 
     // Chi tiết các khoản thanh toán cho từng EV Owner
     @OneToMany(mappedBy = "distribution", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

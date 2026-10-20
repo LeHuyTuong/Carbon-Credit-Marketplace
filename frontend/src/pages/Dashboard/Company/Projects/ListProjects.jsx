@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { devError } from "@/utils/devLog";
 import { Button, Table, Spinner, Card } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,7 @@ export default function ListProjects() {
       setApplications(data);
       setRequestDateTime(res?.requestDateTime || new Date().toISOString()); //lưu request time
     } catch (err) {
-      console.error("Error fetching project applications:", err);
+      devError("Error fetching project applications:", err);
       toast.error("Failed to load registered projects");
     } finally {
       setLoading(false);

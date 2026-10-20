@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { devError } from "@/utils/devLog";
 import {
   Box,
   TextField,
@@ -59,7 +60,7 @@ const EditProfile = ({ onAvatarUpdated }) => {
           });
         }
       } catch (error) {
-        console.error("Failed to fetch KYC admin data:", error.message);
+        devError("Failed to fetch KYC admin data:", error.message);
       }
     };
 
@@ -114,7 +115,7 @@ const EditProfile = ({ onAvatarUpdated }) => {
 
       setTimeout(() => navigate("/admin/view_profile_admin"), 1500);
     } catch (error) {
-      console.error("Update KYC API Error:", error.message);
+      devError("Update KYC API Error:", error.message);
       setSnackbar({
         open: true,
         message: "Update failed. Please try again.",

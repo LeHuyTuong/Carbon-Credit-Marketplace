@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { devError } from "@/utils/devLog";
 import { useParams, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
@@ -72,7 +73,7 @@ const ViewReport = () => {
           setIssued(false);
         }
       } catch (err) {
-        console.error("Error fetching report:", err);
+        devError("Error fetching report:", err);
         showSnackbar("error", "Failed to load report details!");
       } finally {
         setLoading(false);
@@ -94,7 +95,7 @@ const ViewReport = () => {
       setOpenPreview(true);
 
     } catch (err) {
-      console.error("Preview error:", err);
+      devError("Preview error:", err);
 
       const message =
         err?.response?.data?.responseStatus?.responseMessage ||
@@ -131,7 +132,7 @@ const ViewReport = () => {
       if (isApproved) setApproved(true);
       else setApproved(false);
     } catch (err) {
-      console.error("Approval error:", err);
+      devError("Approval error:", err);
       showSnackbar("error", "Failed to update report status!");
     }
   };
@@ -171,7 +172,7 @@ const ViewReport = () => {
       //quay về trang quản lý tín chỉ sau 1s
       setTimeout(() => navigate("/admin/credit_management"), 1000);
     } catch (err) {
-      console.error("Issue credit error:", err);
+      devError("Issue credit error:", err);
       // lay message từ response nếu có
       const message =
         err?.response?.data?.responseStatus?.responseDesc ||

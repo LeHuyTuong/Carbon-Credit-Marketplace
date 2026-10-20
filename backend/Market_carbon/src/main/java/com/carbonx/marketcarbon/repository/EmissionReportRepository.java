@@ -4,13 +4,15 @@ import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.carbonx.marketcarbon.model.Company;
 import com.carbonx.marketcarbon.model.EmissionReport;
 import com.carbonx.marketcarbon.model.Project;
-import io.lettuce.core.dynamic.annotation.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +51,15 @@ public interface EmissionReportRepository extends JpaRepository<EmissionReport, 
     @Query("SELECT r FROM EmissionReport r WHERE r.id = :id")
     @EntityGraph(attributePaths = {"details"})
     Optional<EmissionReport> findByIdWithDetails(@Param("id") Long id);
+
+    /**
+     * Khóa report trong lúc kiểm tra "đã có payout chưa" và tạo distribution.
+     * Hai request /share đồng thời sẽ được tuần tự hóa trên cùng row report,
+     * nên request thứ hai nhìn thấy distribution của request thứ nhất.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM EmissionReport r WHERE r.id = :id")
+    Optional<EmissionReport> findByIdForUpdate(@Param("id") Long id);
 
     // Tổng số report
     @Query("SELECT COUNT(e) FROM EmissionReport e")

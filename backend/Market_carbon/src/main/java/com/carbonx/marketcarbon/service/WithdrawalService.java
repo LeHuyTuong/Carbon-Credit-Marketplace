@@ -5,7 +5,7 @@ import com.carbonx.marketcarbon.model.Withdrawal;
 import java.util.List;
 
 public interface WithdrawalService {
-    Withdrawal requestWithdrawal(Long amount);
+    Withdrawal requestWithdrawal(java.math.BigDecimal amount);
 
     Withdrawal processWithdrawal(Long  withdrawalId, boolean accept) throws Exception;
 

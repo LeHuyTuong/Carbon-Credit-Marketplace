@@ -23,6 +23,13 @@ public class ProfitSharingProperties {
     private Policy defaultPolicy = new Policy();
     private Map<Long, Policy> overrides = new HashMap<>();
 
+    /**
+     * Một distribution PROCESSING không có heartbeat trong bao nhiêu phút thì được
+     * phép retry lại. Dùng để thoát khỏi trạng thái kẹt khi pod bị kill giữa chừng.
+     * Mỗi owner trả xong sẽ cập nhật updatedAt, nên job dài vẫn được coi là đang sống.
+     */
+    private long staleProcessingMinutes = 15;
+
     public ResolvedPolicy resolveForCompany(Long companyId) {
         if (defaultPolicy == null) {
             throw new IllegalStateException("Default profit sharing policy must be configured");

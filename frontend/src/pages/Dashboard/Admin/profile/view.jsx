@@ -1,4 +1,5 @@
 import { Box, Typography, Avatar, useMediaQuery, Paper, Divider, useTheme } from "@mui/material";
+import { devError, devLog } from "@/utils/devLog";
 import { EditOutlined } from "@mui/icons-material";
 import Header from "@/components/Chart/Header.jsx";
 import { tokens } from "@/theme";
@@ -29,7 +30,7 @@ const AdminProfile = ({ onClose }) => {
     const fetchAdminData = async () => {
       try {
         const res = await checkKYCAdmin();
-        console.log("AdminProfile fetched res:", res);
+        devLog("AdminProfile fetched res:", res);
 
         const data = res; // chỉ lấy res.response, không thêm .response nữa
         if (!data) throw new Error("KYC data not found");
@@ -47,7 +48,7 @@ const AdminProfile = ({ onClose }) => {
           avatarUrl: data.avatarUrl || null,
         });
       } catch (error) {
-        console.error("Failed to fetch KYC admin data:", error.message);
+        devError("Failed to fetch KYC admin data:", error.message);
       }
     };
 

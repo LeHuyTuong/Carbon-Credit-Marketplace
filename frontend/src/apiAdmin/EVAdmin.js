@@ -1,4 +1,5 @@
 import { apiFetch } from "@/utils/apiFetch";
+import { devError } from "@/utils/devLog";
 
 export const getVehicles = async (pageNo = 0, pageSize = 20, sort = "") => {
   try {
@@ -25,10 +26,10 @@ export const getVehicles = async (pageNo = 0, pageSize = 20, sort = "") => {
       };
     }
 
-    console.error("Unexpected response code:", code, res);
+    devError("Unexpected response code:", code, res);
     return { data: [], pageNo: 0, pageSize: 20, totalPages: 0 };
   } catch (error) {
-    console.error("Error in getVehicles:", error);
+    devError("Error in getVehicles:", error);
     return { data: [], pageNo: 0, pageSize: 20, totalPages: 0 };
   }
 };
@@ -65,7 +66,7 @@ export const updateVehicleById = async (id, data) => {
 
     return res;
   } catch (error) {
-    console.error("Error in updateVehicleById:", error);
+    devError("Error in updateVehicleById:", error);
     throw error;
   }
 };

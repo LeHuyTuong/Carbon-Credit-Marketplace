@@ -76,8 +76,12 @@ class WalletTransferFundsLedgerTest {
     }
 
     private void stubLocks() {
+        // Khoá + đọc lại: find() lấy entity, refresh(..., PESSIMISTIC_WRITE) khoá row và
+        // nạp lại số dư đã commit (nếu không, số dư trong memory có thể cũ).
         when(entityManager.find(Wallet.class, 11L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(from);
         when(entityManager.find(Wallet.class, 22L, LockModeType.PESSIMISTIC_WRITE)).thenReturn(to);
+        when(walletRepository.findBalanceByIdForUpdate(11L)).thenReturn(new BigDecimal("100.00"));
+        when(walletRepository.findBalanceByIdForUpdate(22L)).thenReturn(new BigDecimal("50.00"));
     }
 
     @Test
@@ -90,6 +94,15 @@ class WalletTransferFundsLedgerTest {
         // balances mutated correctly
         assertThat(from.getBalance()).isEqualByComparingTo(new BigDecimal("70.00"));
         assertThat(to.getBalance()).isEqualByComparingTo(new BigDecimal("80.00"));
+
+        // Both wallets are locked AND their committed balance is re-read under the lock:
+        // entityManager.find with a lock mode does not refresh an already managed entity,
+        // so the transfer could run on a stale balance. The lock itself is taken by the
+        // native 'SELECT balance ... FOR UPDATE'.
+        verify(entityManager).find(Wallet.class, 11L, LockModeType.PESSIMISTIC_WRITE);
+        verify(entityManager).find(Wallet.class, 22L, LockModeType.PESSIMISTIC_WRITE);
+        verify(walletRepository).findBalanceByIdForUpdate(11L);
+        verify(walletRepository).findBalanceByIdForUpdate(22L);
 
         // two ledger rows with correct per-side before/after
         ArgumentCaptor<WalletTransaction> captor = ArgumentCaptor.forClass(WalletTransaction.class);

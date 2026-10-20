@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { Container, Table, Accordion, Spinner, Button } from "react-bootstrap";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../../../../utils/apiFetch";
@@ -47,7 +48,7 @@ export default function PayoutOwnerDetail() {
         grandTotalPayout: data.grandTotalPayout || 0,
       });
     } catch (err) {
-      console.error("Error fetching payout detail:", err);
+      devError("Error fetching payout detail:", err);
       setError(err.message || "Failed to load payout detail.");
     } finally {
       setLoading(false); // tắt spinner
@@ -81,7 +82,7 @@ export default function PayoutOwnerDetail() {
       //giải phóng bộ nhớ tạm (blob URL)
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
+      devError(err);
       toast.error("Export failed: " + err.message);
     } finally {
       setLoading(false);

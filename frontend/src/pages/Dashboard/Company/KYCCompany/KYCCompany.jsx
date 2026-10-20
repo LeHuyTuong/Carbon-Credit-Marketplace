@@ -1,5 +1,6 @@
 // src/pages/KYCCompany/KYCCompany.jsx
 import React, { useEffect, useState } from "react";
+import { devError } from "@/utils/devLog";
 import { useNavigate } from "react-router-dom";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -45,7 +46,7 @@ export default function KYCCompany() {
           address: info.address || "",
         });
       } catch (err) {
-        console.error("Error fetching company KYC:", err);
+        devError("Error fetching company KYC:", err);
         // 400 hoặc 404 không hiển thị lỗi
         if (err.status === 400 || err.status === 404) {
           // không làm gì cả, chỉ giữ form trống
@@ -86,7 +87,7 @@ export default function KYCCompany() {
       );
       nav("/profile-company", { replace: true });
     } catch (err) {
-      console.error("Error submitting company KYC:", err);
+      devError("Error submitting company KYC:", err);
       toast.error(err.message || "Failed to save company KYC");
     } finally {
       setLoading(false);
