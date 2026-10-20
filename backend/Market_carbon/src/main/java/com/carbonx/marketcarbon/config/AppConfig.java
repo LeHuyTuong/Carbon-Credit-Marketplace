@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.config;
 
 import lombok.extern.slf4j.Slf4j;
 import com.carbonx.marketcarbon.common.USER_ROLE;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -39,6 +41,9 @@ public class AppConfig {
 
     @Value("${app.cors.allowed-origins}")
     private String corsAllowedOrigins;
+
+    /** Parsed once at startup; a bare wildcard is rejected before the app accepts requests. */
+    private List<String> corsOrigins = List.of();
 
     private static final String[] PUBLIC_ENDPOINT = {
             "/api/v1/auth/register",
@@ -136,12 +141,37 @@ public class AppConfig {
         return http.build();
     }
 
+    /**
+     * Parses {@code app.cors.allowed-origins} once and fails fast on values that cannot
+     * work with {@code allowCredentials=true}: an empty list or the bare wildcard.
+     * Hitting those only at request time would surface as a 500 without CORS headers.
+     */
+    @PostConstruct
+    void initCorsOrigins() {
+        List<String> parsed = Arrays.stream(corsAllowedOrigins == null ? new String[0] : corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+
+        if (parsed.isEmpty()) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins is empty. Set APP_CORS_ALLOWED_ORIGINS to a comma-separated "
+                            + "list of explicit origins (for example https://app.example.com).");
+        }
+        if (parsed.contains("*")) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins must list explicit origins: '*' is unsafe with "
+                            + "allowCredentials=true. Set APP_CORS_ALLOWED_ORIGINS to your frontend origins "
+                            + "(host patterns such as https://*.example.com are supported).");
+        }
+        this.corsOrigins = List.copyOf(parsed);
+        log.info("CORS allowed origin patterns: {}", corsOrigins);
+    }
+
     private CorsConfigurationSource corsConfigurationSource() {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
-            cfg.setAllowedOrigins(Arrays.stream(corsAllowedOrigins.split(","))
-                    .map(String::trim)
-                    .toList());
+            cfg.setAllowedOriginPatterns(corsOrigins);
             cfg.setAllowedMethods(Collections.singletonList("*"));
             cfg.setAllowCredentials(true);
             cfg.setAllowedHeaders(Collections.singletonList("*"));

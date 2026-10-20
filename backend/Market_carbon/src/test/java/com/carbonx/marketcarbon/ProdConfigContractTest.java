@@ -4,9 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Scanner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Contract tests for hardcode findings H1–H4: the production profile must not
@@ -19,15 +21,20 @@ class ProdConfigContractTest {
     @Test
     void prodProfile_ddlAutoDefaultsToValidate() {
         String prod = readClasspathFile("application-prod.properties");
+        assertNoDuplicateKeys(prod, "spring.jpa.hibernate.ddl-auto");
         assertThat(lineStartingWith(prod, "spring.jpa.hibernate.ddl-auto"))
                 .as("H1: production must default to schema validation, never mutation")
                 .isEqualTo("spring.jpa.hibernate.ddl-auto=${JPA_DDL_AUTO:validate}");
         assertThat(prod).doesNotContain("${JPA_DDL_AUTO:update}");
+
+        String base = readClasspathFile("application.properties");
+        assertNoDuplicateKeys(base, "spring.jpa.hibernate.ddl-auto");
     }
 
     @Test
     void prodProfile_doesNotPinPaypalModeToSandbox() {
         String prod = readClasspathFile("application-prod.properties");
+        assertNoDuplicateKeys(prod, "paypal.mode");
         assertThat(prod)
                 .as("H2: prod must not force paypal sandbox mode")
                 .doesNotContain("paypal.mode=sandbox");
@@ -36,6 +43,7 @@ class ProdConfigContractTest {
                 .noneMatch(line -> line.startsWith("paypal.mode"));
 
         String base = readClasspathFile("application.properties");
+        assertNoDuplicateKeys(base, "paypal.mode");
         assertThat(lineStartingWith(base, "paypal.mode"))
                 .as("H2: base paypal.mode must fail fast when PAYPAL_MODE is missing (no fallback)")
                 .isEqualTo("paypal.mode=${PAYPAL_MODE}");
@@ -44,6 +52,7 @@ class ProdConfigContractTest {
     @Test
     void prodProfile_definesFrontendAndCorsWithEnvPlaceholders() {
         String prod = readClasspathFile("application-prod.properties");
+        assertNoDuplicateKeys(prod, "app.frontend.base-url", "app.cors.allowed-origins");
         assertThat(lineStartingWith(prod, "app.frontend.base-url"))
                 .isEqualTo("app.frontend.base-url=${APP_FRONTEND_BASE_URL:https://carbonx.io.vn}");
         assertThat(lineStartingWith(prod, "app.cors.allowed-origins"))
@@ -53,6 +62,8 @@ class ProdConfigContractTest {
     @Test
     void baseProfile_definesFrontendCorsAndStorageWithEnvPlaceholders() {
         String base = readClasspathFile("application.properties");
+        assertNoDuplicateKeys(base, "app.frontend.base-url", "app.cors.allowed-origins",
+                "storage.local.base-dir", "storage.local.public-base-url");
         assertThat(lineStartingWith(base, "app.frontend.base-url"))
                 .isEqualTo("app.frontend.base-url=${APP_FRONTEND_BASE_URL:http://localhost:5173}");
         assertThat(lineStartingWith(base, "app.cors.allowed-origins"))
@@ -63,14 +74,56 @@ class ProdConfigContractTest {
                 .isEqualTo("storage.local.base-dir=${STORAGE_LOCAL_BASE_DIR:uploads}");
     }
 
+    @Test
+    void lineStartingWith_returnsLastActiveValueBecausePropertiesLoadIsLastWins() {
+        String props = String.join("\n",
+                "# paypal.mode=commented-out",
+                "paypal.mode=first",
+                "paypal.mode=last");
+
+        assertThat(lineStartingWith(props, "paypal.mode"))
+                .as("a duplicate appended by a merge must not be masked by the first line")
+                .isEqualTo("paypal.mode=last");
+    }
+
+    @Test
+    void duplicateKeysAreRejectedAsMergeHazard() {
+        String props = String.join("\n",
+                "paypal.mode=${PAYPAL_MODE}",
+                "paypal.mode=sandbox");
+
+        assertThatThrownBy(() -> assertNoDuplicateKeys(props, "paypal.mode"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("paypal.mode");
+    }
+
     private String lineStartingWith(String props, String prefix) {
-        for (String rawLine : props.split("\n")) {
-            String line = rawLine.trim();
-            if (line.startsWith(prefix)) {
-                return line;
+        String match = null;
+        for (String line : activeLines(props)) {
+            if (line.startsWith(prefix + "=") || line.startsWith(prefix + ":")) {
+                match = line;
             }
         }
-        throw new AssertionError("No property line starting with '" + prefix + "' found");
+        if (match == null) {
+            throw new AssertionError("No property line starting with '" + prefix + "' found");
+        }
+        return match;
+    }
+
+    /**
+     * Duplicate keys are a merge hazard: {@link java.util.Properties#load} is last-wins,
+     * so the first line can look correct while the effective value comes from the last.
+     */
+    private void assertNoDuplicateKeys(String props, String... keys) {
+        List<String> lines = activeLines(props);
+        for (String key : keys) {
+            List<String> matches = lines.stream()
+                    .filter(line -> line.startsWith(key + "=") || line.startsWith(key + ":"))
+                    .toList();
+            assertThat(matches)
+                    .as("duplicate property '%s' is a merge hazard (Properties.load is last-wins)", key)
+                    .hasSizeLessThanOrEqualTo(1);
+        }
     }
 
     /** Property lines only — comments/blanks are documentation, not configuration. */

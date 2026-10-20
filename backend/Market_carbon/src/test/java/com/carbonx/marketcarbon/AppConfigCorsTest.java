@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -33,7 +34,7 @@ class AppConfigCorsTest {
 
         CorsConfiguration cfg = corsConfiguration(appConfig);
 
-        assertThat(cfg.getAllowedOrigins())
+        assertThat(cfg.getAllowedOriginPatterns())
                 .containsExactly("http://localhost:3000", "http://localhost:5173", "https://example.test");
         assertThat(cfg.getAllowCredentials()).isTrue();
         assertThat(cfg.getAllowedMethods()).containsExactly("*");
@@ -49,8 +50,44 @@ class AppConfigCorsTest {
 
         CorsConfiguration cfg = corsConfiguration(appConfig);
 
-        assertThat(cfg.getAllowedOrigins()).containsExactly("https://carbonx.io.vn");
+        assertThat(cfg.getAllowedOriginPatterns()).containsExactly("https://carbonx.io.vn");
         assertThat(cfg.getAllowCredentials()).isTrue();
+    }
+
+    @Test
+    void wildcardOrigin_failsFastAtStartup() {
+        AppConfig appConfig = newAppConfig();
+        ReflectionTestUtils.setField(appConfig, "corsAllowedOrigins", "*");
+
+        assertThatThrownBy(() -> initializeCorsOrigins(appConfig))
+                .as("wildcard + allowCredentials=true throws on every request; fail at boot instead")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("*")
+                .hasMessageContaining("explicit");
+    }
+
+    @Test
+    void emptyOriginList_failsFastAtStartup() {
+        AppConfig appConfig = newAppConfig();
+        ReflectionTestUtils.setField(appConfig, "corsAllowedOrigins", " , ,");
+
+        assertThatThrownBy(() -> initializeCorsOrigins(appConfig))
+                .as("an empty origin list silently blocks every cross-origin call")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("empty");
+    }
+
+    @Test
+    void portWildcardPattern_isAcceptedByCheckOrigin() throws Exception {
+        AppConfig appConfig = newAppConfig();
+        ReflectionTestUtils.setField(appConfig, "corsAllowedOrigins", "http://127.0.0.1:*");
+
+        CorsConfiguration cfg = corsConfiguration(appConfig);
+
+        assertThat(cfg.getAllowedOriginPatterns()).containsExactly("http://127.0.0.1:*");
+        assertThat(cfg.checkOrigin("http://127.0.0.1:5173"))
+                .as("setAllowedOriginPatterns must keep port-wildcard origins working")
+                .isEqualTo("http://127.0.0.1:5173");
     }
 
     @Test
@@ -78,10 +115,17 @@ class AppConfigCorsTest {
     }
 
     private CorsConfiguration corsConfiguration(AppConfig appConfig) throws Exception {
+        // Spring would call the @PostConstruct initializer when creating the bean;
+        // direct construction in this test must do the same before reading the source.
+        initializeCorsOrigins(appConfig);
         Method method = AppConfig.class.getDeclaredMethod("corsConfigurationSource");
         method.setAccessible(true);
         CorsConfigurationSource source = (CorsConfigurationSource) method.invoke(appConfig);
         return source.getCorsConfiguration(mock(HttpServletRequest.class));
+    }
+
+    private void initializeCorsOrigins(AppConfig appConfig) {
+        ReflectionTestUtils.invokeMethod(appConfig, "initCorsOrigins");
     }
 
     private String readAppConfigSource() {

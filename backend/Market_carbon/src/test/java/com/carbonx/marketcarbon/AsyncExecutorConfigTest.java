@@ -1,8 +1,13 @@
 package com.carbonx.marketcarbon;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.carbonx.marketcarbon.config.ConcurrencyConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +20,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,13 +65,52 @@ class AsyncExecutorConfigTest {
     }
 
     @Test
-    void namedExecutorsUseCallerRunsPolicy() throws Exception {
-        for (String beanName : List.of("profitSharingTaskExecutor", "emailTaskExecutor")) {
-            ThreadPoolTaskExecutor executor = executorBean(beanName);
+    void profitSharingAndDefaultExecutorsUseCallerRunsPolicy() throws Exception {
+        for (ThreadPoolTaskExecutor executor : List.of(
+                executorBean("profitSharingTaskExecutor"), defaultAsyncExecutor())) {
             assertThat(executor.getThreadPoolExecutor().getRejectedExecutionHandler())
-                    .as("%s must apply backpressure instead of dropping tasks", beanName)
+                    .as("%s must apply backpressure instead of dropping tasks",
+                            executor.getThreadNamePrefix())
                     .isInstanceOf(ThreadPoolExecutor.CallerRunsPolicy.class);
         }
+    }
+
+    @Test
+    void emailExecutorDropsWhenSaturatedInsteadOfRunningInline() throws Exception {
+        ThreadPoolTaskExecutor email = executorBean("emailTaskExecutor");
+        RejectedExecutionHandler rejectionHandler =
+                email.getThreadPoolExecutor().getRejectedExecutionHandler();
+
+        assertThat(rejectionHandler)
+                .as("email is a notification: it must never run SMTP inline on the payout thread while wallet locks are held")
+                .isNotInstanceOf(ThreadPoolExecutor.CallerRunsPolicy.class);
+
+        AtomicBoolean taskRan = new AtomicBoolean(false);
+        Logger configLogger = (Logger) LoggerFactory.getLogger(ConcurrencyConfig.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        configLogger.addAppender(appender);
+        try {
+            assertThatCode(() -> rejectionHandler.rejectedExecution(
+                    () -> taskRan.set(true), email.getThreadPoolExecutor()))
+                    .as("a dropped notification must not surface as an exception to the caller")
+                    .doesNotThrowAnyException();
+        } finally {
+            configLogger.detachAppender(appender);
+        }
+
+        assertThat(taskRan)
+                .as("the rejected email task must be dropped, not executed inline")
+                .isFalse();
+        assertThat(appender.list)
+                .as("the drop must be observable at ERROR level")
+                .anySatisfy(event -> {
+                    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                    assertThat(event.getFormattedMessage())
+                            .contains("pool size")
+                            .contains("active count")
+                            .contains("queue size");
+                });
     }
 
     @Test
