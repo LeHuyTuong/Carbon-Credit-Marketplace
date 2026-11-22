@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Locale;
-import java.util.Random;
+import java.math.RoundingMode;
 
 @Component
 @RequiredArgsConstructor
@@ -21,8 +20,7 @@ public class PriceUpdateScheduler {
     private final MarketplaceListingRepository  marketplaceListingRepository;
 
     @Transactional
-//    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh") // 8h sáng giờ VN
-    @Scheduled(cron = "0 * * * * *") // Chạy mỗi phút để test
+    @Scheduled(cron = "${app.pricing.cron:0 0 8 * * *}", zone = "Asia/Ho_Chi_Minh")
     public void updateMarketPrices() {
         log.info("[CRON] Running daily price update job (Redis)...");
 
@@ -35,7 +33,7 @@ public class PriceUpdateScheduler {
         }
 
         BigDecimal newPrice = BigDecimal.valueOf(priceAvg)
-                .setScale(2, BigDecimal.ROUND_HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
 
         // Cập nhật giá vào ram
         dynamicPricingService.updateMarketPrice(newPrice);
