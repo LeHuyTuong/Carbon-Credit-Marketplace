@@ -75,7 +75,9 @@ const WITHDRAWAL: Record<string, Badge> = {
   PENDING: { ...warning, label: 'Chờ duyệt' },
   APPROVED: { ...info, label: 'Đã duyệt' },
   COMPLETED: { ...success, label: 'Đã chi trả' },
+  SUCCEEDED: { ...success, label: 'Đã chi trả' },
   REJECTED: { ...danger, label: 'Từ chối' },
+  FAILED: { ...danger, label: 'Thất bại' },
 }
 
 const MAPS: Record<StatusKind, Record<string, Badge>> = {

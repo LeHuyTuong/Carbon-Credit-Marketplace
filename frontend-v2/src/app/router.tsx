@@ -33,6 +33,38 @@ const WalletPage = lazy(() => import('@/pages/WalletPage').then((m) => ({ defaul
 const PayoutsPage = lazy(() =>
   import('@/pages/PayoutsPage').then((m) => ({ default: m.PayoutsPage })),
 )
+const EvKycPage = lazy(() => import('@/pages/ev/EvKycPage').then((m) => ({ default: m.EvKycPage })))
+const VehiclesPage = lazy(() => import('@/pages/ev/VehiclesPage').then((m) => ({ default: m.VehiclesPage })))
+const CompanyProjectsPage = lazy(() =>
+  import('@/pages/company/CompanyProjectsPage').then((m) => ({ default: m.CompanyProjectsPage })),
+)
+const CompanyReportsPage = lazy(() =>
+  import('@/pages/company/CompanyReportsPage').then((m) => ({ default: m.CompanyReportsPage })),
+)
+const CompanyCreditsPage = lazy(() =>
+  import('@/pages/company/CompanyCreditsPage').then((m) => ({ default: m.CompanyCreditsPage })),
+)
+const CompanyOrdersPage = lazy(() =>
+  import('@/pages/company/CompanyOrdersPage').then((m) => ({ default: m.CompanyOrdersPage })),
+)
+const CvaApplicationsPage = lazy(() =>
+  import('@/pages/cva/CvaApplicationsPage').then((m) => ({ default: m.CvaApplicationsPage })),
+)
+const CvaReportsPage = lazy(() =>
+  import('@/pages/cva/CvaReportsPage').then((m) => ({ default: m.CvaReportsPage })),
+)
+const AdminProjectsPage = lazy(() =>
+  import('@/pages/admin/AdminProjectsPage').then((m) => ({ default: m.AdminProjectsPage })),
+)
+const AdminIssuancePage = lazy(() =>
+  import('@/pages/admin/AdminIssuancePage').then((m) => ({ default: m.AdminIssuancePage })),
+)
+const AdminWithdrawalsPage = lazy(() =>
+  import('@/pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })),
+)
+const AdminUsersPage = lazy(() =>
+  import('@/pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
@@ -72,10 +104,58 @@ export function AppRouter() {
             }
           />
           <Route
+            path="ev/kyc"
+            element={
+              <RoleGuard allow={['EV_OWNER']}>
+                <EvKycPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="ev/vehicles"
+            element={
+              <RoleGuard allow={['EV_OWNER']}>
+                <VehiclesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="company"
             element={
               <RoleGuard allow={['COMPANY']}>
                 <CompanyDashboardPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/projects"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyProjectsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/reports"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyReportsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/credits"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyCreditsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/orders"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyOrdersPage />
               </RoleGuard>
             }
           />
@@ -96,10 +176,58 @@ export function AppRouter() {
             }
           />
           <Route
+            path="cva/applications"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaApplicationsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="cva/reports"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaReportsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="admin"
             element={
               <RoleGuard allow={['ADMIN']}>
                 <AdminDashboardPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/projects"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminProjectsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/issuance"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminIssuancePage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/withdrawals"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminWithdrawalsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/users"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminUsersPage />
               </RoleGuard>
             }
           />

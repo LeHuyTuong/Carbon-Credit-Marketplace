@@ -1,0 +1,180 @@
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { RefreshCw, Search, ShieldCheck, Users } from 'lucide-react'
+import { toast } from 'sonner'
+import { api } from '@/shared/api/client'
+import { errorMessage, mapAdminUser, mapList, type AdminUser } from '@/shared/api/phase3b'
+import { Button } from '@/shared/components/Button'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { Input } from '@/shared/components/Input'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { queryKeys } from '@/shared/lib/queryKeys'
+import { PageIntro } from '@/pages/components/PageIntro'
+import { QueryError, QueryLoading, SectionCard } from '@/pages/components/QueryState'
+
+const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'PENDING', 'BANNED'] as const
+type UserStatus = (typeof USER_STATUSES)[number]
+
+export function AdminUsersPage() {
+  const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+
+  const usersQuery = useQuery({
+    queryKey: queryKeys.phase3b.users,
+    queryFn: async () => mapList(await api.get<unknown>('/users'), mapAdminUser),
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: UserStatus }) =>
+      api.patch<unknown>(`/users/${id}/status`, { status }),
+    onSuccess: async (_data, variables) => {
+      toast.success(`Đã đổi trạng thái người dùng sang ${variables.status}`)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.users })
+    },
+    onError: (error) => toast.error('Không đổi được trạng thái', { description: errorMessage(error) }),
+  })
+
+  const users = usersQuery.data ?? []
+  const filtered = useMemo(() => {
+    const keyword = search.trim().toLowerCase()
+    return users.filter((user: AdminUser) => {
+      const matchesKeyword =
+        keyword === '' ||
+        user.email.toLowerCase().includes(keyword) ||
+        user.fullName.toLowerCase().includes(keyword) ||
+        user.roles.some((role) => role.toLowerCase().includes(keyword))
+      const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter
+      return matchesKeyword && matchesStatus
+    })
+  }, [users, search, statusFilter])
+
+  return (
+    <>
+      <PageIntro
+        eyebrow="Admin"
+        title="Quản lý người dùng"
+        description="Tra cứu tài khoản theo email, tên hoặc vai trò và thay đổi trạng thái hoạt động của người dùng."
+        actions={
+          <Button
+            variant="outline"
+            leftIcon={<RefreshCw className="size-4" />}
+            onClick={() => void usersQuery.refetch()}
+          >
+            Làm mới
+          </Button>
+        }
+      />
+
+      {usersQuery.isPending ? (
+        <QueryLoading />
+      ) : usersQuery.isError ? (
+        <QueryError onRetry={() => void usersQuery.refetch()} />
+      ) : (
+        <SectionCard
+          title="Danh sách người dùng"
+          description={`${users.length} tài khoản · ${filtered.length} kết quả`}
+        >
+          <div className="grid gap-4 border-b border-ink-100 p-5 sm:grid-cols-[1fr_220px]">
+            <Input
+              label="Tìm kiếm"
+              placeholder="Email, họ tên hoặc vai trò"
+              value={search}
+              icon={<Search className="size-4" />}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <div>
+              <label htmlFor="user-status-filter" className="mb-1.5 block text-sm font-medium text-ink-700">
+                Trạng thái
+              </label>
+              <select
+                id="user-status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm"
+              >
+                <option value="ALL">Tất cả</option>
+                {USER_STATUSES.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={search || statusFilter !== 'ALL' ? Search : Users}
+              title="Không tìm thấy người dùng"
+              description="Thử thay đổi từ khóa hoặc bộ lọc trạng thái."
+            />
+          ) : (
+            <div className="scrollbar-thin overflow-x-auto p-5">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                    <th className="pb-3 font-semibold">Người dùng</th>
+                    <th className="pb-3 font-semibold">Vai trò</th>
+                    <th className="pb-3 font-semibold">Trạng thái</th>
+                    <th className="pb-3 text-right font-semibold">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink-100">
+                  {filtered.map((user) => (
+                    <tr key={user.id} className="text-ink-700">
+                      <td className="py-3">
+                        <p className="font-semibold text-ink-900">{user.fullName || 'Chưa cập nhật tên'}</p>
+                        <p className="mt-0.5 text-xs text-ink-500">{user.email || `#${user.id}`}</p>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.length === 0 ? (
+                            <span className="text-xs text-ink-400">—</span>
+                          ) : (
+                            user.roles.map((role) => (
+                              <span
+                                key={role}
+                                className="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2 py-1 text-xs font-medium text-ink-700"
+                              >
+                                <ShieldCheck className="size-3" /> {role}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                        {user.companyName && <p className="mt-1 text-xs text-ink-500">{user.companyName}</p>}
+                      </td>
+                      <td className="py-3">
+                        <StatusBadge
+                          status={user.status}
+                          label={user.status === 'ACTIVE' ? 'Hoạt động' : user.status === 'BANNED' ? 'Bị khoá' : undefined}
+                        />
+                      </td>
+                      <td className="py-3">
+                        <div className="flex justify-end gap-2">
+                          <select
+                            aria-label={`Đổi trạng thái ${user.email}`}
+                            value=""
+                            disabled={statusMutation.isPending}
+                            onChange={(event) => {
+                              const status = event.target.value as UserStatus
+                              if (status && status !== user.status) statusMutation.mutate({ id: user.id, status })
+                            }}
+                            className="h-9 rounded-xl border border-ink-200 bg-white px-2 text-xs font-medium text-ink-700"
+                          >
+                            <option value="">Đổi trạng thái</option>
+                            {USER_STATUSES.filter((status) => status !== user.status).map((status) => (
+                              <option key={status} value={status}>{status}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
+      )}
+    </>
+  )
+}
