@@ -1,0 +1,50 @@
+import { Building2, CalendarDays, Layers3 } from 'lucide-react'
+import { Card } from '@/shared/components/Card'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import type { MarketplaceListing } from '@/shared/api/types'
+import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
+
+export function ListingCard({ listing }: { listing: MarketplaceListing }) {
+  return (
+    <Card className="flex h-full flex-col p-5 transition-shadow hover:shadow-float">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+            {listing.batchCode || 'Tín chỉ carbon'}
+          </p>
+          <h3 className="mt-1 line-clamp-2 text-base font-semibold text-ink-900">
+            {listing.projectTitle}
+          </h3>
+        </div>
+        <StatusBadge status="LISTED" kind="credit" label="Đang bán" />
+      </div>
+
+      <div className="mt-4 flex items-baseline gap-1.5">
+        <span className="text-2xl font-bold tracking-tight text-ink-900">
+          {formatUsd(listing.pricePerCredit)}
+        </span>
+        <span className="text-sm text-ink-500">/ tín chỉ</span>
+      </div>
+
+      <dl className="mt-4 space-y-2 text-sm text-ink-600">
+        <div className="flex items-center gap-2">
+          <Layers3 aria-hidden className="size-4 shrink-0 text-ink-400" />
+          <dt className="sr-only">Số lượng khả dụng</dt>
+          <dd>
+            {formatNumber(listing.availableQuantity)} / {formatNumber(listing.quantity)} tín chỉ còn lại
+          </dd>
+        </div>
+        <div className="flex items-center gap-2">
+          <Building2 aria-hidden className="size-4 shrink-0 text-ink-400" />
+          <dt className="sr-only">Doanh nghiệp bán</dt>
+          <dd className="truncate">{listing.sellerCompanyName}</dd>
+        </div>
+        <div className="flex items-center gap-2">
+          <CalendarDays aria-hidden className="size-4 shrink-0 text-ink-400" />
+          <dt>Hạn niêm yết</dt>
+          <dd className="font-medium text-ink-700">{formatDate(listing.expiresAt)}</dd>
+        </div>
+      </dl>
+    </Card>
+  )
+}
