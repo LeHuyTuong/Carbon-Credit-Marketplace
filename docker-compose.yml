@@ -80,9 +80,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Vite chỉ đọc biến VITE_* lúc build; apiFetch dùng đường dẫn tương đối
-        # "/api" để nginx proxy tới backend (network "backend", service "be").
-        VITE_API_BASE: /api
+        # Vite chỉ đọc biến VITE_* lúc build; apiClient dùng "/api/v1" để nginx
+        # proxy /api/ tới backend (network "backend", service "be").
+        VITE_API_BASE: /api/v1
     image: carbonx-fe:latest
     networks:
       - backend
