@@ -94,7 +94,8 @@ class ProfitSharingPartialFailureTest {
                 emailService,
                 dynamicPricingService,
                 transactionManager,
-                new ProfitSharingTaskDispatcher(Runnable::run)));
+                new ProfitSharingTaskDispatcher(Runnable::run),
+                null)); // legacy unit test: null registry -> default pricing strategies
         ReflectionTestUtils.setField(service, "requiresNewTransaction", noOpTemplate());
     }
 

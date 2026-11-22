@@ -94,7 +94,8 @@ class ProfitSharingPayoutTransferTest {
                 emailService,
                 dynamicPricingService,
                 transactionManager,
-                new ProfitSharingTaskDispatcher(Runnable::run));
+                new ProfitSharingTaskDispatcher(Runnable::run),
+                null); // legacy unit test: null registry -> default pricing strategies
         // Template thật của production: giữ lại isolation level để kiểm tra.
         service.initTransactionTemplate();
         TransactionTemplate productionTemplate = (TransactionTemplate) ReflectionTestUtils.getField(

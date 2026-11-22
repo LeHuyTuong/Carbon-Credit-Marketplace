@@ -104,7 +104,8 @@ class ProfitSharingRetrySafetyTest {
                 emailService,
                 dynamicPricingService,
                 transactionManager,
-                new ProfitSharingTaskDispatcher(dispatched::add)));
+                new ProfitSharingTaskDispatcher(dispatched::add),
+                null)); // legacy unit test: null registry -> default pricing strategies
         ReflectionTestUtils.setField(service, "requiresNewTransaction", noOpTemplate());
     }
 

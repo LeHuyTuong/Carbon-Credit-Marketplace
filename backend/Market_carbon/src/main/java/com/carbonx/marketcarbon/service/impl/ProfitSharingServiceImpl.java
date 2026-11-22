@@ -4,7 +4,6 @@ import com.carbonx.marketcarbon.common.EmissionStatus;
 import com.carbonx.marketcarbon.common.ProfitDistributionStatus;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.config.ProfitSharingProperties;
-import com.carbonx.marketcarbon.config.ProfitSharingProperties.PricingMode;
 import com.carbonx.marketcarbon.config.ProfitSharingProperties.ResolvedPolicy;
 import com.carbonx.marketcarbon.dto.request.ProfitSharingRequest;
 import com.carbonx.marketcarbon.dto.response.ProfitDistributionListItem;
@@ -16,6 +15,8 @@ import com.carbonx.marketcarbon.exception.WalletException;
 import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.*;
+import com.carbonx.marketcarbon.service.payout.strategy.PayoutPricingStrategy;
+import com.carbonx.marketcarbon.service.payout.strategy.PayoutPricingStrategyRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,7 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
     private final DynamicPricingService dynamicPricingService;
     private final PlatformTransactionManager transactionManager;
     private final ProfitSharingTaskDispatcher retryDispatcher;
+    private final PayoutPricingStrategyRegistry payoutPricingStrategyRegistry;
 
     // TransactionTemplate REQUIRES_NEW dùng chung, khởi tạo sau khi inject transactionManager.
     // Thay cho self-proxy trước đây (gọi @Transactional qua chính bean).
@@ -1233,33 +1235,27 @@ public class ProfitSharingServiceImpl implements ProfitSharingService {
         return vehicleMap;
     }
 
-    // Tính toán tiền payout dựa trên Pricing Mode
+    /**
+     * Tính tiền payout theo Pricing Mode thông qua Strategy Pattern.
+     * Các unit test cũ khởi tạo service bằng tay nên registry có thể null; khi đó dùng
+     * bộ strategy mặc định để giữ nguyên hành vi trước khi tách Strategy.
+     */
     private BigDecimal calculateRawPayout(
             ContributionData contribution,
             ResolvedPolicy policy,
             BigDecimal actualPayoutPricePerCredit,
             BigDecimal kwhPerCreditFactor
     ) {
-        // Case 1: Tính theo kWh (Năng lượng sạc)
-        if (policy.getPricingMode() == PricingMode.KWH) {
-            if (kwhPerCreditFactor.compareTo(BigDecimal.ZERO) == 0) {
-                log.warn("KWH_PER_CREDIT_FACTOR is zero, defaulting to CREDIT mode.");
-            } else {
-                // Quy đổi giá 1 Credit -> giá 1 kWh
-                BigDecimal payoutPricePerKwh = actualPayoutPricePerCredit.divide(kwhPerCreditFactor, 6, RoundingMode.HALF_UP);
-                return contribution.getTotalEnergyContribution()
-                        .multiply(payoutPricePerKwh)
-                        .setScale(2, RoundingMode.HALF_UP);
-            }
-        }
+        PayoutPricingStrategyRegistry registry = payoutPricingStrategyRegistry != null
+                ? payoutPricingStrategyRegistry
+                : PayoutPricingStrategyRegistry.withDefaults();
+        PayoutPricingStrategy strategy = registry.resolve(policy.getPricingMode());
 
-        // Case 2: Tính theo Credit (Mặc định) - Quy đổi kg -> Tấn (Credit) -> Tiền
-        BigDecimal creditsAsTCO2e = contribution.getTotalCreditContribution()
-                .divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
-
-        return creditsAsTCO2e
-                .multiply(actualPayoutPricePerCredit)
-                .setScale(2, RoundingMode.HALF_UP);
+        return strategy.calculateRawPayout(
+                contribution.getTotalEnergyContribution(),
+                contribution.getTotalCreditContribution(),
+                actualPayoutPricePerCredit,
+                kwhPerCreditFactor);
     }
 
     private BigDecimal normalizeAmount(BigDecimal value, int scale) {
