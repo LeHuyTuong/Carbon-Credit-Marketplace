@@ -25,4 +25,7 @@ public interface CompanyPayoutQueryService {
                                                            int scale);
 
     CompanyPayoutSummaryResponse getDistributionSummary(Long distributionId);
+
+    /** Xuất báo cáo chi trả của một đợt phân phối ra file .xlsx. */
+    byte[] exportDistributionXlsx(Long distributionId);
 }
