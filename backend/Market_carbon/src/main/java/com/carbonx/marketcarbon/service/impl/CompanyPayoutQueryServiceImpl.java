@@ -11,9 +11,11 @@ import com.carbonx.marketcarbon.model.*;
 import com.carbonx.marketcarbon.repository.*;
 import com.carbonx.marketcarbon.service.CompanyPayoutQueryService;
 import com.carbonx.marketcarbon.service.DynamicPricingService;
+import com.carbonx.marketcarbon.service.payout.export.PayoutExcelExporter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,22 @@ public class CompanyPayoutQueryServiceImpl implements CompanyPayoutQueryService 
     private final UserRepository userRepository;
     private final EmissionReportRepository emissionReportRepository;
     private final DynamicPricingService dynamicPricingService;
+
+    // Optional để unit test khởi tạo service bằng tay vẫn chạy được.
+    @Autowired(required = false)
+    private PayoutExcelExporter payoutExcelExporter;
+
+    public void setPayoutExcelExporter(PayoutExcelExporter payoutExcelExporter) {
+        this.payoutExcelExporter = payoutExcelExporter;
+    }
+
+    @Override
+    public byte[] exportDistributionXlsx(Long distributionId) {
+        PayoutExcelExporter exporter = payoutExcelExporter != null
+                ? payoutExcelExporter
+                : new PayoutExcelExporter();
+        return exporter.export(getDistributionSummary(distributionId));
+    }
 
     /**
      * Lấy thông tin công thức tính toán chi trả hiện tại.

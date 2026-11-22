@@ -1,5 +1,6 @@
 package com.carbonx.marketcarbon.service.impl;
 
+import com.carbonx.marketcarbon.common.PaymentMethod;
 import com.carbonx.marketcarbon.common.Status;
 import com.carbonx.marketcarbon.common.WalletTransactionType;
 import com.carbonx.marketcarbon.config.PaypalMode;
@@ -21,6 +22,9 @@ import com.carbonx.marketcarbon.service.PaymentVerificationService;
 import com.carbonx.marketcarbon.service.SseService;
 import com.carbonx.marketcarbon.service.WalletService;
 import com.carbonx.marketcarbon.service.WalletTransactionService;
+import com.carbonx.marketcarbon.service.payment.gateway.PaymentGateway;
+import com.carbonx.marketcarbon.service.payment.gateway.PaymentGatewayException;
+import com.carbonx.marketcarbon.service.payment.gateway.PaymentGatewayRegistry;
 import com.carbonx.marketcarbon.utils.CurrencyConverter;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
@@ -32,6 +36,7 @@ import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,6 +60,21 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentVerificationService verificationService;
     private final WalletService walletService;
     private final WalletTransactionService walletTransactionService;
+
+    // Không đưa vào @RequiredArgsConstructor: unit test cũ khởi tạo service bằng 7 arg.
+    @Autowired(required = false)
+    private PaymentGatewayRegistry paymentGatewayRegistry;
+
+    public void setPaymentGatewayRegistry(PaymentGatewayRegistry paymentGatewayRegistry) {
+        this.paymentGatewayRegistry = paymentGatewayRegistry;
+    }
+
+    private PaymentGateway gateway(PaymentMethod method) {
+        PaymentGatewayRegistry registry = paymentGatewayRegistry != null
+                ? paymentGatewayRegistry
+                : PaymentGatewayRegistry.withDefaults();
+        return registry.resolve(method);
+    }
 
     @Value("${payment_success_url}")
     private String successUrl;
@@ -238,6 +258,17 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentOrderResponse createStripePaymentLink(PaymentOrderRequest request, Long orderId) throws StripeException {
+        if (paymentGatewayRegistry != null) {
+            try {
+                return gateway(PaymentMethod.STRIPE).createPayment(currentUser(), request.getAmount(), orderId);
+            } catch (PaymentGatewayException e) {
+                if (e.getCause() instanceof StripeException stripeException) {
+                    throw stripeException;
+                }
+                throw e;
+            }
+        }
+        // Fallback: service đã được khởi tạo tay (unit test cũ) không có registry.
         Stripe.apiKey = stripeKey;
 
         SessionCreateParams params = SessionCreateParams.builder()
@@ -276,6 +307,17 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentOrderResponse createPayPalPaymentLink(PaymentOrderRequest paymentOrder, Long orderId) throws PayPalRESTException {
+        if (paymentGatewayRegistry != null) {
+            try {
+                return gateway(PaymentMethod.PAYPAL).createPayment(currentUser(), paymentOrder.getAmount(), orderId);
+            } catch (PaymentGatewayException e) {
+                if (e.getCause() instanceof PayPalRESTException paypalException) {
+                    throw paypalException;
+                }
+                throw e;
+            }
+        }
+        // Fallback: service đã được khởi tạo tay (unit test cũ) không có registry.
         APIContext apiContext = new APIContext(paypalClientId, paypalClientSecret, PaypalMode.normalize(paypalMode));
 
         // Create amount details
