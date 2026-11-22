@@ -6,10 +6,11 @@ import com.carbonx.marketcarbon.model.EmissionReportDetail;
 import com.carbonx.marketcarbon.repository.EmissionReportDetailRepository;
 import com.carbonx.marketcarbon.repository.EmissionReportRepository;
 import com.carbonx.marketcarbon.service.AiScoringService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.carbonx.marketcarbon.service.ai.GeminiPromptBuilder;
+import com.carbonx.marketcarbon.service.ai.GeminiScoreResponseParser;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -18,18 +19,10 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class GeminiAiScoringService implements AiScoringService {
 
@@ -37,11 +30,33 @@ public class GeminiAiScoringService implements AiScoringService {
     private final WebClient vertexWebClient;
     private final EmissionReportRepository reportRepo;
     private final EmissionReportDetailRepository detailRepo;
+    private final GeminiPromptBuilder promptBuilder;
+    private final GeminiScoreResponseParser responseParser;
 
-    // ========= Basic constants (only for parsing / formatting) =========
-    private static final Pattern JSON_BLOCK = Pattern.compile("\\{[\\s\\S]*\\}");
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    /** Full constructor used by Spring (and by tests that want to inject the collaborators). */
+    @Autowired
+    public GeminiAiScoringService(AiVertexConfig cfg,
+                                  WebClient vertexWebClient,
+                                  EmissionReportRepository reportRepo,
+                                  EmissionReportDetailRepository detailRepo,
+                                  GeminiPromptBuilder promptBuilder,
+                                  GeminiScoreResponseParser responseParser) {
+        this.cfg = cfg;
+        this.vertexWebClient = vertexWebClient;
+        this.reportRepo = reportRepo;
+        this.detailRepo = detailRepo;
+        this.promptBuilder = promptBuilder;
+        this.responseParser = responseParser;
+    }
+
+    /** Backward-compatible constructor for the legacy four-argument callers. */
+    public GeminiAiScoringService(AiVertexConfig cfg,
+                                  WebClient vertexWebClient,
+                                  EmissionReportRepository reportRepo,
+                                  EmissionReportDetailRepository detailRepo) {
+        this(cfg, vertexWebClient, reportRepo, detailRepo,
+                new GeminiPromptBuilder(), new GeminiScoreResponseParser());
+    }
 
     // ========= Public API =========
 
@@ -109,8 +124,8 @@ public class GeminiAiScoringService implements AiScoringService {
         DQMetrics dqMetrics = computeDQMetrics(details);
 
         // 5. Build LLM prompt
-        final String projectContext = buildProjectContext(report);
-        final String dataContext = buildDataContext(
+        final String projectContext = promptBuilder.buildProjectContext(report);
+        final String dataContext = promptBuilder.buildDataContext(
                 report,
                 rowCount,
                 zeroEnergyRows,
@@ -118,17 +133,17 @@ public class GeminiAiScoringService implements AiScoringService {
                 avgEf,
                 avgCo2
         );
-        final String anomalyContext = buildAnomalyContext(
+        final String anomalyContext = promptBuilder.buildAnomalyContext(
                 duplicatePlatesAcrossCompanies,
                 efAboveHighThreshold,
                 efBelowLowThreshold
         );
-        final String userPrompt = buildPrompt(projectContext, dataContext, anomalyContext);
+        final String userPrompt = promptBuilder.buildPrompt(projectContext, dataContext, anomalyContext);
 
         if (log.isDebugEnabled()) {
             log.debug("[AI] Prompt sent to Vertex Gemini:\n{}", userPrompt);
         }
-        dumpPromptIfEnabled(userPrompt, report);
+        promptBuilder.dumpPromptIfEnabled(userPrompt, report);
 
         // 6. Prepare Vertex request
         int maxTokens = maxOutputTokens();
@@ -169,10 +184,10 @@ public class GeminiAiScoringService implements AiScoringService {
                     .block();
 
             // 8. Extract and parse LLM text
-            String rawText = extractText(raw);
+            String rawText = responseParser.extractText(raw);
             log.info("[AI] Vertex Gemini raw output:\n{}", rawText);
 
-            Map<String, Object> parsed = tryParseJson(rawText);
+            Map<String, Object> parsed = responseParser.tryParseJson(rawText);
 
             double scoreNumber = ((Number) parsed.getOrDefault("score", 0)).doubleValue();
             String version = Objects.toString(parsed.getOrDefault("version", defaultVersion()), defaultVersion());
@@ -234,186 +249,6 @@ public class GeminiAiScoringService implements AiScoringService {
         }
     }
 
-    // ========= Prompt builder utilities =========
-
-    private String buildProjectContext(EmissionReport report) {
-        String commitments = safe(report != null && report.getProject() != null
-                ? report.getProject().getCommitments()
-                : null);
-        String measurementMethod = safe(report != null && report.getProject() != null
-                ? report.getProject().getMeasurementMethod()
-                : null);
-        String technicalIndicators = safe(report != null && report.getProject() != null
-                ? report.getProject().getTechnicalIndicators()
-                : null);
-
-        return String.format(
-                Locale.US,
-                "Project context:%n" +
-                        "- Commitments: %s%n" +
-                        "- MeasurementMethod: %s%n" +
-                        "- TechnicalIndicators: %s",
-                commitments,
-                measurementMethod,
-                technicalIndicators
-        );
-    }
-
-    private String buildDataContext(
-            EmissionReport report,
-            int rowCount,
-            long zeroEnergyRows,
-            double co2CoverageRatio,
-            double avgEf,
-            double avgCo2
-    ) {
-        String company = report != null && report.getSeller() != null
-                ? safe(report.getSeller().getCompanyName())
-                : "";
-        String project = report != null && report.getProject() != null
-                ? safe(report.getProject().getTitle())
-                : "";
-        String period = report != null
-                ? safe(report.getPeriod())
-                : "";
-
-        return String.format(
-                Locale.US,
-                "Report summary:%n" +
-                        "- Company: %s%n" +
-                        "- Project: %s%n" +
-                        "- Period: %s%n" +
-                        "- Rows: %d%n" +
-                        "- Zero-energy rows: %d%n" +
-                        "- CO2 coverage: %.0f%%%n" +
-                        "- Avg EF (kg/kWh): %.3f%n" +
-                        "- Avg CO2 per row (kg): %.1f",
-                company,
-                project,
-                period,
-                rowCount,
-                zeroEnergyRows,
-                co2CoverageRatio * 100,
-                avgEf,
-                avgCo2
-        );
-    }
-
-    private String buildAnomalyContext(
-            int duplicatePlatesAcrossCompanies,
-            boolean efAboveHighThreshold,
-            boolean efBelowLowThreshold
-    ) {
-        return String.format(
-                Locale.US,
-                "Detected anomalies:%n" +
-                        "- Duplicate plates across companies: %d%n" +
-                        "- EF above high threshold: %s%n" +
-                        "- EF below low threshold: %s",
-                duplicatePlatesAcrossCompanies,
-                efAboveHighThreshold,
-                efBelowLowThreshold
-        );
-    }
-
-    private String buildPrompt(String projectContext, String dataContext, String anomalyContext) {
-        String header = """
-                You are an auditor of carbon-emission reports.
-                Return ONE JSON object only. No markdown. No prose outside JSON. No code fences.
-
-                Strict schema:
-                {
-                  "score": number,                // 0..10
-                  "riskLevel": "LOW|MEDIUM|HIGH",
-                  "fraudLikelihood": number,      // 0.0..1.0
-                  "issues": [{ "type": string, "message": string }],
-                  "version": "v2.5",
-                  "notes": string                 // 180–300 words. Must contain sections titled: "Overview", "Key Signals", "Anomalies & Explanations", "Data Quality", "Recommendations", "Confidence". Use concise bullet points where appropriate. Reference concrete figures from the report summary and anomalies.
-                }
-
-                Be conservative when uncertain.
-                """.trim();
-
-        return (header + "\n\n" + projectContext + "\n\n" + dataContext + "\n\n" + anomalyContext).trim();
-    }
-
-    // ========= LLM output parsing =========
-
-    @SuppressWarnings("unchecked")
-    private static String extractText(Object raw) {
-        if (!(raw instanceof Map<?, ?> map)) {
-            return "{}";
-        }
-
-        Object candidatesObj = map.get("candidates");
-        if (!(candidatesObj instanceof List<?> candidates) || candidates.isEmpty()) {
-            return "{}";
-        }
-
-        Object contentObj = ((Map<?, ?>) candidates.get(0)).get("content");
-        if (!(contentObj instanceof Map<?, ?> content)) {
-            return "{}";
-        }
-
-        Object partsObj = content.get("parts");
-        if (!(partsObj instanceof List<?> parts) || parts.isEmpty()) {
-            return "{}";
-        }
-
-        Object text = ((Map<?, ?>) parts.get(0)).get("text");
-        if (text == null) {
-            return "{}";
-        }
-
-        String s = text.toString().trim();
-        // Remove possible markdown wrappers
-        s = s.replaceAll("(?i)```json", "")
-                .replaceAll("```", "")
-                .replaceAll("^json", "")
-                .trim();
-        return s;
-    }
-
-    private static Map<String, Object> tryParseJson(String text) {
-        if (text == null || text.isBlank()) {
-            return Map.of();
-        }
-
-        Matcher m = JSON_BLOCK.matcher(text);
-        String candidate = m.find() ? m.group() : text;
-
-        long open = candidate.chars().filter(ch -> ch == '{').count();
-        long close = candidate.chars().filter(ch -> ch == '}').count();
-        if (open > close) {
-            candidate += "}".repeat((int) (open - close));
-        }
-
-        try {
-            return MAPPER.readValue(candidate, Map.class);
-        } catch (Exception e) {
-            Map<String, Object> fallback = new HashMap<>();
-            try {
-                Matcher scoreM = Pattern.compile("\"score\"\\s*:\\s*([0-9.]+)").matcher(candidate);
-                if (scoreM.find()) {
-                    fallback.put("score", Double.parseDouble(scoreM.group(1)));
-                }
-
-                Matcher riskM = Pattern.compile("\"riskLevel\"\\s*:\\s*\"(\\w+)\"").matcher(candidate);
-                if (riskM.find()) {
-                    fallback.put("riskLevel", riskM.group(1));
-                }
-
-                Matcher fraudM = Pattern.compile("\"fraudLikelihood\"\\s*:\\s*([0-9.]+)").matcher(candidate);
-                if (fraudM.find()) {
-                    fallback.put("fraudLikelihood", Double.parseDouble(fraudM.group(1)));
-                }
-            } catch (Exception ignored) {
-            }
-            log.warn("[AI] Fallback parser used for incomplete JSON:\n{}", candidate);
-            return fallback;
-        }
-    }
-
     // ========= Misc helpers =========
 
     private static String safe(String s) {
@@ -458,31 +293,6 @@ public class GeminiAiScoringService implements AiScoringService {
             }
         } catch (Exception e) {
             log.warn("[AI] Failed to inspect project context fields: {}", e.getMessage());
-        }
-    }
-
-    private void dumpPromptIfEnabled(String prompt, EmissionReport report) {
-        try {
-            boolean enabled = Boolean.parseBoolean(
-                    System.getProperty("carbonx.ai.prompt.dump", "false")
-            );
-            if (!enabled) {
-                return;
-            }
-
-            String dir = System.getProperty("carbonx.ai.prompt.dir", "./ai-prompts");
-            Files.createDirectories(Path.of(dir));
-
-            String ts = TS_FMT.format(LocalDateTime.now());
-            String id = (report != null && report.getId() != null)
-                    ? ("report-" + report.getId())
-                    : "report-unknown";
-            Path out = Path.of(dir, ts + "_" + id + ".txt");
-
-            Files.writeString(out, prompt, StandardCharsets.UTF_8);
-            log.info("[AI] Prompt dumped to file: {}", out.toAbsolutePath());
-        } catch (Exception e) {
-            log.warn("[AI] Unable to dump prompt file: {}", e.getMessage());
         }
     }
 

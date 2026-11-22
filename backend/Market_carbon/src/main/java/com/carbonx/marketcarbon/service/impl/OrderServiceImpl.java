@@ -1,6 +1,7 @@
 package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.*;
+import com.carbonx.marketcarbon.common.security.CurrentUserService;
 import com.carbonx.marketcarbon.dto.request.OrderRequest;
 import com.carbonx.marketcarbon.dto.request.WalletTransactionRequest;
 import com.carbonx.marketcarbon.dto.response.CreditTradeResponse;
@@ -15,6 +16,7 @@ import com.carbonx.marketcarbon.service.WalletTransactionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,6 +46,17 @@ public class OrderServiceImpl implements OrderService {
     // P0-B/B3: wallet row locks during settlement
     private final jakarta.persistence.EntityManager entityManager;
 
+    /**
+     * Optional collaborator: production Spring wiring injects it, while legacy unit tests
+     * that call the generated constructor directly keep the repository-based fallback.
+     */
+    private CurrentUserService currentUserService;
+
+    @Autowired(required = false)
+    public void setCurrentUserService(CurrentUserService currentUserService) {
+        this.currentUserService = currentUserService;
+    }
+
     @Value("${trading_fee}")
     private BigDecimal tradingFee;
 
@@ -52,6 +65,9 @@ public class OrderServiceImpl implements OrderService {
 
     // helper find user login
     private User currentUser() {
+        if (currentUserService != null) {
+            return currentUserService.getCurrentUser();
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
@@ -63,6 +79,9 @@ public class OrderServiceImpl implements OrderService {
 
     // helper find company login
     private Company currentCompany(User user) {
+        if (currentUserService != null) {
+            return currentUserService.getCurrentCompany();
+        }
         return companyRepository.findByUserId(user.getId())
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Company not found with userid: " + user.getId()));

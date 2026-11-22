@@ -2,6 +2,7 @@ package com.carbonx.marketcarbon.service.impl;
 
 import com.carbonx.marketcarbon.common.CreditStatus;
 import com.carbonx.marketcarbon.common.ListingStatus;
+import com.carbonx.marketcarbon.common.security.CurrentUserService;
 import com.carbonx.marketcarbon.dto.request.CreditListingRequest;
 import com.carbonx.marketcarbon.dto.request.CreditListingUpdateRequest;
 import com.carbonx.marketcarbon.dto.response.MarketplaceListingResponse;
@@ -14,6 +15,7 @@ import com.carbonx.marketcarbon.service.MarketplaceService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,9 +40,23 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private final MarketplaceListingRepository marketplaceListingRepository;
     private final CreditBatchRepository creditBatchRepository;
 
+    /**
+     * Optional collaborator: production Spring wiring injects it, while legacy unit tests
+     * that call the generated constructor directly keep the repository-based fallback.
+     */
+    private CurrentUserService currentUserService;
+
+    @Autowired(required = false)
+    public void setCurrentUserService(CurrentUserService currentUserService) {
+        this.currentUserService = currentUserService;
+    }
+
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private User currentUser() {
+        if (currentUserService != null) {
+            return currentUserService.getCurrentUser();
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email);
@@ -51,6 +67,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     private Company currentCompany(User user) {
+        if (currentUserService != null) {
+            return currentUserService.getCurrentCompany();
+        }
         return companyRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND));
     }
