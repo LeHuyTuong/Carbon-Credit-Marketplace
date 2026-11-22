@@ -31,11 +31,12 @@ export function WalletPage() {
       ) : wallet.isError || !wallet.data ? (
         <QueryError onRetry={() => void wallet.refetch()} />
       ) : (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <BalanceOverview wallet={wallet.data as WalletSummary} />
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-2">
             <SectionCard
+              className="min-w-0"
               title="Tài khoản nhận tiền"
               description="Thông tin này được dùng khi phê duyệt yêu cầu rút tiền."
             >
@@ -53,6 +54,7 @@ export function WalletPage() {
             </SectionCard>
 
             <SectionCard
+              className="min-w-0"
               title="Rút tiền"
               description="Yêu cầu sẽ được ADMIN phê duyệt trước khi chi trả."
             >
@@ -63,14 +65,20 @@ export function WalletPage() {
             </SectionCard>
           </div>
 
-          <SectionCard title="Lịch sử giao dịch" description="Các khoản tiền vào/ra gần đây của ví">
-            {transactions.isPending ? (
-              <div className="h-48 animate-pulse bg-ink-100" />
-            ) : transactions.isError ? (
-              <QueryError onRetry={() => void transactions.refetch()} />
-            ) : (
-              <TransactionList transactions={transactions.data ?? []} />
-            )}
+          <SectionCard
+            className="min-w-0"
+            title="Lịch sử giao dịch"
+            description="Các khoản tiền vào/ra gần đây của ví"
+          >
+            <div className="min-w-0 overflow-x-auto">
+              {transactions.isPending ? (
+                <div className="h-48 animate-pulse bg-ink-100" />
+              ) : transactions.isError ? (
+                <QueryError onRetry={() => void transactions.refetch()} />
+              ) : (
+                <TransactionList transactions={transactions.data ?? []} />
+              )}
+            </div>
           </SectionCard>
         </div>
       )}

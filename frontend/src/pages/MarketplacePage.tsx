@@ -48,7 +48,7 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <PageIntro
         eyebrow="Marketplace"
         title="Sàn giao dịch tín chỉ carbon"
@@ -56,7 +56,7 @@ export function MarketplacePage() {
       />
 
       <Card className="mb-6 p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             aria-label="Tìm kiếm tin đăng"
             placeholder="Tìm dự án, doanh nghiệp hoặc mã lô…"
@@ -65,8 +65,8 @@ export function MarketplacePage() {
             onChange={(event) => setSearch(event.target.value)}
             wrapperClassName="sm:flex-1"
           />
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
+            <div className="relative min-w-0">
               <SlidersHorizontal aria-hidden className="pointer-events-none absolute left-3 top-3 size-4 text-ink-400" />
               <select
                 aria-label="Lọc theo dự án"

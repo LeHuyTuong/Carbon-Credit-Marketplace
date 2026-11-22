@@ -30,13 +30,13 @@ export function PublicHomePage() {
       <section className="relative overflow-hidden bg-ink-950">
         <div aria-hidden className="absolute -right-24 -top-32 size-96 rounded-full bg-brand-500/25 blur-3xl" />
         <div aria-hidden className="absolute -bottom-40 left-1/4 size-80 rounded-full bg-brand-700/25 blur-3xl" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:px-8">
-          <div>
+        <div className="relative mx-auto grid min-w-0 max-w-7xl gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:px-8">
+          <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-400/10 px-3 py-1.5 text-xs font-semibold text-brand-300">
               <Sparkles aria-hidden className="size-3.5" />
               Sàn giao dịch tín chỉ carbon thế hệ mới
             </span>
-            <h1 className="mt-6 text-4xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 break-words text-4xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-5xl lg:text-6xl">
               Biến giảm phát thải
               <span className="block text-brand-400">thành giá trị kinh tế.</span>
             </h1>
@@ -61,7 +61,7 @@ export function PublicHomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4">
             {[
               { icon: BarChart3, label: 'Tin đăng hoạt động', value: marketplace.isPending ? '—' : formatNumber(listings.length) },
               { icon: Building2, label: 'Dự án carbon', value: projects.isPending ? '—' : formatNumber(projectList.length) },
@@ -70,10 +70,10 @@ export function PublicHomePage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm sm:p-5"
+                className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm sm:p-5"
               >
                 <item.icon aria-hidden className="size-5 text-brand-400" />
-                <p className="mt-4 text-2xl font-bold tracking-tight text-white">{item.value}</p>
+                <p className="mt-4 break-words text-2xl font-bold tracking-tight text-white">{item.value}</p>
                 <p className="mt-1 text-xs text-slate-400">{item.label}</p>
               </div>
             ))}
@@ -81,9 +81,9 @@ export function PublicHomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <div>
+      <section className="mx-auto min-w-0 max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mb-6 flex min-w-0 flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-widest text-brand-600">Đang diễn ra</p>
             <h2 className="mt-1 text-2xl font-bold tracking-tight text-ink-900">Tin đăng mới nhất</h2>
           </div>
@@ -120,7 +120,7 @@ export function PublicHomePage() {
       </section>
 
       <section id="du-an" className="scroll-mt-20 border-t border-ink-100 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto min-w-0 max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-600">Danh mục</p>
           <h2 className="mt-1 text-2xl font-bold tracking-tight text-ink-900">Dự án carbon nổi bật</h2>
 
@@ -162,7 +162,7 @@ export function PublicHomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+      <section className="mx-auto min-w-0 max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-4 rounded-3xl bg-brand-600 p-8 text-white sm:flex-row sm:items-center sm:p-10">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Sẵn sàng tham gia thị trường carbon?</h2>
