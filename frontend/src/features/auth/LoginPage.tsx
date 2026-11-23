@@ -70,8 +70,7 @@ export function LoginPage() {
 
       const targetHome = roleHome(role)
       const from = (location.state as LocationState | null)?.from
-      const canReturnToFrom =
-        typeof from === 'string' && (from === '/app/wallet' || from.startsWith(targetHome))
+      const canReturnToFrom = typeof from === 'string' && from.startsWith(targetHome)
       navigate(canReturnToFrom ? from : targetHome, { replace: true })
     },
   })
