@@ -82,6 +82,11 @@ export function mapTransaction(raw: Raw): WalletTransaction | null {
     description: str(raw.description),
     createdAt: str(first(raw.createdAt, raw.transactionDate)) || null,
     status: str(raw.status),
+    batchCode: str(first(raw.batchCode, raw.creditBatchCode)) || null,
+    distributionId: toNumber(first(raw.distributionId, raw.distribution_id), 0) || null,
+    orderId: toNumber(first(raw.orderId, raw.order_id), 0) || null,
+    carbonCreditQuantity: toNumber(first(raw.carbonCreditQuantity, raw.creditQuantity, raw.quantity), 0) || null,
+    unitPrice: toNumber(first(raw.unitPrice, raw.price), 0) || null,
   }
 }
 

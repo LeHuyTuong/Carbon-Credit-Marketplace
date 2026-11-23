@@ -16,6 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")                  // áp cho toàn bộ API
                 .excludePathPatterns(
                         "/api/resource",                     // ngoại lệ
+                        "/api/v1/notifications/**",          // SSE stream persistent
                         "/v3/api-docs/**", "/swagger-ui/**" // tránh throttle swagger
                 );
     }

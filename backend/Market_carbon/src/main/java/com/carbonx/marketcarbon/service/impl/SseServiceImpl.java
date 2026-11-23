@@ -62,15 +62,18 @@ public class SseServiceImpl implements SseService {
         // Lưu emitter vào map với key là userId
         SseEmitter previous = emitters.put(userId, emitter);
         if (previous != null) {
-            previous.complete();
+            try {
+                previous.complete();
+            } catch (Exception ignored) {
+            }
         }
 
         // Gửi một sự kiện "init" để xác nhận kết nối
-        try{
+        try {
             emitter.send(SseEmitter.event().name("init").data("Connection established for user " + userId));
-        }catch (IOException e){
+        } catch (Exception e) {
             // Client disconnected before the handshake completed - expected, not an error.
-            log.debug("SSE init event failed for user {}; dropping emitter", userId, e);
+            log.debug("SSE init event failed for user {}; dropping emitter: {}", userId, e.getMessage());
             emitters.remove(userId, emitter);
         }
         return emitter;

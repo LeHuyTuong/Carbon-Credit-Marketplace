@@ -13,7 +13,7 @@ import { StatCard } from '@/shared/components/StatCard'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate } from '@/shared/lib/format'
 import type { Role } from '@/shared/stores/auth.store'
-import { MetricBarChart, TrendChart } from './Charts'
+import { EmissionDistributionChart, MetricBarChart, TrendChart } from './Charts'
 import { PageIntro } from './PageIntro'
 import { QueryError, QueryLoading, SectionCard } from './QueryState'
 
@@ -68,15 +68,23 @@ export function DashboardView({ role, eyebrow, title, description }: DashboardVi
             ))}
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3">
             <SectionCard
-              title="Hoạt động theo tháng"
-              description="Số lượng hồ sơ phát sinh theo thời gian"
-              className="xl:col-span-2"
+              title="Xu hướng hoạt động"
+              description="Biến động khối lượng theo thời gian"
             >
               <TrendChart data={data.trend} />
             </SectionCard>
-            <SectionCard title="Tổng quan chỉ số" description="So sánh các chỉ số chính">
+            <SectionCard
+              title="Cơ cấu nguồn phát thải"
+              description="Tỷ trọng tín chỉ theo danh mục dự án"
+            >
+              <EmissionDistributionChart />
+            </SectionCard>
+            <SectionCard
+              title="So sánh chỉ số"
+              description="Quy mô các chỉ số vận hành chính"
+            >
               <MetricBarChart metrics={data.metrics} />
             </SectionCard>
           </div>

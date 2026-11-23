@@ -57,6 +57,11 @@ export interface WalletTransaction {
   description: string
   createdAt: string | null
   status: string
+  batchCode?: string | null
+  distributionId?: number | null
+  orderId?: number | null
+  carbonCreditQuantity?: number | null
+  unitPrice?: number | null
 }
 
 export interface PaymentDetails {

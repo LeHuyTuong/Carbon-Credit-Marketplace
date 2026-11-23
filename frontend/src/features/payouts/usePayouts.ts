@@ -4,17 +4,29 @@ import { api, apiClient, API_BASE } from '@/shared/api/client'
 import { queryKeys } from '@/shared/lib/queryKeys'
 
 export interface PayoutRow {
+  ownerId?: number
   ownerName: string
   email: string
+  phone: string
+  vehiclesCount: number
+  energyKwh: number
   credits: number
   amount: number
   status: string
+}
+
+export interface PayoutSummary {
+  grandTotalPayout: number
+  totalEnergyKwh: number
+  totalCredits: number
+  ownersCount: number
 }
 
 export interface PayoutPreview {
   rows: PayoutRow[]
   totalAmount: number
   reportId: number | null
+  summary?: PayoutSummary
 }
 
 interface RawRow extends Record<string, unknown> {}
@@ -43,7 +55,7 @@ function extractRows(payload: unknown): RawRow[] {
     }
     if (value && typeof value === 'object') {
       const record = value as Record<string, unknown>
-      for (const key of ['rows', 'items', 'owners', 'content', 'data', 'evOwners', 'details']) {
+      for (const key of ['rows', 'items', 'owners', 'content', 'data', 'evOwners', 'details', 'page', 'summary', 'response']) {
         const nested = visit(record[key])
         if (nested.length) return nested
       }
@@ -63,16 +75,28 @@ export function usePayoutPreview(reportId: number | null) {
         size: 20,
       })
       const rows = extractRows(payload).map((row) => ({
+        ownerId: toNumber(first(row.ownerId, row.id)),
         ownerName: text(first(row.ownerName, row.name, row.fullName)),
         email: text(first(row.email, row.ownerEmail), ''),
+        phone: text(first(row.phone, row.ownerPhone, row.phoneNumber), '—'),
+        vehiclesCount: toNumber(first(row.vehiclesCount, row.vehicleCount, row.vehicles)) || 1,
+        energyKwh: toNumber(first(row.energyKwh, row.totalEnergy, row.energy)),
         credits: toNumber(first(row.credits, row.creditAmount, row.totalCredits, row.quantity)),
-        amount: toNumber(first(row.amount, row.payoutAmount, row.totalAmount, row.total)),
+        amount: toNumber(first(row.amount, row.amountUsd, row.payoutAmount, row.totalAmount, row.total)),
         status: text(first(row.status, row.paymentStatus), 'PENDING'),
       }))
+      const rawSummary = (payload && typeof payload === 'object' && 'response' in payload && payload.response && typeof payload.response === 'object' && 'summary' in payload.response ? payload.response.summary : null) as Record<string, unknown> | null
+      const summary: PayoutSummary = {
+        grandTotalPayout: rawSummary ? toNumber(rawSummary.grandTotalPayout) : rows.reduce((s, r) => s + r.amount, 0),
+        totalEnergyKwh: rawSummary ? toNumber(rawSummary.totalEnergyKwh) : rows.reduce((s, r) => s + r.energyKwh, 0),
+        totalCredits: rawSummary ? toNumber(rawSummary.totalCredits) : rows.reduce((s, r) => s + r.credits, 0),
+        ownersCount: rawSummary ? toNumber(rawSummary.ownersCount) : rows.length,
+      }
       return {
         rows,
-        totalAmount: rows.reduce((sum, row) => sum + row.amount, 0),
+        totalAmount: summary.grandTotalPayout || rows.reduce((sum, row) => sum + row.amount, 0),
         reportId,
+        summary,
       }
     },
   })

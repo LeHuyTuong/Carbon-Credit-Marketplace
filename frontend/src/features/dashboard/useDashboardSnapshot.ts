@@ -112,23 +112,22 @@ async function load(role: Role): Promise<DashboardSnapshot> {
   const cvaConfig = { baseURL: '' }
 
   if (role === 'EV_OWNER') {
-    const [summary, balance, reports, projects, listings] = await Promise.all([
-      safeGet('/my/credits/summary'),
-      safeGet('/my/credits/balance'),
-      safeGet('/reports/my-reports'),
+    const [vehicles, wallet, projects, listings] = await Promise.all([
+      safeGet('/vehicles'),
+      safeGet('/wallet'),
       safeGet('/projects'),
       safeGet('/marketplace'),
     ])
-    const reportItems = itemsFrom(reports)
+    const vehicleItems = itemsFrom(vehicles)
     return {
       metrics: [
-        metric('credit-balance', 'Số dư tín chỉ', numberFrom(summary, ['balance', 'creditBalance', 'totalBalance']) ?? numberFrom(balance, ['balance', 'creditBalance']), 'Tín chỉ khả dụng', 'tín chỉ'),
-        metric('reports', 'Báo cáo phát thải', countOf(reports), 'Báo cáo đã nộp'),
-        metric('projects', 'Dự án tham gia', countOf(projects), 'Dự án trên sàn'),
+        metric('vehicles', 'Xe điện đã đăng ký', vehicleItems.length, 'Phương tiện của tôi', 'xe'),
+        metric('wallet', 'Số dư ví', numberFrom(wallet, ['balance']), 'Tiền nhận chia sẻ doanh thu', 'USD'),
+        metric('projects', 'Dự án trên sàn', countOf(projects), 'Dự án phát thải'),
         metric('price', 'Giá tín chỉ TB', averagePrice(itemsFrom(listings)), 'Tham khảo marketplace', 'USD'),
       ],
-      trend: buildTrend([reports, listings]),
-      recent: reportItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
+      trend: buildTrend([vehicles, listings]),
+      recent: vehicleItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
     }
   }
 

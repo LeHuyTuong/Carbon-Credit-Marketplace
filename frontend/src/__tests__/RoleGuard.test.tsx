@@ -63,6 +63,14 @@ describe('RoleGuard', () => {
     expect(screen.queryByRole('link', { name: 'Về trang tổng quan' })).not.toBeInTheDocument()
   })
 
+  it('chặn vai CVA truy cập vào route ví tiền của hệ thống', () => {
+    useAuthStore.setState({ token: 'cva-token', role: 'CVA' })
+    renderGuard(['ADMIN', 'COMPANY', 'EV_OWNER'])
+
+    expect(screen.queryByText('Trang bảo mật')).not.toBeInTheDocument()
+    expect(screen.getByText('Không có quyền truy cập')).toBeInTheDocument()
+  })
+
   it('điều hướng về /login khi chưa đăng nhập', () => {
     renderGuard(['COMPANY'])
 

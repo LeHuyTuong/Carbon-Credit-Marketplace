@@ -84,6 +84,12 @@ const AdminWithdrawalsPage = lazy(() =>
 const AdminUsersPage = lazy(() =>
   import('@/pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
 )
+const AdminVehiclesPage = lazy(() =>
+  import('@/pages/admin/AdminVehiclesPage').then((m) => ({ default: m.AdminVehiclesPage })),
+)
+const CompanyEvOwnersPage = lazy(() =>
+  import('@/pages/company/CompanyEvOwnersPage').then((m) => ({ default: m.CompanyEvOwnersPage })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
@@ -178,6 +184,14 @@ export function AppRouter() {
             element={
               <RoleGuard allow={['COMPANY']}>
                 <CompanyOrdersPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/ev-owners"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyEvOwnersPage />
               </RoleGuard>
             }
           />
@@ -286,9 +300,17 @@ export function AppRouter() {
             }
           />
           <Route
+            path="admin/vehicles"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminVehiclesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="wallet"
             element={
-              <RoleGuard allow={ROLES}>
+              <RoleGuard allow={['ADMIN', 'COMPANY', 'EV_OWNER']}>
                 <WalletPage />
               </RoleGuard>
             }

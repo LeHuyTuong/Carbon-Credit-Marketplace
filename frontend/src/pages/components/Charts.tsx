@@ -4,6 +4,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,6 +16,13 @@ import {
 import type { DashboardMetric, TrendPoint } from '@/shared/api/types'
 
 const axisStyle = { fill: '#64748b', fontSize: 12 }
+const PIE_COLORS = ['#059669', '#0284c7', '#f59e0b', '#8b5cf6', '#ec4899']
+
+const DEFAULT_DISTRIBUTION = [
+  { name: 'Xe điện đô thị (EVs)', value: 62 },
+  { name: 'Trạm sạc năng lượng xanh', value: 24 },
+  { name: 'Tối ưu logistics xanh', value: 14 },
+]
 
 export function TrendChart({ data }: { data: TrendPoint[] }) {
   if (!data.length) {
@@ -64,6 +75,37 @@ export function MetricBarChart({ metrics }: { metrics: DashboardMetric[] }) {
           <Tooltip cursor={{ fill: '#f1f5f9' }} />
           <Bar dataKey="value" name="Giá trị" fill="#059669" radius={[6, 6, 0, 0]} maxBarSize={48} />
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export function EmissionDistributionChart({
+  data = DEFAULT_DISTRIBUTION,
+}: {
+  data?: { name: string; value: number }[]
+}) {
+  return (
+    <div className="h-64 w-full px-2 pb-2 pt-2">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Tooltip formatter={(val) => [`${val ?? 0}%`, 'Tỷ trọng']} />
+          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="45%"
+            innerRadius={55}
+            outerRadius={80}
+            paddingAngle={4}
+          >
+            {data.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+            ))}
+          </Pie>
+        </PieChart>
       </ResponsiveContainer>
     </div>
   )

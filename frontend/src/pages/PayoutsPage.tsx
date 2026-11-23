@@ -25,8 +25,19 @@ function parseId(value: string): number | null {
 export function PayoutsPage() {
   const [reportInput, setReportInput] = useState('')
   const [distributionInput, setDistributionInput] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [reportId, setReportId] = useState<number | null>(null)
   const preview = usePayoutPreview(reportId)
+
+  const filteredRows = (preview.data?.rows ?? []).filter((row) => {
+    if (!searchTerm.trim()) return true
+    const term = searchTerm.toLowerCase()
+    return (
+      row.ownerName.toLowerCase().includes(term) ||
+      row.email.toLowerCase().includes(term) ||
+      row.phone.toLowerCase().includes(term)
+    )
+  })
 
   const shareMutation = useMutation({
     mutationFn: (emissionReportId: number) =>
@@ -145,30 +156,75 @@ export function PayoutsPage() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-ink-500">Tổng tiền thanh toán</p>
+              <p className="text-xs text-ink-500">Tổng ngân sách chi trả</p>
               <p className="text-xl font-bold text-brand-700">
                 {formatUsd(preview.data.totalAmount)}
               </p>
             </div>
           </div>
+
+          {/* KPI Tóm tắt phân bổ chi tiết */}
+          <div className="grid grid-cols-2 gap-3 border-b border-ink-100 bg-ink-50/50 p-4 sm:grid-cols-4">
+            <div>
+              <span className="text-xs text-ink-500">Tổng chủ xe:</span>
+              <p className="font-semibold text-ink-900">{formatNumber(preview.data.summary?.ownersCount ?? preview.data.rows.length)}</p>
+            </div>
+            <div>
+              <span className="text-xs text-ink-500">Tổng điện năng sạc:</span>
+              <p className="font-semibold text-ink-900">{formatNumber(preview.data.summary?.totalEnergyKwh ?? 0)} kWh</p>
+            </div>
+            <div>
+              <span className="text-xs text-ink-500">Tổng tín chỉ phân bổ:</span>
+              <p className="font-semibold text-ink-900">{formatNumber(preview.data.summary?.totalCredits ?? 0)} tCO₂e</p>
+            </div>
+            <div>
+              <span className="text-xs text-ink-500">Đơn vị thụ hưởng:</span>
+              <p className="font-semibold text-brand-700">Chủ xe điện VinFast</p>
+            </div>
+          </div>
+
+          <div className="border-b border-ink-100 p-4">
+            <Input
+              placeholder="Tìm kiếm theo tên chủ xe, email hoặc số điện thoại..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-ink-50 text-left text-xs uppercase tracking-wider text-ink-500">
                 <tr>
                   <th scope="col" className="px-5 py-3 font-semibold">Chủ xe điện</th>
-                  <th scope="col" className="px-5 py-3 font-semibold">Email</th>
-                  <th scope="col" className="px-5 py-3 text-right font-semibold">Tín chỉ</th>
+                  <th scope="col" className="px-5 py-3 font-semibold">Liên hệ</th>
+                  <th scope="col" className="px-5 py-3 text-center font-semibold">Số xe</th>
+                  <th scope="col" className="px-5 py-3 text-right font-semibold">Điện sạc (kWh)</th>
+                  <th scope="col" className="px-5 py-3 text-right font-semibold">Tín chỉ (tCO₂e)</th>
                   <th scope="col" className="px-5 py-3 text-right font-semibold">Thành tiền</th>
                   <th scope="col" className="px-5 py-3 font-semibold">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
-                {preview.data.rows.map((row, index) => (
+                {filteredRows.map((row, index) => (
                   <tr key={`${row.email || 'row'}-${index}`} className="hover:bg-ink-50/60">
-                    <td className="px-5 py-3 font-medium text-ink-900">{row.ownerName}</td>
-                    <td className="px-5 py-3 text-ink-500">{row.email || '—'}</td>
-                    <td className="px-5 py-3 text-right">{formatNumber(row.credits)}</td>
-                    <td className="px-5 py-3 text-right font-semibold text-ink-900">
+                    <td className="px-5 py-3">
+                      <p className="font-medium text-ink-900">{row.ownerName}</p>
+                      {row.ownerId && <span className="text-xs text-ink-400">Mã #{row.ownerId}</span>}
+                    </td>
+                    <td className="px-5 py-3 text-ink-600">
+                      <div>{row.email || '—'}</div>
+                      <div className="text-xs text-ink-400">{row.phone}</div>
+                    </td>
+                    <td className="px-5 py-3 text-center font-medium text-ink-800">
+                      {row.vehiclesCount}
+                    </td>
+                    <td className="px-5 py-3 text-right text-ink-700">
+                      {formatNumber(row.energyKwh)}
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium text-ink-900">
+                      {formatNumber(row.credits)}
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold text-brand-700">
                       {formatUsd(row.amount)}
                     </td>
                     <td className="px-5 py-3">

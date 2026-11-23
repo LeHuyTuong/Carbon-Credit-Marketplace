@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Building2, Info, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -318,7 +318,27 @@ export function AdminProjectsPage() {
       ) : projectsQuery.isError ? (
         <QueryError onRetry={() => void projectsQuery.refetch()} />
       ) : (
-        <SectionCard title="Danh sách dự án" description={`${projects.length} dự án`}>
+        <>
+          <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50/50 p-4 text-xs text-ink-700">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 size-4 shrink-0 text-brand-700" />
+              <div className="space-y-1">
+                <p className="font-semibold text-brand-900">
+                  Quy chuẩn cấp tín chỉ VM0038 & Tính bất biến của lô phát hành (Audit Rule)
+                </p>
+                <p className="text-ink-600">
+                  Công thức: <code className="rounded bg-brand-100/70 px-1.5 py-0.5 font-mono text-brand-800">Tín chỉ = (Tổng kWh × Hệ số kgCO₂/kWh) / 1000 × (1 - Dự phòng - Bất định - Rò rỉ) + Dư kỳ trước</code>.
+                </p>
+                <p className="text-ink-500">
+                  • <strong>Lô đã phát hành:</strong> Mang số serial và chứng chỉ bất biến, không bị thay đổi hồi tố khi thông số dự án cập nhật.
+                  <br />
+                  • <strong>Kỳ phát thải mới:</strong> Khi Admin chỉnh sửa hệ số phát thải hoặc tỷ lệ dự phòng, các kỳ nộp về sau sẽ tự động áp dụng công thức mới nhất.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <SectionCard title="Danh sách dự án" description={`${projects.length} dự án`}>
           {projects.length === 0 ? (
             <EmptyState icon={Building2} title="Chưa có dự án" description="Tạo dự án đầu tiên để doanh nghiệp có thể đăng ký." />
           ) : (
@@ -377,6 +397,7 @@ export function AdminProjectsPage() {
             </div>
           )}
         </SectionCard>
+        </>
       )}
 
       {dialog && (

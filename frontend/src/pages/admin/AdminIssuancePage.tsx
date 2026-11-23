@@ -53,14 +53,23 @@ export function AdminIssuancePage() {
     enabled: selectedId !== null,
     retry: false,
   })
+  const canPreview =
+    selectedId !== null &&
+    Boolean(
+      detailQuery.data &&
+        (detailQuery.data.status === 'ADMIN_APPROVED' ||
+          detailQuery.data.status === 'APPROVED_BY_ADMIN' ||
+          detailQuery.data.status === 'APPROVED'),
+    )
+
   const previewQuery = useQuery({
     queryKey: ['credits', 'preview', selectedId],
     queryFn: async () => {
-      if (selectedId === null) return null
+      if (!canPreview || selectedId === null) return null
       const data = await api.get<unknown>(`/credits/preview/${selectedId}`)
       return isRecord(data) && (data.id !== undefined || data.batchCode !== undefined) ? mapCreditBatch(data) : null
     },
-    enabled: selectedId !== null,
+    enabled: canPreview,
     retry: false,
   })
   const batchesQuery = useQuery({
