@@ -15,10 +15,14 @@ export function useWalletData() {
   const wallet = useQuery({
     queryKey: queryKeys.wallet,
     queryFn: async () => mapWallet(await api.get<unknown>('/wallet')),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
   const transactions = useQuery({
     queryKey: queryKeys.walletTransactions,
     queryFn: async () => mapList(await api.get<unknown>('/wallet/transactions'), mapTransaction),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
   // Tài khoản ngân hàng có thể chưa được thiết lập -> 404/empty là trạng thái hợp lệ.
   const paymentDetails = useQuery({

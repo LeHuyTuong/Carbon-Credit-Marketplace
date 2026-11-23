@@ -25,7 +25,11 @@ export function CompanyOrdersPage() {
     mutationFn: (orderId: number) => api.post<unknown>(`/orders/${orderId}/complete`),
     onSuccess: async () => {
       toast.success('Đơn hàng đã hoàn tất')
-      await queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.orders })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.orders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.wallet }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.walletTransactions }),
+      ])
     },
     onError: (error) => toast.error('Không hoàn tất được đơn hàng', { description: errorMessage(error) }),
   })
