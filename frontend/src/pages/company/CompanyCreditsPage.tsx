@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Coins, Download, Flame, Store } from 'lucide-react'
+import { Coins, Download, Flame, Store, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import {
   downloadFile,
   errorMessage,
+  isRecord,
   mapCreditBatch,
   pageOf,
 } from '@/shared/api/phase3b'
@@ -13,7 +14,7 @@ import { Button } from '@/shared/components/Button'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { Input } from '@/shared/components/Input'
 import { StatusBadge } from '@/shared/components/StatusBadge'
-import { formatDate, formatNumber } from '@/shared/lib/format'
+import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import { useAuthStore } from '@/shared/stores/auth.store'
 import { PageIntro } from '@/pages/components/PageIntro'
@@ -32,11 +33,66 @@ export function CompanyCreditsPage() {
     queryKey: queryKeys.phase3b.myCreditBatches,
     queryFn: async () => pageOf(await api.get<unknown>('/my/credits/batches')).items.map(mapCreditBatch),
   })
+  const myListingsQuery = useQuery({
+    queryKey: ['marketplace', 'company-mine'],
+    queryFn: async () => {
+      const data = await api.get<unknown>('/marketplace/company')
+      const arr = Array.isArray(data) ? data : pageOf(data).items
+      return arr.map((raw) => {
+        const r = isRecord(raw) ? raw : {}
+        return {
+          id: Number(r.listingId ?? r.id ?? 0),
+          projectTitle: String(r.projectTitle ?? r.projectName ?? 'Tín chỉ carbon'),
+          quantity: Number(r.quantity ?? 0),
+          soldQuantity: Number(r.soldQuantity ?? 0),
+          pricePerCredit: Number(r.pricePerCredit ?? 0),
+          status: String(r.status ?? 'AVAILABLE'),
+          expiresAt: String(r.expiresAt ?? ''),
+        }
+      })
+    },
+    retry: false,
+  })
+  const retiredQuery = useQuery({
+    queryKey: ['my-credits', 'retired'],
+    queryFn: async () => {
+      const data = await api.get<unknown>('/my/credits', { page: 0, size: 50 })
+      return pageOf(data)
+        .items.map((raw) => {
+          const r = isRecord(raw) ? raw : {}
+          return {
+            id: Number(r.id ?? 0),
+            creditCode: String(r.creditCode ?? r.credit_code ?? ''),
+            name: String(r.name ?? 'Tín chỉ carbon'),
+            amount: Number(r.carbonCredit ?? r.amount ?? 0),
+            status: String(r.status ?? ''),
+            issuedAt: String(r.issuedAt ?? ''),
+          }
+        })
+        .filter((item) => item.status.toUpperCase() === 'RETIRED')
+    },
+    retry: false,
+  })
   const batches = batchesQuery.data ?? []
+  const myListings = myListingsQuery.data ?? []
+  const retiredCredits = retiredQuery.data ?? []
 
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.myCreditBatches })
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.myCreditBatches }),
+      queryClient.invalidateQueries({ queryKey: ['marketplace', 'company-mine'] }),
+      queryClient.invalidateQueries({ queryKey: ['my-credits', 'retired'] }),
+    ])
   }
+
+  const cancelListingMutation = useMutation({
+    mutationFn: (listingId: number) => api.delete<unknown>(`/marketplace/${listingId}`),
+    onSuccess: async () => {
+      toast.success('Đã huỷ tin niêm yết trên sàn')
+      await invalidate()
+    },
+    onError: (error) => toast.error('Không huỷ được tin niêm yết', { description: errorMessage(error) }),
+  })
 
   const listMutation = useMutation({
     mutationFn: async () =>
@@ -251,6 +307,97 @@ export function CompanyCreditsPage() {
               </form>
             </SectionCard>
           </div>
+
+          {/* Lịch sử tin đã niêm yết (SRS 7a & BR-13) */}
+          <SectionCard
+            title="Lịch sử tin niêm yết trên sàn"
+            description={`${myListings.length} tin niêm yết của doanh nghiệp · Phí sàn giao dịch 5%`}
+          >
+            {myListings.length === 0 ? (
+              <EmptyState icon={Store} title="Chưa có tin niêm yết nào" description="Tin niêm yết bán tín chỉ của bạn sẽ hiển thị tại đây." />
+            ) : (
+              <div className="scrollbar-thin overflow-x-auto p-5">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                      <th className="pb-3 font-semibold">Mã tin</th>
+                      <th className="pb-3 font-semibold">Dự án</th>
+                      <th className="pb-3 font-semibold">Còn lại</th>
+                      <th className="pb-3 font-semibold">Đã bán</th>
+                      <th className="pb-3 font-semibold">Đơn giá</th>
+                      <th className="pb-3 font-semibold">Trạng thái</th>
+                      <th className="pb-3 text-right font-semibold">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {myListings.map((item) => {
+                      const canCancel = ['AVAILABLE', 'LISTED'].includes(item.status.toUpperCase())
+                      return (
+                        <tr key={item.id} className="text-ink-700">
+                          <td className="py-3 font-mono text-xs font-semibold text-ink-900">#{item.id}</td>
+                          <td className="py-3 font-medium text-ink-900">{item.projectTitle}</td>
+                          <td className="py-3">{formatNumber(item.quantity)}</td>
+                          <td className="py-3">{formatNumber(item.soldQuantity)}</td>
+                          <td className="py-3 font-semibold">{formatUsd(item.pricePerCredit)}</td>
+                          <td className="py-3">
+                            <StatusBadge status={item.status} kind="credit" />
+                          </td>
+                          <td className="py-3 text-right">
+                            {canCancel ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                leftIcon={<Trash2 className="size-3.5" />}
+                                loading={cancelListingMutation.isPending && cancelListingMutation.variables === item.id}
+                                onClick={() => cancelListingMutation.mutate(item.id)}
+                              >
+                                Huỷ niêm yết
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-ink-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Lịch sử tín chỉ đã triệt tiêu (SRS 9b) */}
+          <SectionCard
+            title="Lịch sử tín chỉ đã triệt tiêu (Retire)"
+            description={`${retiredCredits.length} bản ghi tín chỉ đã thu hồi vĩnh viễn để bù trừ phát thải`}
+          >
+            {retiredCredits.length === 0 ? (
+              <EmptyState icon={Flame} title="Chưa có tín chỉ đã triệt tiêu" description="Sau khi triệt tiêu tín chỉ, chứng nhận sẽ lưu vĩnh viễn tại đây." />
+            ) : (
+              <div className="scrollbar-thin overflow-x-auto p-5">
+                <table className="w-full min-w-[680px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                      <th className="pb-3 font-semibold">Mã tín chỉ</th>
+                      <th className="pb-3 font-semibold">Tên tín chỉ</th>
+                      <th className="pb-3 font-semibold">Số lượng</th>
+                      <th className="pb-3 font-semibold">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {retiredCredits.map((item) => (
+                      <tr key={item.id} className="text-ink-700">
+                        <td className="py-3 font-mono text-xs font-semibold text-ink-900">{item.creditCode || `#${item.id}`}</td>
+                        <td className="py-3">{item.name}</td>
+                        <td className="py-3 font-semibold">{formatNumber(item.amount)}</td>
+                        <td className="py-3"><StatusBadge status="RETIRED" kind="credit" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
         </div>
       )}
     </>

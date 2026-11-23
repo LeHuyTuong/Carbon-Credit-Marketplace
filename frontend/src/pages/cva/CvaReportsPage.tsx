@@ -66,6 +66,26 @@ export function CvaReportsPage() {
     enabled: selectedId !== null,
     retry: false,
   })
+  const evDetailsQuery = useQuery({
+    queryKey: ['reports', 'ev-details', selectedId],
+    queryFn: async () => {
+      if (selectedId === null) return []
+      const data = await api.get<unknown>(`/reports/${selectedId}/details`, { page: 0, size: 50 })
+      const items = pageOf(data).items
+      return items.map((raw) => {
+        const r = isRecord(raw) ? raw : {}
+        return {
+          id: Number(r.id ?? 0),
+          plate: String(r.vehiclePlate ?? r.vehicle_plate ?? '—'),
+          period: String(r.period ?? '—'),
+          energy: Number(r.totalEnergy ?? r.total_energy ?? 0),
+          co2Kg: Number(r.co2Kg ?? r.co2_kg ?? 0),
+        }
+      })
+    },
+    enabled: selectedId !== null,
+    retry: false,
+  })
 
   const refreshAnalysis = async () => {
     await queryClient.invalidateQueries({
@@ -294,6 +314,48 @@ export function CvaReportsPage() {
                         </article>
                       )
                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* Danh sách xe điện (List EV — SRS #45) */}
+              <div className="space-y-3 border-t border-ink-100 pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-ink-900">Danh sách xe điện trong báo cáo</h4>
+                  <p className="text-xs text-ink-500">
+                    {(evDetailsQuery.data ?? []).length} bản ghi xe điện
+                  </p>
+                </div>
+                {evDetailsQuery.isPending ? (
+                  <div className="h-24 animate-pulse rounded-xl bg-ink-100" />
+                ) : (evDetailsQuery.data ?? []).length === 0 ? (
+                  <p className="rounded-xl border border-ink-200 bg-ink-50 p-3 text-xs text-ink-500">
+                    Chưa có dòng chi tiết từng xe điện cho báo cáo này.
+                  </p>
+                ) : (
+                  <div className="scrollbar-thin overflow-x-auto rounded-xl border border-ink-200">
+                    <table className="w-full min-w-[460px] text-left text-xs">
+                      <thead className="bg-ink-50 text-ink-500">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold">Biển số xe</th>
+                          <th className="px-3 py-2 font-semibold">Kỳ</th>
+                          <th className="px-3 py-2 text-right font-semibold">Điện năng (kWh)</th>
+                          <th className="px-3 py-2 text-right font-semibold">CO₂ giảm (kg)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-ink-100">
+                        {(evDetailsQuery.data ?? []).map((row, idx) => (
+                          <tr key={`${row.id}-${idx}`} className="text-ink-700">
+                            <td className="px-3 py-2 font-mono font-semibold text-ink-900">{row.plate}</td>
+                            <td className="px-3 py-2">{row.period}</td>
+                            <td className="px-3 py-2 text-right font-mono">{formatNumber(row.energy)}</td>
+                            <td className="px-3 py-2 text-right font-mono font-semibold text-brand-700">
+                              {formatNumber(row.co2Kg)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

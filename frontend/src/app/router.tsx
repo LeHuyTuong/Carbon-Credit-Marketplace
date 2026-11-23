@@ -63,6 +63,18 @@ const CvaReportsPage = lazy(() =>
 const AdminProjectsPage = lazy(() =>
   import('@/pages/admin/AdminProjectsPage').then((m) => ({ default: m.AdminProjectsPage })),
 )
+const AdminApplicationsPage = lazy(() =>
+  import('@/pages/admin/AdminApplicationsPage').then((m) => ({ default: m.AdminApplicationsPage })),
+)
+const AdminCreditsPage = lazy(() =>
+  import('@/pages/admin/AdminCreditsPage').then((m) => ({ default: m.AdminCreditsPage })),
+)
+const CompanyKycPage = lazy(() =>
+  import('@/pages/company/CompanyKycPage').then((m) => ({ default: m.CompanyKycPage })),
+)
+const ChangePasswordPage = lazy(() =>
+  import('@/pages/ChangePasswordPage').then((m) => ({ default: m.ChangePasswordPage })),
+)
 const AdminIssuancePage = lazy(() =>
   import('@/pages/admin/AdminIssuancePage').then((m) => ({ default: m.AdminIssuancePage })),
 )
@@ -218,10 +230,42 @@ export function AppRouter() {
             }
           />
           <Route
+            path="admin/applications"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminApplicationsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="admin/issuance"
             element={
               <RoleGuard allow={['ADMIN']}>
                 <AdminIssuancePage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/credits"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminCreditsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="company/kyc"
+            element={
+              <RoleGuard allow={['COMPANY']}>
+                <CompanyKycPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="password"
+            element={
+              <RoleGuard allow={ROLES}>
+                <ChangePasswordPage />
               </RoleGuard>
             }
           />

@@ -57,6 +57,13 @@ public class OrderServiceImpl implements OrderService {
         this.currentUserService = currentUserService;
     }
 
+    private com.carbonx.marketcarbon.repository.AdminRepository adminRepository;
+
+    @Autowired(required = false)
+    public void setAdminRepository(com.carbonx.marketcarbon.repository.AdminRepository adminRepository) {
+        this.adminRepository = adminRepository;
+    }
+
     @Value("${trading_fee}")
     private BigDecimal tradingFee;
 
@@ -411,24 +418,55 @@ public class OrderServiceImpl implements OrderService {
                     .wallet(buyerWallet)
                     .order(order)
                     .type(WalletTransactionType.BUY_CARBON_CREDIT)
-                    .description("Buy " + quantity + " credits from listing " + listing.getId() +
-                            " (Seller: " + sellerCompany.getCompanyName() + ")")
+                    .description("Mua " + quantity + " tín chỉ từ tin đăng #" + listing.getId() +
+                            " (Bên bán: " + sellerCompany.getCompanyName() + ")")
                     .amount(totalPrice)
                     .build();
 
             walletTransactionService.createTransaction(buyerTxn);
 
-            // Giao dịch cộng tiền người bán
+            // Hạch toán phí sàn giao dịch (mặc định 5% theo BusinessFlowV2) về ví Admin
+            BigDecimal feeRate = order.getPlatformFee() != null ? order.getPlatformFee() : BigDecimal.ZERO;
+            BigDecimal feeAmount = BigDecimal.ZERO;
+            Wallet adminWallet = null;
+
+            if (feeRate.compareTo(BigDecimal.ZERO) > 0 && adminRepository != null) {
+                var firstAdmin = adminRepository.findAll().stream().findFirst();
+                if (firstAdmin.isPresent() && firstAdmin.get().getUser() != null) {
+                    adminWallet = walletRepository.findByUserId(firstAdmin.get().getUser().getId());
+                }
+            }
+
+            if (adminWallet != null && feeRate.compareTo(BigDecimal.ZERO) > 0) {
+                feeAmount = totalPrice.multiply(feeRate).setScale(2, java.math.RoundingMode.HALF_UP);
+            }
+            BigDecimal sellerNet = totalPrice.subtract(feeAmount);
+            order.setSellerPayout(sellerNet);
+            orderRepository.save(order);
+
+            // Giao dịch cộng tiền thực nhận cho người bán (sau trừ phí sàn)
             WalletTransactionRequest sellerTxn = WalletTransactionRequest.builder()
                     .wallet(sellerWallet)
                     .order(order)
                     .type(WalletTransactionType.SELL_CARBON_CREDIT)
-                    .description("Sell " + quantity + " credits via listing " + listing.getId() +
-                            " (Buyer: " + buyerCompany.getCompanyName() + ")")
-                    .amount(totalPrice)
+                    .description("Bán " + quantity + " tín chỉ từ tin đăng #" + listing.getId() +
+                            " (Bên mua: " + buyerCompany.getCompanyName() + ")")
+                    .amount(sellerNet)
                     .build();
 
             walletTransactionService.createTransaction(sellerTxn);
+
+            // Giao dịch cộng phí sàn 5% vào ví Admin
+            if (adminWallet != null && feeAmount.compareTo(BigDecimal.ZERO) > 0) {
+                WalletTransactionRequest feeTxn = WalletTransactionRequest.builder()
+                        .wallet(adminWallet)
+                        .order(order)
+                        .type(WalletTransactionType.ADD_MONEY)
+                        .description("Phí sàn giao dịch (5%) từ đơn hàng #" + order.getId())
+                        .amount(feeAmount)
+                        .build();
+                walletTransactionService.createTransaction(feeTxn);
+            }
 
         } catch (Exception e) {
             log.error("Error processing financial transactions for order: {}", order.getId(), e);
