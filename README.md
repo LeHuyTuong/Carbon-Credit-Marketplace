@@ -45,11 +45,44 @@ docs/                      kiến trúc, audit, sơ đồ UML
 
 ## Video demo
 
-Mỗi luồng một video, bấm vào ảnh để xem (đã quay trên bản chạy thật, 4 vai trò):
+Mỗi luồng có bản xem trước tự chạy (GIF) và file video đầy đủ (MP4) khi bấm vào:
 
-<table><tr><td align="center"><a href="docs/demo/flow01_admin_khoi-tao-du-an.mp4"><img src="docs/demo/flow01_admin_khoi-tao-du-an.jpg" width="260"><br>▶ 1. Admin khởi tạo dự án</a></td><td align="center"><a href="docs/demo/flow02_cva_tham-dinh-ho-so-va-bao-cao.mp4"><img src="docs/demo/flow02_cva_tham-dinh-ho-so-va-bao-cao.jpg" width="260"><br>▶ 2. CVA thẩm định hồ sơ và báo cáo</a></td><td align="center"><a href="docs/demo/flow03_admin_phe-duyet-va-phat-hanh-tin-chi.mp4"><img src="docs/demo/flow03_admin_phe-duyet-va-phat-hanh-tin-chi.jpg" width="260"><br>▶ 3. Admin phê duyệt và phát hành tín chỉ</a></td></tr><tr><td align="center"><a href="docs/demo/flow04_doanh-nghiep_giao-dich-san-va-thanh-toan.mp4"><img src="docs/demo/flow04_doanh-nghiep_giao-dich-san-va-thanh-toan.jpg" width="260"><br>▶ 4. Doanh nghiệp giao dịch trên sàn</a></td><td align="center"><a href="docs/demo/flow05_doanh-nghiep_chia-se-doanh-thu-profit-sharing.mp4"><img src="docs/demo/flow05_doanh-nghiep_chia-se-doanh-thu-profit-sharing.jpg" width="260"><br>▶ 5. Chia sẻ doanh thu cho chủ xe</a></td><td align="center"><a href="docs/demo/flow06_chu-xe-dien_quan-ly-xe-va-vi.mp4"><img src="docs/demo/flow06_chu-xe-dien_quan-ly-xe-va-vi.jpg" width="260"><br>▶ 6. Chủ xe quản lý xe và ví</a></td></tr></table>
+<table><tr><td align="center"><a href="docs/demo/flow01_admin_khoi-tao-du-an.mp4"><img src="docs/demo/flow01_admin_khoi-tao-du-an.gif" width="260" alt="1. Admin khởi tạo dự án"><br>▶ 1. Admin khởi tạo dự án</a></td><td align="center"><a href="docs/demo/flow02_cva_tham-dinh-ho-so-va-bao-cao.mp4"><img src="docs/demo/flow02_cva_tham-dinh-ho-so-va-bao-cao.gif" width="260" alt="2. CVA thẩm định hồ sơ và báo cáo"><br>▶ 2. CVA thẩm định hồ sơ và báo cáo</a></td><td align="center"><a href="docs/demo/flow03_admin_phe-duyet-va-phat-hanh-tin-chi.mp4"><img src="docs/demo/flow03_admin_phe-duyet-va-phat-hanh-tin-chi.gif" width="260" alt="3. Admin phê duyệt và phát hành tín chỉ"><br>▶ 3. Admin phê duyệt và phát hành tín chỉ</a></td></tr><tr><td align="center"><a href="docs/demo/flow04_doanh-nghiep_giao-dich-san-va-thanh-toan.mp4"><img src="docs/demo/flow04_doanh-nghiep_giao-dich-san-va-thanh-toan.gif" width="260" alt="4. Doanh nghiệp giao dịch trên sàn"><br>▶ 4. Doanh nghiệp giao dịch trên sàn</a></td><td align="center"><a href="docs/demo/flow05_doanh-nghiep_chia-se-doanh-thu-profit-sharing.mp4"><img src="docs/demo/flow05_doanh-nghiep_chia-se-doanh-thu-profit-sharing.gif" width="260" alt="5. Chia sẻ doanh thu cho chủ xe"><br>▶ 5. Chia sẻ doanh thu cho chủ xe</a></td><td align="center"><a href="docs/demo/flow06_chu-xe-dien_quan-ly-xe-va-vi.mp4"><img src="docs/demo/flow06_chu-xe-dien_quan-ly-xe-va-vi.gif" width="260" alt="6. Chủ xe quản lý xe và ví"><br>▶ 6. Chủ xe quản lý xe và ví</a></td></tr></table>
 
-File nằm ở [`docs/demo/`](docs/demo/).
+Toàn bộ file nằm ở [`docs/demo/`](docs/demo/).
+
+## Đa luồng & Chống tranh chấp (Concurrency)
+
+Hệ thống xử lý đồng thời ở 2 điểm nóng tài chính:
+
+1. **Chốt đơn mua tín chỉ (`OrderServiceImpl`)**: Khi nhiều request cùng gọi chốt một đơn hàng, transaction khoá bi quan (`PESSIMISTIC_WRITE` / `SELECT ... FOR UPDATE`) trên đơn hàng, tin đăng và ví người mua/bán, kết hợp kiểm tra trạng thái idempotent — đảm bảo chỉ trừ tiền đúng 1 lần và ghi đúng 1 bộ `WalletTransaction`.
+2. **Chia sẻ doanh thu bất đồng bộ (`ProfitSharingServiceImpl` + `ConcurrencyConfig`)**: Khoá dòng `EmissionReport` (`findByIdForUpdate`) để tuần tự hoá lệnh chia tiền, sau đó đẩy việc chuyển khoản từng chủ xe vào thread pool giới hạn (`profitPool`), tách transaction độc lập cho từng chủ xe và dùng `claim_token` + heartbeat để retry không trả trùng.
+
+**Chạy thử đa luồng trực tiếp (8 luồng bắn đồng thời vào 1 đơn hàng):**
+
+```bash
+python3 scripts/demo_concurrency.py
+```
+
+Kết quả mẫu khi 8 thread cùng qua `Barrier` gọi `POST /api/v1/orders/{id}/complete`:
+
+```text
+[Before] Buyer wallet balance = $248295.5
+[Order ] Created order #17 (1 credit @ listing #10), launching 8 concurrent threads...
+
+  Thread #01 -> HTTP 200 [OK  ] (  43.5 ms) : Success
+  ...
+  Thread #08 -> HTTP 200 [OK  ] (  36.4 ms) : Success
+
+[After ] Buyer wallet balance = $248276.0 (debited: $19.5)
+[Result] 8/8 threads returned HTTP 200 (1 settled + 7 idempotent no-op under PESSIMISTIC_WRITE); debited $19.5 == 1x order.
+```
+
+Integration test đa luồng trên MySQL 8 thật (Testcontainers):
+
+```bash
+cd backend/Market_carbon && ./mvnw verify -Dit.test=OrderSettlementConcurrencyIT
+```
 
 ## Chạy local
 
@@ -72,6 +105,8 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run     # http://localhost:8082
 cd frontend
 npm install
 npm run dev                                              # http://localhost:5173
+# Nạp thêm dữ liệu mẫu phong phú (24 tài khoản, 24 xe điện, 11 tin đăng, 10 báo cáo)
+python3 scripts/seed_demo_rich.py
 ```
 
 Biến môi trường backend tối thiểu: `SPRING_DATASOURCE_URL/USERNAME/PASSWORD`, `JWT_SECRET`, `SPRING_MAIL_*`. Danh sách đầy đủ xem `.env.example` và `application.properties`. Không commit giá trị thật.
