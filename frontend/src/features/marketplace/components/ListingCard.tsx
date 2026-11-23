@@ -1,10 +1,17 @@
-import { Building2, CalendarDays, Layers3 } from 'lucide-react'
+import { Building2, CalendarDays, Layers3, ShoppingCart } from 'lucide-react'
+import { Button } from '@/shared/components/Button'
 import { Card } from '@/shared/components/Card'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import type { MarketplaceListing } from '@/shared/api/types'
 import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
 
-export function ListingCard({ listing }: { listing: MarketplaceListing }) {
+export function ListingCard({
+  listing,
+  onBuy,
+}: {
+  listing: MarketplaceListing
+  onBuy?: (listing: MarketplaceListing) => void
+}) {
   return (
     <Card className="group flex h-full flex-col p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float">
       <div className="flex items-start justify-between gap-3">
@@ -31,7 +38,7 @@ export function ListingCard({ listing }: { listing: MarketplaceListing }) {
         </span>
       </div>
 
-      <dl className="mt-4 space-y-2 text-sm text-ink-600">
+      <dl className="mt-4 flex-1 space-y-2 text-sm text-ink-600">
         <div className="flex items-center gap-2">
           <Layers3 aria-hidden className="size-4 shrink-0 text-ink-400" />
           <dt className="sr-only">Số lượng khả dụng</dt>
@@ -50,6 +57,19 @@ export function ListingCard({ listing }: { listing: MarketplaceListing }) {
           <dd className="font-medium text-ink-700">{formatDate(listing.expiresAt)}</dd>
         </div>
       </dl>
+
+      {onBuy && listing.availableQuantity > 0 && (
+        <div className="mt-5 border-t border-ink-100 pt-4">
+          <Button
+            className="w-full"
+            size="sm"
+            leftIcon={<ShoppingCart aria-hidden className="size-4" />}
+            onClick={() => onBuy(listing)}
+          >
+            Đặt mua tín chỉ
+          </Button>
+        </div>
+      )}
     </Card>
   )
 }

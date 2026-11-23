@@ -50,6 +50,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: '/app/company/projects', label: 'Dự án & hồ sơ', icon: Folder },
     { to: '/app/company/reports', label: 'Báo cáo phát thải', icon: FileText },
     { to: '/app/company/credits', label: 'Kho tín chỉ', icon: Coins },
+    { to: '/marketplace', label: 'Sàn giao dịch', icon: ShoppingCart },
     { to: '/app/company/orders', label: 'Đơn mua', icon: ShoppingCart },
     { to: '/app/company/payouts', label: 'Thanh toán', icon: ReceiptText },
     { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet },

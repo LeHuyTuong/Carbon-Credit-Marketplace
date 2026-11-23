@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Download, FileSpreadsheet, Search } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
+import { Download, FileSpreadsheet, Search, Send } from 'lucide-react'
 import { toast } from 'sonner'
+import { api } from '@/shared/api/client'
+import { errorMessage } from '@/shared/api/phase3b'
 import {
   downloadPayoutExcel,
   usePayoutPreview,
@@ -24,6 +27,28 @@ export function PayoutsPage() {
   const [distributionInput, setDistributionInput] = useState('')
   const [reportId, setReportId] = useState<number | null>(null)
   const preview = usePayoutPreview(reportId)
+
+  const shareMutation = useMutation({
+    mutationFn: (emissionReportId: number) =>
+      api.post<unknown>('/profit-sharing/share', {
+        data: { emissionReportId },
+      }),
+    onSuccess: () => {
+      toast.success('Đã kích hoạt chia sẻ doanh thu về ví các chủ xe điện')
+    },
+    onError: (error) => {
+      toast.error('Không thể chia sẻ doanh thu', { description: errorMessage(error) })
+    },
+  })
+
+  const triggerShare = () => {
+    const id = parseId(reportInput)
+    if (!id) {
+      toast.error('Mã báo cáo không hợp lệ', { description: 'Nhập một số nguyên dương.' })
+      return
+    }
+    shareMutation.mutate(id)
+  }
 
   const submitSearch = () => {
     const id = parseId(reportInput)
@@ -52,23 +77,31 @@ export function PayoutsPage() {
       />
 
       <Card className="mb-6 p-5">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto_auto] lg:items-end">
           <Input
             label="Mã báo cáo phát thải"
             inputMode="numeric"
-            placeholder="Ví dụ: 12"
+            placeholder="Ví dụ: 2"
             value={reportInput}
             onChange={(event) => setReportInput(event.target.value)}
           />
           <Input
             label="Mã phân phối (để xuất Excel)"
             inputMode="numeric"
-            placeholder="Ví dụ: 8"
+            placeholder="Ví dụ: 1"
             value={distributionInput}
             onChange={(event) => setDistributionInput(event.target.value)}
           />
           <Button leftIcon={<Search aria-hidden className="size-4" />} onClick={submitSearch}>
             Xem trước
+          </Button>
+          <Button
+            variant="secondary"
+            loading={shareMutation.isPending}
+            leftIcon={<Send aria-hidden className="size-4" />}
+            onClick={triggerShare}
+          >
+            Chia sẻ cho chủ xe
           </Button>
           <Button
             variant="outline"
