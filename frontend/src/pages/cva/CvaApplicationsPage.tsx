@@ -152,6 +152,8 @@ export function CvaApplicationsPage() {
   })
 
   const applications = applicationsQuery.data ?? []
+  const pendingApplications = applications.filter((app) => app.status === 'UNDER_REVIEW')
+  const historyApplications = applications.filter((app) => app.status !== 'UNDER_REVIEW')
 
   return (
     <>
@@ -166,69 +168,103 @@ export function CvaApplicationsPage() {
       ) : applicationsQuery.isError ? (
         <QueryError onRetry={() => void applicationsQuery.refetch()} />
       ) : (
-        <SectionCard title="Danh sách chờ duyệt" description={`${applications.length} hồ sơ`}>
-          {applications.length === 0 ? (
-            <EmptyState icon={ClipboardList} title="Không có hồ sơ chờ duyệt" description="Hồ sơ mới sẽ xuất hiện tại đây." />
-          ) : (
-            <div className="grid gap-4 p-5 lg:grid-cols-2">
-              {applications.map((application) => (
-                <article key={application.id} className="flex flex-col rounded-xl border border-ink-200 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-ink-900">
-                        {application.projectTitle || `Dự án #${application.projectId}`}
-                      </h3>
-                      <p className="mt-0.5 text-sm text-ink-500">
-                        {application.companyName || 'Doanh nghiệp chưa cập nhật'}
-                      </p>
+        <div className="space-y-6">
+          <SectionCard title="Danh sách chờ duyệt" description={`${pendingApplications.length} hồ sơ`}>
+            {pendingApplications.length === 0 ? (
+              <EmptyState icon={ClipboardList} title="Không có hồ sơ chờ duyệt" description="Hồ sơ mới sẽ xuất hiện tại đây." />
+            ) : (
+              <div className="grid gap-4 p-5 lg:grid-cols-2">
+                {pendingApplications.map((application) => (
+                  <article key={application.id} className="flex flex-col rounded-xl border border-ink-200 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-ink-900">
+                          {application.projectTitle || `Dự án #${application.projectId}`}
+                        </h3>
+                        <p className="mt-0.5 text-sm text-ink-500">
+                          {application.companyName || 'Doanh nghiệp chưa cập nhật'}
+                        </p>
+                      </div>
+                      <StatusBadge status={application.status} kind="application" />
                     </div>
-                    <StatusBadge status={application.status} kind="application" />
-                  </div>
 
-                  <dl className="mt-3 space-y-1 text-xs text-ink-500">
-                    <div className="flex justify-between gap-2">
-                      <dt>Nộp ngày</dt>
-                      <dd className="text-ink-700">{formatDate(application.submittedAt)}</dd>
+                    <dl className="mt-3 space-y-1 text-xs text-ink-500">
+                      <div className="flex justify-between gap-2">
+                        <dt>Nộp ngày</dt>
+                        <dd className="text-ink-700">{formatDate(application.submittedAt)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt>Mã hồ sơ</dt>
+                        <dd className="text-ink-700">#{application.id}</dd>
+                      </div>
+                    </dl>
+
+                    {application.applicationDocsUrl && (
+                      <a
+                        href={application.applicationDocsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        <ExternalLink className="size-4" /> Xem hồ sơ đính kèm
+                      </a>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2 border-t border-ink-100 pt-4">
+                      <Button
+                        size="sm"
+                        leftIcon={<CheckCircle2 className="size-4" />}
+                        onClick={() => setTarget(application)}
+                      >
+                        Duyệt / bổ sung / từ chối
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        leftIcon={<RotateCcw className="size-4" />}
+                        onClick={() => void applicationsQuery.refetch()}
+                      >
+                        Làm mới
+                      </Button>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <dt>Mã hồ sơ</dt>
-                      <dd className="text-ink-700">#{application.id}</dd>
-                    </div>
-                  </dl>
+                  </article>
+                ))}
+              </div>
+            )}
+          </SectionCard>
 
-                  {application.applicationDocsUrl && (
-                    <a
-                      href={application.applicationDocsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
-                    >
-                      <ExternalLink className="size-4" /> Xem hồ sơ đính kèm
-                    </a>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-ink-100 pt-4">
-                    <Button
-                      size="sm"
-                      leftIcon={<CheckCircle2 className="size-4" />}
-                      onClick={() => setTarget(application)}
-                    >
-                      Duyệt / bổ sung / từ chối
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      leftIcon={<RotateCcw className="size-4" />}
-                      onClick={() => void applicationsQuery.refetch()}
-                    >
-                      Làm mới
-                    </Button>
-                  </div>
-                </article>
-              ))}
-            </div>
+          {historyApplications.length > 0 && (
+            <SectionCard
+              title="Lịch sử thẩm định hồ sơ"
+              description={`${historyApplications.length} hồ sơ đã qua thẩm định`}
+            >
+              <div className="scrollbar-thin overflow-x-auto p-5">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-ink-100 text-xs font-semibold text-ink-500">
+                      <th className="pb-3 pr-4">Mã hồ sơ</th>
+                      <th className="pb-3 pr-4">Tên dự án</th>
+                      <th className="pb-3 pr-4">Doanh nghiệp</th>
+                      <th className="pb-3 pr-4">Ngày nộp</th>
+                      <th className="pb-3">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {historyApplications.map((app) => (
+                      <tr key={app.id}>
+                        <td className="py-3 pr-4 font-mono text-xs text-ink-500">#{app.id}</td>
+                        <td className="py-3 pr-4 font-medium text-ink-900">{app.projectTitle || `Dự án #${app.projectId}`}</td>
+                        <td className="py-3 pr-4 text-ink-600">{app.companyName || 'Doanh nghiệp'}</td>
+                        <td className="py-3 pr-4 text-xs text-ink-500">{formatDate(app.submittedAt)}</td>
+                        <td className="py-3"><StatusBadge status={app.status} kind="application" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
           )}
-        </SectionCard>
+        </div>
       )}
 
       {target && (
