@@ -12,9 +12,9 @@ export function ListingCard({ listing }: { listing: MarketplaceListing }) {
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
             {listing.batchCode || 'Tín chỉ carbon'}
           </p>
-          <h3 className="mt-1 line-clamp-2 text-base font-semibold text-ink-900">
+          <h2 className="mt-1 text-base font-bold leading-snug text-ink-900">
             {listing.projectTitle}
-          </h3>
+          </h2>
         </div>
         <StatusBadge status="LISTED" kind="credit" label="Đang bán" />
       </div>

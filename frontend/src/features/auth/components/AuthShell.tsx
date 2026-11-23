@@ -13,15 +13,15 @@ export function AuthShell({
   footer: ReactNode
 }) {
   return (
-    <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+    <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[1680px] items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
       <section className="hidden lg:block">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
           <Leaf aria-hidden className="size-3.5" />
           CarbonX Marketplace
         </span>
-        <p className="mt-6 font-serif text-5xl leading-[1.08] tracking-tight text-ink-900">
+        <p className="mt-6 font-extrabold text-4xl leading-[1.15] tracking-tight text-ink-900">
           Giao dịch tín chỉ carbon
-          <span className="block italic text-brand-600">minh bạch và kiểm chứng.</span>
+          <span className="block text-brand-600">minh bạch và kiểm chứng.</span>
         </p>
         <p className="mt-4 max-w-md text-base leading-relaxed text-ink-500">
           Kết nối chủ xe điện, doanh nghiệp và đơn vị thẩm định trên một nền tảng duy nhất — đo lường,

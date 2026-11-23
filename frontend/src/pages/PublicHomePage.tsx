@@ -51,14 +51,14 @@ export function PublicHomePage() {
     <div className="bg-ink-50">
       {/* Editorial Climate-Exchange Hero */}
       <section className="border-b border-ink-200 bg-ink-50">
-        <div className="mx-auto grid min-w-0 max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8">
+        <div className="mx-auto grid min-w-0 w-full max-w-[1680px] gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8">
           <div className="min-w-0 lg:col-span-7">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-brand-600">
               EV Carbon Registry &amp; Exchange · Vietnam
             </p>
-            <h1 className="mt-4 break-words font-serif text-4xl leading-[1.06] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
               Thị trường tín chỉ carbon xe điện{' '}
-              <span className="italic text-brand-600">đo lường &amp; kiểm chứng.</span>
+              <span className="text-brand-600">đo lường &amp; kiểm chứng.</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-600 sm:text-lg">
               Nền tảng đăng ký, thẩm định độc lập hai cấp (CVA &amp; Admin), giao dịch và triệt tiêu tín
@@ -144,7 +144,7 @@ export function PublicHomePage() {
 
       {/* 4-Step Registry Pipeline */}
       <section className="border-b border-ink-200 bg-white">
-        <div className="mx-auto min-w-0 max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600">
@@ -173,7 +173,7 @@ export function PublicHomePage() {
       </section>
 
       {/* Live Marketplace Listings */}
-      <section className="mx-auto min-w-0 max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-14 sm:px-6 lg:px-8">
         <div className="mb-6 flex min-w-0 flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600">
@@ -215,7 +215,7 @@ export function PublicHomePage() {
 
       {/* Live Carbon Projects */}
       <section id="du-an" className="scroll-mt-20 border-t border-ink-200 bg-white">
-        <div className="mx-auto min-w-0 max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-14 sm:px-6 lg:px-8">
           <div className="mb-6 min-w-0">
             <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-600">
               Danh mục chương trình
@@ -254,8 +254,8 @@ export function PublicHomePage() {
                       </span>
                       <span className="font-mono text-xs text-ink-500">PRJ-{project.id}</span>
                     </div>
-                    <h3 className="mt-2 line-clamp-1 text-base font-bold text-ink-900">{project.title}</h3>
-                    <p className="mt-1.5 line-clamp-2 text-sm text-ink-600">
+                    <h3 className="mt-2 text-base font-bold leading-snug text-ink-900">{project.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
                       {project.description || 'Dự án giảm phát thải xe điện đã được kiểm chứng trên CarbonX.'}
                     </p>
                   </div>
@@ -267,13 +267,13 @@ export function PublicHomePage() {
       </section>
 
       {/* Editorial Footer CTA */}
-      <section className="mx-auto min-w-0 max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <section className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-14 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-brand-800 bg-brand-700 p-8 text-white sm:flex-row sm:items-center sm:p-10">
           <div className="max-w-xl">
             <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-100">
               CarbonX Registry
             </p>
-            <h2 className="mt-2 font-serif text-3xl tracking-tight text-white">
+            <h2 className="mt-2 font-bold text-3xl tracking-tight text-white">
               Sẵn sàng tham gia thị trường tín chỉ carbon minh bạch?
             </h2>
             <p className="mt-2 text-sm text-white/90">

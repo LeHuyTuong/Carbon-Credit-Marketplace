@@ -48,7 +48,7 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-10 sm:px-6 lg:px-8">
       <PageIntro
         eyebrow="Marketplace"
         title="Sàn giao dịch tín chỉ carbon"

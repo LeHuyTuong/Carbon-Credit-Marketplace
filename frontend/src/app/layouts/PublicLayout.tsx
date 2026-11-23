@@ -22,7 +22,7 @@ export function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-ink-50">
       <header className="sticky top-0 z-40 border-b border-ink-200 bg-ink-50/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex min-h-10 items-center gap-2.5" aria-label="CarbonX trang chủ">
             <img
               src="/images/logo.png"
@@ -113,7 +113,7 @@ export function PublicLayout() {
       </main>
 
       <footer className="border-t border-ink-100 bg-ink-50">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-8 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>© {new Date().getFullYear()} CarbonX. Sàn giao dịch tín chỉ carbon minh bạch.</p>
           <p>Đo lường · Giảm phát thải · Trao đổi tín chỉ</p>
         </div>
