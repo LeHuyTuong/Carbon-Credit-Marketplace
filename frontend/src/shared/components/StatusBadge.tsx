@@ -116,7 +116,7 @@ export function StatusBadge({ status, kind, label, className }: StatusBadgeProps
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+        'inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
         badge.className,
         className,
       )}

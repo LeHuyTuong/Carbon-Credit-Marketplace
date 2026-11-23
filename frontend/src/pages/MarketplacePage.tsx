@@ -110,6 +110,10 @@ function BuyCreditDialog({
             </div>
           </dl>
 
+          <p className="text-xs text-ink-500">
+            Tiền sẽ được trừ trực tiếp từ ví doanh nghiệp và tín chỉ cộng vào kho ngay khi xác nhận.
+          </p>
+
           <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
             <Button variant="outline" onClick={onClose} disabled={submitting}>
               Huỷ
@@ -119,7 +123,7 @@ function BuyCreditDialog({
               loading={submitting}
               leftIcon={<ShoppingCart aria-hidden className="size-4" />}
             >
-              Xác nhận đặt mua
+              Mua & Thanh toán ngay
             </Button>
           </div>
         </form>
@@ -139,17 +143,38 @@ export function MarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null)
 
   const orderMutation = useMutation({
-    mutationFn: ({ listingId, quantity }: { listingId: number; quantity: number }) =>
-      api.post<unknown>('/orders', {
+    mutationFn: async ({ listingId, quantity }: { listingId: number; quantity: number }) => {
+      const created = await api.post<{ id?: number; orderId?: number }>('/orders', {
         data: { buyerCompanyId: 0, listingId, quantity },
-      }),
-    onSuccess: async () => {
-      toast.success('Đã tạo đơn mua tín chỉ thành công')
+      })
+      const orderId = created?.id ?? created?.orderId
+      if (!orderId) {
+        return { settled: false, orderId: null }
+      }
+      try {
+        await api.post<unknown>(`/orders/${orderId}/complete`)
+        return { settled: true, orderId }
+      } catch (completeError) {
+        return { settled: false, orderId, error: completeError }
+      }
+    },
+    onSuccess: async (result) => {
       setSelectedListing(null)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.marketplace }),
         queryClient.invalidateQueries({ queryKey: queryKeys.phase3b.orders }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.wallet }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.walletTransactions }),
       ])
+      if (result.settled) {
+        toast.success('Mua và thanh toán tín chỉ thành công')
+      } else {
+        toast.warning('Đơn đã tạo nhưng chưa trừ tiền ví', {
+          description: result.error
+            ? errorMessage(result.error)
+            : 'Kiểm tra số dư ví rồi bấm Thanh toán lại trong mục Đơn mua.',
+        })
+      }
       navigate('/app/company/orders')
     },
     onError: (error) => {

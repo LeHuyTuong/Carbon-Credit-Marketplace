@@ -50,7 +50,7 @@ export function CompanyOrdersPage() {
       <PageIntro
         eyebrow="Doanh nghiệp"
         title="Đơn mua tín chỉ"
-        description="Theo dõi đơn hàng, hoàn tất thanh toán hoặc huỷ các đơn đang ở trạng thái Chờ thanh toán. Phí sàn giao dịch cố định 5%."
+        description="Lịch sử giao dịch mua tín chỉ carbon của doanh nghiệp (thanh toán tự động từ ví, phí sàn cố định 5%)."
       />
 
       {ordersQuery.isPending ? (
@@ -96,7 +96,7 @@ export function CompanyOrdersPage() {
                                   loading={completeMutation.isPending && completeMutation.variables === order.id}
                                   onClick={() => completeMutation.mutate(order.id)}
                                 >
-                                  Hoàn tất
+                                  Thanh toán lại
                                 </Button>
                                 <Button
                                   size="sm"
