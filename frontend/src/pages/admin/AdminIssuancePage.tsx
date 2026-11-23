@@ -144,7 +144,7 @@ export function AdminIssuancePage() {
                       <StatusBadge status={item.status} kind="emission" />
                     </div>
                     <p className="mt-1 text-xs text-ink-500">
-                      {item.sellerName || 'Doanh nghiệp chưa cập nhật'} · {formatDate(item.submittedAt)}
+                      {item.sellerName || 'Doanh nghiệp chưa cập nhật'} · Kỳ {item.period} · {formatDate(item.submittedAt)}
                     </p>
                   </button>
                 </li>
@@ -213,7 +213,7 @@ export function AdminIssuancePage() {
                 <div className="space-y-4 border-t border-ink-100 pt-4">
                   <Input
                     label="Ghi chú phê duyệt"
-                    placeholder="Bắt buộc để duyệt hoặc từ chối báo cáo"
+                    placeholder="Bắt buộc nhập khi duyệt hoặc từ chối"
                     value={note}
                     error={noteError}
                     onChange={(event) => {
