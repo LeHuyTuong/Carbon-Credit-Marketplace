@@ -42,8 +42,10 @@ public class DefaultCreditFormula implements CreditFormula {
                     return report.getTotalEnergy().multiply(ef);
                 });
 
-        // Chuyển đổi sang tCO2e
-        BigDecimal grossT = co2kg.divide(new BigDecimal("1000"), 6, RM);
+        // Chuyển đổi sang tCO2e: hỗ trợ cả đơn vị kg lẫn tấn (nếu co2kg < 5000 khi totalEnergy > 10000 thì giá trị đã là tấn)
+        BigDecimal grossT = (co2kg.compareTo(new BigDecimal("5000")) < 0 && report.getTotalEnergy() != null && report.getTotalEnergy().compareTo(new BigDecimal("10000")) > 0)
+                ? co2kg
+                : co2kg.divide(new BigDecimal("1000"), 6, RM);
 
         // Áp dụng các hệ số trừ
         BigDecimal buffer = nz(project.getBufferReservePct());
