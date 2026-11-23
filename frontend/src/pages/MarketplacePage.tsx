@@ -59,7 +59,7 @@ export function MarketplacePage() {
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             aria-label="Tìm kiếm tin đăng"
-            placeholder="Tìm dự án, doanh nghiệp hoặc mã lô…"
+            placeholder="Tìm dự án, mã lô…"
             icon={<Search aria-hidden className="size-4" />}
             value={search}
             onChange={(event) => setSearch(event.target.value)}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Leaf, LogIn, Menu, X } from 'lucide-react'
+import { LogIn, Menu, X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { useAuthStore } from '@/shared/stores/auth.store'
 import { roleHome } from '@/shared/lib/roles'
@@ -20,13 +20,15 @@ export function PublicLayout() {
   useEffect(() => setMenuOpen(false), [location.pathname])
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-lg">
+    <div className="flex min-h-screen flex-col bg-ink-50">
+      <header className="sticky top-0 z-40 border-b border-ink-200 bg-ink-50/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="CarbonX trang chủ">
-            <span className="grid size-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm">
-              <Leaf aria-hidden className="size-5" />
-            </span>
+          <Link to="/" className="flex min-h-10 items-center gap-2.5" aria-label="CarbonX trang chủ">
+            <img
+              src="/images/logo.png"
+              alt="CarbonX"
+              className="size-8 rounded-lg object-contain"
+            />
             <span className="text-lg font-extrabold tracking-tight text-ink-900">
               Carbon<span className="text-brand-600">X</span>
             </span>

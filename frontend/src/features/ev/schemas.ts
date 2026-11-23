@@ -15,11 +15,11 @@ export const kycSchema = z.object({
     .min(1, 'Vui lòng chọn ngày sinh')
     .refine((value) => !Number.isNaN(Date.parse(value)) && new Date(value) <= new Date(), 'Ngày sinh không hợp lệ'),
   documentType: z.enum(['CCCD', 'CMND', 'DRIVE_CARD'], {
-    errorMap: () => ({ message: 'Vui lòng chọn loại giấy tờ' }),
+    message: 'Vui lòng chọn loại giấy tờ',
   }),
   documentNumber: required('số giấy tờ').min(5, 'Số giấy tờ phải có ít nhất 5 ký tự'),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    errorMap: () => ({ message: 'Vui lòng chọn giới tính' }),
+    message: 'Vui lòng chọn giới tính',
   }),
 })
 

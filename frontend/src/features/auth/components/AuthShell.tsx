@@ -19,10 +19,10 @@ export function AuthShell({
           <Leaf aria-hidden className="size-3.5" />
           CarbonX Marketplace
         </span>
-        <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-ink-900">
+        <p className="mt-6 font-serif text-5xl leading-[1.08] tracking-tight text-ink-900">
           Giao dịch tín chỉ carbon
-          <span className="block text-brand-600">minh bạch, tức thì.</span>
-        </h1>
+          <span className="block italic text-brand-600">minh bạch và kiểm chứng.</span>
+        </p>
         <p className="mt-4 max-w-md text-base leading-relaxed text-ink-500">
           Kết nối chủ xe điện, doanh nghiệp và đơn vị thẩm định trên một nền tảng duy nhất — đo lường,
           cấp tín chỉ và trao đổi theo thời gian thực.
@@ -44,12 +44,12 @@ export function AuthShell({
       </section>
 
       <section className="mx-auto w-full max-w-md">
-        <div className="rounded-2xl border border-ink-200 bg-white p-6 shadow-card sm:p-8">
-          <h2 className="text-2xl font-bold tracking-tight text-ink-900">{title}</h2>
+        <div className="rounded-xl border border-ink-200 bg-white p-6 shadow-card sm:p-8">
+          <h1 className="text-2xl font-bold tracking-tight text-ink-900">{title}</h1>
           <p className="mt-1.5 text-sm text-ink-500">{subtitle}</p>
           {children}
         </div>
-        <div className="mt-5 text-center text-sm text-ink-500">{footer}</div>
+        <div className="mt-5 text-center text-sm text-ink-600 [&_a]:inline-flex [&_a]:min-h-10 [&_a]:items-center [&_a]:px-1.5">{footer}</div>
       </section>
     </div>
   )

@@ -28,18 +28,20 @@ export function QueryError({
 }) {
   return (
     <Card>
-      <EmptyState
-        icon={CircleAlert}
-        title={title}
-        description={description}
-        action={
-          onRetry ? (
-            <Button variant="outline" onClick={onRetry}>
-              Thử lại
-            </Button>
-          ) : undefined
-        }
-      />
+      <div role="alert" aria-live="polite">
+        <EmptyState
+          icon={CircleAlert}
+          title={title}
+          description={description}
+          action={
+            onRetry ? (
+              <Button variant="outline" onClick={onRetry}>
+                Thử lại
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
     </Card>
   )
 }

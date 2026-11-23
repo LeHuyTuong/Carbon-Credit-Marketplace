@@ -22,7 +22,7 @@ export function EmptyState({
       <span className="grid size-12 place-items-center rounded-2xl bg-ink-100 text-ink-500">
         <Icon aria-hidden className="size-6" />
       </span>
-      <h3 className="mt-4 text-base font-semibold text-ink-900">{title}</h3>
+      <h2 className="mt-4 text-base font-semibold text-ink-900">{title}</h2>
       {description && <p className="mt-1.5 max-w-sm text-sm text-ink-500">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

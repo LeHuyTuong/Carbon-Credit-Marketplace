@@ -17,7 +17,7 @@ export const adminProjectSchema = z.object({
     .trim()
     .refine((value) => value === '' || Number(value) >= 0, 'Hệ số phát thải không được âm'),
   status: z.enum(['OPEN', 'CLOSE', 'COMING_SOON'], {
-    errorMap: () => ({ message: 'Vui lòng chọn trạng thái' }),
+    message: 'Vui lòng chọn trạng thái',
   }),
   startedDate: z.string(),
   endDate: z.string(),

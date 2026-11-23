@@ -27,7 +27,7 @@ export const registerSchema = z
     password: passwordRule,
     confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu'),
     roleName: z.enum(['EV_OWNER', 'CC_BUYER', 'CVA'], {
-      errorMap: () => ({ message: 'Vui lòng chọn vai trò' }),
+      message: 'Vui lòng chọn vai trò',
     }),
   })
   .refine((values) => values.password === values.confirmPassword, {
