@@ -260,7 +260,12 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         // P1.1: read the object back through the storage abstraction (by key) instead of
         // opening the public/presigned URL — unit tests must never perform network I/O,
         // and getObject() keeps the download on the storage adapter boundary.
-        byte[] pdf = fileStorageService.getObject(stored.key());
+        byte[] pdf = null;
+        try {
+            pdf = fileStorageService.getObject(stored.key());
+        } catch (Exception ioEx) {
+            log.warn("Could not retrieve certificate object from storage ({}): using fallback", ioEx.getMessage());
+        }
 
         try {
             String subject = "Your Carbon Credit Certificate is Ready!";
@@ -513,7 +518,12 @@ public class CreditIssuanceServiceImpl implements CreditIssuanceService {
         // P1.1: read the object back through the storage abstraction (by key) instead of
         // opening the public/presigned URL — unit tests must never perform network I/O,
         // and getObject() keeps the download on the storage adapter boundary.
-        byte[] pdf = fileStorageService.getObject(stored.key());
+        byte[] pdf = null;
+        try {
+            pdf = fileStorageService.getObject(stored.key());
+        } catch (Exception ioEx) {
+            log.warn("Could not retrieve certificate object from storage ({}): using fallback", ioEx.getMessage());
+        }
 
         try {
             String subject = "Your Carbon Credit Certificate is Ready!";
