@@ -29,4 +29,7 @@ public class ProjectResponse {
     private LocalDate startedDate;
     private LocalDate endDate;
     private BigDecimal emissionFactorKgPerKwh;
+    private BigDecimal bufferReservePct;
+    private BigDecimal uncertaintyPct;
+    private BigDecimal leakagePct;
 }

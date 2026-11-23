@@ -48,34 +48,39 @@ export function PublicHomePage() {
   const totalCredits = listings.reduce((sum, item) => sum + item.availableQuantity, 0)
 
   return (
-    <div className="bg-ink-50">
-      {/* Editorial Climate-Exchange Hero */}
-      <section className="border-b border-ink-200 bg-ink-50">
-        <div className="mx-auto grid min-w-0 w-full max-w-[1680px] gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8">
+    <div className="bg-white">
+      {/* Clean Climate-Exchange Hero */}
+      <section className="relative border-b border-ink-200 bg-gradient-to-b from-brand-50/60 via-white to-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:28px_28px] opacity-35"
+        />
+        <div className="relative mx-auto grid min-w-0 w-full max-w-[1680px] gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8">
           <div className="min-w-0 lg:col-span-7">
-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-brand-600">
+            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+              <span className="size-2 rounded-full bg-brand-500 motion-safe:animate-pulse" />
               EV Carbon Registry &amp; Exchange · Vietnam
             </p>
-            <h1 className="mt-4 break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
+            <h1 className="animate-fade-up-delay-1 mt-4 break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
               Thị trường tín chỉ carbon xe điện{' '}
               <span className="text-brand-600">đo lường &amp; kiểm chứng.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-600 sm:text-lg">
+            <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-base leading-relaxed text-ink-600 sm:text-lg">
               Nền tảng đăng ký, thẩm định độc lập hai cấp (CVA &amp; Admin), giao dịch và triệt tiêu tín
               chỉ carbon gắn trực tiếp với dữ liệu sạc xe điện thực tế.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to="/marketplace"
-                className="inline-flex h-12 items-center gap-2 rounded-lg bg-brand-600 px-6 text-sm font-semibold text-white transition hover:bg-brand-700"
+                className="inline-flex h-12 items-center gap-2 rounded-lg bg-brand-600 px-6 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md"
               >
                 Khám phá sàn giao dịch
                 <ArrowRight aria-hidden className="size-4" />
               </Link>
               <Link
                 to="/register"
-                className="inline-flex h-12 items-center gap-2 rounded-lg border border-ink-300 bg-white px-6 text-sm font-semibold text-ink-900 transition hover:border-ink-900 hover:bg-ink-100"
+                className="inline-flex h-12 items-center gap-2 rounded-lg border border-ink-300 bg-white px-6 text-sm font-semibold text-ink-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-900 hover:bg-ink-50"
               >
                 Mở tài khoản doanh nghiệp
               </Link>
@@ -141,6 +146,25 @@ export function PublicHomePage() {
           </div>
         </div>
       </section>
+
+      {/* Live Carbon Ticker Marquee */}
+      {listings.length > 0 && (
+        <div
+          aria-label="Bảng giá tín chỉ carbon trực tiếp"
+          className="overflow-hidden border-b border-ink-200 bg-ink-900 py-2.5 text-white"
+        >
+          <div className="animate-marquee flex items-center gap-8 px-4 font-mono text-xs">
+            {[...listings, ...listings, ...listings].map((item, index) => (
+              <div key={`${item.listingId}-${index}`} className="flex shrink-0 items-center gap-2.5">
+                <span className="size-1.5 rounded-full bg-brand-400" />
+                <span className="font-semibold text-white">{item.projectTitle}</span>
+                <span className="text-brand-300">{formatUsd(item.pricePerCredit)}/tCO₂e</span>
+                <span className="text-ink-400">· {formatNumber(item.availableQuantity)} khả dụng</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 4-Step Registry Pipeline */}
       <section className="border-b border-ink-200 bg-white">
@@ -238,12 +262,15 @@ export function PublicHomePage() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {projectList.slice(0, 6).map((project, idx) => (
-                <Card key={project.id} className="overflow-hidden transition hover:border-ink-300">
+                <Card
+                  key={project.id}
+                  className="group overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float"
+                >
                   <div className="aspect-[16/9] overflow-hidden bg-ink-100">
                     <img
                       src={FALLBACK_PROJECT_IMAGES[idx % FALLBACK_PROJECT_IMAGES.length]}
                       alt={project.title}
-                      className="size-full object-cover"
+                      className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     />
                   </div>
                   <div className="p-5">

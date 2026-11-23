@@ -6,7 +6,7 @@ import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
 
 export function ListingCard({ listing }: { listing: MarketplaceListing }) {
   return (
-    <Card className="flex h-full flex-col p-5 transition-shadow hover:shadow-float">
+    <Card className="group flex h-full flex-col p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-float">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">

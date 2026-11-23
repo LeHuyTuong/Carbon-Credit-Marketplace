@@ -47,15 +47,24 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = Project.builder()
                 .title(title)
                 .description(req.getDescription())
-                .commitments(req.getCommitments())
-                .technicalIndicators(req.getTechnicalIndicators())
-                .measurementMethod(req.getMeasurementMethod())
-                .status(ProjectStatus.OPEN) // có thể chuyển sang req.getStatus() nếu muốn set ngay khi tạo
-                .logo(logoUrl)
+                .commitments(req.getCommitments() != null && !req.getCommitments().isBlank()
+                        ? req.getCommitments()
+                        : "Cam kết đo đếm và báo cáo phát thải định kỳ theo chuẩn CarbonX Registry.")
+                .technicalIndicators(req.getTechnicalIndicators() != null && !req.getTechnicalIndicators().isBlank()
+                        ? req.getTechnicalIndicators()
+                        : "Chu kỳ MRV hàng quý; dữ liệu sạc OCPP / telematics xe điện.")
+                .measurementMethod(req.getMeasurementMethod() != null && !req.getMeasurementMethod().isBlank()
+                        ? req.getMeasurementMethod()
+                        : "Verra VM0038 — Electric Vehicle Charging Systems")
+                .status(req.getStatus() != null ? req.getStatus() : ProjectStatus.OPEN)
+                .logo(logoUrl != null ? logoUrl : "/images/project1.jpg")
                 .legalDocsFile(legalDocsUrl)
                 .startedDate(req.getStartedDate())
                 .endDate(req.getEndDate())
                 .emissionFactorKgPerKwh(req.getEmissionFactorKgPerKwh())
+                .bufferReservePct(req.getBufferReservePct())
+                .uncertaintyPct(req.getUncertaintyPct())
+                .leakagePct(req.getLeakagePct())
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -170,6 +179,9 @@ public class ProjectServiceImpl implements ProjectService {
                 .startedDate(p.getStartedDate())
                 .endDate(p.getEndDate())
                 .emissionFactorKgPerKwh(p.getEmissionFactorKgPerKwh())
+                .bufferReservePct(p.getBufferReservePct())
+                .uncertaintyPct(p.getUncertaintyPct())
+                .leakagePct(p.getLeakagePct())
                 .build();
     }
 }

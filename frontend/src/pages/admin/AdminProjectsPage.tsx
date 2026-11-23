@@ -343,7 +343,7 @@ export function AdminProjectsPage() {
                         <p className="mt-0.5 line-clamp-1 max-w-xs text-xs text-ink-500">{project.description}</p>
                       </td>
                       <td className="py-3"><StatusBadge status={project.status} /></td>
-                      <td className="py-3">{formatNumber(project.emissionFactorKgPerKwh)}</td>
+                      <td className="py-3 font-mono">{Number(project.emissionFactorKgPerKwh ?? 0).toFixed(4)}</td>
                       <td className="py-3">{formatNumber(project.bufferReservePct)}%</td>
                       <td className="py-3">{formatNumber(project.uncertaintyPct)}%</td>
                       <td className="py-3">{formatNumber(project.leakagePct)}%</td>
