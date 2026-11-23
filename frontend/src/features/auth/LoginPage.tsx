@@ -68,8 +68,11 @@ export function LoginPage() {
       })
       toast.success('Đăng nhập thành công')
 
+      const targetHome = roleHome(role)
       const from = (location.state as LocationState | null)?.from
-      navigate(from && from.startsWith('/app') ? from : roleHome(role), { replace: true })
+      const canReturnToFrom =
+        typeof from === 'string' && (from === '/app/wallet' || from.startsWith(targetHome))
+      navigate(canReturnToFrom ? from : targetHome, { replace: true })
     },
   })
 
