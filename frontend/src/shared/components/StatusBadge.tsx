@@ -1,6 +1,6 @@
 import { cn } from '@/shared/lib/cn'
 
-export type StatusKind = 'credit' | 'emission' | 'order' | 'application' | 'withdrawal'
+export type StatusKind = 'credit' | 'emission' | 'order' | 'application' | 'withdrawal' | 'project'
 
 type Badge = { label: string; className: string }
 
@@ -80,12 +80,19 @@ const WITHDRAWAL: Record<string, Badge> = {
   FAILED: { ...danger, label: 'Thất bại' },
 }
 
+const PROJECT: Record<string, Badge> = {
+  OPEN: { ...success, label: 'Đang mở' },
+  CLOSE: { ...neutral, label: 'Đã đóng' },
+  COMING_SOON: { ...warning, label: 'Sắp mở' },
+}
+
 const MAPS: Record<StatusKind, Record<string, Badge>> = {
   credit: CREDIT,
   emission: EMISSION,
   order: ORDER,
   application: APPLICATION,
   withdrawal: WITHDRAWAL,
+  project: PROJECT,
 }
 
 export function resolveStatus(status: string, kind?: StatusKind): Badge {

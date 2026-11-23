@@ -57,9 +57,9 @@ export function PublicHomePage() {
         />
         <div className="relative mx-auto grid min-w-0 w-full max-w-[1680px] gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8">
           <div className="min-w-0 lg:col-span-7">
-            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+            <p className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-brand-700">
               <span className="size-2 rounded-full bg-brand-500 motion-safe:animate-pulse" />
-              EV Carbon Registry &amp; Exchange · Vietnam
+              Sổ đăng ký &amp; Sàn giao dịch tín chỉ carbon xe điện · Việt Nam
             </p>
             <h1 className="animate-fade-up-delay-1 mt-4 break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
               Thị trường tín chỉ carbon xe điện{' '}
@@ -115,7 +115,7 @@ export function PublicHomePage() {
                 />
                 <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-white/95 px-2.5 py-1 text-xs font-semibold text-brand-700 shadow-sm">
                   <ShieldCheck aria-hidden className="size-3.5" />
-                  1 Credit = 1 tCO2e · CVA Verified
+                  1 tín chỉ = 1 tCO₂e · Đã thẩm định CVA
                 </div>
               </div>
               <div className="grid grid-cols-2 divide-x divide-ink-200 border-t border-ink-200 bg-white">
@@ -126,7 +126,7 @@ export function PublicHomePage() {
                     className="h-10 w-14 shrink-0 rounded object-contain bg-ink-50 p-1"
                   />
                   <div className="min-w-0">
-                    <p className="font-mono text-xs font-semibold text-brand-600">EV OWNER</p>
+                    <p className="font-mono text-xs font-semibold text-brand-600">CHỦ XE ĐIỆN</p>
                     <p className="truncate text-xs font-medium text-ink-700">Nhận chia sẻ doanh thu</p>
                   </div>
                 </div>
@@ -137,8 +137,8 @@ export function PublicHomePage() {
                     className="size-10 shrink-0 rounded object-contain bg-ink-50 p-1"
                   />
                   <div className="min-w-0">
-                    <p className="font-mono text-xs font-semibold text-brand-600">AUDIT TRAIL</p>
-                    <p className="truncate text-xs font-medium text-ink-700">SHA-256 &amp; PDF Serial</p>
+                    <p className="font-mono text-xs font-semibold text-brand-600">TRUY VẾT KIỂM TOÁN</p>
+                    <p className="truncate text-xs font-medium text-ink-700">Mã băm SHA-256 &amp; Chứng chỉ PDF</p>
                   </div>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export function PublicHomePage() {
             </div>
             <span className="inline-flex items-center gap-1.5 font-mono text-xs text-ink-500">
               <FileCheck2 aria-hidden className="size-4 text-brand-600" />
-              Chống tính trùng (Double Issuance &amp; Double Use)
+              Chống tính trùng (phát hành trùng &amp; sử dụng trùng) · Phí sàn minh bạch 5%
             </span>
           </div>
 
@@ -298,7 +298,7 @@ export function PublicHomePage() {
         <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-brand-800 bg-brand-700 p-8 text-white sm:flex-row sm:items-center sm:p-10">
           <div className="max-w-xl">
             <p className="font-mono text-xs font-semibold uppercase tracking-widest text-brand-100">
-              CarbonX Registry
+              Sổ đăng ký CarbonX
             </p>
             <h2 className="mt-2 font-bold text-3xl tracking-tight text-white">
               Sẵn sàng tham gia thị trường tín chỉ carbon minh bạch?

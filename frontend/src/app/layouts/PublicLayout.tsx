@@ -7,7 +7,7 @@ import { roleHome } from '@/shared/lib/roles'
 
 const links = [
   { to: '/', label: 'Trang chủ', end: true },
-  { to: '/marketplace', label: 'Marketplace' },
+  { to: '/marketplace', label: 'Sàn giao dịch' },
   { to: '/#du-an', label: 'Dự án' },
 ]
 
@@ -20,8 +20,8 @@ export function PublicLayout() {
   useEffect(() => setMenuOpen(false), [location.pathname])
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink-50">
-      <header className="sticky top-0 z-40 border-b border-ink-200 bg-ink-50/95 backdrop-blur-md">
+    <div className="flex min-h-screen flex-col bg-white">
+      <header className="sticky top-0 z-40 border-b border-ink-200 bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex min-h-10 items-center gap-2.5" aria-label="CarbonX trang chủ">
             <img

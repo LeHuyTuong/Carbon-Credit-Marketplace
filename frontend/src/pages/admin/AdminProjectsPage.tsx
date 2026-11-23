@@ -164,9 +164,9 @@ function ProjectDialog({
                 className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm"
                 {...register('status')}
               >
-                <option value="OPEN">OPEN</option>
-                <option value="CLOSE">CLOSE</option>
-                <option value="COMING_SOON">COMING_SOON</option>
+                <option value="OPEN">Đang mở</option>
+                <option value="CLOSE">Đã đóng</option>
+                <option value="COMING_SOON">Sắp mở</option>
               </select>
             </div>
             <Input
@@ -181,7 +181,7 @@ function ProjectDialog({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
-              label="Buffer (%)"
+              label="Dự phòng rủi ro (%)"
               type="number"
               min={0}
               max={100}
@@ -190,7 +190,7 @@ function ProjectDialog({
               {...register('bufferReservePct')}
             />
             <Input
-              label="Uncertainty (%)"
+              label="Độ bất định (%)"
               type="number"
               min={0}
               max={100}
@@ -199,7 +199,7 @@ function ProjectDialog({
               {...register('uncertaintyPct')}
             />
             <Input
-              label="Leakage (%)"
+              label="Rò rỉ phát thải (%)"
               type="number"
               min={0}
               max={100}
@@ -303,9 +303,9 @@ export function AdminProjectsPage() {
   return (
     <>
       <PageIntro
-        eyebrow="Admin"
+        eyebrow="Quản trị viên"
         title="Quản lý dự án"
-        description="Tạo, cập nhật, xoá dự án cùng hệ số phát thải và các hệ số buffer, uncertainty, leakage."
+        description="Tạo, cập nhật, xoá dự án cùng hệ số phát thải và các tỷ lệ dự phòng rủi ro, độ bất định, rò rỉ phát thải."
         actions={
           <Button leftIcon={<Plus className="size-4" />} onClick={() => setDialog({ mode: 'create' })}>
             Tạo dự án
@@ -329,9 +329,9 @@ export function AdminProjectsPage() {
                     <th className="pb-3 font-semibold">Dự án</th>
                     <th className="pb-3 font-semibold">Trạng thái</th>
                     <th className="pb-3 font-semibold">Hệ số kgCO₂/kWh</th>
-                    <th className="pb-3 font-semibold">Buffer</th>
-                    <th className="pb-3 font-semibold">Uncertainty</th>
-                    <th className="pb-3 font-semibold">Leakage</th>
+                    <th className="pb-3 font-semibold">Dự phòng</th>
+                    <th className="pb-3 font-semibold">Bất định</th>
+                    <th className="pb-3 font-semibold">Rò rỉ</th>
                     <th className="pb-3 text-right font-semibold">Thao tác</th>
                   </tr>
                 </thead>
@@ -342,7 +342,7 @@ export function AdminProjectsPage() {
                         <p className="font-semibold text-ink-900">{project.title || `Dự án #${project.id}`}</p>
                         <p className="mt-0.5 line-clamp-1 max-w-xs text-xs text-ink-500">{project.description}</p>
                       </td>
-                      <td className="py-3"><StatusBadge status={project.status} /></td>
+                      <td className="py-3"><StatusBadge status={project.status} kind="project" /></td>
                       <td className="py-3 font-mono">{Number(project.emissionFactorKgPerKwh ?? 0).toFixed(4)}</td>
                       <td className="py-3">{formatNumber(project.bufferReservePct)}%</td>
                       <td className="py-3">{formatNumber(project.uncertaintyPct)}%</td>

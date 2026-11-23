@@ -46,7 +46,7 @@ export function CompanyOrdersPage() {
       <PageIntro
         eyebrow="Doanh nghiệp"
         title="Đơn mua tín chỉ"
-        description="Theo dõi đơn hàng, hoàn tất thanh toán hoặc huỷ các đơn còn ở trạng thái PENDING."
+        description="Theo dõi đơn hàng, hoàn tất thanh toán hoặc huỷ các đơn đang ở trạng thái Chờ thanh toán. Phí sàn giao dịch cố định 5%."
       />
 
       {ordersQuery.isPending ? (
@@ -66,6 +66,7 @@ export function CompanyOrdersPage() {
                     <th className="pb-3 font-semibold">Ngày tạo</th>
                     <th className="pb-3 font-semibold">Số tín chỉ</th>
                     <th className="pb-3 font-semibold">Tổng tiền</th>
+                    <th className="pb-3 font-semibold">Phí sàn (5%)</th>
                     <th className="pb-3 font-semibold">Trạng thái</th>
                     <th className="pb-3 text-right font-semibold">Thao tác</th>
                   </tr>
@@ -79,6 +80,7 @@ export function CompanyOrdersPage() {
                         <td className="py-3">{formatDate(order.createAt)}</td>
                         <td className="py-3">{formatNumber(order.creditAmount)}</td>
                         <td className="py-3">{formatUsd(order.totalAmount)}</td>
+                        <td className="py-3 font-mono text-xs text-ink-600">{formatUsd(order.totalAmount * 0.05)}</td>
                         <td className="py-3"><StatusBadge status={order.status} kind="order" /></td>
                         <td className="py-3">
                           <div className="flex justify-end gap-2">

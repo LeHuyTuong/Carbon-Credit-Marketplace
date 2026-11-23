@@ -28,8 +28,8 @@ const vehicleSchema = z.object({
   companyId: z
     .string()
     .trim()
-    .min(1, 'Vui lòng nhập Company ID')
-    .regex(/^[0-9]+$/, 'Company ID phải là số'),
+    .min(1, 'Vui lòng nhập mã doanh nghiệp')
+    .regex(/^[0-9]+$/, 'Mã doanh nghiệp phải là số'),
 })
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>
@@ -124,7 +124,7 @@ function VehicleDialog({
             <Input label="Mẫu xe" placeholder="VF e34" error={errors.model?.message} {...register('model')} />
           </div>
           <Input
-            label="Company ID"
+            label="Mã doanh nghiệp"
             placeholder="Nhập mã công ty chủ quản xe"
             error={errors.companyId?.message}
             {...register('companyId')}

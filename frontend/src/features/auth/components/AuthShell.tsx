@@ -17,7 +17,7 @@ export function AuthShell({
       <section className="hidden lg:block">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
           <Leaf aria-hidden className="size-3.5" />
-          CarbonX Marketplace
+          Sàn tín chỉ carbon CarbonX
         </span>
         <p className="mt-6 font-extrabold text-4xl leading-[1.15] tracking-tight text-ink-900">
           Giao dịch tín chỉ carbon

@@ -178,7 +178,7 @@ export function CompanyCreditsPage() {
                 </div>
                 {selectedListingBatch && (
                   <p className="text-xs text-ink-500">
-                    Lô {selectedListingBatch.batchCode} · vintage {selectedListingBatch.vintageYear || '—'} · tồn {formatNumber(selectedListingBatch.residualTco2e)} tCO₂e
+                    Lô {selectedListingBatch.batchCode} · niên vụ {selectedListingBatch.vintageYear || '—'} · tồn {formatNumber(selectedListingBatch.residualTco2e)} tCO₂e
                   </p>
                 )}
                 <Input

@@ -50,9 +50,9 @@ export function MarketplacePage() {
   return (
     <div className="mx-auto min-w-0 w-full max-w-[1680px] px-4 py-10 sm:px-6 lg:px-8">
       <PageIntro
-        eyebrow="Marketplace"
+        eyebrow="Sàn giao dịch"
         title="Sàn giao dịch tín chỉ carbon"
-        description="Tìm kiếm, so sánh và lọc các tin đăng tín chỉ carbon đang hoạt động trên CarbonX."
+        description="Tìm kiếm, so sánh và lọc các tin đăng tín chỉ carbon đang hoạt động trên CarbonX. Phí sàn giao dịch cố định 5%."
       />
 
       <Card className="mb-6 p-4 sm:p-5">
@@ -124,7 +124,7 @@ export function MarketplacePage() {
       ) : filtered.length === 0 ? (
         <Card>
           <EmptyState
-            title={hasFilters ? 'Không khớp tin đăng nào' : 'Marketplace chưa có tin đăng'}
+            title={hasFilters ? 'Không khớp tin đăng nào' : 'Sàn giao dịch chưa có tin đăng'}
             description={
               hasFilters
                 ? 'Thử thay đổi từ khoá hoặc bộ lọc dự án.'

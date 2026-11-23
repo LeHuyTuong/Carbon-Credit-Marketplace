@@ -19,11 +19,16 @@ export function ListingCard({ listing }: { listing: MarketplaceListing }) {
         <StatusBadge status="LISTED" kind="credit" label="Đang bán" />
       </div>
 
-      <div className="mt-4 flex items-baseline gap-1.5">
-        <span className="text-2xl font-bold tracking-tight text-ink-900">
-          {formatUsd(listing.pricePerCredit)}
+      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl font-bold tracking-tight text-ink-900">
+            {formatUsd(listing.pricePerCredit)}
+          </span>
+          <span className="text-sm text-ink-500">/ tín chỉ</span>
+        </div>
+        <span className="rounded-md bg-ink-100 px-2 py-0.5 font-mono text-xs font-medium text-ink-600">
+          Phí sàn 5% ({formatUsd(listing.pricePerCredit * 0.05)})
         </span>
-        <span className="text-sm text-ink-500">/ tín chỉ</span>
       </div>
 
       <dl className="mt-4 space-y-2 text-sm text-ink-600">

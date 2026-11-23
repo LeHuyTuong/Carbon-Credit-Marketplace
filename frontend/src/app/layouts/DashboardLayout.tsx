@@ -225,7 +225,7 @@ export function DashboardLayout() {
 
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold text-ink-900 sm:text-lg">{title}</h1>
-              <p className="hidden text-xs text-ink-500 sm:block">CarbonX Workspace</p>
+              <p className="hidden text-xs text-ink-500 sm:block">Không gian làm việc CarbonX</p>
             </div>
 
             <div className="relative">
