@@ -60,6 +60,18 @@ const CvaApplicationsPage = lazy(() =>
 const CvaReportsPage = lazy(() =>
   import('@/pages/cva/CvaReportsPage').then((m) => ({ default: m.CvaReportsPage })),
 )
+const CvaProjectsPage = lazy(() =>
+  import('@/pages/cva/CvaProjectsPage').then((m) => ({ default: m.CvaProjectsPage })),
+)
+const CvaCompaniesPage = lazy(() =>
+  import('@/pages/cva/CvaCompaniesPage').then((m) => ({ default: m.CvaCompaniesPage })),
+)
+const CvaCreditsPage = lazy(() =>
+  import('@/pages/cva/CvaCreditsPage').then((m) => ({ default: m.CvaCreditsPage })),
+)
+const CvaProfilePage = lazy(() =>
+  import('@/pages/cva/CvaProfilePage').then((m) => ({ default: m.CvaProfilePage })),
+)
 const AdminProjectsPage = lazy(() =>
   import('@/pages/admin/AdminProjectsPage').then((m) => ({ default: m.AdminProjectsPage })),
 )
@@ -86,6 +98,21 @@ const AdminUsersPage = lazy(() =>
 )
 const AdminVehiclesPage = lazy(() =>
   import('@/pages/admin/AdminVehiclesPage').then((m) => ({ default: m.AdminVehiclesPage })),
+)
+const AdminTransactionsPage = lazy(() =>
+  import('@/pages/admin/AdminTransactionsPage').then((m) => ({ default: m.AdminTransactionsPage })),
+)
+const AdminDirectoryPage = lazy(() =>
+  import('@/pages/admin/AdminDirectoryPage').then((m) => ({ default: m.AdminDirectoryPage })),
+)
+const AdminProfilePage = lazy(() =>
+  import('@/pages/admin/AdminProfilePage').then((m) => ({ default: m.AdminProfilePage })),
+)
+const TermsPage = lazy(() =>
+  import('@/pages/TermsPrivacyPage').then((m) => ({ default: m.TermsPage })),
+)
+const PrivacyPage = lazy(() =>
+  import('@/pages/TermsPrivacyPage').then((m) => ({ default: m.PrivacyPage })),
 )
 const CompanyEvOwnersPage = lazy(() =>
   import('@/pages/company/CompanyEvOwnersPage').then((m) => ({ default: m.CompanyEvOwnersPage })),
@@ -119,6 +146,8 @@ export function AppRouter() {
           <Route path="otp" element={<OtpPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="oauth-success" element={<OAuthSuccessPage />} />
+          <Route path="terms" element={<TermsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
         </Route>
 
         <Route path="app" element={<DashboardLayout />}>
@@ -228,6 +257,38 @@ export function AppRouter() {
             }
           />
           <Route
+            path="cva/projects"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaProjectsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="cva/companies"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaCompaniesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="cva/credits"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaCreditsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="cva/profile"
+            element={
+              <RoleGuard allow={['CVA']}>
+                <CvaProfilePage />
+              </RoleGuard>
+            }
+          />
+          <Route
             path="admin"
             element={
               <RoleGuard allow={['ADMIN']}>
@@ -304,6 +365,30 @@ export function AppRouter() {
             element={
               <RoleGuard allow={['ADMIN']}>
                 <AdminVehiclesPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/transactions"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminTransactionsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/directory"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminDirectoryPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/profile"
+            element={
+              <RoleGuard allow={['ADMIN']}>
+                <AdminProfilePage />
               </RoleGuard>
             }
           />
