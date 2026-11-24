@@ -27,7 +27,8 @@ export function OAuthSuccessPage() {
     if (handled.current) return
     handled.current = true
 
-    const token = searchParams.get('token') ?? ''
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const token = hashParams.get('token') ?? searchParams.get('token') ?? ''
     if (!isJwtShape(token)) {
       toast.error('Liên kết đăng nhập Google không hợp lệ')
       navigate('/login', { replace: true })

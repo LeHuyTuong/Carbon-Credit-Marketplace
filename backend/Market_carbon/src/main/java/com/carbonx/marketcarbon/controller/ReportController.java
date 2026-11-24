@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +41,7 @@ public class ReportController {
     }
 
     @Operation(summary = "Download file JSON for Company", description = "API help CVA download file JSON for Company")
+    @PreAuthorize("hasAnyRole('ADMIN','CVA')")
     @GetMapping(
             value = "/download-json/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -62,6 +64,7 @@ public class ReportController {
     }
 
     @Operation(summary = "Download file PDF for Company ", description = "API help CVA download file PDF for Company ")
+    @PreAuthorize("hasAnyRole('ADMIN','CVA')")
     @GetMapping("/download/{id}")
     public void downloadRaw(
             @PathVariable("id") Long userId,
@@ -117,6 +120,7 @@ public class ReportController {
 //
 //    }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/files/download")
     public ResponseEntity<Resource> download(@RequestParam("key") String fileKey) throws IOException {
         // 1) Kiểm tra phân quyền ở đây (Admin/CVA/Company có quyền?)

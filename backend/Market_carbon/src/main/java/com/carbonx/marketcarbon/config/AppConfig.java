@@ -42,6 +42,9 @@ public class AppConfig {
     @Value("${app.cors.allowed-origins}")
     private String corsAllowedOrigins;
 
+    @Value("${app.swagger.enabled:false}")
+    private boolean swaggerEnabled;
+
     /** Parsed once at startup; a bare wildcard is rejected before the app accepts requests. */
     private List<String> corsOrigins = List.of();
 
@@ -64,7 +67,6 @@ public class AppConfig {
             "/api/v1/forgot-password/resend-otp",
             "/api/v1/projects",               // Cho phép xem danh sách dự án
             "/api/v1/projects/{id}",          // Cho phép xem chi tiết dự án
-            "/api/v1/reports/files/download", // Cho phép tải file/ảnh (Logo)
             "/api/v1/marketplace",            // Cho phép xem chợ tín chỉ
             "/files/**",
             "/error",                         // Boot error dispatch (P0-A: default-deny)
@@ -96,7 +98,8 @@ public class AppConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
-                        ).permitAll()
+                        ).access((authentication, context) ->
+                                new org.springframework.security.authorization.AuthorizationDecision(swaggerEnabled))
                         // P0-A (SC3): deny-by-default — anything not explicitly public above requires authentication
                         .anyRequest().authenticated()
                 )
@@ -105,7 +108,6 @@ public class AppConfig {
 
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .httpBasic(Customizer.withDefaults())
 
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(a -> a.authorizationRequestRepository(cookieAuthorizationRequestRepository))
@@ -130,12 +132,13 @@ public class AppConfig {
                             String token = jwtProvider.generateToken(email, USER_ROLE.EV_OWNER);
 
                             log.debug("OAuth2 login succeeded for {}, redirecting to {}", email, frontendBaseUrl);
-                            res.sendRedirect(frontendBaseUrl + "/oauth-success?token=" + token);
+                            res.sendRedirect(frontendBaseUrl + "/oauth-success#token=" + token);
                         })
                         .failureHandler((req, res, ex) -> {
+                            log.warn("OAuth2 login failed: {}", ex.getMessage());
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             res.setContentType("application/json");
-                            res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
+                            res.getWriter().write("{\"error\":\"OAuth2 authentication failed\"}");
                         })
                 );
 

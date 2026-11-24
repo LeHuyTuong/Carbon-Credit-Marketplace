@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
@@ -38,6 +39,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Create Vehicle (EV Owner)", description = "API for EV Owner to register vehicle with image/document (uploaded to S3)")
+    @PreAuthorize("hasRole('EV_OWNER')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<VehicleResponse>> create(
             @ModelAttribute @Valid VehicleCreateRequest req,
@@ -59,6 +61,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Get all my vehicles (EV Owner)", description = "Get list of vehicles owned by current EV Owner")
+    @PreAuthorize("hasRole('EV_OWNER')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -78,6 +81,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Update vehicle", description = "Update vehicle info, upload new document/image if needed")
+    @PreAuthorize("hasRole('EV_OWNER')")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<VehicleResponse>> update(
             @PathVariable("id") Long id,
@@ -96,6 +100,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Delete vehicle", description = "API Delete vehicle")
+    @PreAuthorize("hasAnyRole('EV_OWNER','ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable("id") Long id,
@@ -112,6 +117,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Count my vehicles (EV Owner)", description = "Count vehicles registered by the logged-in EV Owner")
+    @PreAuthorize("hasRole('EV_OWNER')")
     @GetMapping("/my/count")
     public ResponseEntity<ApiResponse<Long>> countMyVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -127,6 +133,7 @@ public class VehicleController {
 
 
     @Operation(summary = "Count all vehicles (Admin)", description = "Count total vehicles for all users/companies")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/count")
     public ResponseEntity<ApiResponse<Long>> countAllVehicles(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -141,6 +148,7 @@ public class VehicleController {
     }
 
     @Operation(summary = "Get paginated vehicle list", description = "Paginated list of vehicles with sorting")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/list")
     public ResponseEntity<ApiResponse<PageResponse<?>>> getVehicleList(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -158,6 +166,7 @@ public class VehicleController {
     }
 
     @Operation(summary = "Get vehicles of a company", description = "Get paginated vehicle list by company")
+    @PreAuthorize("hasAnyRole('COMPANY','ADMIN')")
     @GetMapping("/list-by-company")
     public ResponseEntity<ApiResponse<PageResponse<?>>> getVehiclesByCompany(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,
@@ -175,6 +184,7 @@ public class VehicleController {
     }
 
     @Operation(summary = "Get company vehicle summary", description = "Company views all EV Owners and their registered vehicles")
+    @PreAuthorize("hasAnyRole('COMPANY','ADMIN')")
     @GetMapping("/company/summary")
     public ResponseEntity<ApiResponse<List<CompanyVehicleSummaryResponse>>> getCompanyVehicleSummary(
             @RequestHeader(value = "X-Request-Trace", required = false) String requestTrace,

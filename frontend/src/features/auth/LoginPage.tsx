@@ -82,6 +82,8 @@ export function LoginPage() {
     loginMutation.mutate({ email, password: pass })
   }
 
+  const showDemoLogin = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true'
+
   const DEMO_ACCOUNTS = [
     { role: 'EV_OWNER', label: 'Chủ xe điện', email: 'evowner@example.com', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
     { role: 'COMPANY', label: 'Doanh nghiệp', email: 'company@example.com', badge: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
@@ -143,25 +145,27 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-6 rounded-2xl border border-ink-100 bg-ink-50/70 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
-          Đăng nhập nhanh 1-chạm (Tài khoản mẫu)
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {DEMO_ACCOUNTS.map((acc) => (
-            <button
-              key={acc.role}
-              type="button"
-              onClick={() => handleQuickLogin(acc.email, 'Password@1')}
-              disabled={loginMutation.isPending}
-              className={`flex flex-col items-start rounded-xl border p-2.5 text-left transition hover:shadow-sm ${acc.badge}`}
-            >
-              <span className="text-xs font-bold">{acc.label}</span>
-              <span className="truncate text-[11px] opacity-80">{acc.email}</span>
-            </button>
-          ))}
+      {showDemoLogin && (
+        <div className="mt-6 rounded-2xl border border-ink-100 bg-ink-50/70 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+            Đăng nhập nhanh 1-chạm (Tài khoản mẫu)
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {DEMO_ACCOUNTS.map((acc) => (
+              <button
+                key={acc.role}
+                type="button"
+                onClick={() => handleQuickLogin(acc.email, 'Password@1')}
+                disabled={loginMutation.isPending}
+                className={`flex flex-col items-start rounded-xl border p-2.5 text-left transition hover:shadow-sm ${acc.badge}`}
+              >
+                <span className="text-xs font-bold">{acc.label}</span>
+                <span className="truncate text-[11px] opacity-80">{acc.email}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </AuthShell>
   )
 }
