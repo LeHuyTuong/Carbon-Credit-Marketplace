@@ -1,11 +1,13 @@
 import {
   Activity,
+  ArrowRight,
   Coins,
   FolderKanban,
   RefreshCw,
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useDashboardSnapshot } from '@/features/dashboard/useDashboardSnapshot'
 import { Button } from '@/shared/components/Button'
 import { EmptyState } from '@/shared/components/EmptyState'
@@ -13,12 +15,34 @@ import { StatCard } from '@/shared/components/StatCard'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate } from '@/shared/lib/format'
 import type { Role } from '@/shared/stores/auth.store'
-import { EmissionDistributionChart, MetricBarChart, TrendChart } from './Charts'
+import { BreakdownDonutChart, TrendChart } from './Charts'
 import { PageIntro } from './PageIntro'
 import { QueryError, QueryLoading, SectionCard } from './QueryState'
 
 const ICONS: LucideIcon[] = [Coins, Activity, FolderKanban, TrendingUp]
 const TONES = ['brand', 'slate', 'amber', 'rose'] as const
+
+const QUICK_ACTIONS: Record<Role, { label: string; to: string }[]> = {
+  EV_OWNER: [
+    { label: 'Hồ sơ KYC', to: '/app/ev/kyc' },
+    { label: 'Đăng ký xe điện', to: '/app/ev/vehicles' },
+    { label: 'Xem ví & doanh thu', to: '/app/wallet' },
+  ],
+  COMPANY: [
+    { label: 'Nộp báo cáo CSV', to: '/app/company/reports' },
+    { label: 'Kho tín chỉ', to: '/app/company/credits' },
+    { label: 'Chia sẻ doanh thu', to: '/app/company/payouts' },
+  ],
+  CVA: [
+    { label: 'Thẩm định hồ sơ dự án', to: '/app/cva/applications' },
+    { label: 'Thẩm định báo cáo CSV', to: '/app/cva/reports' },
+  ],
+  ADMIN: [
+    { label: 'Duyệt hồ sơ cấp 2', to: '/app/admin/applications' },
+    { label: 'Phát hành tín chỉ', to: '/app/admin/issuance' },
+    { label: 'Duyệt rút tiền', to: '/app/admin/withdrawals' },
+  ],
+}
 
 interface DashboardViewProps {
   role: Role
@@ -29,6 +53,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ role, eyebrow, title, description }: DashboardViewProps) {
   const { data, isPending, isError, isFetching, refetch } = useDashboardSnapshot(role)
+  const actions = QUICK_ACTIONS[role] ?? []
 
   return (
     <>
@@ -49,6 +74,19 @@ export function DashboardView({ role, eyebrow, title, description }: DashboardVi
         }
       />
 
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {actions.map((act) => (
+          <Link
+            key={act.to}
+            to={act.to}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2 text-xs font-semibold text-ink-800 shadow-2xs transition hover:border-brand-400 hover:text-brand-700"
+          >
+            {act.label}
+            <ArrowRight aria-hidden className="size-3.5" />
+          </Link>
+        ))}
+      </div>
+
       {isPending ? (
         <QueryLoading />
       ) : isError || !data ? (
@@ -61,6 +99,7 @@ export function DashboardView({ role, eyebrow, title, description }: DashboardVi
                 key={item.key}
                 title={item.label}
                 value={item.value}
+                unit={item.unit}
                 hint={item.hint}
                 icon={ICONS[index % ICONS.length]}
                 tone={TONES[index % TONES.length]}
@@ -72,20 +111,15 @@ export function DashboardView({ role, eyebrow, title, description }: DashboardVi
             <SectionCard
               title="Xu hướng hoạt động"
               description="Biến động khối lượng theo thời gian"
+              className="lg:col-span-2"
             >
               <TrendChart data={data.trend} />
             </SectionCard>
             <SectionCard
-              title="Cơ cấu nguồn phát thải"
-              description="Tỷ trọng tín chỉ theo danh mục dự án"
+              title={data.breakdownTitle || 'Phân bổ dữ liệu'}
+              description={data.breakdownDescription || 'Tổng hợp theo nhóm thực tế'}
             >
-              <EmissionDistributionChart />
-            </SectionCard>
-            <SectionCard
-              title="So sánh chỉ số"
-              description="Quy mô các chỉ số vận hành chính"
-            >
-              <MetricBarChart metrics={data.metrics} />
+              <BreakdownDonutChart data={data.breakdown ?? []} />
             </SectionCard>
           </div>
 

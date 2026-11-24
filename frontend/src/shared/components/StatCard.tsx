@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import { formatNumber } from '@/shared/lib/format'
+import { formatNumber, formatUsd } from '@/shared/lib/format'
 import { Card } from './Card'
 
 type Tone = 'brand' | 'slate' | 'amber' | 'rose'
@@ -15,6 +15,7 @@ const tones: Record<Tone, string> = {
 interface StatCardProps {
   title: string
   value: string | number | null
+  unit?: string
   hint?: string
   delta?: number | null
   icon: LucideIcon
@@ -22,9 +23,18 @@ interface StatCardProps {
   className?: string
 }
 
+function formatMetricValue(value: string | number | null, unit?: string): string {
+  if (value === null) return '—'
+  if (typeof value !== 'number') return value
+  if (unit === 'USD') return formatUsd(value)
+  const formatted = formatNumber(value)
+  return unit ? `${formatted} ${unit}` : formatted
+}
+
 export function StatCard({
   title,
   value,
+  unit,
   hint,
   delta,
   icon: Icon,
@@ -37,7 +47,7 @@ export function StatCard({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink-500">{title}</p>
           <p className="mt-2 text-2xl font-bold tracking-tight text-ink-900">
-            {value === null ? '—' : typeof value === 'number' ? formatNumber(value) : value}
+            {formatMetricValue(value, unit)}
           </p>
         </div>
         <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl ring-1', tones[tone])}>

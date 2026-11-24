@@ -38,53 +38,54 @@ interface NavItem {
   to: string
   label: string
   icon: LucideIcon
+  group: string
 }
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   EV_OWNER: [
-    { to: '/app/ev', label: 'Tổng quan', icon: LayoutDashboard },
-    { to: '/app/ev/kyc', label: 'Hồ sơ KYC', icon: UserRound },
-    { to: '/app/ev/vehicles', label: 'Xe điện', icon: Car },
-    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet },
-    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound },
+    { to: '/app/ev', label: 'Tổng quan', icon: LayoutDashboard, group: 'Cá nhân & Phương tiện' },
+    { to: '/app/ev/kyc', label: 'Hồ sơ KYC', icon: UserRound, group: 'Cá nhân & Phương tiện' },
+    { to: '/app/ev/vehicles', label: 'Xe điện', icon: Car, group: 'Cá nhân & Phương tiện' },
+    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet, group: 'Tài chính & Bảo mật' },
+    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound, group: 'Tài chính & Bảo mật' },
   ],
   COMPANY: [
-    { to: '/app/company', label: 'Tổng quan', icon: LayoutDashboard },
-    { to: '/app/company/kyc', label: 'Hồ sơ doanh nghiệp', icon: Building2 },
-    { to: '/app/company/projects', label: 'Dự án & hồ sơ', icon: Folder },
-    { to: '/app/company/reports', label: 'Báo cáo phát thải', icon: FileText },
-    { to: '/app/company/credits', label: 'Kho tín chỉ', icon: Coins },
-    { to: '/marketplace', label: 'Sàn giao dịch', icon: ShoppingCart },
-    { to: '/app/company/orders', label: 'Đơn mua', icon: ShoppingCart },
-    { to: '/app/company/ev-owners', label: 'Chủ xe tham gia', icon: Car },
-    { to: '/app/company/payouts', label: 'Thanh toán', icon: ReceiptText },
-    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet },
-    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound },
+    { to: '/app/company', label: 'Tổng quan', icon: LayoutDashboard, group: 'Vận hành & MRV' },
+    { to: '/app/company/kyc', label: 'Hồ sơ doanh nghiệp', icon: Building2, group: 'Vận hành & MRV' },
+    { to: '/app/company/projects', label: 'Dự án & hồ sơ', icon: Folder, group: 'Vận hành & MRV' },
+    { to: '/app/company/ev-owners', label: 'Chủ xe tham gia', icon: Car, group: 'Vận hành & MRV' },
+    { to: '/app/company/reports', label: 'Báo cáo phát thải', icon: FileText, group: 'Vận hành & MRV' },
+    { to: '/app/company/credits', label: 'Kho tín chỉ', icon: Coins, group: 'Tín chỉ & Giao dịch' },
+    { to: '/marketplace', label: 'Sàn giao dịch', icon: ShoppingCart, group: 'Tín chỉ & Giao dịch' },
+    { to: '/app/company/orders', label: 'Đơn mua', icon: ShoppingCart, group: 'Tín chỉ & Giao dịch' },
+    { to: '/app/company/payouts', label: 'Thanh toán', icon: ReceiptText, group: 'Tài chính & Bảo mật' },
+    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet, group: 'Tài chính & Bảo mật' },
+    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound, group: 'Tài chính & Bảo mật' },
   ],
   CVA: [
-    { to: '/app/cva', label: 'Tổng quan', icon: ClipboardCheck },
-    { to: '/app/cva/projects', label: 'Dự án', icon: Folder },
-    { to: '/app/cva/applications', label: 'Hồ sơ dự án', icon: ClipboardList },
-    { to: '/app/cva/reports', label: 'Báo cáo phát thải', icon: FileText },
-    { to: '/app/cva/credits', label: 'Lô tín chỉ', icon: Coins },
-    { to: '/app/cva/companies', label: 'Doanh nghiệp', icon: Building2 },
-    { to: '/app/cva/profile', label: 'Hồ sơ CVA', icon: UserRound },
-    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound },
+    { to: '/app/cva', label: 'Tổng quan', icon: ClipboardCheck, group: 'Thẩm định độc lập' },
+    { to: '/app/cva/applications', label: 'Hồ sơ dự án', icon: ClipboardList, group: 'Thẩm định độc lập' },
+    { to: '/app/cva/reports', label: 'Báo cáo phát thải', icon: FileText, group: 'Thẩm định độc lập' },
+    { to: '/app/cva/projects', label: 'Dự án', icon: Folder, group: 'Tra cứu sổ đăng ký' },
+    { to: '/app/cva/credits', label: 'Lô tín chỉ', icon: Coins, group: 'Tra cứu sổ đăng ký' },
+    { to: '/app/cva/companies', label: 'Doanh nghiệp', icon: Building2, group: 'Tra cứu sổ đăng ký' },
+    { to: '/app/cva/profile', label: 'Hồ sơ CVA', icon: UserRound, group: 'Tài khoản' },
+    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound, group: 'Tài khoản' },
   ],
   ADMIN: [
-    { to: '/app/admin', label: 'Tổng quan', icon: ShieldCheck },
-    { to: '/app/admin/projects', label: 'Dự án', icon: Folder },
-    { to: '/app/admin/applications', label: 'Duyệt hồ sơ cấp 2', icon: ClipboardCheck },
-    { to: '/app/admin/issuance', label: 'Phát hành tín chỉ', icon: Coins },
-    { to: '/app/admin/credits', label: 'Giám sát sàn & tín chỉ', icon: ReceiptText },
-    { to: '/app/admin/transactions', label: 'Giao dịch & Sổ cái', icon: Landmark },
-    { to: '/app/admin/vehicles', label: 'Quản lý xe điện', icon: Car },
-    { to: '/app/admin/withdrawals', label: 'Lệnh rút tiền', icon: Landmark },
-    { to: '/app/admin/users', label: 'Người dùng', icon: Users },
-    { to: '/app/admin/directory', label: 'Danh bạ KYC', icon: Building2 },
-    { to: '/app/admin/profile', label: 'Hồ sơ Admin', icon: UserRound },
-    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet },
-    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound },
+    { to: '/app/admin', label: 'Tổng quan', icon: ShieldCheck, group: 'Thẩm định & Phát hành' },
+    { to: '/app/admin/projects', label: 'Dự án', icon: Folder, group: 'Thẩm định & Phát hành' },
+    { to: '/app/admin/applications', label: 'Duyệt hồ sơ cấp 2', icon: ClipboardCheck, group: 'Thẩm định & Phát hành' },
+    { to: '/app/admin/issuance', label: 'Phát hành tín chỉ', icon: Coins, group: 'Thẩm định & Phát hành' },
+    { to: '/app/admin/credits', label: 'Giám sát sàn & tín chỉ', icon: ReceiptText, group: 'Sàn & Tài chính' },
+    { to: '/app/admin/transactions', label: 'Giao dịch & Sổ cái', icon: Landmark, group: 'Sàn & Tài chính' },
+    { to: '/app/admin/withdrawals', label: 'Lệnh rút tiền', icon: Landmark, group: 'Sàn & Tài chính' },
+    { to: '/app/wallet', label: 'Ví của tôi', icon: Wallet, group: 'Sàn & Tài chính' },
+    { to: '/app/admin/users', label: 'Người dùng', icon: Users, group: 'Đối tượng & Hệ thống' },
+    { to: '/app/admin/directory', label: 'Danh bạ KYC', icon: Building2, group: 'Đối tượng & Hệ thống' },
+    { to: '/app/admin/vehicles', label: 'Quản lý xe điện', icon: Car, group: 'Đối tượng & Hệ thống' },
+    { to: '/app/admin/profile', label: 'Hồ sơ Admin', icon: UserRound, group: 'Đối tượng & Hệ thống' },
+    { to: '/app/password', label: 'Đổi mật khẩu', icon: KeyRound, group: 'Đối tượng & Hệ thống' },
   ],
 }
 
@@ -150,24 +151,40 @@ function SidebarContent({
         </div>
       )}
 
-      <nav aria-label="Điều hướng dashboard" className="flex flex-col gap-1 px-3">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
-              )
-            }
-          >
-            <item.icon aria-hidden className="size-5 shrink-0" />
-            {item.label}
-          </NavLink>
+      <nav aria-label="Điều hướng dashboard" className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-3 pb-4">
+        {Array.from(
+          items.reduce((acc, item) => {
+            const list = acc.get(item.group) ?? []
+            list.push(item)
+            acc.set(item.group, list)
+            return acc
+          }, new Map<string, NavItem[]>()),
+        ).map(([group, groupItems]) => (
+          <div key={group}>
+            <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
+              {group}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {groupItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
+                    )
+                  }
+                >
+                  <item.icon aria-hidden className="size-4.5 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
@@ -254,10 +271,19 @@ export function DashboardLayout() {
               <Menu aria-hidden className="size-5" />
             </button>
 
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-base font-semibold text-ink-900 sm:text-lg">{title}</h1>
-              <p className="hidden text-xs text-ink-500 sm:block">Không gian làm việc CarbonX</p>
-            </div>
+            <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+              <span className="hidden text-ink-400 sm:inline">{role ? ROLE_LABELS[role] : 'CarbonX'}</span>
+              <span aria-hidden className="hidden text-ink-300 sm:inline">/</span>
+              <span className="truncate font-semibold text-ink-900">{title}</span>
+            </nav>
+
+            <Link
+              to="/marketplace"
+              className="hidden items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-xs font-semibold text-ink-700 transition hover:border-brand-300 hover:text-brand-700 sm:inline-flex"
+            >
+              <ShoppingCart aria-hidden className="size-3.5" />
+              Sàn giao dịch
+            </Link>
 
             <div className="relative">
               <button
@@ -327,16 +353,6 @@ export function DashboardLayout() {
                 </NotificationPanel>
               )}
             </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              leftIcon={<LogOut aria-hidden className="size-4" />}
-              className="hidden sm:inline-flex"
-            >
-              Đăng xuất
-            </Button>
           </div>
         </header>
 

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/shared/api/client'
 import { mapActivity } from '@/shared/api/mappers'
-import type { DashboardMetric, DashboardSnapshot, TrendPoint } from '@/shared/api/types'
+import type { BreakdownPoint, DashboardMetric, DashboardSnapshot, TrendPoint } from '@/shared/api/types'
 import { toNumber } from '@/shared/lib/format'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import type { Role } from '@/shared/stores/auth.store'
@@ -76,7 +76,7 @@ function buildTrend(sources: unknown[]): TrendPoint[] {
   const grouped = new Map<string, number>()
   for (const source of sources) {
     for (const item of itemsFrom(source)) {
-      const rawDate = firstText(item, ['createdAt', 'submittedAt', 'requestDate', 'date', 'issueDate'])
+      const rawDate = firstText(item, ['createdAt', 'submittedAt', 'requestedAt', 'requestDate', 'date', 'issueDate', 'issuedAt'])
       if (!rawDate) continue
       const date = new Date(rawDate)
       if (Number.isNaN(date.getTime())) continue
@@ -87,6 +87,19 @@ function buildTrend(sources: unknown[]): TrendPoint[] {
   return [...grouped.entries()]
     .map(([label, value]) => ({ label, value }))
     .slice(-8)
+}
+
+function groupByKey(items: Raw[], keys: readonly string[], labelMap?: Record<string, string>): BreakdownPoint[] {
+  const counts = new Map<string, number>()
+  for (const item of items) {
+    const rawVal = firstText(item, keys) ?? 'Khác'
+    const label = labelMap?.[rawVal.toUpperCase()] ?? rawVal
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5)
 }
 
 function metric(
@@ -107,8 +120,24 @@ async function safeGet(url: string, config?: { baseURL?: string }): Promise<unkn
   }
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  AVAILABLE: 'Đang mở bán',
+  SOLD: 'Đã bán hết',
+  CANCELLED: 'Đã huỷ',
+  EXPIRED: 'Hết hạn',
+  SUBMITTED: 'Chờ thẩm định',
+  UNDER_REVIEW: 'Đang thẩm định',
+  CVA_APPROVED: 'CVA đã duyệt',
+  ADMIN_APPROVED: 'Admin đã duyệt',
+  CREDIT_ISSUED: 'Đã cấp tín chỉ',
+  PAID_OUT: 'Đã chi trả',
+  PENDING: 'Chờ duyệt',
+  APPROVED: 'Đã duyệt',
+  SUCCEEDED: 'Đã chi trả',
+  REJECTED: 'Từ chối',
+}
+
 async function load(role: Role): Promise<DashboardSnapshot> {
-  // Endpoint CVA nằm ngoài prefix /api/v1 nên cần override baseURL cho request này.
   const cvaConfig = { baseURL: '' }
 
   if (role === 'EV_OWNER') {
@@ -119,14 +148,18 @@ async function load(role: Role): Promise<DashboardSnapshot> {
       safeGet('/marketplace'),
     ])
     const vehicleItems = itemsFrom(vehicles)
+    const listingItems = itemsFrom(listings)
     return {
       metrics: [
         metric('vehicles', 'Xe điện đã đăng ký', vehicleItems.length, 'Phương tiện của tôi', 'xe'),
         metric('wallet', 'Số dư ví', numberFrom(wallet, ['balance']), 'Tiền nhận chia sẻ doanh thu', 'USD'),
-        metric('projects', 'Dự án trên sàn', countOf(projects), 'Dự án phát thải'),
-        metric('price', 'Giá tín chỉ TB', averagePrice(itemsFrom(listings)), 'Tham khảo marketplace', 'USD'),
+        metric('projects', 'Dự án trên sàn', countOf(projects), 'Dự án đang mở'),
+        metric('price', 'Giá tín chỉ TB', averagePrice(listingItems), 'Tham khảo marketplace', 'USD'),
       ],
       trend: buildTrend([vehicles, listings]),
+      breakdown: groupByKey(vehicleItems, ['brand', 'model']),
+      breakdownTitle: 'Phương tiện theo hãng xe',
+      breakdownDescription: 'Phân bổ xe điện đã đăng ký của bạn',
       recent: vehicleItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
     }
   }
@@ -143,10 +176,13 @@ async function load(role: Role): Promise<DashboardSnapshot> {
       metrics: [
         metric('listings', 'Tin đăng hoạt động', countOf(listings), 'Tin đang mở bán'),
         metric('wallet', 'Số dư ví', numberFrom(wallet, ['balance']), 'Khả dụng để mua tín chỉ', 'USD'),
-        metric('projects', 'Dự án trên sàn', countOf(projects), 'Cơ hội đầu tư'),
-        metric('formula', 'Đơn giá thanh toán', numberFrom(formula, ['pricePerCredit', 'unitPrice', 'rate']), 'Theo chính sách công ty', 'USD'),
+        metric('projects', 'Dự án trên sàn', countOf(projects), 'Cơ hội đăng ký'),
+        metric('formula', 'Đơn giá chia chủ xe', numberFrom(formula, ['unitPricePerCredit', 'pricePerCredit', 'unitPrice']), 'Theo chính sách công ty', 'USD'),
       ],
       trend: buildTrend([listings]),
+      breakdown: groupByKey(listingItems, ['status'], STATUS_LABELS),
+      breakdownTitle: 'Tin đăng theo trạng thái',
+      breakdownDescription: 'Tình trạng các lô tín chỉ trên sàn',
       recent: listingItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
     }
   }
@@ -159,14 +195,18 @@ async function load(role: Role): Promise<DashboardSnapshot> {
       safeGet('/projects'),
     ])
     const reportItems = itemsFrom(reports)
+    const appItems = itemsFrom(applications)
     return {
       metrics: [
         metric('pending-reports', 'Báo cáo chờ thẩm định', countOf(reports) ?? numberFrom(cards, ['pendingReports', 'reportsPending']), 'Cần CVA xử lý'),
         metric('pending-applications', 'Đơn chờ duyệt', countOf(applications), 'Đơn đăng ký dự án'),
-        metric('projects', 'Dự án cần thẩm định', numberFrom(cards, ['pendingProjects']) ?? countOf(projects), 'Danh mục dự án'),
-        metric('issued-credits', 'Tín chỉ đã cấp', numberFrom(cards, ['issuedCredits', 'creditsIssued']), 'Lũy kế hệ thống'),
+        metric('projects', 'Dự án đang theo dõi', numberFrom(cards, ['pendingProjects']) ?? countOf(projects), 'Danh mục dự án'),
+        metric('issued-credits', 'Tín chỉ đã cấp', numberFrom(cards, ['issuedCredits', 'creditsIssued']), 'Lũy kế hệ thống', 'tín chỉ'),
       ],
       trend: buildTrend([reports, applications]),
+      breakdown: groupByKey([...reportItems, ...appItems], ['status'], STATUS_LABELS),
+      breakdownTitle: 'Hồ sơ & Báo cáo theo trạng thái',
+      breakdownDescription: 'Phân loại hàng đợi thẩm định độc lập',
       recent: reportItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
     }
   }
@@ -178,6 +218,7 @@ async function load(role: Role): Promise<DashboardSnapshot> {
     safeGet('/marketplace'),
   ])
   const withdrawalItems = itemsFrom(withdrawals)
+  const listingItems = itemsFrom(listings)
   return {
     metrics: [
       metric('users', 'Người dùng', countOf(users), 'Tổng tài khoản'),
@@ -186,6 +227,9 @@ async function load(role: Role): Promise<DashboardSnapshot> {
       metric('listings', 'Tin đăng', countOf(listings), 'Tổng tin trên sàn'),
     ],
     trend: buildTrend([withdrawals, listings]),
+    breakdown: groupByKey(withdrawalItems.length ? withdrawalItems : listingItems, ['status'], STATUS_LABELS),
+    breakdownTitle: withdrawalItems.length ? 'Lệnh rút tiền theo trạng thái' : 'Tin đăng theo trạng thái',
+    breakdownDescription: 'Tổng hợp trạng thái xử lý trên hệ thống',
     recent: withdrawalItems.slice(0, 5).map((item, index) => mapActivity(item, index)),
   }
 }

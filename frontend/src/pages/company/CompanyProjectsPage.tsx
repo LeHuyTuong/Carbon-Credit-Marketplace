@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, FileUp, FolderOpen, Send, X } from 'lucide-react'
+import { ArrowRight, ExternalLink, FileUp, FolderOpen, Send, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import {
@@ -13,7 +14,7 @@ import {
 } from '@/shared/api/phase3b'
 import { Button } from '@/shared/components/Button'
 import { EmptyState } from '@/shared/components/EmptyState'
-import { Input } from '@/shared/components/Input'
+import { FileDropzone } from '@/shared/components/FileDropzone'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate, formatNumber } from '@/shared/lib/format'
 import { queryKeys } from '@/shared/lib/queryKeys'
@@ -71,15 +72,15 @@ function ApplyDialog({
             onSubmit(file)
           }}
         >
-          <Input
-            label="Hồ sơ tham gia (PDF/DOC)"
-            type="file"
+          <FileDropzone
+            label="Hồ sơ tham gia (PDF/DOC/Ảnh)"
             accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-            hint="Hồ sơ sẽ được CVA thẩm định ở vòng 1."
+            hint="Hồ sơ sẽ được CVA thẩm định ở vòng 1 (tối đa 10 MB)."
             error={fileError}
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null)
-              if (event.target.files?.length) setFileError('')
+            file={file}
+            onFileChange={(f) => {
+              setFile(f)
+              if (f) setFileError('')
             }}
           />
           <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
@@ -96,7 +97,17 @@ function ApplyDialog({
   )
 }
 
-function ApplicationRow({ application }: { application: ProjectApplication }) {
+function ApplicationRow({
+  application,
+  onResubmit,
+}: {
+  application: ProjectApplication
+  onResubmit: () => void
+}) {
+  const statusUpper = application.status.toUpperCase()
+  const needsAction = ['NEEDS_REVISION', 'CVA_REJECTED', 'ADMIN_REJECTED'].includes(statusUpper)
+  const isApproved = statusUpper === 'ADMIN_APPROVED'
+
   return (
     <article className="rounded-xl border border-ink-200 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -116,18 +127,35 @@ function ApplicationRow({ application }: { application: ProjectApplication }) {
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-ink-500">
-        {application.waitingFor && <p>Đang chờ: {application.waitingFor}</p>}
-        {application.applicationDocsUrl && (
-          <a
-            href={application.applicationDocsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-700"
-          >
-            <ExternalLink className="size-3.5" /> Xem hồ sơ đã nộp
-          </a>
-        )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-500">
+        <div className="flex flex-wrap items-center gap-4">
+          {application.waitingFor && <p>Đang chờ: {application.waitingFor}</p>}
+          {application.applicationDocsUrl && (
+            <a
+              href={application.applicationDocsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-700"
+            >
+              <ExternalLink className="size-3.5" /> Xem hồ sơ đã nộp
+            </a>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {needsAction && (
+            <Button size="sm" variant="outline" leftIcon={<FileUp className="size-3.5" />} onClick={onResubmit}>
+              Nộp bổ sung hồ sơ
+            </Button>
+          )}
+          {isApproved && (
+            <Link
+              to="/app/company/reports"
+              className="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-2.5 py-1.5 font-semibold text-brand-700 hover:bg-brand-100"
+            >
+              Nộp báo cáo CSV <ArrowRight className="size-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   )
@@ -248,7 +276,16 @@ export function CompanyProjectsPage() {
           ) : (
             <div className="space-y-3 p-5">
               {filteredApplications.map((application) => (
-                <ApplicationRow key={application.id} application={application} />
+                <ApplicationRow
+                  key={application.id}
+                  application={application}
+                  onResubmit={() =>
+                    setApplyingTo({
+                      id: application.projectId,
+                      title: application.projectTitle || `Dự án #${application.projectId}`,
+                    })
+                  }
+                />
               ))}
             </div>
           )}

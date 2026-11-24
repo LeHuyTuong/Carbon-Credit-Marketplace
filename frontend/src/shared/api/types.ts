@@ -110,8 +110,16 @@ export interface ActivityItem {
   date: string | null
 }
 
+export interface BreakdownPoint {
+  name: string
+  value: number
+}
+
 export interface DashboardSnapshot {
   metrics: DashboardMetric[]
   trend: TrendPoint[]
+  breakdown?: BreakdownPoint[]
+  breakdownTitle?: string
+  breakdownDescription?: string
   recent: ActivityItem[]
 }

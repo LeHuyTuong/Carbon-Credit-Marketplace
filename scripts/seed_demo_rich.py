@@ -118,10 +118,10 @@ def build_sql() -> str:
 
     # 4. Project Applications (diverse workflow states for CVA & Admin queues)
     apps = [
-        (10, "ADMIN_APPROVED", 10, 1, 3, 1, "Hồ sơ trạm sạc đủ tiêu chuẩn", "Đã duyệt tham gia"),
-        (11, "ADMIN_APPROVED", 11, 2, 3, 1, "Đạt chuẩn đo lường VM0038", "Chấp thuận cấp 2"),
-        (12, "CVA_APPROVED", 12, 3, 3, None, "Đã xác minh danh sách 450 trạm đổi pin", None),
-        (13, "CVA_APPROVED", 13, 2, 3, None, "Đủ điều kiện đo đếm hành trình taxi điện", None),
+        (10, "ADMIN_APPROVED", 10, 1, 1, 1, "Hồ sơ trạm sạc đủ tiêu chuẩn", "Đã duyệt tham gia"),
+        (11, "ADMIN_APPROVED", 11, 2, 1, 1, "Đạt chuẩn đo lường VM0038", "Chấp thuận cấp 2"),
+        (12, "CVA_APPROVED", 12, 3, 1, None, "Đã xác minh danh sách 450 trạm đổi pin", None),
+        (13, "CVA_APPROVED", 13, 2, 1, None, "Đủ điều kiện đo đếm hành trình taxi điện", None),
         (14, "UNDER_REVIEW", 14, 4, None, None, None, None),
         (15, "SUBMITTED", 10, 6, None, None, None, None),
     ]
@@ -145,9 +145,11 @@ def build_sql() -> str:
         (10, 2, 2, "PAID_OUT", "2026-08", 215000.0000, 145500.0000, 9),
     ]
     for rid, pid, sid, st, period, energy, co2, vcount in reports:
+        cva_id_sql = "NULL" if st == "SUBMITTED" else "1"
+        cva_name_sql = "NULL" if st == "SUBMITTED" else "'Trần Thị Minh Châu'"
         lines.append(
             f"INSERT IGNORE INTO emission_reports (id, created_at, updated_at, submitted_at, period, source, status, total_energy, total_co2, vehicle_count, project_id, seller_id, verified_by_cva_id, verified_by_cva_name, ai_pre_score, verification_score) "
-            f"VALUES ({rid}, DATE_SUB(NOW(), INTERVAL {15 - rid} DAY), NOW(), DATE_SUB(NOW(), INTERVAL {15 - rid} DAY), '{period}', 'CSV_UPLOAD', '{st}', {energy:.4f}, {co2:.4f}, {vcount}, {pid}, {sid}, 3, 'CVA Auditor', 94.50, 96.00);"
+            f"VALUES ({rid}, DATE_SUB(NOW(), INTERVAL {15 - rid} DAY), NOW(), DATE_SUB(NOW(), INTERVAL {15 - rid} DAY), '{period}', 'CSV_UPLOAD', '{st}', {energy:.4f}, {co2:.4f}, {vcount}, {pid}, {sid}, {cva_id_sql}, {cva_name_sql}, 94.50, 96.00);"
         )
 
     # Populate report #5 (CREDIT_ISSUED, company 2) and #10 (PAID_OUT, company 2) with 9 vehicles / 8 EV owners each!

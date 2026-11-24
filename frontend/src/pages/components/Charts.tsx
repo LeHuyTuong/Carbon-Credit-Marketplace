@@ -1,8 +1,6 @@
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -13,20 +11,19 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { DashboardMetric, TrendPoint } from '@/shared/api/types'
+import type { BreakdownPoint, TrendPoint } from '@/shared/api/types'
 
 const axisStyle = { fill: '#64748b', fontSize: 12 }
-const PIE_COLORS = ['#059669', '#0284c7', '#f59e0b', '#8b5cf6', '#ec4899']
-
-const DEFAULT_DISTRIBUTION = [
-  { name: 'Xe điện đô thị (EVs)', value: 62 },
-  { name: 'Trạm sạc năng lượng xanh', value: 24 },
-  { name: 'Tối ưu logistics xanh', value: 14 },
-]
+const PIE_COLORS = ['#0f5132', '#166534', '#0284c7', '#d97706', '#64748b']
 
 export function TrendChart({ data }: { data: TrendPoint[] }) {
   if (!data.length) {
-    return <p className="px-5 py-10 text-center text-sm text-ink-500">Chưa có dữ liệu theo thời gian.</p>
+    return (
+      <div className="flex h-64 flex-col items-center justify-center px-5 text-center">
+        <p className="text-sm font-medium text-ink-600">Chưa có chuỗi thời gian phát sinh</p>
+        <p className="mt-1 text-xs text-ink-400">Biểu đồ tự cập nhật khi có giao dịch hoặc hồ sơ mới theo tháng.</p>
+      </div>
+    )
   }
   return (
     <div className="h-64 w-full px-2 pb-4 pt-4">
@@ -49,6 +46,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
             stroke="#059669"
             strokeWidth={2.5}
             fill="url(#carbonTrend)"
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -56,40 +54,21 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
   )
 }
 
-export function MetricBarChart({ metrics }: { metrics: DashboardMetric[] }) {
-  const data = metrics
-    .filter((item) => item.value !== null && item.value !== undefined)
-    .map((item) => ({ name: item.label, value: item.value as number }))
-
+export function BreakdownDonutChart({ data }: { data: BreakdownPoint[] }) {
   if (!data.length) {
-    return <p className="px-5 py-10 text-center text-sm text-ink-500">Chưa có chỉ số để hiển thị.</p>
+    return (
+      <div className="flex h-64 flex-col items-center justify-center px-5 text-center">
+        <p className="text-sm font-medium text-ink-600">Chưa có dữ liệu phân bổ</p>
+        <p className="mt-1 text-xs text-ink-400">Dữ liệu thực tế theo vai trò sẽ hiển thị tại đây.</p>
+      </div>
+    )
   }
 
-  return (
-    <div className="h-64 w-full px-2 pb-4 pt-4">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} interval={0} />
-          <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-          <Tooltip cursor={{ fill: '#f1f5f9' }} />
-          <Bar dataKey="value" name="Giá trị" fill="#059669" radius={[6, 6, 0, 0]} maxBarSize={48} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-export function EmissionDistributionChart({
-  data = DEFAULT_DISTRIBUTION,
-}: {
-  data?: { name: string; value: number }[]
-}) {
   return (
     <div className="h-64 w-full px-2 pb-2 pt-2">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Tooltip formatter={(val) => [`${val ?? 0}%`, 'Tỷ trọng']} />
+          <Tooltip formatter={(val) => [`${val ?? 0}`, 'Số lượng']} />
           <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 12 }} />
           <Pie
             data={data}
@@ -97,12 +76,13 @@ export function EmissionDistributionChart({
             nameKey="name"
             cx="50%"
             cy="45%"
-            innerRadius={55}
-            outerRadius={80}
-            paddingAngle={4}
+            innerRadius={52}
+            outerRadius={78}
+            paddingAngle={3}
+            isAnimationActive={false}
           >
-            {data.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+            {data.map((entry, index) => (
+              <Cell key={`cell-${entry.name}-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
             ))}
           </Pie>
         </PieChart>

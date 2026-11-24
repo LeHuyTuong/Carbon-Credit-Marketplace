@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Coins, Download, Flame, Store, Trash2 } from 'lucide-react'
+import { Coins, Download, Flame, Store, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import {
@@ -9,25 +9,29 @@ import {
   isRecord,
   mapCreditBatch,
   pageOf,
+  type CreditBatch,
 } from '@/shared/api/phase3b'
 import { Button } from '@/shared/components/Button'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { Input } from '@/shared/components/Input'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
 import { queryKeys } from '@/shared/lib/queryKeys'
-import { useAuthStore } from '@/shared/stores/auth.store'
 import { PageIntro } from '@/pages/components/PageIntro'
 import { QueryError, QueryLoading, SectionCard } from '@/pages/components/QueryState'
 
+type CreditsTab = 'batches' | 'listings' | 'retired'
+type BatchModal = { mode: 'list' | 'retire'; batch: CreditBatch } | null
+
 export function CompanyCreditsPage() {
   const queryClient = useQueryClient()
-  const userId = useAuthStore((state) => state.user?.id)
-  const [listingBatch, setListingBatch] = useState('')
-  const [listingQuantity, setListingQuantity] = useState('')
-  const [listingPrice, setListingPrice] = useState('')
-  const [retireBatch, setRetireBatch] = useState('')
-  const [retireQuantity, setRetireQuantity] = useState('')
+  const [tab, setTab] = useState<CreditsTab>('batches')
+  const [modal, setModal] = useState<BatchModal>(null)
+  const [quantity, setQuantity] = useState('10')
+  const [price, setPrice] = useState('20')
+  const [formError, setFormError] = useState('')
+  const [cancelTargetId, setCancelTargetId] = useState<number | null>(null)
 
   const batchesQuery = useQuery({
     queryKey: queryKeys.phase3b.myCreditBatches,
@@ -73,6 +77,7 @@ export function CompanyCreditsPage() {
     },
     retry: false,
   })
+
   const batches = batchesQuery.data ?? []
   const myListings = myListingsQuery.data ?? []
   const retiredCredits = retiredQuery.data ?? []
@@ -89,308 +94,141 @@ export function CompanyCreditsPage() {
     mutationFn: (listingId: number) => api.delete<unknown>(`/marketplace/${listingId}`),
     onSuccess: async () => {
       toast.success('Đã huỷ tin niêm yết trên sàn')
+      setCancelTargetId(null)
       await invalidate()
     },
     onError: (error) => toast.error('Không huỷ được tin niêm yết', { description: errorMessage(error) }),
   })
 
   const listMutation = useMutation({
-    mutationFn: async () =>
+    mutationFn: async ({ batchId, qty, unitPrice }: { batchId: number; qty: number; unitPrice: number }) =>
       api.post<unknown>('/marketplace', {
-        data: {
-          batchId: Number(listingBatch),
-          quantity: Number(listingQuantity),
-          pricePerCredit: Number(listingPrice),
-        },
+        data: { batchId, quantity: qty, pricePerCredit: unitPrice },
       }),
     onSuccess: async () => {
       toast.success('Đã niêm yết tín chỉ lên sàn')
-      setListingBatch('')
-      setListingQuantity('')
-      setListingPrice('')
+      setModal(null)
       await invalidate()
     },
     onError: (error) => toast.error('Không niêm yết được tín chỉ', { description: errorMessage(error) }),
   })
 
   const retireMutation = useMutation({
-    mutationFn: async () => {
-      const batch = batches.find((item) => String(item.id) === retireBatch)
-      return api.post<unknown>('/my/credits/retire', {
-        data: { batchCode: batch?.batchCode ?? '', quantity: Number(retireQuantity) },
-      })
-    },
+    mutationFn: async ({ batchCode, qty }: { batchCode: string; qty: number }) =>
+      api.post<unknown>('/my/credits/retire', {
+        data: { batchCode, quantity: qty },
+      }),
     onSuccess: async () => {
-      toast.success('Đã triệt tiêu tín chỉ')
-      setRetireBatch('')
-      setRetireQuantity('')
+      toast.success('Đã triệt tiêu tín chỉ thành công')
+      setModal(null)
       await invalidate()
     },
     onError: (error) => toast.error('Không triệt tiêu được tín chỉ', { description: errorMessage(error) }),
   })
 
-  const downloadCertificate = async () => {
-    if (userId === undefined) {
-      toast.error('Không xác định được người dùng để tải chứng chỉ')
+  const openModal = (mode: 'list' | 'retire', batch: CreditBatch) => {
+    setFormError('')
+    setQuantity(String(Math.min(10, Math.max(1, Math.floor(batch.creditsCount)))))
+    setPrice('20')
+    setModal({ mode, batch })
+  }
+
+  const downloadBatchCertificate = async (batch: CreditBatch) => {
+    if (batch.certificateUrl) {
+      window.open(batch.certificateUrl, '_blank', 'noreferrer')
       return
     }
     try {
-      await downloadFile(`/reports/download/${userId}`, `certificate-${userId}.pdf`)
-      toast.success('Đã tải chứng chỉ PDF')
+      await downloadFile(`/credits/batches/${batch.id}`, `batch-${batch.batchCode}.json`)
+      toast.success(`Đã tải thông tin lô ${batch.batchCode}`)
     } catch (error) {
-      toast.error('Không tải được chứng chỉ', { description: errorMessage(error) })
+      toast.error('Lô này chưa có file chứng chỉ PDF đính kèm', { description: errorMessage(error) })
     }
   }
-
-  const selectedListingBatch = batches.find((item) => String(item.id) === listingBatch)
 
   return (
     <>
       <PageIntro
         eyebrow="Doanh nghiệp"
         title="Kho tín chỉ carbon"
-        description="Xem tín chỉ theo lô, niêm yết lên sàn, triệt tiêu tín chỉ và tải chứng chỉ PDF."
-        actions={
-          <Button
-            variant="outline"
-            leftIcon={<Download className="size-4" />}
-            onClick={() => void downloadCertificate()}
-          >
-            Tải chứng chỉ PDF
-          </Button>
-        }
+        description="Quản lý các lô tín chỉ đã cấp, niêm yết bán trực tiếp lên sàn, triệt tiêu (retire) và tải chứng chỉ theo từng lô."
       />
 
-      {batchesQuery.isPending ? (
-        <QueryLoading />
-      ) : batchesQuery.isError ? (
-        <QueryError onRetry={() => void batchesQuery.refetch()} />
-      ) : (
-        <div className="space-y-6">
-          <SectionCard title="Tín chỉ theo lô" description={`${batches.length} lô tín chỉ trong kho`}>
+      <div className="mb-6 flex flex-wrap gap-2">
+        <Button variant={tab === 'batches' ? 'primary' : 'outline'} onClick={() => setTab('batches')}>
+          Kho lô tín chỉ ({batches.length})
+        </Button>
+        <Button variant={tab === 'listings' ? 'primary' : 'outline'} onClick={() => setTab('listings')}>
+          Đang niêm yết ({myListings.length})
+        </Button>
+        <Button variant={tab === 'retired' ? 'primary' : 'outline'} onClick={() => setTab('retired')}>
+          Đã triệt tiêu ({retiredCredits.length})
+        </Button>
+      </div>
+
+      {tab === 'batches' &&
+        (batchesQuery.isPending ? (
+          <QueryLoading />
+        ) : batchesQuery.isError ? (
+          <QueryError onRetry={() => void batchesQuery.refetch()} />
+        ) : (
+          <SectionCard title="Tín chỉ theo lô trong kho" description={`${batches.length} lô tín chỉ đã cấp`}>
             {batches.length === 0 ? (
               <EmptyState icon={Coins} title="Chưa có tín chỉ" description="Tín chỉ được cấp sau khi báo cáo phát thải được phê duyệt." />
             ) : (
               <div className="scrollbar-thin overflow-x-auto p-5">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[820px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
                       <th className="pb-3 font-semibold">Mã lô</th>
                       <th className="pb-3 font-semibold">Dự án</th>
-                      <th className="pb-3 font-semibold">Số lượng</th>
+                      <th className="pb-3 font-semibold">Số tín chỉ</th>
                       <th className="pb-3 font-semibold">Tổng tCO₂e</th>
                       <th className="pb-3 font-semibold">Hạn dùng</th>
-                      <th className="pb-3 font-semibold">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-ink-100">
-                    {batches.map((batch) => (
-                      <tr key={batch.id} className="text-ink-700">
-                        <td className="py-3 font-semibold text-ink-900">{batch.batchCode || `#${batch.id}`}</td>
-                        <td className="py-3">{batch.projectTitle || '—'}</td>
-                        <td className="py-3">{formatNumber(batch.creditsCount)}</td>
-                        <td className="py-3">{formatNumber(batch.totalTco2e)}</td>
-                        <td className="py-3">{formatDate(batch.expiresAt)}</td>
-                        <td className="py-3"><StatusBadge status={batch.status} kind="credit" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </SectionCard>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <SectionCard title="Niêm yết lên sàn" description="Chọn lô và số lượng tín chỉ muốn bán.">
-              <form
-                className="space-y-4 p-5"
-                noValidate
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!listingBatch || !listingQuantity || !listingPrice) {
-                    toast.error('Vui lòng chọn lô, nhập số lượng và giá bán')
-                    return
-                  }
-                  listMutation.mutate()
-                }}
-              >
-                <div>
-                  <label htmlFor="listing-batch" className="mb-1.5 block text-sm font-medium text-ink-700">
-                    Lô tín chỉ
-                  </label>
-                  <select
-                    id="listing-batch"
-                    value={listingBatch}
-                    onChange={(event) => setListingBatch(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm"
-                  >
-                    <option value="">Chọn lô tín chỉ</option>
-                    {batches.map((batch) => (
-                      <option key={batch.id} value={batch.id}>
-                        {batch.batchCode || `#${batch.id}`} — khả dụng {formatNumber(batch.creditsCount)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {selectedListingBatch && (
-                  <p className="text-xs text-ink-500">
-                    Lô {selectedListingBatch.batchCode} · niên vụ {selectedListingBatch.vintageYear || '—'} · tồn {formatNumber(selectedListingBatch.residualTco2e)} tCO₂e
-                  </p>
-                )}
-                <Input
-                  label="Số lượng tín chỉ"
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  value={listingQuantity}
-                  onChange={(event) => setListingQuantity(event.target.value)}
-                  placeholder="0.00"
-                />
-                <Input
-                  label="Giá mỗi tín chỉ"
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  value={listingPrice}
-                  onChange={(event) => setListingPrice(event.target.value)}
-                  placeholder="0.00"
-                />
-                <Button type="submit" loading={listMutation.isPending} leftIcon={<Store className="size-4" />}>
-                  Niêm yết
-                </Button>
-              </form>
-            </SectionCard>
-
-            <SectionCard title="Triệt tiêu tín chỉ" description="Triệt tiêu một phần số lượng trong lô đã chọn.">
-              <form
-                className="space-y-4 p-5"
-                noValidate
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!retireBatch || !retireQuantity) {
-                    toast.error('Vui lòng chọn lô và nhập số lượng triệt tiêu')
-                    return
-                  }
-                  retireMutation.mutate()
-                }}
-              >
-                <div>
-                  <label htmlFor="retire-batch" className="mb-1.5 block text-sm font-medium text-ink-700">
-                    Lô tín chỉ
-                  </label>
-                  <select
-                    id="retire-batch"
-                    value={retireBatch}
-                    onChange={(event) => setRetireBatch(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm"
-                  >
-                    <option value="">Chọn lô tín chỉ</option>
-                    {batches.map((batch) => (
-                      <option key={batch.id} value={batch.id}>
-                        {batch.batchCode || `#${batch.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Input
-                  label="Số lượng triệt tiêu"
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  value={retireQuantity}
-                  onChange={(event) => setRetireQuantity(event.target.value)}
-                  placeholder="0.00"
-                />
-                <Button type="submit" variant="secondary" loading={retireMutation.isPending} leftIcon={<Flame className="size-4" />}>
-                  Triệt tiêu
-                </Button>
-              </form>
-            </SectionCard>
-          </div>
-
-          {/* Lịch sử tin đã niêm yết (SRS 7a & BR-13) */}
-          <SectionCard
-            title="Lịch sử tin niêm yết trên sàn"
-            description={`${myListings.length} tin niêm yết của doanh nghiệp · Phí sàn giao dịch 5%`}
-          >
-            {myListings.length === 0 ? (
-              <EmptyState icon={Store} title="Chưa có tin niêm yết nào" description="Tin niêm yết bán tín chỉ của bạn sẽ hiển thị tại đây." />
-            ) : (
-              <div className="scrollbar-thin overflow-x-auto p-5">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
-                      <th className="pb-3 font-semibold">Mã tin</th>
-                      <th className="pb-3 font-semibold">Dự án</th>
-                      <th className="pb-3 font-semibold">Còn lại</th>
-                      <th className="pb-3 font-semibold">Đã bán</th>
-                      <th className="pb-3 font-semibold">Đơn giá</th>
                       <th className="pb-3 font-semibold">Trạng thái</th>
                       <th className="pb-3 text-right font-semibold">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-ink-100">
-                    {myListings.map((item) => {
-                      const canCancel = ['AVAILABLE', 'LISTED'].includes(item.status.toUpperCase())
-                      return (
-                        <tr key={item.id} className="text-ink-700">
-                          <td className="py-3 font-mono text-xs font-semibold text-ink-900">#{item.id}</td>
-                          <td className="py-3 font-medium text-ink-900">{item.projectTitle}</td>
-                          <td className="py-3">{formatNumber(item.quantity)}</td>
-                          <td className="py-3">{formatNumber(item.soldQuantity)}</td>
-                          <td className="py-3 font-semibold">{formatUsd(item.pricePerCredit)}</td>
-                          <td className="py-3">
-                            <StatusBadge status={item.status} kind="credit" />
-                          </td>
-                          <td className="py-3 text-right">
-                            {canCancel ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                leftIcon={<Trash2 className="size-3.5" />}
-                                loading={cancelListingMutation.isPending && cancelListingMutation.variables === item.id}
-                                onClick={() => cancelListingMutation.mutate(item.id)}
-                              >
-                                Huỷ niêm yết
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-ink-400">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </SectionCard>
-
-          {/* Lịch sử tín chỉ đã triệt tiêu (SRS 9b) */}
-          <SectionCard
-            title="Lịch sử tín chỉ đã triệt tiêu (Retire)"
-            description={`${retiredCredits.length} bản ghi tín chỉ đã thu hồi vĩnh viễn để bù trừ phát thải`}
-          >
-            {retiredCredits.length === 0 ? (
-              <EmptyState icon={Flame} title="Chưa có tín chỉ đã triệt tiêu" description="Sau khi triệt tiêu tín chỉ, chứng nhận sẽ lưu vĩnh viễn tại đây." />
-            ) : (
-              <div className="scrollbar-thin overflow-x-auto p-5">
-                <table className="w-full min-w-[680px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
-                      <th className="pb-3 font-semibold">Mã tín chỉ</th>
-                      <th className="pb-3 font-semibold">Tên tín chỉ</th>
-                      <th className="pb-3 font-semibold">Số lượng</th>
-                      <th className="pb-3 font-semibold">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-ink-100">
-                    {retiredCredits.map((item) => (
-                      <tr key={item.id} className="text-ink-700">
-                        <td className="py-3 font-mono text-xs font-semibold text-ink-900">{item.creditCode || `#${item.id}`}</td>
-                        <td className="py-3">{item.name}</td>
-                        <td className="py-3 font-semibold">{formatNumber(item.amount)}</td>
-                        <td className="py-3"><StatusBadge status="RETIRED" kind="credit" /></td>
+                    {batches.map((batch) => (
+                      <tr key={batch.id} className="text-ink-700">
+                        <td className="py-3 font-mono text-xs font-semibold text-brand-700">
+                          {batch.batchCode || `#${batch.id}`}
+                        </td>
+                        <td className="py-3 font-medium text-ink-900">{batch.projectTitle || '—'}</td>
+                        <td className="py-3 font-semibold">{formatNumber(batch.creditsCount)}</td>
+                        <td className="py-3 font-mono">{formatNumber(batch.totalTco2e)}</td>
+                        <td className="py-3 text-xs text-ink-500">{formatDate(batch.expiresAt)}</td>
+                        <td className="py-3"><StatusBadge status={batch.status} kind="credit" /></td>
+                        <td className="py-3">
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              leftIcon={<Store className="size-3.5" />}
+                              onClick={() => openModal('list', batch)}
+                            >
+                              Niêm yết
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              leftIcon={<Flame className="size-3.5" />}
+                              onClick={() => openModal('retire', batch)}
+                            >
+                              Triệt tiêu
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              title="Xem / tải chứng chỉ lô"
+                              leftIcon={<Download className="size-3.5" />}
+                              onClick={() => void downloadBatchCertificate(batch)}
+                            >
+                              Chứng chỉ
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -398,8 +236,199 @@ export function CompanyCreditsPage() {
               </div>
             )}
           </SectionCard>
+        ))}
+
+      {tab === 'listings' && (
+        <SectionCard title="Tin đang niêm yết trên sàn" description={`${myListings.length} tin bán của doanh nghiệp`}>
+          {myListings.length === 0 ? (
+            <EmptyState icon={Store} title="Chưa có tin niêm yết nào" description="Chọn nút Niêm yết tại tab Kho lô tín chỉ để đưa tín chỉ lên sàn." />
+          ) : (
+            <div className="scrollbar-thin overflow-x-auto p-5">
+              <table className="w-full min-w-[700px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                    <th className="pb-3 font-semibold">Dự án</th>
+                    <th className="pb-3 font-semibold">Còn lại / Đã bán</th>
+                    <th className="pb-3 font-semibold">Đơn giá</th>
+                    <th className="pb-3 font-semibold">Hết hạn</th>
+                    <th className="pb-3 font-semibold">Trạng thái</th>
+                    <th className="pb-3 text-right font-semibold">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink-100">
+                  {myListings.map((item) => (
+                    <tr key={item.id} className="text-ink-700">
+                      <td className="py-3 font-semibold text-ink-900">{item.projectTitle}</td>
+                      <td className="py-3">
+                        {formatNumber(item.quantity)} / {formatNumber(item.soldQuantity)} đã bán
+                      </td>
+                      <td className="py-3 font-semibold text-brand-700">{formatUsd(item.pricePerCredit)}</td>
+                      <td className="py-3 text-xs text-ink-500">{formatDate(item.expiresAt)}</td>
+                      <td className="py-3"><StatusBadge status={item.status} kind="credit" /></td>
+                      <td className="py-3 text-right">
+                        {item.status.toUpperCase() === 'AVAILABLE' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            leftIcon={<Trash2 className="size-3.5" />}
+                            loading={cancelListingMutation.isPending && cancelListingMutation.variables === item.id}
+                            onClick={() => setCancelTargetId(item.id)}
+                          >
+                            Huỷ niêm yết
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-ink-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
+      )}
+
+      {tab === 'retired' && (
+        <SectionCard title="Lịch sử tín chỉ đã triệt tiêu (Retire)" description={`${retiredCredits.length} bản ghi triệt tiêu vĩnh viễn`}>
+          {retiredCredits.length === 0 ? (
+            <EmptyState icon={Flame} title="Chưa có tín chỉ nào được triệt tiêu" description="Chọn nút Triệt tiêu tại tab Kho lô tín chỉ để bù trừ phát thải cho doanh nghiệp." />
+          ) : (
+            <div className="scrollbar-thin overflow-x-auto p-5">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                    <th className="pb-3 font-semibold">Mã tín chỉ</th>
+                    <th className="pb-3 font-semibold">Tên</th>
+                    <th className="pb-3 font-semibold">Số lượng</th>
+                    <th className="pb-3 font-semibold">Ngày cấp</th>
+                    <th className="pb-3 font-semibold">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink-100">
+                  {retiredCredits.map((c) => (
+                    <tr key={c.id} className="text-ink-700">
+                      <td className="py-3 font-mono text-xs font-semibold text-ink-900">{c.creditCode || `#${c.id}`}</td>
+                      <td className="py-3">{c.name}</td>
+                      <td className="py-3 font-semibold">{formatNumber(c.amount)}</td>
+                      <td className="py-3 text-xs text-ink-500">{formatDate(c.issuedAt)}</td>
+                      <td className="py-3"><StatusBadge status={c.status} kind="credit" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
+      )}
+
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-ink-950/50 p-4 backdrop-blur-xs"
+          onClick={() => setModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-md rounded-card bg-white p-6 shadow-float"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-ink-900">
+                  {modal.mode === 'list' ? 'Niêm yết tín chỉ lên sàn' : 'Triệt tiêu tín chỉ (Retire)'}
+                </h3>
+                <p className="mt-1 font-mono text-xs text-brand-700">{modal.batch.batchCode}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Đóng"
+                onClick={() => setModal(null)}
+                className="grid size-8 place-items-center rounded-lg text-ink-400 hover:bg-ink-100"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form
+              className="mt-4 space-y-4"
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault()
+                const qty = Number(quantity)
+                if (!Number.isInteger(qty) || qty < 1) {
+                  setFormError('Số lượng phải là số nguyên lớn hơn hoặc bằng 1')
+                  return
+                }
+                if (modal.mode === 'list') {
+                  const unitPrice = Number(price)
+                  if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+                    setFormError('Đơn giá phải lớn hơn 0 USD')
+                    return
+                  }
+                  setFormError('')
+                  listMutation.mutate({ batchId: modal.batch.id, qty, unitPrice })
+                } else {
+                  setFormError('')
+                  retireMutation.mutate({ batchCode: modal.batch.batchCode, qty })
+                }
+              }}
+            >
+              <Input
+                label="Số lượng tín chỉ (số nguyên)"
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => {
+                  setQuantity(e.target.value)
+                  setFormError('')
+                }}
+                hint={`Lô ${modal.batch.batchCode} · Niên vụ ${modal.batch.vintageYear || '—'}`}
+              />
+              {modal.mode === 'list' && (
+                <Input
+                  label="Đơn giá mỗi tín chỉ (USD)"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={price}
+                  onChange={(e) => {
+                    setPrice(e.target.value)
+                    setFormError('')
+                  }}
+                />
+              )}
+              {formError && <p role="alert" className="text-xs font-medium text-rose-600">{formError}</p>}
+              <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
+                <Button variant="outline" onClick={() => setModal(null)}>
+                  Huỷ
+                </Button>
+                <Button
+                  type="submit"
+                  variant={modal.mode === 'retire' ? 'secondary' : 'primary'}
+                  loading={listMutation.isPending || retireMutation.isPending}
+                >
+                  {modal.mode === 'list' ? 'Xác nhận niêm yết' : 'Xác nhận triệt tiêu'}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={cancelTargetId !== null}
+        title={`Huỷ tin niêm yết #${cancelTargetId ?? ''}?`}
+        description="Số tín chỉ chưa bán sẽ được trả về trạng thái khả dụng trong kho của doanh nghiệp."
+        confirmLabel="Huỷ niêm yết"
+        variant="danger"
+        loading={cancelListingMutation.isPending}
+        onCancel={() => setCancelTargetId(null)}
+        onConfirm={() => {
+          if (cancelTargetId !== null) cancelListingMutation.mutate(cancelTargetId)
+        }}
+      />
     </>
   )
 }

@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, ShoppingCart, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import { errorMessage, mapCreditOrder } from '@/shared/api/phase3b'
 import { Button } from '@/shared/components/Button'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate, formatNumber, formatUsd } from '@/shared/lib/format'
@@ -13,6 +15,7 @@ import { QueryError, QueryLoading, SectionCard } from '@/pages/components/QueryS
 
 export function CompanyOrdersPage() {
   const queryClient = useQueryClient()
+  const [cancelOrderId, setCancelOrderId] = useState<number | null>(null)
   const ordersQuery = useQuery({
     queryKey: queryKeys.phase3b.orders,
     queryFn: async () => {
@@ -103,9 +106,7 @@ export function CompanyOrdersPage() {
                                   variant="outline"
                                   leftIcon={<XCircle className="size-4" />}
                                   disabled={cancelMutation.isPending}
-                                  onClick={() => {
-                                    if (window.confirm(`Huỷ đơn hàng #${order.id}?`)) cancelMutation.mutate(order.id)
-                                  }}
+                                  onClick={() => setCancelOrderId(order.id)}
                                 >
                                   Huỷ đơn
                                 </Button>
@@ -124,6 +125,23 @@ export function CompanyOrdersPage() {
           )}
         </SectionCard>
       )}
+
+      <ConfirmDialog
+        open={cancelOrderId !== null}
+        title={`Huỷ đơn hàng #${cancelOrderId ?? ''}?`}
+        description="Đơn hàng đang chờ thanh toán sẽ bị huỷ và giải phóng số lượng tín chỉ trên sàn."
+        confirmLabel="Huỷ đơn hàng"
+        variant="danger"
+        loading={cancelMutation.isPending}
+        onCancel={() => setCancelOrderId(null)}
+        onConfirm={() => {
+          if (cancelOrderId !== null) {
+            cancelMutation.mutate(cancelOrderId, {
+              onSettled: () => setCancelOrderId(null),
+            })
+          }
+        }}
+      />
     </>
   )
 }

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import { errorMessage, mapAdminWithdrawal, mapList } from '@/shared/api/phase3b'
 import { Button } from '@/shared/components/Button'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate, formatUsd } from '@/shared/lib/format'
@@ -15,6 +16,7 @@ import { QueryError, QueryLoading, SectionCard } from '@/pages/components/QueryS
 export function AdminWithdrawalsPage() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [confirmAction, setConfirmAction] = useState<{ id: number; accept: boolean } | null>(null)
 
   const withdrawalsQuery = useQuery({
     queryKey: queryKeys.phase3b.adminWithdrawals,
@@ -143,11 +145,7 @@ export function AdminWithdrawalsPage() {
                             size="sm"
                             leftIcon={<CheckCircle2 className="size-4" />}
                             loading={processMutation.isPending && processMutation.variables?.id === withdrawal.id && processMutation.variables.accept}
-                            onClick={() => {
-                              if (window.confirm(`Duyệt yêu cầu rút tiền #${withdrawal.id}?`)) {
-                                processMutation.mutate({ id: withdrawal.id, accept: true })
-                              }
-                            }}
+                            onClick={() => setConfirmAction({ id: withdrawal.id, accept: true })}
                           >
                             Duyệt chi trả
                           </Button>
@@ -156,11 +154,7 @@ export function AdminWithdrawalsPage() {
                             variant="danger"
                             leftIcon={<XCircle className="size-4" />}
                             loading={processMutation.isPending && processMutation.variables?.id === withdrawal.id && !processMutation.variables.accept}
-                            onClick={() => {
-                              if (window.confirm(`Từ chối yêu cầu rút tiền #${withdrawal.id}?`)) {
-                                processMutation.mutate({ id: withdrawal.id, accept: false })
-                              }
-                            }}
+                            onClick={() => setConfirmAction({ id: withdrawal.id, accept: false })}
                           >
                             Từ chối
                           </Button>
@@ -176,6 +170,31 @@ export function AdminWithdrawalsPage() {
           )}
         </SectionCard>
       )}
+
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={
+          confirmAction?.accept
+            ? `Duyệt chi trả yêu cầu rút tiền #${confirmAction.id}?`
+            : `Từ chối yêu cầu rút tiền #${confirmAction?.id ?? ''}?`
+        }
+        description={
+          confirmAction?.accept
+            ? 'Số tiền sẽ được xác nhận chuyển khoản tới tài khoản ngân hàng của người dùng.'
+            : 'Số tiền tạm giữ sẽ được hoàn trả lại vào số dư khả dụng trên ví người dùng.'
+        }
+        confirmLabel={confirmAction?.accept ? 'Duyệt chi trả' : 'Từ chối yêu cầu'}
+        variant={confirmAction?.accept ? 'primary' : 'danger'}
+        loading={processMutation.isPending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction) {
+            processMutation.mutate(confirmAction, {
+              onSettled: () => setConfirmAction(null),
+            })
+          }
+        }}
+      />
     </>
   )
 }

@@ -83,6 +83,7 @@ export function WalletPage() {
               <WithdrawCard
                 balance={wallet.data.balance}
                 withdrawals={withdrawals.data ?? []}
+                hasBankAccount={Boolean(paymentDetails.data?.accountNumber)}
               />
             </SectionCard>
           </div>

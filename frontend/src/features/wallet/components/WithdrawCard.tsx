@@ -11,7 +11,15 @@ import { formatDate, formatUsd } from '@/shared/lib/format'
 import { withdrawalSchema, type WithdrawalValues } from '../schemas'
 import { useWithdraw } from '../useWallet'
 
-export function WithdrawCard({ balance, withdrawals }: { balance: number; withdrawals: Withdrawal[] }) {
+export function WithdrawCard({
+  balance,
+  withdrawals,
+  hasBankAccount = true,
+}: {
+  balance: number
+  withdrawals: Withdrawal[]
+  hasBankAccount?: boolean
+}) {
   const withdraw = useWithdraw()
   const schema = useMemo(() => withdrawalSchema(balance), [balance])
 
@@ -27,6 +35,11 @@ export function WithdrawCard({ balance, withdrawals }: { balance: number; withdr
 
   return (
     <div className="p-5">
+      {!hasBankAccount && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-900">
+          Vui lòng lưu thông tin <strong>Tài khoản nhận tiền</strong> ở khung bên cạnh trước khi gửi yêu cầu rút tiền.
+        </div>
+      )}
       <form
         noValidate
         onSubmit={handleSubmit(async (values) => {
@@ -41,6 +54,7 @@ export function WithdrawCard({ balance, withdrawals }: { balance: number; withdr
           min="1"
           step="0.01"
           placeholder="100"
+          disabled={!hasBankAccount}
           hint={`Số dư khả dụng: ${formatUsd(balance)}`}
           error={errors.amount?.message}
           {...register('amount')}
@@ -48,6 +62,7 @@ export function WithdrawCard({ balance, withdrawals }: { balance: number; withdr
         />
         <Button
           type="submit"
+          disabled={!hasBankAccount}
           loading={withdraw.isPending}
           leftIcon={<ArrowUpFromLine aria-hidden className="size-4" />}
         >

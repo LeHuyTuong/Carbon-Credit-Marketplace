@@ -131,10 +131,49 @@ export function mapTrendPoint(raw: Raw, index: number): TrendPoint {
 }
 
 export function mapActivity(raw: Raw, index: number): ActivityItem {
+  const plate = str(raw.plateNumber)
+  if (plate) {
+    return {
+      id: str(first(raw.id, raw.vehicleId), `veh-${index}`),
+      title: `Xe điện ${plate}`,
+      subtitle: [str(raw.brand), str(raw.model)].filter(Boolean).join(' · ') || 'Phương tiện đã đăng ký',
+      status: str(raw.status, 'ACTIVE'),
+      date: str(first(raw.createdAt, raw.updatedAt)) || null,
+    }
+  }
+
+  const pricePerCredit = toNumber(raw.pricePerCredit, 0)
+  if (pricePerCredit > 0 || raw.batchCode) {
+    const qty = toNumber(first(raw.quantity, raw.availableQuantity), 0)
+    return {
+      id: str(first(raw.listingId, raw.id), `lst-${index}`),
+      title: str(first(raw.projectTitle, raw.batchCode, raw.title), 'Tin niêm yết tín chỉ'),
+      subtitle: [
+        str(first(raw.sellerCompanyName, raw.companyName)),
+        qty > 0 ? `${qty} tín chỉ @ $${pricePerCredit.toFixed(2)}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      status: str(raw.status, 'AVAILABLE'),
+      date: str(first(raw.createdAt, raw.issuedAt, raw.expiresAt)) || null,
+    }
+  }
+
+  if (raw.amount !== undefined && (raw.userEmail || raw.bankName || raw.requestedAt)) {
+    const amt = toNumber(raw.amount, 0)
+    return {
+      id: str(first(raw.id, raw.withdrawalId), `wd-${index}`),
+      title: `Yêu cầu rút $${amt.toFixed(2)}`,
+      subtitle: str(first(raw.userName, raw.userEmail, raw.bankName), 'Giao dịch rút tiền'),
+      status: str(raw.status, 'PENDING'),
+      date: str(first(raw.requestedAt, raw.createdAt)) || null,
+    }
+  }
+
   return {
     id: str(first(raw.id, raw.reportId, raw.applicationId), `item-${index}`),
-    title: str(first(raw.title, raw.projectTitle, raw.companyName, raw.name), 'Hồ sơ mới'),
-    subtitle: str(first(raw.subtitle, raw.description, raw.email)),
+    title: str(first(raw.title, raw.projectTitle, raw.companyName, raw.name), 'Báo cáo phát thải'),
+    subtitle: str(first(raw.subtitle, raw.period ? `Kỳ ${str(raw.period)}` : '', raw.description, raw.email)),
     status: str(raw.status, 'PENDING'),
     date: str(first(raw.createdAt, raw.submittedAt, raw.date)) || null,
   }

@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, FileBarChart2, FileSpreadsheet, RefreshCw, Upload } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/shared/api/client'
 import {
   downloadFile,
   errorMessage,
+  mapApplication,
   mapEmissionReport,
   mapList,
   mapRule,
@@ -15,7 +17,7 @@ import {
 } from '@/shared/api/phase3b'
 import { Button } from '@/shared/components/Button'
 import { EmptyState } from '@/shared/components/EmptyState'
-import { Input } from '@/shared/components/Input'
+import { FileDropzone } from '@/shared/components/FileDropzone'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { formatDate, formatNumber } from '@/shared/lib/format'
 import { queryKeys } from '@/shared/lib/queryKeys'
@@ -35,6 +37,19 @@ export function CompanyReportsPage() {
     queryKey: queryKeys.phase3b.myReports,
     queryFn: async () => mapList(await api.get<unknown>('/reports/my-reports'), mapEmissionReport),
   })
+  const myAppsQuery = useQuery({
+    queryKey: queryKeys.phase3b.myApplications,
+    queryFn: async () => mapList(await api.get<unknown>('/project-applications/my'), mapApplication),
+  })
+  const approvedProjects = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const app of myAppsQuery.data ?? []) {
+      if (app.status.toUpperCase() === 'ADMIN_APPROVED' && app.projectId) {
+        map.set(app.projectId, app.projectTitle || `Dự án #${app.projectId}`)
+      }
+    }
+    return Array.from(map.entries()).map(([id, title]) => ({ id, title }))
+  }, [myAppsQuery.data])
   const reports = reportsQuery.data ?? []
 
   useEffect(() => {
@@ -85,9 +100,9 @@ export function CompanyReportsPage() {
       />
 
       <div className="space-y-6">
-        <SectionCard title="Upload báo cáo CSV" description="File CSV chứa dữ liệu sạc của xe điện theo kỳ báo cáo.">
+        <SectionCard title="Upload báo cáo CSV" description="Chọn dự án đã được Admin phê duyệt và tải lên file CSV dữ liệu sạc xe điện.">
           <form
-            className="grid gap-4 p-5 md:grid-cols-[2fr_1fr_auto] md:items-end"
+            className="grid gap-4 p-5 md:grid-cols-[1.5fr_1fr_auto] md:items-end"
             noValidate
             onSubmit={(event) => {
               event.preventDefault()
@@ -99,26 +114,45 @@ export function CompanyReportsPage() {
               uploadMutation.mutate({ file: csvFile, projectId: projectId === '' ? null : Number(projectId) })
             }}
           >
-            <Input
-              label="File CSV báo cáo"
-              type="file"
+            <FileDropzone
+              label="File CSV báo cáo phát thải"
               accept=".csv,text/csv"
+              hint="Định dạng CSV gồm các cột: total_energy, license_plate, period (tối đa 10 MB)"
               error={uploadError}
-              onChange={(event) => {
-                setCsvFile(event.target.files?.[0] ?? null)
-                if (event.target.files?.length) setUploadError('')
+              file={csvFile}
+              onFileChange={(file) => {
+                setCsvFile(file)
+                if (file) setUploadError('')
               }}
             />
-            <Input
-              label="Project ID (tuỳ chọn)"
-              type="number"
-              min={1}
-              placeholder="Để trống nếu CSV có cột project_id"
-              value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
-            />
+            <div>
+              <label htmlFor="report-project-select" className="mb-1.5 block text-sm font-medium text-ink-700">
+                Dự án đã được duyệt
+              </label>
+              <select
+                id="report-project-select"
+                value={projectId}
+                onChange={(event) => setProjectId(event.target.value)}
+                className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm text-ink-900 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              >
+                <option value="">Tự nhận diện từ cột project_id trong CSV</option>
+                {approvedProjects.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+              {approvedProjects.length === 0 && !myAppsQuery.isPending && (
+                <p className="mt-1.5 text-xs text-amber-700">
+                  Chưa có dự án được duyệt.{' '}
+                  <Link to="/app/company/projects" className="font-semibold underline">
+                    Đăng ký dự án ngay
+                  </Link>
+                </p>
+              )}
+            </div>
             <Button type="submit" loading={uploadMutation.isPending} leftIcon={<Upload className="size-4" />}>
-              Upload
+              Upload CSV
             </Button>
           </form>
         </SectionCard>
