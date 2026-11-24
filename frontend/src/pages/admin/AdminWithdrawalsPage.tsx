@@ -124,14 +124,16 @@ export function AdminWithdrawalsPage() {
                         <dt className="text-ink-500">Chủ tài khoản</dt>
                         <dd className="text-right font-medium text-ink-800">{withdrawal.accountHolder || '—'}</dd>
                       </div>
-                      <div className="flex justify-between gap-3 border-t border-ink-200 pt-2">
-                        <dt className="flex items-center gap-1.5 text-ink-500">
-                          <Landmark className="size-3.5" /> Số dư ví
-                        </dt>
-                        <dd className="text-right font-semibold text-ink-900">
-                          {withdrawal.walletBalance === null ? 'Không có trong phản hồi' : formatUsd(withdrawal.walletBalance)}
-                        </dd>
-                      </div>
+                      {withdrawal.walletBalance !== null && (
+                        <div className="flex justify-between gap-3 border-t border-ink-200 pt-2">
+                          <dt className="flex items-center gap-1.5 text-ink-500">
+                            <Landmark className="size-3.5" /> Số dư ví
+                          </dt>
+                          <dd className="text-right font-semibold text-ink-900">
+                            {formatUsd(withdrawal.walletBalance)}
+                          </dd>
+                        </div>
+                      )}
                     </dl>
 
                     {withdrawal.processedAt && (

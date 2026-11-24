@@ -50,6 +50,7 @@ const EMISSION: Record<string, Badge> = {
   CREDIT_ISSUED: { ...success, label: 'Đã cấp tín chỉ' },
   PAID_OUT: { ...success, label: 'Đã chi trả' },
   NEEDS_REVISION: { ...warning, label: 'Cần chỉnh sửa' },
+  PREVIEW: { ...info, label: 'Dự kiến' },
 }
 
 const ORDER: Record<string, Badge> = {
@@ -82,6 +83,7 @@ const WITHDRAWAL: Record<string, Badge> = {
 
 const PROJECT: Record<string, Badge> = {
   OPEN: { ...success, label: 'Đang mở' },
+  ACTIVE: { ...success, label: 'Đang hoạt động' },
   CLOSE: { ...neutral, label: 'Đã đóng' },
   COMING_SOON: { ...warning, label: 'Sắp mở' },
 }

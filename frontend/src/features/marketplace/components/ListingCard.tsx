@@ -19,7 +19,7 @@ export function ListingCard({
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
             {listing.batchCode || 'Tín chỉ carbon'}
           </p>
-          <h2 className="mt-1 text-base font-bold leading-snug text-ink-900">
+          <h2 className="mt-1 text-balance text-base font-bold leading-snug text-ink-900">
             {listing.projectTitle}
           </h2>
         </div>

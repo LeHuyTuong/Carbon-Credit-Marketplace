@@ -162,7 +162,7 @@ export function AdminIssuancePage() {
           )}
         </SectionCard>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <SectionCard
             title="Xem trước tín chỉ"
             description="Số lượng tín chỉ dự kiến được tính từ phát thải và hệ số dự án."
@@ -181,7 +181,13 @@ export function AdminIssuancePage() {
           >
             {selectedId === null ? (
               <EmptyState icon={Coins} title="Chưa chọn báo cáo" description="Chọn một báo cáo để xem trước tín chỉ." />
-            ) : (
+            ) : (() => {
+              const statusUpper = (report?.status ?? '').toUpperCase()
+              const canApproveOrReject = statusUpper === 'CVA_APPROVED'
+              const canIssue = statusUpper === 'ADMIN_APPROVED'
+              const isAlreadyIssued = statusUpper === 'CREDIT_ISSUED' || statusUpper === 'PAID_OUT'
+
+              return (
               <div className="space-y-5 p-5">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <Metric label="Tổng năng lượng" value={`${formatNumber(report?.totalEnergy)} kWh`} />
@@ -190,12 +196,16 @@ export function AdminIssuancePage() {
                   <Metric label="Số xe" value={formatNumber(report?.vehicleCount)} />
                 </div>
 
-                {previewQuery.isPending ? (
+                {isAlreadyIssued ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                    Báo cáo này đã hoàn tất phát hành tín chỉ. Xem chi tiết mã lô ở bảng <strong>Các lô đã cấp</strong> bên dưới.
+                  </div>
+                ) : previewQuery.isPending ? (
                   <div className="h-32 animate-pulse rounded-xl bg-ink-100" />
                 ) : previewQuery.isError ? (
                   <QueryError
                     title="Chưa có bản xem trước"
-                    description="Báo cáo có thể chưa đủ điều kiện cấp tín chỉ."
+                    description="Báo cáo cần được CVA và Admin phê duyệt trước khi tính toán lượng tín chỉ cấp phát."
                     onRetry={() => void previewQuery.refetch()}
                   />
                 ) : preview ? (
@@ -219,46 +229,58 @@ export function AdminIssuancePage() {
                   <EmptyState icon={Coins} title="Không có dữ liệu xem trước" description="Hãy kiểm tra trạng thái báo cáo." />
                 )}
 
-                <div className="space-y-4 border-t border-ink-100 pt-4">
-                  <Input
-                    label="Ghi chú phê duyệt"
-                    placeholder="Bắt buộc nhập khi duyệt hoặc từ chối"
-                    value={note}
-                    error={noteError}
-                    onChange={(event) => {
-                      setNote(event.target.value)
-                      if (event.target.value.trim()) setNoteError('')
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      leftIcon={<BadgeCheck className="size-4" />}
-                      loading={decisionMutation.isPending && decisionMutation.variables?.approved === true}
-                      onClick={() => submitDecision(true)}
-                    >
-                      Phê duyệt báo cáo
-                    </Button>
-                    <Button
-                      variant="danger"
-                      loading={decisionMutation.isPending && decisionMutation.variables?.approved === false}
-                      onClick={() => submitDecision(false)}
-                    >
-                      Từ chối báo cáo
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      leftIcon={<Coins className="size-4" />}
-                      loading={issueMutation.isPending}
-                      onClick={() => {
-                        if (selectedId !== null) issueMutation.mutate(selectedId)
+                {!isAlreadyIssued && (
+                  <div className="space-y-4 border-t border-ink-100 pt-4">
+                    <Input
+                      label="Ghi chú phê duyệt"
+                      placeholder="Bắt buộc nhập khi duyệt hoặc từ chối"
+                      value={note}
+                      error={noteError}
+                      disabled={!canApproveOrReject}
+                      onChange={(event) => {
+                        setNote(event.target.value)
+                        if (event.target.value.trim()) setNoteError('')
                       }}
-                    >
-                      Cấp tín chỉ
-                    </Button>
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        leftIcon={<BadgeCheck className="size-4" />}
+                        disabled={!canApproveOrReject}
+                        loading={decisionMutation.isPending && decisionMutation.variables?.approved === true}
+                        onClick={() => submitDecision(true)}
+                      >
+                        Phê duyệt báo cáo
+                      </Button>
+                      <Button
+                        variant="danger"
+                        disabled={!canApproveOrReject}
+                        loading={decisionMutation.isPending && decisionMutation.variables?.approved === false}
+                        onClick={() => submitDecision(false)}
+                      >
+                        Từ chối báo cáo
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        leftIcon={<Coins className="size-4" />}
+                        disabled={!canIssue}
+                        loading={issueMutation.isPending}
+                        onClick={() => {
+                          if (selectedId !== null) issueMutation.mutate(selectedId)
+                        }}
+                      >
+                        Cấp tín chỉ
+                      </Button>
+                    </div>
+                    {!canApproveOrReject && !canIssue && (
+                      <p className="text-xs text-ink-500">
+                        Báo cáo đang ở trạng thái chờ CVA thẩm định hoặc đã bị từ chối nên chưa thể phê duyệt/cấp tín chỉ.
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
-            )}
+              )
+            })()}
           </SectionCard>
 
           <SectionCard title="Các lô đã cấp" description={`${batches.length} lô tín chỉ gần đây`}>

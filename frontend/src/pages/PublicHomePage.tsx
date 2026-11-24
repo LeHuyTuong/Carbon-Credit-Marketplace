@@ -61,7 +61,7 @@ export function PublicHomePage() {
               <span className="size-2 rounded-full bg-brand-500 motion-safe:animate-pulse" />
               Sổ đăng ký &amp; Sàn giao dịch tín chỉ carbon xe điện · Việt Nam
             </p>
-            <h1 className="animate-fade-up-delay-1 mt-4 break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
+            <h1 className="animate-fade-up-delay-1 mt-4 text-balance break-words font-extrabold text-4xl leading-[1.14] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
               Thị trường tín chỉ carbon xe điện{' '}
               <span className="text-brand-600">đo lường &amp; kiểm chứng.</span>
             </h1>

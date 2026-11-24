@@ -146,7 +146,11 @@ export function PayoutsPage() {
             <p className="mt-1.5 text-lg font-bold text-brand-700">
               {formatUsd(formula.unitPricePerCredit ?? formula.unitPrice ?? 0)} / tCO₂e
             </p>
-            <p className="mt-0.5 text-xs text-ink-500">Tương đương {formatUsd(formula.unitPricePerKwh ?? 0)} / kWh</p>
+            <p className="mt-0.5 text-xs text-ink-500">
+              {formula.unitPricePerKwh && formula.unitPricePerKwh > 0
+                ? `Tương đương ${formula.unitPricePerKwh < 0.01 ? `$${formula.unitPricePerKwh.toFixed(4)}` : formatUsd(formula.unitPricePerKwh)} / kWh`
+                : 'Quy đổi theo phương pháp luận VM0038'}
+            </p>
           </Card>
           <Card className="p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">Báo cáo đủ điều kiện</p>

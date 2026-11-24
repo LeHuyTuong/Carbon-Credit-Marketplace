@@ -200,12 +200,13 @@ export function CompanyCreditsPage() {
                         <td className="py-3 font-mono">{formatNumber(batch.totalTco2e)}</td>
                         <td className="py-3 text-xs text-ink-500">{formatDate(batch.expiresAt)}</td>
                         <td className="py-3"><StatusBadge status={batch.status} kind="credit" /></td>
-                        <td className="py-3">
+                        <td className="py-3 whitespace-nowrap">
                           <div className="flex justify-end gap-1.5">
                             <Button
                               size="sm"
                               variant="outline"
-                              leftIcon={<Store className="size-3.5" />}
+                              className="whitespace-nowrap"
+                              leftIcon={<Store className="size-3.5 shrink-0" />}
                               onClick={() => openModal('list', batch)}
                             >
                               Niêm yết
@@ -213,7 +214,8 @@ export function CompanyCreditsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              leftIcon={<Flame className="size-3.5" />}
+                              className="whitespace-nowrap"
+                              leftIcon={<Flame className="size-3.5 shrink-0" />}
                               onClick={() => openModal('retire', batch)}
                             >
                               Triệt tiêu
@@ -221,8 +223,9 @@ export function CompanyCreditsPage() {
                             <Button
                               size="sm"
                               variant="ghost"
+                              className="whitespace-nowrap"
                               title="Xem / tải chứng chỉ lô"
-                              leftIcon={<Download className="size-3.5" />}
+                              leftIcon={<Download className="size-3.5 shrink-0" />}
                               onClick={() => void downloadBatchCertificate(batch)}
                             >
                               Chứng chỉ

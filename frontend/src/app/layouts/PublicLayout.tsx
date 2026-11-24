@@ -116,10 +116,10 @@ export function PublicLayout() {
         <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-8 text-sm text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>© {new Date().getFullYear()} CarbonX. Sàn giao dịch tín chỉ carbon minh bạch.</p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link to="/terms" className="hover:text-ink-900">
+            <Link to="/terms" className="inline-flex min-h-[28px] items-center py-1 hover:text-ink-900">
               Điều khoản sử dụng
             </Link>
-            <Link to="/privacy" className="hover:text-ink-900">
+            <Link to="/privacy" className="inline-flex min-h-[28px] items-center py-1 hover:text-ink-900">
               Chính sách bảo mật
             </Link>
           </div>
